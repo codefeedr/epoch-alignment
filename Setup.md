@@ -6,4 +6,4 @@ Do add `resolvers += "Artima Maven Repository" at "http://repo.artima.com/releas
 
 # IntelliJ Plugins
 - Markdown Navigator 2.0 (Editting .md files with preview)
-
+- .ignore (Editting and validation .gitignore)
