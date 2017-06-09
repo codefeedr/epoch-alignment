@@ -19,10 +19,12 @@ val flinkDependencies = Seq(
   "org.apache.flink" %% "flink-streaming-scala" % flinkVersion % "provided")
 
 lazy val root = (project in file(".")).
+enablePlugins(ScalafmtPlugin).
   settings(
     libraryDependencies ++= flinkDependencies
 
   )
+
 
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.0.1"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
