@@ -1,4 +1,12 @@
 language: scala
 scala: 2.11.2
+
+cache:
+  directories:
+  - $HOME/.sbt/0.13/dependency
+  - $HOME/.sbt/boot/scala*
+  - $HOME/.sbt/launchers
+
 script:
-  - sbt scalafmt::test test
+  - sbt scalafmt::test
+  - sbt test
