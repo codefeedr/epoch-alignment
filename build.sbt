@@ -2,6 +2,7 @@ import sbt.Keys.libraryDependencies
 
 resolvers in ThisBuild ++= Seq("Apache Development Snapshot Repository" at "https://repository.apache.org/content/repositories/snapshots/",
   Resolver.mavenLocal)
+resolvers += "Artima Maven Repository" at "http://repo.artima.com/releases"
 
 name := "FlinkPlayground"
 
