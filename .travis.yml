@@ -20,5 +20,5 @@ matrix:
       jdk: oraclejdk8
 
 script:
-  - sbt "scalafmt --diff --test"
+  - sbt scalafmtTest
   - sbt test
