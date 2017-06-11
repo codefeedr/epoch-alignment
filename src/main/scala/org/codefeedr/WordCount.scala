@@ -32,9 +32,6 @@ import org.apache.flink.api.scala._
 object WordCount {
   def main(args: Array[String]) {
 
-
-
-    
     // set up the execution environment
     val env = ExecutionEnvironment.getExecutionEnvironment
 
@@ -45,6 +42,13 @@ object WordCount {
       "The slings and arrows of outrageous fortune",
       "Or to take arms against a sea of troubles,"
     )
+
+
+
+
+
+
+
 
 
     val counts = text
