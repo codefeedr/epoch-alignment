@@ -2,9 +2,8 @@
 <project version="4">
   <component name="ScalaCompilerConfiguration">
     <profile name="SBT 2" modules="root,mainRunner">
-      <option name="postfixOps" value="true" />
       <plugins>
-        <plugin path="C:\Users\Niels\.ivy2\cache\com.artima.supersafe\supersafe_2.11.0\jars\supersafe_2.11.0-1.1.2.jar" />
+        <plugin path="C:\Users\Niels\.ivy2\cache\com.artima.supersafe\supersafe_2.11.11\jars\supersafe_2.11.11-1.1.2.jar" />
       </plugins>
     </profile>
   </component>
