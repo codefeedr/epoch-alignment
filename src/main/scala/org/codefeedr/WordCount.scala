@@ -43,14 +43,6 @@ object WordCount {
       "Or to take arms against a sea of troubles,"
     )
 
-
-
-
-
-
-
-
-
     val counts = text
       .flatMap { _.toLowerCase.split("\\W+") }
       .map { (_, 1) }
