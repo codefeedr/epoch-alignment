@@ -1,5 +1,12 @@
 .idea/vcs.xml
 .idea/workspace.xml
+.idea/sbt.xml
+
+.DS_Store
+
 mainRunner/
 project/project/
 target/
+
+
+
