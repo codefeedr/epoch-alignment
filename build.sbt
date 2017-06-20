@@ -30,6 +30,9 @@ libraryDependencies += "codes.reactive" %% "scala-time" % "0.4.1"
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.0.1"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
+libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.7"
+libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0"
+
 mainClass in assembly := Some("org.codefeedr.Job")
 
 // make run command include the provided dependencies
