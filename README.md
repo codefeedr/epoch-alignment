@@ -2,6 +2,9 @@
 
 A platform for streaming software analytics
 
+[![Build Status](https://travis-ci.org/codefeedr/codefeedr.svg?branch=master)](https://travis-ci.org/codefeedr/codefeedr)
+
+
 ## Configuring the build environment
 
 ### Command line
