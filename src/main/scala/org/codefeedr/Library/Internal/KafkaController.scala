@@ -16,7 +16,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * low level object to control the connected kafka
   */
 object KafkaController {
-  //TODO: move this to some sort of configuration
+  //This should be moved to some sort of configuration file
   private lazy val properties: Properties = {
     val props = new Properties()
     props.put("bootstrap.servers", "localhost:9092")
@@ -32,21 +32,25 @@ object KafkaController {
 
   /**
     * Perform a method on the kafka admin. Using a managed resource to dispose of the admin client after use
-    * TODO: Handle exceptions from the creation of the amdin client
     * @param method the method to run on the kafka cluster
     * @tparam T return type of the method
     * @return raw result from kafka API
     */
   private def apply[T](method: AdminClient => T): T =
-    (managed(AdminClient.create(properties)) map method).opt.get
+    (managed(AdminClient.create(properties)) map method).opt match {
+      case None =>
+        throw new Exception(
+          "Error while connecting to Kafka. Is kafka running and the configuration correct?")
+      case Some(value) => value
+    }
 
   /**
     * Create a new topic on kafka
+    * Still need to support numTopics and replication factor. Probably need to integrate this with flink?
     * @param name name of the topic to register
     * @return a future that resolves when the topic has been created
     */
   def CreateTopic(name: String): Future[Unit] = {
-    //TODO: Support numTopics and replication factor. Probably need to integrate this with flink?
     val topic = new NewTopic(name, 1, 1)
     val topicSet = Iterable(topic).asJavaCollection
     val result = apply(o => o.createTopics(topicSet))
