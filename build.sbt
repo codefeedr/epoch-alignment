@@ -30,6 +30,10 @@ libraryDependencies += "codes.reactive" %% "scala-time" % "0.4.1"
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.0.1"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
+libraryDependencies += "org.apache.kafka" % "kafka-clients" % "0.11.0.0"
+libraryDependencies += "com.jsuereth" %% "scala-arm" % "2.0"
+libraryDependencies += "org.scala-lang.modules" % "scala-java8-compat_2.11" % "0.8.0"
+
 mainClass in assembly := Some("org.codefeedr.Job")
 
 // make run command include the provided dependencies
