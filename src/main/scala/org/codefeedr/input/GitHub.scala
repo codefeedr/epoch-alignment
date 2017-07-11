@@ -49,9 +49,9 @@ class GithubConnector extends RichSourceFunction[Event] {
   }
 
   def connectToMongo(): MongoCollection[Event] = {
-    db = MongoClient(conf.getString("codefeedr.mongo.url")).
-      getDatabase(conf.getString("codefeedr.mongo.db")).
-      getCollection(conf.getString("codefeedr.input.github.events_collection"))
+    db = MongoClient(conf.getString("codefeedr.mongo.url"))
+      .getDatabase(conf.getString("codefeedr.mongo.db"))
+      .getCollection(conf.getString("codefeedr.input.github.events_collection"))
     db
   }
 
