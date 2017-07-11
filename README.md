@@ -33,3 +33,7 @@ IntelliJ splash screen
 In order to run your application from within IntelliJ, you have to select the classpath of the 
 'mainRunner' module in  the run/debug configurations. Simply open 'Run -> Edit configurations...' 
 and then select 'mainRunner' from the "Use  classpath of module" dropbox.
+
+## Required external programs
+
+* MongoDB
