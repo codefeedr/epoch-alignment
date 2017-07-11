@@ -21,15 +21,22 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" scope="PROVIDED" name="SBT: com.data-artisans:flakka-actor_2.11:2.3-custom:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.scalactic:scalactic_2.11:3.0.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: ch.qos.logback:logback-classic:1.1.7:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: xmlenc:xmlenc:0.52:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: org.uncommons.maths:uncommons-maths:1.2.2a:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: org.tukaani:xz:1.0:jar" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="SBT: org.slf4j:slf4j-api:1.7.7:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.slf4j:slf4j-api:1.7.21:jar" level="project" />
+    <orderEntry type="library" scope="TEST" name="SBT: org.scalatest:scalatest_2.11:3.0.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.scalactic:scalactic_2.11:3.0.1:jar" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="SBT: org.scala-lang.modules:scala-xml_2.11:1.0.5:jar" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="SBT: org.scala-lang.modules:scala-parser-combinators_2.11:1.0.4:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.scala-lang:scala-reflect:2.11.11:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.scala-lang:scala-library:2.11.11:jar" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="SBT: org.scala-lang:scala-compiler:2.11.11:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: org.objenesis:objenesis:2.1:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: org.mortbay.jetty:jetty-util:6.1.26:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: org.javassist:javassist:3.18.2-GA:jar" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="SBT: org.eclipse.mylyn.github:org.eclipse.egit.github.core:2.1.5:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: org.codehaus.jackson:jackson-mapper-asl:1.9.13:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: org.codehaus.jackson:jackson-core-asl:1.9.13:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: org.clapper:grizzled-slf4j_2.11:1.0.2:jar" level="project" />
@@ -71,7 +78,8 @@
     <orderEntry type="library" scope="PROVIDED" name="SBT: commons-codec:commons-codec:1.4:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: commons-cli:commons-cli:1.3.1:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: commons-beanutils:commons-beanutils-bean-collections:1.8.3:jar" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="SBT: com.typesafe:config:1.2.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.scala-logging:scala-logging_2.11:3.5.0:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe:config:1.3.1:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: com.twitter:chill_2.11:0.7.4:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: com.twitter:chill-java:0.7.4:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: com.thoughtworks.paranamer:paranamer:2.3:jar" level="project" />
@@ -79,6 +87,7 @@
     <orderEntry type="library" scope="PROVIDED" name="SBT: com.jcraft:jsch:0.1.42:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: com.jamesmurty.utils:java-xmlbuilder:0.4:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: com.google.protobuf:protobuf-java:2.5.0:jar" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="SBT: com.google.code.gson:gson:2.2.2:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: com.google.code.findbugs:jsr305:1.3.9:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: com.github.scopt:scopt_2.11:3.5.0:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: com.fasterxml.jackson.core:jackson-databind:2.7.4:jar" level="project" />
@@ -88,12 +97,8 @@
     <orderEntry type="library" scope="PROVIDED" name="SBT: com.esotericsoftware.kryo:kryo:2.24.0:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: com.data-artisans:flakka-slf4j_2.11:2.3-custom:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: com.data-artisans:flakka-remote_2.11:2.3-custom:jar" level="project" />
-    <orderEntry type="library" scope="TEST" name="SBT: org.scalatest:scalatest_2.11:3.0.1:jar" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="SBT: com.data-artisans:flakka-actor_2.11:2.3-custom:jar" level="project" />
     <orderEntry type="library" name="SBT: codes.reactive:scala-time_2.11:0.4.1:jar" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="SBT: org.scala-lang.modules:scala-parser-combinators_2.11:1.0.4:jar" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="SBT: org.scala-lang:scala-compiler:2.11.11:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.scala-lang:scala-library:2.11.11:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.scala-lang:scala-reflect:2.11.11:jar" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="SBT: org.scala-lang.modules:scala-xml_2.11:1.0.5:jar" level="project" />
+    <orderEntry type="library" name="SBT: ch.qos.logback:logback-core:1.1.7:jar" level="project" />
   </component>
 </module>
