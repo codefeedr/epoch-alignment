@@ -33,7 +33,7 @@ class GitHubConnectorTest extends AsyncFlatSpec with Matchers {
 
   "The GitHub connector" should "connect to the database" in {
 
-    val mongo = (new GithubConnector()).connectToMongo
+    val mongo = new GithubConnector().connectToMongo()
     mongo should not be null
     mongo.count.head.map(r => assert(r >= 0))
   }

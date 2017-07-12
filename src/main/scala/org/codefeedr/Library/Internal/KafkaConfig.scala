@@ -2,21 +2,37 @@ package org.codefeedr.Library.Internal
 
 import java.util.Properties
 
+import com.typesafe.config.{Config, ConfigFactory}
+
 /**
   * Created by Niels on 11/07/2017.
   */
 object KafkaConfig {
-  //This should be moved to some sort of configuration file
-  @transient lazy val properties: Properties = {
+  lazy val conf: Config = ConfigFactory.load
+
+  /**
+    * Map configuration to java properties
+    * Source: https://stackoverflow.com/questions/34337782/converting-typesafe-config-type-to-java-util-properties
+    * @param config the config object to convert to properties
+    * @return java properties object
+    */
+  def propsFromConfig(config: Config): Properties = {
+    import scala.collection.JavaConversions._
+
     val props = new Properties()
-    props.put("bootstrap.servers", "localhost:9092")
-    props.put("acks", "all")
-    props.put("retries", Predef.int2Integer(0))
-    props.put("batch.size", Predef.int2Integer(16384))
-    props.put("linger.ms", Predef.int2Integer(1))
-    props.put("buffer.memory", Predef.int2Integer(33554432))
-    props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
-    props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer")
+
+    val map: Map[String, Object] = config
+      .entrySet()
+      .map({ entry =>
+        entry.getKey -> entry.getValue.unwrapped()
+      })(collection.breakOut)
+
+    props.putAll(map)
     props
   }
+
+  /**
+    * Get the kafka configuration
+    */
+  lazy val properties: Properties = propsFromConfig(conf.getConfig("codefeedr.kafka"))
 }

@@ -56,8 +56,8 @@ class GithubConnector extends RichSourceFunction[Event] {
   }
 
   override def open(config: Configuration): Unit = {
-    client = connectToGitHub
-    db = connectToMongo
+    client = connectToGitHub()
+    db = connectToMongo()
   }
 
   override def cancel(): Unit = {
