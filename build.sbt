@@ -5,7 +5,7 @@ resolvers in ThisBuild ++= Seq(
   Resolver.mavenLocal)
 resolvers += "Artima Maven Repository" at "http://repo.artima.com/releases"
 
-name := "FlinkPlayground"
+name := "CodeFeedr"
 
 version := "0.1-SNAPSHOT"
 
@@ -29,6 +29,13 @@ libraryDependencies += "codes.reactive" %% "scala-time" % "0.4.1"
 
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.0.1"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
+
+libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.7"
+libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0"
+
+libraryDependencies += "org.eclipse.mylyn.github" % "org.eclipse.egit.github.core" % "2.1.5" % "provided"
+libraryDependencies += "com.typesafe" % "config" % "1.3.1"
+libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.1.0"
 
 libraryDependencies += "org.apache.kafka" % "kafka-clients" % "0.11.0.0"
 libraryDependencies += "com.jsuereth" %% "scala-arm" % "2.0"
