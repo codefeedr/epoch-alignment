@@ -1,5 +1,6 @@
 # /bin/bash
 
+
 set -eu
 
 #This file is based on: https://github.com/matrix-org/dendrite
