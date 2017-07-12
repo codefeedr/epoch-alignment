@@ -26,5 +26,6 @@ before_script:
   - sleep 10
 
 script:
+  - ./travis-install-kafka.sh
   - sbt scalafmtTest
   - sbt test
