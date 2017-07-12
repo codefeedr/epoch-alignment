@@ -16,19 +16,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * low level object to control the connected kafka
   */
 object KafkaController {
-  //This should be moved to some sort of configuration file
-  private lazy val properties: Properties = {
-    val props = new Properties()
-    props.put("bootstrap.servers", "localhost:9092")
-    props.put("acks", "all")
-    props.put("retries", Predef.int2Integer(0))
-    props.put("batch.size", Predef.int2Integer(16384))
-    props.put("linger.ms", Predef.int2Integer(1))
-    props.put("buffer.memory", Predef.int2Integer(33554432))
-    props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
-    props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer")
-    props
-  }
 
   /**
     * Perform a method on the kafka admin. Using a managed resource to dispose of the admin client after use
@@ -37,7 +24,7 @@ object KafkaController {
     * @return raw result from kafka API
     */
   private def apply[T](method: AdminClient => T): T =
-    (managed(AdminClient.create(properties)) map method).opt match {
+    (managed(AdminClient.create(KafkaConfig.properties)) map method).opt match {
       case None =>
         throw new Exception(
           "Error while connecting to Kafka. Is kafka running and the configuration correct?")
