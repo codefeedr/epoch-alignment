@@ -1,12 +1,15 @@
 package org.codefeedr.Library.Internal
 
 import org.apache.kafka.clients.consumer._
+import org.apache.kafka.clients.producer.KafkaProducer
 
 /**
   * Created by Niels on 14/07/2017.
   */
 object KafkaConsumerFactory {
-  def create[TData, TKey](): KafkaConsumer[TData, TKey] = {
-    new KafkaConsumer[TData, TKey](KafkaConfig.properties)
+  def create[TKey, TData](): KafkaConsumer[TKey, TData] = {
+    new KafkaConsumer[TKey, TData](KafkaConfig.properties,
+      new KafkaDeserializer[TKey],
+      new KafkaDeserializer[TData])
   }
 }

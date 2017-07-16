@@ -14,7 +14,7 @@ object KafkaProducerFactory {
     * @tparam TKey Type of the key idintifying the data object
     * @return A kafka producer cabapble of pushing the tuples to kafka
     */
-  def Create[TKey, TData]: KafkaProducer[TKey, TData] =
+  def create[TKey, TData]: KafkaProducer[TKey, TData] =
     new KafkaProducer[TKey, TData](KafkaConfig.properties,
                                    new KafkaSerializer[TKey],
                                    new KafkaSerializer[TData])

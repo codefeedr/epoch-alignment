@@ -15,7 +15,7 @@ import scala.reflect.runtime.{universe => ru}
   * Created by Niels on 11/07/2017.
   */
 class KafkaSink[TData: ru.TypeTag] extends RichSinkFunction[TData] {
-  @transient private lazy val kafkaProducer = KafkaProducerFactory.Create[RecordIdentifier, TData]
+  @transient private lazy val kafkaProducer = KafkaProducerFactory.create[RecordIdentifier, TData]
 
   @transient private lazy val env = StreamExecutionEnvironment.getExecutionEnvironment
   //Unique identifier for the sink

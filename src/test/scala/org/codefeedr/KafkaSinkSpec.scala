@@ -21,7 +21,13 @@ class KafkaSinkSpec extends AsyncFlatSpec with Matchers {
       .flatMap(o => {
         assert(o.contains("MyOwnIntegerObject"))
       })
+  }
 
+  "A KafkaSink" should "be able to be removed again" in {
+    for {
+      _ <- KafkaController.Destroy()
+      empty <- KafkaController.GetTopics().map(o => assert(o.size == 0))
+    } yield empty
   }
 
 }
