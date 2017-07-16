@@ -47,6 +47,18 @@ object KafkaController {
   }
 
   /**
+    * Creates a topic if it does not exist yet. Otherwise does nothing
+    * @param name
+    * @return
+    */
+  def GuaranteeTopic(name: String): Future[Unit] = {
+    GetTopics().map(o =>
+      if (!o.contains(name)) {
+        CreateTopic(name)
+    })
+  }
+
+  /**
     * Get the list of topics registered on the kafka cluster
     * @return a future of a set of topic names
     */
@@ -66,4 +78,10 @@ object KafkaController {
       apply(o => o.deleteTopics(Iterable(topic).asJavaCollection)).all().get()
     }
   }
+
+  /**
+    * Destroy all topics on the kafka cluster.
+    * @return a set of unit for the destroyed topics
+    */
+  def Destroy() = GetTopics().flatMap(o => Future.sequence(o.map(DeleteTopic)))
 }

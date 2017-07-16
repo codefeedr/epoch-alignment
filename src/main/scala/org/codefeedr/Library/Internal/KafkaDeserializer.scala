@@ -1,15 +1,20 @@
 package org.codefeedr.Library.Internal
 
 import java.io.{ByteArrayInputStream, ObjectInputStream}
+import java.util
 
 /**
   * Created by Niels on 14/07/2017.
   */
-object Deserializer {
-  def deserialise(bytes: Array[Byte]): Any = {
-    val ois = new ObjectInputStream(new ByteArrayInputStream(bytes))
-    val value = ois.readObject
+class KafkaDeserializer[T] extends org.apache.kafka.common.serialization.Deserializer[T] {
+  override def configure(configs: util.Map[String, _], isKey: Boolean): Unit = {}
+
+  override def close(): Unit = {}
+
+  override def deserialize(topic: String, data: Array[Byte]): T = {
+    val ois = new ObjectInputStream(new ByteArrayInputStream(data))
+    val value = ois.readObject()
     ois.close
-    value
+    value.asInstanceOf[T]
   }
 }

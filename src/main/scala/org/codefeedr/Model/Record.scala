@@ -1,28 +1,41 @@
 package org.codefeedr.Model
 
+import java.util.UUID
+
 import org.apache.flink.api.common.typeinfo.{PrimitiveArrayTypeInfo, TypeInformation, Types}
 
 /**
   * Created by Niels on 12/07/2017.
   */
 @SerialVersionUID(100L)
-case class Record(id: RecordIdentifier, data: RecordData, recordType: RecordType.Value) extends Serializable
+case class Record(id: RecordIdentifier, data: Any, action: ActionType.Value) extends Serializable
 
 @SerialVersionUID(100L)
-case class RecordData(bag: Array[Any]) extends Serializable
+case class RecordIdentifier(sequence: Long, sinkSource: String) extends Serializable
 
 @SerialVersionUID(100L)
-case class RecordIdentifier(sequence: Long, recordSource: Long) extends Serializable
+case class RecordSource(sinkUuid: String, typeUuid: String) extends Serializable
 
 @SerialVersionUID(100L)
-case class RecordSource(id: Long, typeId: Long) extends Serializable
+case class SubjectType(uuid: String, name: String, properties: Set[RecordProperty])
+    extends Serializable
 
 @SerialVersionUID(100L)
-case class RecordType(id: Long, properties: Set[RecordProperty]) extends Serializable
+case class RecordProperty(name: String, propertyType: PropertyType.Value) extends Serializable
 
-@SerialVersionUID(100L)
-case class RecordProperty(name: String, typeInfo: TypeInformation[_]) extends Serializable
+case class SubjectTypeEvent(subjectType: SubjectType, actionType: ActionType.Value)
 
-object RecordType extends Enumeration {
+/**
+  * Data equals audit trail
+  */
+object ActionType extends Enumeration {
   val Add, Update, Remove = Value
+}
+
+/**
+  * Property types that are recognized and supported by the query language
+  * Any is used for types that are unrecognized
+  */
+object PropertyType extends Enumeration {
+  val Number, String, Any = Value
 }
