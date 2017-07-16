@@ -8,7 +8,6 @@ import scala.collection.JavaConverters._
 import scala.concurrent._
 
 /**
-  * WARNIGN: Running thi
   * Created by Niels on 11/07/2017.
   */
 class KafkaControllerSpec extends AsyncFlatSpec with Matchers {
@@ -28,25 +27,30 @@ class KafkaControllerSpec extends AsyncFlatSpec with Matchers {
     } yield list
   }
 
-  "A kafkaController" should "create a new topic if guarantee is called and it does not exist yet, but not add it again if it already exists" in {
+  "A kafkaController" should "create a new topic if guarantee is called and it does not exist yet" in {
     for {
       _ <- KafkaController.GuaranteeTopic(testTopic)
-      topics1 <- KafkaController.GetTopics().map(o => assert(o.size == 1))
-    } yield topics1
+      contains <- KafkaController.GetTopics().map(o => assert(o.contains(testTopic)))
+    } yield contains
+  }
+
+  "A kafkaController" should "Not add a topic again if guarantee is called and the topic already exists" in {
     for {
+      numTopics <- KafkaController.GetTopics().map(o => o.size)
       _ <- KafkaController.GuaranteeTopic(testTopic)
-      topics1 <- KafkaController.GetTopics().map(o => assert(o.size == 1))
+      topics1 <- KafkaController.GetTopics().map(o => assert(o.size == numTopics))
     } yield topics1
   }
 
+  /*
   "A kafkaController" should "be able to destroy all topics on a kafka cluster" in {
     for {
       _ <- KafkaController.CreateTopic("Blablabla")
       topics1 <- KafkaController.GetTopics().map(o => assert(o.size == 2))
-    } yield topics1
-    for {
       _ <- KafkaController.Destroy()
       topics1 <- KafkaController.GetTopics().map(o => assert(o.isEmpty))
     } yield topics1
+
   }
+  */
 }
