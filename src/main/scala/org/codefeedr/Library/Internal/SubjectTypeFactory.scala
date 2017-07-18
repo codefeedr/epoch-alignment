@@ -30,9 +30,9 @@ object SubjectTypeFactory extends LazyLogging {
 
     val propertyType = symbol.info.toString match {
       case "scala.Int" => PropertyType.Number
-      case "Int"       => PropertyType.Number
-      case "String"    => PropertyType.String
-      case _           => PropertyType.Any
+      case "Int" => PropertyType.Number
+      case "String" => PropertyType.String
+      case _ => PropertyType.Any
     }
     RecordProperty(name, propertyType)
   }

@@ -152,7 +152,7 @@ object KafkaLibrary {
     */
   private def handleEvent(event: SubjectTypeEvent): Unit =
     event.actionType match {
-      case ActionType.Add    => insert(event.subjectType)
+      case ActionType.Add => insert(event.subjectType)
       case ActionType.Update => update(event.subjectType)
       case ActionType.Remove => delete(event.subjectType)
     }
