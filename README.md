@@ -21,6 +21,7 @@ Run `sbt`. Then at the SBT console:
 - `test` to run the tests
 - `clean` to clean
 - `scalafmt` to format according to project guidelines
+- `scalafmt::test` to check if format according to project guidelines
 
 ### From IntelliJ
 
@@ -44,3 +45,13 @@ IntelliJ preferences panel.
 ## Required external programs
 
 * MongoDB
+* Kafka
+
+## Setup KAFKA
+
+1. Download the latest version of kafka from https://kafka.apache.org/
+2. In the configuration folder, in the file "", uncomment the line "delete.topic.enable=true"
+3. From the root folder run "bin/zookeeper-server-start.sh config/zookeeper.properties" to start apache zookeeper
+4. From the root folder run "bin/kafka-server-start.sh config/server.properties" to start kafka
+
+Now the unit tests should run. For further info on runnin kafka, and running kafka on windows, see https://kafka.apache.org/quickstart

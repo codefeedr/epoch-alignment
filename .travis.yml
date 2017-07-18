@@ -27,5 +27,5 @@ before_script:
 
 script:
   - ./setuptravis.sh
-  - sbt scalafmtTest
+  - sbt scalafmt::test
   - sbt test

@@ -1,16 +1,13 @@
 package org.codefeedr.Library.Internal
 
-import java.util
-import java.util.Properties
-
 import org.apache.kafka.clients.admin.{AdminClient, NewTopic}
 import resource.managed
 
-import scala.collection.JavaConverters._
 import scala.collection.JavaConversions._
-import scala.concurrent.Future
+import scala.collection.JavaConverters._
 import scala.collection.immutable._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 /**
   * low level object to control the connected kafka
@@ -33,7 +30,7 @@ object KafkaController {
 
   /**
     * Create a new topic on kafka
-    * Still need to support numTopics and replication factor. Probably need to integrate this with flink?
+    * Still need to support numTopics and replication factor. Probably need to integrate this with Flink?
     * @param name name of the topic to register
     * @return a future that resolves when the topic has been created
     */
@@ -43,7 +40,20 @@ object KafkaController {
     val result = apply(o => o.createTopics(topicSet))
     Future {
       result.all().get()
+
     }
+  }
+
+  /**
+    * Creates a topic if it does not exist yet. Otherwise does nothing
+    * @param name Topic to guarantee
+    * @return
+    */
+  def GuaranteeTopic(name: String): Future[Unit] = {
+    GetTopics().map(o =>
+      if (!o.contains(name)) {
+        CreateTopic(name)
+    })
   }
 
   /**
@@ -66,4 +76,10 @@ object KafkaController {
       apply(o => o.deleteTopics(Iterable(topic).asJavaCollection)).all().get()
     }
   }
+
+  /**
+    * Destroy all topics on the kafka cluster.
+    * @return a set of unit for the destroyed topics
+    */
+  def Destroy(): Future[Set[Unit]] = GetTopics().flatMap(o => Future.sequence(o.map(DeleteTopic)))
 }
