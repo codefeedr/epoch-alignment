@@ -24,4 +24,20 @@ class KafkaSubjectsSpec extends AsyncFlatSpec with Matchers {
       _ <- KafkaSubjects.UnRegisterSubject("TestTypeA")
     } yield assert(!KafkaSubjects.GetSubjectNames().contains("TestTypeA"))
   }
+
+  "A KafkaSubjects" should "return the same subjecttype if GetType is called twice in parallel" in {
+    val t1 = KafkaSubjects.GetType[TestTypeA]()
+    val t2 = KafkaSubjects.GetType[TestTypeA]()
+    for {
+      r1 <- t1
+      r2 <- t2
+    } yield assert(r1.uuid == r2.uuid)
+  }
+
+  "A KafkaSubjects" should "return the same subjecttype if GetType is called twice sequential" in {
+    for {
+      r1 <- KafkaSubjects.GetType[TestTypeA]()
+      r2 <- KafkaSubjects.GetType[TestTypeA]()
+    } yield assert(r1.uuid == r2.uuid)
+  }
 }
