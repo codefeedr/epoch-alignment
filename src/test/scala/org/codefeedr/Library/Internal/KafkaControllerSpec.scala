@@ -39,9 +39,9 @@ class KafkaControllerSpec extends AsyncFlatSpec with Matchers {
       numTopics <- KafkaController.GetTopics().map(o => o.size)
       _ <- KafkaController.GuaranteeTopic(testTopic)
       topics1 <- KafkaController.GetTopics().map(o => assert(o.size == numTopics))
+      _ <- KafkaController.DeleteTopic(testTopic)
     } yield topics1
   }
-
   /*
   "A kafkaController" should "be able to destroy all topics on a kafka cluster" in {
     for {
@@ -52,5 +52,5 @@ class KafkaControllerSpec extends AsyncFlatSpec with Matchers {
     } yield topics1
 
   }
-  */
+ */
 }

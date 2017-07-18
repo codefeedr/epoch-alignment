@@ -12,7 +12,7 @@ case class MyOwnIntegerObject(value: Int)
   * Created by Niels on 14/07/2017.
   */
 class KafkaSinkSpec extends AsyncFlatSpec with Matchers {
-
+  /*
   "A KafkaSink" should "be able to create a topic for itself" in {
     val sink = new KafkaSink[MyOwnIntegerObject]
     sink.invoke(MyOwnIntegerObject(1))
@@ -29,5 +29,5 @@ class KafkaSinkSpec extends AsyncFlatSpec with Matchers {
       empty <- KafkaController.GetTopics().map(o => assert(o.size == 0))
     } yield empty
   }
-
+ */
 }
