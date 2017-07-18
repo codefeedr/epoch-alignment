@@ -21,6 +21,7 @@ Run `sbt`. Then at the SBT console:
 - `test` to run the tests
 - `clean` to clean
 - `scalafmt` to format according to project guidelines
+- `scalafmt::test` to check if format according to project guidelines
 
 ### From IntelliJ
 
