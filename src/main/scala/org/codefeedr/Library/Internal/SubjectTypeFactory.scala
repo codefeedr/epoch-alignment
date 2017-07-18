@@ -26,9 +26,9 @@ object SubjectTypeFactory {
   private def getRecordProperty(symbol: ru.TermSymbol): RecordProperty = {
     val name = symbol.name.toString.trim()
     val propertyType = symbol.info.toString match {
-      case "Int"    => PropertyType.Number
+      case "Int" => PropertyType.Number
       case "String" => PropertyType.String
-      case _        => PropertyType.Any
+      case _ => PropertyType.Any
     }
     RecordProperty(name, propertyType)
   }
