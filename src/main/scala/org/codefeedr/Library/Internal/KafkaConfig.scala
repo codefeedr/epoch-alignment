@@ -34,5 +34,8 @@ object KafkaConfig {
   /**
     * Get the kafka configuration
     */
-  lazy val properties: Properties = propsFromConfig(conf.getConfig("codefeedr.kafka"))
+  lazy val properties: Properties = propsFromConfig(conf.getConfig("codefeedr.kafka.server"))
+
+  lazy val consumerPropertes: Properties = propsFromConfig(
+    conf.getConfig("codefeedr.kafka.consumer"))
 }

@@ -1,7 +1,6 @@
 package org.codefeedr.Library.Internal
 
 import org.apache.kafka.clients.producer.KafkaProducer
-import org.apache.kafka.common.serialization.Serializer
 
 /**
   * Created by Niels on 11/07/2017.
@@ -9,10 +8,10 @@ import org.apache.kafka.common.serialization.Serializer
 object KafkaProducerFactory {
 
   /**
-    * Create a kafkaproducer for a specific data and key type
+    * Create a kafka producer for a specific data and key type
     * @tparam TData Type of the data object
-    * @tparam TKey Type of the key idintifying the data object
-    * @return A kafka producer cabapble of pushing the tuples to kafka
+    * @tparam TKey Type of the key identifying the data object
+    * @return A kafka producer capable of pushing the tuple to kafka
     */
   def create[TKey, TData]: KafkaProducer[TKey, TData] =
     new KafkaProducer[TKey, TData](KafkaConfig.properties,

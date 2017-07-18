@@ -13,7 +13,7 @@ class KafkaSerializer[T] extends org.apache.kafka.common.serialization.Serialize
     val stream: ByteArrayOutputStream = new ByteArrayOutputStream()
     val oos = new ObjectOutputStream(stream)
     oos.writeObject(data)
-    oos.close
+    oos.close()
     stream.toByteArray
   }
 

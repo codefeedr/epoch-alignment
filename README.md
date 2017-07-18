@@ -46,7 +46,6 @@ IntelliJ preferences panel.
 * MongoDB
 * Kafka
 
-
 ## Setup KAFKA
 
 1. Download the latest version of kafka from https://kafka.apache.org/

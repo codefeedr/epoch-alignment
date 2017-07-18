@@ -24,7 +24,7 @@ object SubjectTypeFactory {
   }
 
   private def getRecordProperty(symbol: ru.TermSymbol): RecordProperty = {
-    val name = symbol.name.toString.trim
+    val name = symbol.name.toString.trim()
     val propertyType = symbol.info.toString match {
       case "Int"    => PropertyType.Number
       case "String" => PropertyType.String
@@ -34,8 +34,8 @@ object SubjectTypeFactory {
   }
 
   /**
-    * Get a subject type for the query language, typetag required
-    * @tparam T
+    * Get a subject type for the query language, type tag required
+    * @tparam T type of the subject
     * @return Type description of the given type
     */
   def getSubjectType[T: ru.TypeTag]: SubjectType = getSubjectTypeInternal(ru.typeOf[T])

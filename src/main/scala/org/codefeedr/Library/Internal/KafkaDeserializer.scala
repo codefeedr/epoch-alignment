@@ -14,7 +14,7 @@ class KafkaDeserializer[T] extends org.apache.kafka.common.serialization.Deseria
   override def deserialize(topic: String, data: Array[Byte]): T = {
     val ois = new ObjectInputStream(new ByteArrayInputStream(data))
     val value = ois.readObject()
-    ois.close
+    ois.close()
     value.asInstanceOf[T]
   }
 }
