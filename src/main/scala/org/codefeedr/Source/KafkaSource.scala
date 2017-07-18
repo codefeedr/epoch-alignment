@@ -1,17 +1,17 @@
 package org.codefeedr.Source
 
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
-import org.codefeedr.Library.Internal.{KafkaConsumerFactory, KafkaProducerFactory}
+import org.codefeedr.Library.Internal.KafkaConsumerFactory
 import org.codefeedr.Model.{Record, RecordIdentifier, SubjectType}
 
-import scala.reflect.runtime.{universe => ru}
 import scala.collection.JavaConverters._
+import scala.reflect.runtime.{universe => ru}
 
 /**
   * Created by Niels on 18/07/2017.
   */
 class KafkaSource[TData: ru.TypeTag](subjectType: SubjectType) extends RichSourceFunction[TData] {
-  @transient private lazy val dataConsumer = KafkaConsumerFactory.create[RecordIdentifier, Record]
+  @transient private lazy val dataConsumer = KafkaConsumerFactory.create[RecordIdentifier, Record]()
   @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
 
   @transient private var running = false
