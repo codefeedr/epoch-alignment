@@ -8,12 +8,6 @@ import org.codefeedr.Library.Internal.{
   KafkaProducerFactory,
   SubjectTypeFactory
 }
-import org.codefeedr.Library.KafkaLibrary.{
-  PollTimeout,
-  RefreshTime,
-  handleEvent,
-  subjectTypeConsumer
-}
 import org.codefeedr.Model.{ActionType, SubjectType, SubjectTypeEvent}
 
 import scala.collection.JavaConverters._
@@ -49,6 +43,7 @@ object KafkaLibrary {
   @transient private lazy val subjectSynchronizer = new SubjectSynchronizer()
 
   //Using a concurrent map to keep track of promises that still need to get notified of their type
+  //Could switch to a normal map as there should only be a single thread modifying this (but multiple requesting)
   @transient private lazy val subjects: concurrent.Map[String, SubjectType] = {
     concurrent.TrieMap[String, SubjectType]()
   }
@@ -59,7 +54,7 @@ object KafkaLibrary {
     */
   def Initialize(): Future[Unit] = {
     KafkaController
-      .GuaranteeTopic(SubjectTopic)
+      .GuaranteeTopic(SubjectTopic) //This should actually not be needed, as kafka can automatically create topics
       .map(_ => {
         new Thread(subjectSynchronizer).start()
         Initialized = true
@@ -81,7 +76,6 @@ object KafkaLibrary {
       subjectTypeConsumer.close()
       Initialized = false
     }
-
   }
 
   /**
@@ -152,7 +146,7 @@ object KafkaLibrary {
     */
   private def handleEvent(event: SubjectTypeEvent): Unit =
     event.actionType match {
-      case ActionType.Add => insert(event.subjectType)
+      case ActionType.Add    => insert(event.subjectType)
       case ActionType.Update => update(event.subjectType)
       case ActionType.Remove => delete(event.subjectType)
     }

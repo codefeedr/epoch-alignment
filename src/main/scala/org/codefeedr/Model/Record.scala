@@ -8,7 +8,7 @@ import org.apache.flink.api.common.typeinfo.{PrimitiveArrayTypeInfo, TypeInforma
   * Created by Niels on 12/07/2017.
   */
 @SerialVersionUID(100L)
-case class Record(id: RecordIdentifier, data: Any, action: ActionType.Value) extends Serializable
+case class Record(data: Any, action: ActionType.Value) extends Serializable
 
 @SerialVersionUID(100L)
 case class RecordIdentifier(sequence: Long, sinkSource: String) extends Serializable
