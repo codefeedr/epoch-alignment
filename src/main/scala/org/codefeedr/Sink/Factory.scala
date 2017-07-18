@@ -1,13 +1,15 @@
-package org.codefeedr.Library
+package org.codefeedr.Sink
 
+import org.codefeedr.Library.KafkaLibrary
+
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.reflect.runtime.{universe => ru}
-import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
   * Created by Niels on 18/07/2017.
   */
-object SinkFactory {
+object Factory {
   def GetSink[TData: ru.TypeTag]: Future[KafkaSink[TData]] = {
     KafkaLibrary.GetType[TData]().map(o => new KafkaSink[TData](o))
   }

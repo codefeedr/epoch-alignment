@@ -22,11 +22,12 @@ import scala.reflect.runtime.{universe => ru}
   */
 object KafkaLibrary {
   //Topic used to publish all types and topics on
-  val SubjectTopic = "Subjects"
-  val SubjectAwaitTime = 1000
-  val RefreshTime = 1000
-  val PollTimeout = 1000
-  var Initialized = false
+  //MAke this configurable?
+  @transient private val SubjectTopic = "Subjects"
+  @transient private val SubjectAwaitTime = 1000
+  @transient private val RefreshTime = 1000
+  @transient private val PollTimeout = 1000
+  @transient private var Initialized = false
 
   @transient private lazy val subjectTypeConsumer: KafkaConsumer[String, SubjectTypeEvent] = {
     //Create consumer that is subscribed to the "subjects" topic

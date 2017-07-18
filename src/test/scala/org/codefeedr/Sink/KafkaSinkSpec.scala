@@ -1,10 +1,9 @@
-package org.codefeedr
+package org.codefeedr.Sink
 
-import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
-import org.codefeedr.Library.Internal.KafkaController
-import org.codefeedr.Library.{KafkaLibrary, KafkaSink, SinkFactory}
-import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, FlatSpec, Matchers}
-import org.apache.flink.api.scala._
+import org.codefeedr.Library.Internal.{KafkaConsumerFactory, KafkaController}
+import org.codefeedr.Library.KafkaLibrary
+import org.codefeedr.Model.{Record, RecordIdentifier}
+import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, Matchers}
 
 case class MyOwnIntegerObject(value: Int)
 
@@ -41,5 +40,4 @@ class KafkaSinkSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAll {
           })
       })
   }
-
 }
