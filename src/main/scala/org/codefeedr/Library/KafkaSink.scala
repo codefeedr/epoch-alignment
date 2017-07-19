@@ -1,7 +1,8 @@
-package org.codefeedr.Sink
+package org.codefeedr.Library
 
 import java.util.UUID
 
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction
 import org.apache.kafka.clients.producer.ProducerRecord
@@ -14,8 +15,14 @@ import scala.reflect.runtime.{universe => ru}
   * A simple kafka sink, pushing all records as "new" data
   * Created by Niels on 11/07/2017.
   */
-class KafkaSink[TData: ru.TypeTag](subjectType: SubjectType) extends RichSinkFunction[TData] {
-  @transient private lazy val kafkaProducer = KafkaProducerFactory.create[RecordIdentifier, Record]
+class KafkaSink[TData: ru.TypeTag](subjectType: SubjectType)
+    extends RichSinkFunction[TData]
+    with LazyLogging {
+  @transient private lazy val kafkaProducer = {
+    val producer = KafkaProducerFactory.create[RecordIdentifier, Record]
+    logger.debug(s"Producer $uuid created for topic $topic")
+    producer
+  }
   @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
   @transient private var Sequence: Long = 0
 
