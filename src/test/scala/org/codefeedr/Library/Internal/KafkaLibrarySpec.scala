@@ -9,21 +9,7 @@ case class TestTypeA(prop1: String)
   * Created by Niels on 18/07/2017.
   */
 class KafkaLibrarySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAll {
-
-  override def beforeAll(): Unit = {
-
-    val f = KafkaLibrary.Initialize()
-    while (f.value.isEmpty) {
-      Thread.sleep(100)
-    }
-  }
-
-  override def afterAll(): Unit = {
-    val f = KafkaLibrary.Shutdown()
-    while (f.value.isEmpty) {
-      Thread.sleep(100)
-    }
-  }
+  implicit override def executionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   "A KafkaLibrary" should "be able to register a new type" in {
     for {

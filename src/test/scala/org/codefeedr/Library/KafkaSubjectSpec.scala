@@ -1,74 +1,72 @@
 package org.codefeedr.Library
 
+import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.Library.Internal.KafkaController
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, Matchers}
-
 import org.apache.flink.streaming.api.scala._
 
 import scala.concurrent.Future
 
-case class MyOwnIntegerObject(value: Int)
+@SerialVersionUID(100L)
+case class MyOwnIntegerObject(value: Int) extends Serializable
 
 /**
   * Created by Niels on 14/07/2017.
   */
-class KafkaSinkSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAll {
-
-  override def beforeAll(): Unit = {
-
-    val f = KafkaLibrary.Initialize()
-    while (f.value.isEmpty) {
-      Thread.sleep(100)
-    }
-  }
-
-  override def afterAll(): Unit = {
-    val f = KafkaLibrary.Shutdown()
-    while (f.value.isEmpty) {
-      Thread.sleep(100)
-    }
-  }
-
-  "A KafkaSink" should "be able to create a topic for itself" in {
-    KafkaLibrary
-      .GetType[MyOwnIntegerObject]()
-      .flatMap(subjectType => {
-        new KafkaSink[MyOwnIntegerObject](subjectType)
-          .invoke(MyOwnIntegerObject(1))
-        KafkaController
-          .GetTopics()
-          .flatMap(o => {
-            assert(o.contains(s"${subjectType.name}_${subjectType.uuid}"))
-          })
-      })
-  }
+class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAll with LazyLogging {
+  //These tests must run in parallel
+  implicit override def executionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   "A KafkaSource" should "retrieve all messages published by a source" in {
-    val env = StreamExecutionEnvironment.getExecutionEnvironment
-    val sourceF = KafkaSubjectFactory.GetSource[MyOwnIntegerObject]
+    //val env = StreamExecutionEnvironment.getExecutionEnvironment
     val sinkF = KafkaSubjectFactory.GetSink[MyOwnIntegerObject]
-    (for {
-      source <- sourceF
-      sink <- sinkF
-    } yield (source, sink)).flatMap(subject => {
-      val source = env.addSource[MyOwnIntegerObject](subject._1)
+    sinkF.flatMap(sink => {
+      val t1 = new Thread(new MyOwnSink(1))
+      t1.start()
+      val t2 = new Thread(new MyOwnSink(2))
+      t2.start()
+      val t3 = new Thread(new MyOwnSink(3))
+      t3.start()
 
-      val mapped = source
-        .map { o =>
-          s"Integer value is ${o.value}"
-        }
-      mapped.print
+      Thread.sleep(15000)
+      logger.debug("Sending events")
+      sink.invoke(MyOwnIntegerObject(1))
+      sink.invoke(MyOwnIntegerObject(2))
+      sink.invoke(MyOwnIntegerObject(3))
 
-      env.execute()
+      Thread.sleep(2000)
 
-      subject._2.invoke(MyOwnIntegerObject(1))
-      subject._2.invoke(MyOwnIntegerObject(2))
-      subject._2.invoke(MyOwnIntegerObject(3))
-      Future {
-        Thread.sleep(10000)
-        assert(true)
-      }
+      assert(true)
+      KafkaLibrary.UnRegisterSubject("MyOwnIntegerObject").map(_ => assert(true))
+
     })
 
+  }
+
+  class MyOwnSink(nr: Int) extends Runnable with LazyLogging {
+    override def run(): Unit = {
+      val env = StreamExecutionEnvironment.getExecutionEnvironment
+      val sourceF = KafkaSubjectFactory.GetSource[MyOwnIntegerObject]
+      val number = nr //Copy to this scope, otherwise it is not copied by flink
+      logger.debug(s"Creating environment $nr")
+
+      val job = sourceF
+        .map(source => {
+          val mapped = env
+            .addSource[MyOwnIntegerObject](source)
+            .map { o =>
+              s"Value in environment $number is ${o.value}"
+            }
+          //    mapped.addSink(o => logger.debug(o))
+          mapped.print()
+        })
+
+      while (!job.isCompleted) {
+        Thread.sleep(10)
+      }
+
+      logger.debug(s"Starting environment $nr")
+      env.execute(s"job${nr}")
+    }
   }
 }

@@ -1,5 +1,9 @@
 package org.codefeedr.Library
 
+import java.time.Instant
+import java.util.concurrent.ConcurrentMap
+import java.util.{Calendar, UUID}
+
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.codefeedr.Library.Internal.{
@@ -24,60 +28,16 @@ object KafkaLibrary {
   //Topic used to publish all types and topics on
   //MAke this configurable?
   @transient private val SubjectTopic = "Subjects"
-  @transient private val SubjectAwaitTime = 1000
-  @transient private val RefreshTime = 1000
+  @transient private val SubjectAwaitTime = 10
   @transient private val PollTimeout = 1000
-  @transient private var Initialized = false
 
-  @transient private lazy val subjectTypeConsumer: KafkaConsumer[String, SubjectTypeEvent] = {
-    //Create consumer that is subscribed to the "subjects" topic
-    val consumer = KafkaConsumerFactory.create[String, SubjectTypeEvent]()
-    consumer.subscribe(Iterable(SubjectTopic).asJavaCollection)
-    consumer
-  }
+  @transient private lazy val uuid = UUID.randomUUID()
 
   //Producer to send type information
-  @transient private lazy val subjectTypeProducer: KafkaProducer[String, SubjectTypeEvent] = {
+  @transient private lazy val subjectTypeProducer: KafkaProducer[String, SubjectTypeEvent] =
     KafkaProducerFactory.create[String, SubjectTypeEvent]
-  }
 
-  @transient private lazy val subjectSynchronizer = new SubjectSynchronizer()
-
-  //Using a concurrent map to keep track of promises that still need to get notified of their type
-  //Could switch to a normal map as there should only be a single thread modifying this (but multiple requesting)
-  @transient private lazy val subjects: concurrent.Map[String, SubjectType] = {
-    concurrent.TrieMap[String, SubjectType]()
-  }
-
-  /**
-    * Initialize the KafkaLibrary with its subject subscription
-    * @return A future when the initialization is done
-    */
-  def Initialize(): Future[Unit] = {
-    KafkaController
-      .GuaranteeTopic(SubjectTopic) //This should actually not be needed, as kafka can automatically create topics
-      .map(_ => {
-        new Thread(subjectSynchronizer).start()
-        Initialized = true
-      })
-  }
-
-  /**
-    * Shutdown the kafkalibrary
-    * @return
-    */
-  def Shutdown(): Future[Unit] = {
-    assume(Initialized)
-    Future {
-      subjectSynchronizer.stop()
-      while (subjectSynchronizer.running) {
-        Thread.sleep(PollTimeout)
-      }
-      subjectTypeProducer.close()
-      subjectTypeConsumer.close()
-      Initialized = false
-    }
-  }
+  @transient private lazy val subjects = new SynchronisedSubjects()
 
   /**
     * Retrieve a subjectType for an arbitrary scala type
@@ -86,9 +46,8 @@ object KafkaLibrary {
     * @return The subjectType when it is registered in the library
     */
   def GetType[T: ru.TypeTag](): Future[SubjectType] = {
-    assume(Initialized)
     val typeDef = SubjectTypeFactory.getSubjectType[T]
-    val r = subjects.get(typeDef.name) map (o => Future { o })
+    val r = subjects.get().get(typeDef.name) map (o => Future { o })
     r.getOrElse(RegisterAndAwaitType[T]())
   }
 
@@ -98,26 +57,30 @@ object KafkaLibrary {
     * @return
     */
   def GetSubjectNames(): immutable.Set[String] = {
-    assume(Initialized)
-    subjects.keys.toSet
+    subjects.get().keys.toSet
   }
 
   /**
     * Register a type and resolve the future once the type has been registered
+    * Returns a value once the requested type has been found
     * @tparam T Type to register
     * @return The subjectType once it has been registered
     */
-  private def RegisterAndAwaitType[T: ru.TypeTag](): Future[SubjectType] =
-    Future {
-      val typeDef = SubjectTypeFactory.getSubjectType[T]
-      val event = SubjectTypeEvent(typeDef, ActionType.Add)
-      subjectTypeProducer.send(new ProducerRecord(SubjectTopic, typeDef.name, event))
-      //Not sure if this is the cleanest way to do this
-      while (!subjects.contains(typeDef.name)) {
-        Thread.sleep(SubjectAwaitTime)
-      }
-      subjects(typeDef.name)
-    }
+  private def RegisterAndAwaitType[T: ru.TypeTag](): Future[SubjectType] = {
+    val typeDef = SubjectTypeFactory.getSubjectType[T]
+    KafkaController
+      .GuaranteeTopic(typeDef.name)
+      .map(_ => {
+
+        val event = SubjectTypeEvent(typeDef, ActionType.Add)
+        subjectTypeProducer.send(new ProducerRecord(SubjectTopic, typeDef.name, event))
+        //Not sure if this is the cleanest way to do this
+        while (!subjects.get().contains(typeDef.name)) {
+          Thread.sleep(SubjectAwaitTime)
+        }
+        subjects.get()(typeDef.name)
+      })
+  }
 
   /**
     * Un-register a subject from the library
@@ -129,60 +92,67 @@ object KafkaLibrary {
   private[Library] def UnRegisterSubject(name: String): Future[Unit] = {
     //Send the removal event
     //Note that this causes an exception if the type is actually not registered
-    val event = SubjectTypeEvent(subjects(name), ActionType.Remove)
+    val event = SubjectTypeEvent(subjects.get()(name), ActionType.Remove)
     subjectTypeProducer.send(new ProducerRecord(SubjectTopic, name, event))
     //Create a future that will wait until the event has been processed
     //Note that this might cause a deadlock when another thread creates the subject again.
     //Should be fixed if this method is made public and used outside unit tests
     Future {
-      while (subjects.contains(name)) {
+      while (subjects.get().contains(name)) {
         Thread.sleep(SubjectAwaitTime)
       }
     }
   }
 
   /**
-    * Event handler managing the internal state of registered subjects
-    * @param event: SubjectTypeEvent
+    * This class is responsible for keeping the current active subjects synchronized
+    * Currently every subject request checks kafka for updates and blocks untill a response has been recieved
     */
-  private def handleEvent(event: SubjectTypeEvent): Unit =
-    event.actionType match {
-      case ActionType.Add    => insert(event.subjectType)
-      case ActionType.Update => update(event.subjectType)
-      case ActionType.Remove => delete(event.subjectType)
+  private class SynchronisedSubjects() {
+    @transient private lazy val subjects = concurrent.TrieMap[String, SubjectType]()
+
+    @transient private lazy val subjectTypeConsumer: KafkaConsumer[String, SubjectTypeEvent] = {
+      val consumer = KafkaConsumerFactory.create[String, SubjectTypeEvent](uuid.toString)
+      consumer.subscribe(Iterable(SubjectTopic).asJavaCollection)
+      consumer
     }
 
-  private def insert(s: SubjectType): Unit =
-    if (!subjects.contains(s.name)) {
-      subjects.put(s.name, s)
-    }
-
-  private def update(s: SubjectType): Unit =
-    subjects.put(s.name, s)
-
-  private def delete(s: SubjectType): Unit =
-    if (subjects.contains(s.name)) {
-      subjects.remove(s.name)
-    }
-
-  class SubjectSynchronizer extends Runnable {
-    var running = false
-
-    def run(): Unit = {
-      running = true
-      while (running) {
+    def get(): Map[String, SubjectType] = {
+      this.synchronized {
         subjectTypeConsumer
           .poll(PollTimeout)
           .iterator()
           .asScala
           .map(o => o.value())
           .foreach(handleEvent)
-        Thread.sleep(RefreshTime)
+
+        subjects.toMap
       }
     }
+    //Perform initial scan on creation
 
-    def stop(): Unit = {
-      running = false
-    }
+    /**
+      * Event handler managing the internal state of registered subjects
+      * @param event: SubjectTypeEvent
+      */
+    def handleEvent(event: SubjectTypeEvent): Unit =
+      event.actionType match {
+        case ActionType.Add    => insert(event.subjectType)
+        case ActionType.Update => update(event.subjectType)
+        case ActionType.Remove => delete(event.subjectType)
+      }
+
+    def insert(s: SubjectType): Unit =
+      if (!subjects.contains(s.name)) {
+        subjects.put(s.name, s)
+      }
+
+    def update(s: SubjectType): Unit =
+      subjects.put(s.name, s)
+
+    def delete(s: SubjectType): Unit =
+      if (subjects.contains(s.name)) {
+        subjects.remove(s.name)
+      }
   }
 }

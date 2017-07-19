@@ -20,41 +20,41 @@ class KafkaSource[TData: TypeInformation](subjectType: SubjectType)
     with ResultTypeQueryable[TData]
     with LazyLogging {
   @transient private lazy val dataConsumer = {
-    val consumer = KafkaConsumerFactory.create[RecordIdentifier, Record]()
+    val consumer = KafkaConsumerFactory.create[RecordIdentifier, Record](uuid.toString)
     consumer.subscribe(Iterable(topic).asJavaCollection)
     logger.debug(s"Source $uuid subsribed on topic $topic")
     consumer
   }
   @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
-  @transient private var running = false
+
   @transient private lazy val uuid = UUID.randomUUID()
 
   //Make this configurable?
-  @transient private val SubjectAwaitTime = 1000
-  @transient private val RefreshTime = 100
-  @transient private val PollTimeout = 100
+  @transient private lazy val SubjectAwaitTime = 1000
+  @transient private lazy val RefreshTime = 100
+  @transient private lazy val PollTimeout = 100
+
+  private var running = false
 
   override def cancel(): Unit = {
     running = false
   }
 
   override def run(ctx: SourceFunction.SourceContext[TData]): Unit = {
-    new Thread(new KafkaPoller(ctx)).run()
-  }
-
-  class KafkaPoller(ctx: SourceFunction.SourceContext[TData]) extends Runnable {
-    def run(): Unit = {
-      running = true
-      while (running) {
-        dataConsumer
-          .poll(PollTimeout)
-          .iterator()
-          .asScala
-          .map(o => o.value().asInstanceOf[TData])
-          .foreach(ctx.collect)
-        Thread.sleep(RefreshTime)
-      }
+    running = true
+    while (running) {
+      dataConsumer
+        .poll(PollTimeout)
+        .iterator()
+        .asScala
+        .map(o => {
+          logger.debug(s"$uuid got event $o")
+          o.value().data.asInstanceOf[TData]
+        })
+        .foreach(ctx.collect)
+      Thread.sleep(RefreshTime)
     }
+    logger.debug(s"$uuid stopped polling!!!!")
   }
 
   override def getProducedType: TypeInformation[TData] = createTypeInformation[TData]
