@@ -40,7 +40,6 @@ object KafkaController {
     val result = apply(o => o.createTopics(topicSet))
     Future {
       result.all().get()
-
     }
   }
 

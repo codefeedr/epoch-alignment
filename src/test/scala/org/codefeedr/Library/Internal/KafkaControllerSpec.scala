@@ -42,15 +42,4 @@ class KafkaControllerSpec extends AsyncFlatSpec with Matchers {
       _ <- KafkaController.DeleteTopic(testTopic)
     } yield topics1
   }
-  /*
-  "A kafkaController" should "be able to destroy all topics on a kafka cluster" in {
-    for {
-      _ <- KafkaController.CreateTopic("Blablabla")
-      topics1 <- KafkaController.GetTopics().map(o => assert(o.size == 2))
-      _ <- KafkaController.Destroy()
-      topics1 <- KafkaController.GetTopics().map(o => assert(o.isEmpty))
-    } yield topics1
-
-  }
- */
 }
