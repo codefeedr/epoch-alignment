@@ -11,7 +11,7 @@ import org.codefeedr.Library.Internal.KafkaController
 /**
   * Created by Niels on 18/07/2017.
   */
-object KafkaSubjectFactory {
+object SubjectFactory {
   def GetSink[TData: ru.TypeTag]: Future[KafkaSink[TData]] = {
     SubjectLibrary
       .GetType[TData]()

@@ -34,7 +34,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
 
   "Kafka-Sinks" should "retrieve all messages published by a source" in {
     //Create a sink function
-    val sinkF = KafkaSubjectFactory.GetSink[MyOwnIntegerObject]
+    val sinkF = SubjectFactory.GetSink[MyOwnIntegerObject]
     sinkF.flatMap(sink => {
       val env = StreamExecutionEnvironment.createLocalEnvironment()
 
@@ -78,7 +78,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
     Thread.sleep(500)
 
     //Create a sink function
-    val sinkF = KafkaSubjectFactory.GetSink[MyOwnIntegerObject]
+    val sinkF = SubjectFactory.GetSink[MyOwnIntegerObject]
     sinkF.flatMap(sink => {
       val env = StreamExecutionEnvironment.createLocalEnvironment()
       env.fromCollection(mutable.Set(1, 2, 3).toSeq).map(o => MyOwnIntegerObject(o)).addSink(sink)
@@ -116,7 +116,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
 
     Future
       .sequence(for (i <- 1 to 3) yield {
-        val sinkF = KafkaSubjectFactory.GetSink[MyOwnIntegerObject]
+        val sinkF = SubjectFactory.GetSink[MyOwnIntegerObject]
         sinkF
           .map(sink => {
             val env = StreamExecutionEnvironment.createLocalEnvironment()
@@ -161,7 +161,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
       */
     def createTopology(env: StreamExecutionEnvironment, nr: Int): Future[Unit] = {
       //Construct a new source using the subjectFactory
-      val sourceF = KafkaSubjectFactory.GetSource[MyOwnIntegerObject]
+      val sourceF = SubjectFactory.GetSource[MyOwnIntegerObject]
       sourceF.map(source => {
         val mapped = env
           .addSource[MyOwnIntegerObject](source)
