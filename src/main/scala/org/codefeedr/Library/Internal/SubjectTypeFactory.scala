@@ -26,7 +26,7 @@ object SubjectTypeFactory extends LazyLogging {
 
   private def getRecordProperty(symbol: ru.TermSymbol): RecordProperty = {
     val name = symbol.name.toString.trim()
-    logger.debug(f"property type of $name: ${symbol.info.toString}")
+    //logger.debug(f"property type of $name: ${symbol.info.toString}")
 
     val propertyType = symbol.info.toString match {
       case "scala.Int" => PropertyType.Number

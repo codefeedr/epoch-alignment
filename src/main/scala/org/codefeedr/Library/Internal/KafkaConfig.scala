@@ -8,7 +8,7 @@ import com.typesafe.config.{Config, ConfigFactory}
   * Created by Niels on 11/07/2017.
   */
 object KafkaConfig {
-  lazy val conf: Config = ConfigFactory.load
+  @transient lazy val conf: Config = ConfigFactory.load
 
   /**
     * Map configuration to java properties
@@ -34,8 +34,9 @@ object KafkaConfig {
   /**
     * Get the kafka configuration
     */
-  lazy val properties: Properties = propsFromConfig(conf.getConfig("codefeedr.kafka.server"))
+  @transient lazy val properties: Properties = propsFromConfig(
+    conf.getConfig("codefeedr.kafka.server"))
 
-  lazy val consumerPropertes: Properties = propsFromConfig(
+  @transient lazy val consumerPropertes: Properties = propsFromConfig(
     conf.getConfig("codefeedr.kafka.consumer"))
 }

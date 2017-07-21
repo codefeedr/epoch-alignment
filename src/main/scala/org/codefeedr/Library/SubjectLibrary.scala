@@ -4,6 +4,7 @@ import java.time.Instant
 import java.util.concurrent.ConcurrentMap
 import java.util.{Calendar, UUID}
 
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.codefeedr.Library.Internal.{
@@ -24,7 +25,7 @@ import scala.reflect.runtime.{universe => ru}
 /**
   * Created by Niels on 14/07/2017.
   */
-object KafkaLibrary {
+object SubjectLibrary extends LazyLogging {
   //Topic used to publish all types and topics on
   //MAke this configurable?
   @transient private val SubjectTopic = "Subjects"
@@ -68,6 +69,7 @@ object KafkaLibrary {
     */
   private def RegisterAndAwaitType[T: ru.TypeTag](): Future[SubjectType] = {
     val typeDef = SubjectTypeFactory.getSubjectType[T]
+    logger.debug(s"Registering new type ${typeDef.name}")
     KafkaController
       .GuaranteeTopic(typeDef.name)
       .map(_ => {
@@ -137,7 +139,7 @@ object KafkaLibrary {
       */
     def handleEvent(event: SubjectTypeEvent): Unit =
       event.actionType match {
-        case ActionType.Add    => insert(event.subjectType)
+        case ActionType.Add => insert(event.subjectType)
         case ActionType.Update => update(event.subjectType)
         case ActionType.Remove => delete(event.subjectType)
       }

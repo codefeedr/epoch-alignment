@@ -19,10 +19,11 @@ class KafkaSource[TData: TypeInformation](subjectType: SubjectType)
     extends RichSourceFunction[TData]
     with ResultTypeQueryable[TData]
     with LazyLogging {
+
   @transient private lazy val dataConsumer = {
     val consumer = KafkaConsumerFactory.create[RecordIdentifier, Record](uuid.toString)
     consumer.subscribe(Iterable(topic).asJavaCollection)
-    logger.debug(s"Source $uuid subsribed on topic $topic")
+    logger.debug(s"Source $uuid subsribed on topic $topic as group")
     consumer
   }
   @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
@@ -30,11 +31,10 @@ class KafkaSource[TData: TypeInformation](subjectType: SubjectType)
   @transient private lazy val uuid = UUID.randomUUID()
 
   //Make this configurable?
-  @transient private lazy val SubjectAwaitTime = 1000
   @transient private lazy val RefreshTime = 100
-  @transient private lazy val PollTimeout = 100
+  @transient private lazy val PollTimeout = 1000
 
-  private var running = false
+  @transient private var running = false
 
   override def cancel(): Unit = {
     running = false
@@ -48,13 +48,11 @@ class KafkaSource[TData: TypeInformation](subjectType: SubjectType)
         .iterator()
         .asScala
         .map(o => {
-          logger.debug(s"$uuid got event $o")
           o.value().data.asInstanceOf[TData]
         })
         .foreach(ctx.collect)
       Thread.sleep(RefreshTime)
     }
-    logger.debug(s"$uuid stopped polling!!!!")
   }
 
   override def getProducedType: TypeInformation[TData] = createTypeInformation[TData]
