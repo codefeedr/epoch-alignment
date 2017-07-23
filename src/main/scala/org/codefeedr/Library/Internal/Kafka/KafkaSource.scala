@@ -25,25 +25,30 @@ import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
 import org.apache.flink.streaming.api.scala._
+import org.codefeedr.Library.Internal.Bagger
 import org.codefeedr.Model.{Record, RecordIdentifier, SubjectType}
 
 import scala.collection.JavaConverters._
+import scala.reflect.ClassTag
+import scala.reflect.runtime.{universe => ru}
 
 /**
   * Created by Niels on 18/07/2017.
   */
-class KafkaSource[TData: TypeInformation](subjectType: SubjectType)
+class KafkaSource[TData: TypeInformation: ru.TypeTag: ClassTag](subjectType: SubjectType)
     extends RichSourceFunction[TData]
     with ResultTypeQueryable[TData]
     with LazyLogging {
 
   @transient private lazy val dataConsumer = {
-    val consumer = KafkaConsumerFactory.create[RecordIdentifier, Record](uuid.toString)
+    val consumer = KafkaConsumerFactory.create[Array[Byte], Record](uuid.toString)
     consumer.subscribe(Iterable(topic).asJavaCollection)
     logger.debug(s"Source $uuid subsribed on topic $topic as group")
     consumer
   }
   @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
+
+  @transient private lazy val bagger = new Bagger[TData]()
 
   @transient private lazy val uuid = UUID.randomUUID()
 
@@ -65,7 +70,8 @@ class KafkaSource[TData: TypeInformation](subjectType: SubjectType)
         .iterator()
         .asScala
         .map(o => {
-          o.value().data.asInstanceOf[TData]
+          val record = o.value()
+          bagger.Unbag(record)
         })
         .foreach(ctx.collect)
       Thread.sleep(RefreshTime)

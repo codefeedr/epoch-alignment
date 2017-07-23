@@ -22,6 +22,8 @@ import java.util.Properties
 
 import org.apache.kafka.clients.consumer._
 
+import scala.reflect.ClassTag
+
 /**
   * Created by Niels on 14/07/2017.
   */
@@ -34,7 +36,7 @@ object KafkaConsumerFactory {
     * @tparam TData Data type used to send to kafka
     * @return
     */
-  def create[TKey, TData](group: String): KafkaConsumer[TKey, TData] = {
+  def create[TKey: ClassTag, TData: ClassTag](group: String): KafkaConsumer[TKey, TData] = {
     //Kafka consumer constructor is not thread safe!
     val properties = KafkaConfig.consumerPropertes.clone().asInstanceOf[Properties]
     properties.setProperty("group.id", group)

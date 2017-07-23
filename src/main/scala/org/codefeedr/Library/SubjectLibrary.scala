@@ -25,7 +25,11 @@ import java.util.{Calendar, UUID}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
-import org.codefeedr.Library.Internal.Kafka.{KafkaConsumerFactory, KafkaController, KafkaProducerFactory}
+import org.codefeedr.Library.Internal.Kafka.{
+  KafkaConsumerFactory,
+  KafkaController,
+  KafkaProducerFactory
+}
 import org.codefeedr.Library.Internal.SubjectTypeFactory
 import org.codefeedr.Model.{ActionType, SubjectType, SubjectTypeEvent}
 
@@ -37,6 +41,7 @@ import scala.concurrent.Future
 import scala.reflect.runtime.{universe => ru}
 
 /**
+  * ThreadSafe
   * Created by Niels on 14/07/2017.
   */
 object SubjectLibrary extends LazyLogging {
@@ -66,13 +71,26 @@ object SubjectLibrary extends LazyLogging {
     r.getOrElse(RegisterAndAwaitType[T]())
   }
 
+  def GetType(uuid: String)(): Future[SubjectType] = {
+    Future {
+      while (subjects.get().values.count(o => o.uuid == uuid) < 1) {
+        Thread.sleep(SubjectAwaitTime)
+      }
+      subjects
+        .get()
+        .values
+        .find(o => o.uuid == uuid)
+        .getOrElse(throw new Exception("UUID was not unique in subject type map"))
+    }
+  }
+
   /**
     * Retrieves the current set of registered subject names
     * This set might not contain new subjects straight after GetType is called, if the future is not yet completed
     * @return
     */
   def GetSubjectNames(): immutable.Set[String] = {
-    subjects.get().keys.toSet
+    subjects.get().values.map(o => o.name).toSet
   }
 
   /**

@@ -26,7 +26,7 @@ import org.apache.flink.api.common.typeinfo.{PrimitiveArrayTypeInfo, TypeInforma
   * Created by Niels on 12/07/2017.
   */
 @SerialVersionUID(100L)
-case class Record(data: Any, action: ActionType.Value) extends Serializable
+case class Record(data: Array[Any], action: ActionType.Value) extends Serializable
 
 @SerialVersionUID(100L)
 case class RecordIdentifier(sequence: Long, sinkSource: String) extends Serializable
@@ -39,7 +39,8 @@ case class SubjectType(uuid: String, name: String, properties: Array[RecordPrope
     extends Serializable
 
 @SerialVersionUID(100L)
-case class RecordProperty(name: String, propertyType: PropertyType.Value) extends Serializable
+case class RecordProperty(name: String, propertyType: PropertyType.Value, id: Boolean)
+    extends Serializable
 
 case class SubjectTypeEvent(subjectType: SubjectType, actionType: ActionType.Value)
 

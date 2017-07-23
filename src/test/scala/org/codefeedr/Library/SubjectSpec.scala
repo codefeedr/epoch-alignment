@@ -56,6 +56,10 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
     sinkF.flatMap(sink => {
       val env = StreamExecutionEnvironment.createLocalEnvironment()
 
+      env.fromCollection(mutable.Set(1, 2, 3).toSeq).map(o => MyOwnIntegerObject(o)).addSink(sink)
+      env.execute("sink")
+      Thread.sleep(1000)
+
       val t1 = new Thread(new MyOwnSourseQuery(1))
       t1.start()
       val t2 = new Thread(new MyOwnSourseQuery(2))
@@ -63,10 +67,9 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
       val t3 = new Thread(new MyOwnSourseQuery(3))
       t3.start()
 
-      env.fromCollection(mutable.Set(1, 2, 3).toSeq).map(o => MyOwnIntegerObject(o)).addSink(sink)
-      env.execute("sink")
-
       Thread.sleep(3000)
+
+
 
       //Delete the subject
       SubjectLibrary

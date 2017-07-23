@@ -18,21 +18,33 @@
 
 package org.codefeedr.Library.Internal.Kafka
 
-import java.io.{ByteArrayInputStream, ObjectInputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 import java.util
+import scala.reflect._
 
 /**
   * Created by Niels on 14/07/2017.
   */
-class KafkaDeserializer[T] extends org.apache.kafka.common.serialization.Deserializer[T] {
+class KafkaDeserializer[T: ClassTag](implicit ct: ClassTag[T])
+    extends org.apache.kafka.common.serialization.Deserializer[T] {
   override def configure(configs: util.Map[String, _], isKey: Boolean): Unit = {}
 
   override def close(): Unit = {}
 
-  override def deserialize(topic: String, data: Array[Byte]): T = {
-    val ois = new ObjectInputStream(new ByteArrayInputStream(data))
-    val value = ois.readObject()
-    ois.close()
-    value.asInstanceOf[T]
-  }
+  /**
+    * Prevent deserialisation of something that already is a byte array, as those are also not serialized
+    */
+  private val deserializeInternal =
+    if (classOf[Array[Byte]].isAssignableFrom(ct.getClass)) { (data: Array[Byte]) =>
+      data.asInstanceOf[T]
+    } else { (data: Array[Byte]) =>
+      {
+        val ois = new ObjectInputStream(new ByteArrayInputStream(data))
+        val value = ois.readObject()
+        ois.close()
+        value.asInstanceOf[T]
+      }
+    }
+
+  override def deserialize(topic: String, data: Array[Byte]): T = deserializeInternal(data)
 }

@@ -24,37 +24,65 @@ import java.util.UUID
 import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.Model.{PropertyType, RecordProperty, SubjectType}
 
+import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
 /**
+  * Thread safe
   * Created by Niels on 14/07/2017.
   */
 object SubjectTypeFactory extends LazyLogging {
   private def newTypeIdentifier(): UUID = UUID.randomUUID()
 
-  private def getSubjectTypeInternal(t: ru.Type): SubjectType = {
-    val properties = t.getClass.getDeclaredFields
+  private def getSubjectTypeInternal(t: ru.Type, idFields: Array[String]): SubjectType = {
+    val properties = t.members.filter(o => !o.isMethod)
     val name = t.typeSymbol.name.toString
-    SubjectType(newTypeIdentifier().toString, name, properties.map(getRecordProperty))
+    SubjectType(
+      newTypeIdentifier().toString,
+      name,
+      getDefaultProperties(idFields.length == 0) ++ properties.map(getRecordProperty(idFields)))
   }
 
-  private def getRecordProperty(field: Field): RecordProperty = {
+  private def getRecordProperty(idFields: Array[String])(symbol: ru.Symbol): RecordProperty = {
+    val name = symbol.name.toString.trim
     //logger.debug(f"property type of $name: ${symbol.info.toString}")
-    val propertyType = field.getType.getName match {
+    val propertyType = symbol.typeSignature.typeSymbol.name.toString match {
       case "scala.Int" => PropertyType.Number
       case "Int" => PropertyType.Number
       case "String" => PropertyType.String
       case _ => PropertyType.Any
     }
 
-    RecordProperty(field.getName, propertyType)
+    RecordProperty(name, propertyType, idFields.contains(name))
   }
+
+  /**
+    * Generate the default property definitions added by our framework
+    * @param isId are the auto generated fields ids
+    * @return Array of the default properties
+    */
+  private def getDefaultProperties(isId: Boolean) =
+    Array(
+      RecordProperty("_Type", PropertyType.String, id = true),
+      RecordProperty("_Sequence", PropertyType.Number, isId),
+      RecordProperty("_Source", PropertyType.String, isId)
+    )
 
   /**
     * Get a subject type for the query language, type tag required
     * @tparam T type of the subject
     * @return Type description of the given type
     */
-  def getSubjectType[T: ru.TypeTag]: SubjectType = getSubjectTypeInternal(ru.typeOf[T])
+  def getSubjectType[T: ru.TypeTag]: SubjectType =
+    getSubjectTypeInternal(ru.typeOf[T], Array.empty[String])
+
+  /**
+    * Get subject type for the query language, type tag required
+    * @param idFields Names of the fields that uniquely identify the record
+    * @tparam T Type of the object
+    * @return Type description of the given type
+    */
+  def getSubjectType[T: ru.TypeTag](idFields: Array[String]): SubjectType =
+    getSubjectTypeInternal(ru.typeOf[T], idFields)
 
 }
