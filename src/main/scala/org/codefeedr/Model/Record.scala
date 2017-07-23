@@ -17,7 +17,7 @@ case class RecordIdentifier(sequence: Long, sinkSource: String) extends Serializ
 case class RecordSource(sinkUuid: String, typeUuid: String) extends Serializable
 
 @SerialVersionUID(100L)
-case class SubjectType(uuid: String, name: String, properties: Set[RecordProperty])
+case class SubjectType(uuid: String, name: String, properties: Array[RecordProperty])
     extends Serializable
 
 @SerialVersionUID(100L)

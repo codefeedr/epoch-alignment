@@ -1,6 +1,6 @@
-package org.codefeedr.Library.Internal
+package org.codefeedr.Library.Internal.Kafka
 
-import java.util.{Properties, UUID}
+import java.util.Properties
 
 import org.apache.kafka.clients.consumer._
 

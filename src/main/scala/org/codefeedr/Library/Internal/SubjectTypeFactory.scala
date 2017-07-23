@@ -1,5 +1,6 @@
 package org.codefeedr.Library.Internal
 
+import java.lang.reflect.Field
 import java.util.UUID
 
 import com.typesafe.scalalogging.LazyLogging
@@ -14,27 +15,22 @@ object SubjectTypeFactory extends LazyLogging {
   private def newTypeIdentifier(): UUID = UUID.randomUUID()
 
   private def getSubjectTypeInternal(t: ru.Type): SubjectType = {
-    val properties = t.members
-      .filter(o => o.isTerm)
-      .map(o => o.asTerm)
-      .filter(o => o.isVal || o.isVar)
-      .map(getRecordProperty)
-      .toSet
+    val properties = t.getClass.getDeclaredFields
     val name = t.typeSymbol.name.toString
-    SubjectType(newTypeIdentifier().toString, name, properties)
+    SubjectType(newTypeIdentifier().toString, name, properties.map(getRecordProperty))
   }
 
-  private def getRecordProperty(symbol: ru.TermSymbol): RecordProperty = {
-    val name = symbol.name.toString.trim()
+  private def getRecordProperty(field: Field): RecordProperty = {
+
     //logger.debug(f"property type of $name: ${symbol.info.toString}")
 
-    val propertyType = symbol.info.toString match {
+    val propertyType = field.getType.getName match {
       case "scala.Int" => PropertyType.Number
       case "Int" => PropertyType.Number
       case "String" => PropertyType.String
       case _ => PropertyType.Any
     }
-    RecordProperty(name, propertyType)
+    RecordProperty(field.getName, propertyType)
   }
 
   /**

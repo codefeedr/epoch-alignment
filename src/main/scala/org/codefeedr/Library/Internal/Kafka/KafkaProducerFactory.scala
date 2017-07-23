@@ -1,4 +1,4 @@
-package org.codefeedr.Library.Internal
+package org.codefeedr.Library.Internal.Kafka
 
 import org.apache.kafka.clients.producer.KafkaProducer
 

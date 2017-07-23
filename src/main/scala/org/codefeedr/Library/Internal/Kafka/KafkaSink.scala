@@ -1,4 +1,4 @@
-package org.codefeedr.Library
+package org.codefeedr.Library.Internal.Kafka
 
 import java.util.UUID
 
@@ -6,7 +6,6 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.codefeedr.Library.Internal.KafkaProducerFactory
 import org.codefeedr.Model.{ActionType, Record, RecordIdentifier, SubjectType}
 
 import scala.reflect.runtime.{universe => ru}

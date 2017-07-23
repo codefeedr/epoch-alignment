@@ -7,12 +7,8 @@ import java.util.{Calendar, UUID}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
-import org.codefeedr.Library.Internal.{
-  KafkaConsumerFactory,
-  KafkaController,
-  KafkaProducerFactory,
-  SubjectTypeFactory
-}
+import org.codefeedr.Library.Internal.Kafka.{KafkaConsumerFactory, KafkaController, KafkaProducerFactory}
+import org.codefeedr.Library.Internal.SubjectTypeFactory
 import org.codefeedr.Model.{ActionType, SubjectType, SubjectTypeEvent}
 
 import scala.collection.JavaConverters._

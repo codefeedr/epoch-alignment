@@ -1,11 +1,6 @@
-package org.codefeedr.Library.Internal
+package org.codefeedr.Library.Internal.Kafka
 
-import org.apache.kafka.clients.admin.NewTopic
-import org.apache.kafka.common.internals.Topic
-import org.scalatest.{AsyncFlatSpec, FlatSpec, Matchers, fixture}
-
-import scala.collection.JavaConverters._
-import scala.concurrent._
+import org.scalatest.{AsyncFlatSpec, Matchers}
 
 /**
   * Created by Niels on 11/07/2017.

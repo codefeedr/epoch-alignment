@@ -1,4 +1,4 @@
-package org.codefeedr.Library.Internal
+package org.codefeedr.Library.Internal.Kafka
 
 import java.io.{ByteArrayOutputStream, ObjectOutputStream}
 import java.util

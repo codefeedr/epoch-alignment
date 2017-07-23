@@ -1,9 +1,9 @@
 package org.codefeedr.Library
 
 import com.typesafe.scalalogging.LazyLogging
-import org.codefeedr.Library.Internal.KafkaController
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, Matchers}
 import org.apache.flink.streaming.api.scala._
+import org.codefeedr.Library.Internal.Kafka.KafkaController
 
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContextExecutor, Future}

@@ -1,14 +1,13 @@
-package org.codefeedr.Library
+package org.codefeedr.Library.Internal.Kafka
 
 import java.util.UUID
 
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
+import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
-import org.codefeedr.Library.Internal.KafkaConsumerFactory
-import org.codefeedr.Model.{Record, RecordIdentifier, SubjectType}
 import org.apache.flink.streaming.api.scala._
+import org.codefeedr.Model.{Record, RecordIdentifier, SubjectType}
 
 import scala.collection.JavaConverters._
 
