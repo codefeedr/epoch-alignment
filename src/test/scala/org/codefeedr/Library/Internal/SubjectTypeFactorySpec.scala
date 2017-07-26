@@ -85,7 +85,7 @@ class SubjectTypeFactorySpec extends FlatSpec with Matchers {
         case "o" => assert(p.propertyType == PropertyType.Any)
         case "i" => assert(p.propertyType == PropertyType.Number)
         case "s" => assert(p.propertyType == PropertyType.String)
-        case _ => assert(condition = true)
+        case _ => assert(true)
       }
     }
   }
@@ -99,7 +99,7 @@ class SubjectTypeFactorySpec extends FlatSpec with Matchers {
         case "o" => assert(p.propertyType == PropertyType.Any)
         case "i" => assert(p.propertyType == PropertyType.Number)
         case "s" => assert(p.propertyType == PropertyType.String)
-        case _ => assert(condition = true)
+        case _ => assert(true)
       }
     }
   }
@@ -113,7 +113,7 @@ class SubjectTypeFactorySpec extends FlatSpec with Matchers {
         case "o" => assert(p.propertyType == PropertyType.Any)
         case "i" => assert(p.propertyType == PropertyType.Number)
         case "s" => assert(p.propertyType == PropertyType.String)
-        case _ => assert(condition = true)
+        case _ => assert(true)
       }
     }
   }
