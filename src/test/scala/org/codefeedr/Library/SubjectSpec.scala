@@ -53,11 +53,14 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
   implicit override def executionContext: ExecutionContextExecutor =
     ExecutionContext.fromExecutorService(Executors.newWorkStealingPool(8))
 
+  val paralellism = 2
+
   "Kafka-Sinks" should "retrieve all messages published by a source" in {
     //Create a sink function
     val sinkF = SubjectFactory.GetSink[MyOwnIntegerObject]
     sinkF.flatMap(sink => {
       val env = StreamExecutionEnvironment.createLocalEnvironment()
+      env.setParallelism(paralellism)
       env.fromCollection(mutable.Set(1, 2, 3).toSeq).map(o => MyOwnIntegerObject(o)).addSink(sink)
       env.execute()
 
@@ -73,6 +76,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
       } catch {
         case _: TimeoutException => Unit
       }
+      Thread.sleep(1000)
       Console.println("Completed")
       //Delete the subject
       SubjectLibrary
@@ -109,6 +113,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
     val sinkF = SubjectFactory.GetSink[MyOwnIntegerObject]
     sinkF.flatMap(sink => {
       val env = StreamExecutionEnvironment.createLocalEnvironment()
+      env.setParallelism(paralellism)
       env.fromCollection(mutable.Set(1, 2, 3).toSeq).map(o => MyOwnIntegerObject(o)).addSink(sink)
       env.execute("sink")
 
@@ -138,6 +143,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
         sinkF
           .map(sink => {
             val env = StreamExecutionEnvironment.createLocalEnvironment()
+            env.setParallelism(paralellism)
             env
               .fromCollection(mutable.Set(1, 2, 3).toSeq)
               .map(o => MyOwnIntegerObject(o))
@@ -156,10 +162,11 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
 
         Console.println("Waiting for completion")
         try {
-          Await.result(environments, Duration(6, SECONDS))
+          Await.result(environments, Duration(7, SECONDS))
         } catch {
           case _: TimeoutException => Unit
         }
+        Thread.sleep(5000)
         Console.println("Completed")
 
         //Delete the subject as cleanup
@@ -179,6 +186,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
   class MyOwnSourseQuery(nr: Int) extends Runnable with LazyLogging {
     override def run(): Unit = {
       val env = StreamExecutionEnvironment.createLocalEnvironment()
+      env.setParallelism(paralellism)
       createTopology(env, nr).map(_ => {
         logger.debug(s"Starting environment $nr")
         env.execute(s"job$nr")
