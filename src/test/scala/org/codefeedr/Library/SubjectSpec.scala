@@ -51,7 +51,7 @@ object TestCollector extends LazyLogging {
 class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAll with LazyLogging {
   //These tests must run in parallel
   implicit override def executionContext: ExecutionContextExecutor =
-    ExecutionContext.fromExecutorService(Executors.newWorkStealingPool(16))
+    ExecutionContext.fromExecutorService(Executors.newWorkStealingPool(8))
 
   "Kafka-Sinks" should "retrieve all messages published by a source" in {
     //Create a sink function
@@ -156,7 +156,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
 
         Console.println("Waiting for completion")
         try {
-          Await.result(environments, Duration(3, SECONDS))
+          Await.result(environments, Duration(6, SECONDS))
         } catch {
           case _: TimeoutException => Unit
         }

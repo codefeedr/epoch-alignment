@@ -22,6 +22,7 @@ import java.time.Instant
 import java.util.concurrent.ConcurrentMap
 import java.util.{Calendar, UUID}
 
+import akka.actor.ActorSystem
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
@@ -40,6 +41,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.reflect.runtime.{universe => ru}
 
+import akka.actor.Actor
+import akka.actor.Props
+import scala.concurrent.duration._
+
 /**
   * ThreadSafe
   * Created by Niels on 14/07/2017.
@@ -50,7 +55,7 @@ object SubjectLibrary extends LazyLogging {
   @transient private val SubjectTopic = "Subjects"
   @transient private val SubjectAwaitTime = 10
   @transient private val PollTimeout = 1000
-
+  @transient private lazy val system = ActorSystem("SubjectLibrary")
   @transient private lazy val uuid = UUID.randomUUID()
 
   //Producer to send type information
@@ -71,16 +76,20 @@ object SubjectLibrary extends LazyLogging {
     r.getOrElse(RegisterAndAwaitType[T]())
   }
 
+  /**
+    * Get a type with the given uuid.
+    * Remains polling the store untill the given uuid occurs in the store
+    * @param uuid uuid of the type to find
+    * @return A future that will resolve when the type is found
+    */
   def GetType(uuid: String)(): Future[SubjectType] = {
-    Future {
-      while (subjects.get().values.count(o => o.uuid == uuid) < 1) {
-        Thread.sleep(SubjectAwaitTime)
-      }
-      subjects
-        .get()
-        .values
-        .find(o => o.uuid == uuid)
-        .getOrElse(throw new Exception("UUID was not unique in subject type map"))
+    val r = subjects.get().values.filter(o => o.uuid == uuid).toArray
+    if (r.length == 1) {
+      Future { r(0) }
+    } else if (r.length == 0) {
+      akka.pattern.after(SubjectAwaitTime milliseconds, using = system.scheduler)(GetType(uuid))
+    } else {
+      throw new Exception(s"UUID $uuid was not unique in dictionary. This should not happen")
     }
   }
 
@@ -104,16 +113,28 @@ object SubjectLibrary extends LazyLogging {
     logger.debug(s"Registering new type ${typeDef.name}")
     KafkaController
       .GuaranteeTopic(typeDef.name)
-      .flatMap(_ =>
-        Future {
-          val event = SubjectTypeEvent(typeDef, ActionType.Add)
-          subjectTypeProducer.send(new ProducerRecord(SubjectTopic, typeDef.name, event))
-          //Not sure if this is the cleanest way to do this
-          while (!subjects.get().contains(typeDef.name)) {
-            Thread.sleep(SubjectAwaitTime)
-          }
-          subjects.get()(typeDef.name)
+      .flatMap(_ => {
+        val event = SubjectTypeEvent(typeDef, ActionType.Add)
+        subjectTypeProducer.send(new ProducerRecord(SubjectTopic, typeDef.name, event))
+        //Not sure if this is the cleanest way to do this
+        awaitType(typeDef.name)
       })
+  }
+
+  /**
+    * Rerursive functions that retrieves the type store until the given name occurs
+    * @param typeName name of the type to find
+    * @return future that will resolve when the given type has been found
+    */
+  private def awaitType(typeName: String): Future[SubjectType] = {
+    if (!subjects.get().contains(typeName)) {
+      akka.pattern.after(SubjectAwaitTime milliseconds, using = system.scheduler)(
+        awaitType(typeName))
+    } else {
+      Future {
+        subjects.get()(typeName)
+      }
+    }
   }
 
   /**
@@ -128,12 +149,24 @@ object SubjectLibrary extends LazyLogging {
     //Note that this causes an exception if the type is actually not registered
     val event = SubjectTypeEvent(subjects.get()(name), ActionType.Remove)
     subjectTypeProducer.send(new ProducerRecord(SubjectTopic, name, event))
-    //Create a future that will wait until the event has been processed
-    //Note that this might cause a deadlock when another thread creates the subject again.
-    //Should be fixed if this method is made public and used outside unit tests
-    Future {
-      while (subjects.get().contains(name)) {
-        Thread.sleep(SubjectAwaitTime)
+
+    IsUnregistered(name)
+  }
+
+  /**
+    * Retrieve a future that resolves whenever the given typename is unregistered
+    * Note that this might cause a deadlock when another thread creates the subject again.
+    * Should be fixed if this method is made public and used outside unit tests
+    * @param typeName the name to wait for
+    * @return
+    */
+  private def IsUnregistered(typeName: String): Future[Unit] = {
+    if (subjects.get().contains(typeName)) {
+      akka.pattern.after(SubjectAwaitTime milliseconds, using = system.scheduler)(
+        IsUnregistered(typeName))
+    } else {
+      Future {
+        Unit
       }
     }
   }
