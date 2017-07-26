@@ -104,15 +104,15 @@ object SubjectLibrary extends LazyLogging {
     logger.debug(s"Registering new type ${typeDef.name}")
     KafkaController
       .GuaranteeTopic(typeDef.name)
-      .map(_ => {
-
-        val event = SubjectTypeEvent(typeDef, ActionType.Add)
-        subjectTypeProducer.send(new ProducerRecord(SubjectTopic, typeDef.name, event))
-        //Not sure if this is the cleanest way to do this
-        while (!subjects.get().contains(typeDef.name)) {
-          Thread.sleep(SubjectAwaitTime)
-        }
-        subjects.get()(typeDef.name)
+      .flatMap(_ =>
+        Future {
+          val event = SubjectTypeEvent(typeDef, ActionType.Add)
+          subjectTypeProducer.send(new ProducerRecord(SubjectTopic, typeDef.name, event))
+          //Not sure if this is the cleanest way to do this
+          while (!subjects.get().contains(typeDef.name)) {
+            Thread.sleep(SubjectAwaitTime)
+          }
+          subjects.get()(typeDef.name)
       })
   }
 

@@ -18,14 +18,17 @@
 
 package org.codefeedr.Library
 
+import java.util.concurrent.{ExecutorService, Executors, TimeUnit, TimeoutException}
+
 import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, Matchers}
 import org.apache.flink.streaming.api.scala._
 import org.codefeedr.Library.Internal.Kafka.KafkaController
 
+import scala.concurrent.duration._
 import scala.collection.mutable
-import scala.concurrent.{ExecutionContextExecutor, Future}
-import scala.collection.mutable.Set
+import scala.concurrent.{TimeoutException, _}
+import scala.concurrent.duration._
 
 @SerialVersionUID(100L)
 case class MyOwnIntegerObject(value: Int) extends Serializable
@@ -48,29 +51,29 @@ object TestCollector extends LazyLogging {
 class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAll with LazyLogging {
   //These tests must run in parallel
   implicit override def executionContext: ExecutionContextExecutor =
-    scala.concurrent.ExecutionContext.Implicits.global
+    ExecutionContext.fromExecutorService(Executors.newWorkStealingPool(16))
 
   "Kafka-Sinks" should "retrieve all messages published by a source" in {
     //Create a sink function
     val sinkF = SubjectFactory.GetSink[MyOwnIntegerObject]
     sinkF.flatMap(sink => {
       val env = StreamExecutionEnvironment.createLocalEnvironment()
-
       env.fromCollection(mutable.Set(1, 2, 3).toSeq).map(o => MyOwnIntegerObject(o)).addSink(sink)
-      env.execute("sink")
-      Thread.sleep(1000)
+      env.execute()
 
-      val t1 = new Thread(new MyOwnSourseQuery(1))
-      t1.start()
-      val t2 = new Thread(new MyOwnSourseQuery(2))
-      t2.start()
-      val t3 = new Thread(new MyOwnSourseQuery(3))
-      t3.start()
+      val environments = for {
+        f1 <- Future { new MyOwnSourseQuery(1).run() }
+        f2 <- Future { new MyOwnSourseQuery(2).run() }
+        f3 <- Future { new MyOwnSourseQuery(3).run() }
+      } yield (f1, f2, f3)
 
-      Thread.sleep(5000)
-
-
-
+      Console.println("Waiting for completion")
+      try {
+        Await.result(environments, Duration(3, SECONDS))
+      } catch {
+        case _: TimeoutException => Unit
+      }
+      Console.println("Completed")
       //Delete the subject
       SubjectLibrary
         .UnRegisterSubject("MyOwnIntegerObject")
@@ -89,14 +92,18 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
     //Reset the cache
     TestCollector.collectedData = mutable.MutableList[Tuple2[Int, MyOwnIntegerObject]]()
 
-    val t1 = new Thread(new MyOwnSourseQuery(1))
-    t1.start()
-    val t2 = new Thread(new MyOwnSourseQuery(2))
-    t2.start()
-    val t3 = new Thread(new MyOwnSourseQuery(3))
-    t3.start()
+    val environments = for {
+      f1 <- Future { new MyOwnSourseQuery(1).run() }
+      f2 <- Future { new MyOwnSourseQuery(2).run() }
+      f3 <- Future { new MyOwnSourseQuery(3).run() }
+    } yield (f1, f2, f3)
 
-    Thread.sleep(500)
+    //Wait for kafka
+    try {
+      Await.result(environments, Duration(1, SECONDS))
+    } catch {
+      case _: TimeoutException => Unit
+    }
 
     //Create a sink function
     val sinkF = SubjectFactory.GetSink[MyOwnIntegerObject]
@@ -105,7 +112,6 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
       env.fromCollection(mutable.Set(1, 2, 3).toSeq).map(o => MyOwnIntegerObject(o)).addSink(sink)
       env.execute("sink")
 
-      //Wait for kafka
       Thread.sleep(3000)
 
       //Delete the subject as cleanup
@@ -126,15 +132,6 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
     //Reset the cache
     TestCollector.collectedData = mutable.MutableList[Tuple2[Int, MyOwnIntegerObject]]()
 
-    val t1 = new Thread(new MyOwnSourseQuery(1))
-    t1.start()
-    val t2 = new Thread(new MyOwnSourseQuery(2))
-    t2.start()
-    val t3 = new Thread(new MyOwnSourseQuery(3))
-    t3.start()
-
-    Thread.sleep(500)
-
     Future
       .sequence(for (i <- 1 to 3) yield {
         val sinkF = SubjectFactory.GetSink[MyOwnIntegerObject]
@@ -149,8 +146,22 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
           })
       })
       .flatMap(_ => {
+
+        val environments = for {
+          f1 <- Future { new MyOwnSourseQuery(1).run() }
+          f2 <- Future { new MyOwnSourseQuery(2).run() }
+          f3 <- Future { new MyOwnSourseQuery(3).run() }
+        } yield (f1, f2, f3)
         //Wait for kafka data to be retrieved
-        Thread.sleep(3000)
+
+        Console.println("Waiting for completion")
+        try {
+          Await.result(environments, Duration(3, SECONDS))
+        } catch {
+          case _: TimeoutException => Unit
+        }
+        Console.println("Completed")
+
         //Delete the subject as cleanup
         SubjectLibrary
           .UnRegisterSubject("MyOwnIntegerObject")

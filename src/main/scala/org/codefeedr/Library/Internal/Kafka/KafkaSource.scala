@@ -19,6 +19,7 @@
 package org.codefeedr.Library.Internal.Kafka
 
 import java.util.UUID
+import java.util.concurrent.{ExecutorService, Executors, TimeUnit}
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.typeinfo.TypeInformation
@@ -31,10 +32,11 @@ import org.codefeedr.Model.{Record, RecordIdentifier, SubjectType}
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
-import akka.actor.Actor
-import akka.actor.Props
-import scala.concurrent.duration._
 
+/**
+  * Use a single thread to perform all polling operations on kafka
+  * Note that new objects will still exist per distributed environment
+  */
 /**
   * Created by Niels on 18/07/2017.
   */
@@ -46,7 +48,7 @@ class KafkaSource[TData: TypeInformation: ru.TypeTag: ClassTag](subjectType: Sub
   @transient private lazy val dataConsumer = {
     val consumer = KafkaConsumerFactory.create[Array[Byte], Record](uuid.toString)
     consumer.subscribe(Iterable(topic).asJavaCollection)
-    logger.debug(s"Source $uuid subsribed on topic $topic as group")
+    logger.debug(s"Source $uuid subscribed on topic $topic as group")
     consumer
   }
   @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
@@ -59,7 +61,8 @@ class KafkaSource[TData: TypeInformation: ru.TypeTag: ClassTag](subjectType: Sub
   @transient private lazy val RefreshTime = 100
   @transient private lazy val PollTimeout = 1000
 
-  @transient private var running = false
+  @transient
+  @volatile private var running = true
 
   override def cancel(): Unit = {
     running = false
@@ -68,26 +71,31 @@ class KafkaSource[TData: TypeInformation: ru.TypeTag: ClassTag](subjectType: Sub
   override def run(ctx: SourceFunction.SourceContext[TData]): Unit = {
     logger.debug(s"Source $uuid started running.")
 
-    val system = akka.actor.ActorSystem("system")    // this was missing!
-    import system.dispatcher
-
-
-    system.scheduler.schedule(0, RefreshTime, )
-
-    running = true
-    while (running) {
-      dataConsumer
-        .poll(PollTimeout)
-        .iterator()
-        .asScala
-        .map(o => {
-          val record = o.value()
-          bagger.Unbag(record)
-        })
-        .foreach(ctx.collect)
-      Thread.sleep(RefreshTime)
+    val refreshTask = new Runnable {
+      override def run(): Unit = {
+        running = true
+        while (running) {
+          dataConsumer
+            .poll(PollTimeout)
+            .iterator()
+            .asScala
+            .map(o => {
+              val record = o.value()
+              bagger.Unbag(record)
+            })
+            .foreach(ctx.collect)
+          Thread.sleep(RefreshTime)
+        }
+      }
     }
+    //Maybe refactor this back to just sleeping in the main thread.
+    val thread = new Thread(refreshTask)
+    thread.setDaemon(true)
+    thread.start()
+    thread.join()
+    //KafkaSourceExecutor.pool.execute(refreshTask)
   }
 
   override def getProducedType: TypeInformation[TData] = createTypeInformation[TData]
+
 }
