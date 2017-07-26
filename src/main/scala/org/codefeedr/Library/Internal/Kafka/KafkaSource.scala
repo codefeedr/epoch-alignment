@@ -31,6 +31,9 @@ import org.codefeedr.Model.{Record, RecordIdentifier, SubjectType}
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
+import akka.actor.Actor
+import akka.actor.Props
+import scala.concurrent.duration._
 
 /**
   * Created by Niels on 18/07/2017.
@@ -63,6 +66,14 @@ class KafkaSource[TData: TypeInformation: ru.TypeTag: ClassTag](subjectType: Sub
   }
 
   override def run(ctx: SourceFunction.SourceContext[TData]): Unit = {
+    logger.debug(s"Source $uuid started running.")
+
+    val system = akka.actor.ActorSystem("system")    // this was missing!
+    import system.dispatcher
+
+
+    system.scheduler.schedule(0, RefreshTime, )
+
     running = true
     while (running) {
       dataConsumer

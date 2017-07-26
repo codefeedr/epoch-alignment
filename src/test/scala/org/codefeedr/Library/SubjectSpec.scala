@@ -67,7 +67,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
       val t3 = new Thread(new MyOwnSourseQuery(3))
       t3.start()
 
-      Thread.sleep(3000)
+      Thread.sleep(5000)
 
 
 
