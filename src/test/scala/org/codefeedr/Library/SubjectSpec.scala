@@ -46,6 +46,7 @@ object TestCollector extends LazyLogging {
 }
 
 /**
+  * This is more of an integration test than unit test
   * Created by Niels on 14/07/2017.
   */
 class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAll with LazyLogging {
@@ -76,7 +77,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
       } catch {
         case _: TimeoutException => Unit
       }
-      Thread.sleep(1000)
+      Thread.sleep(5000)
       Console.println("Completed")
       //Delete the subject
       SubjectLibrary
@@ -117,7 +118,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
       env.fromCollection(mutable.Set(1, 2, 3).toSeq).map(o => MyOwnIntegerObject(o)).addSink(sink)
       env.execute("sink")
 
-      Thread.sleep(3000)
+      Thread.sleep(8000)
 
       //Delete the subject as cleanup
       SubjectLibrary
@@ -166,7 +167,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
         } catch {
           case _: TimeoutException => Unit
         }
-        Thread.sleep(5000)
+        Thread.sleep(9000)
         Console.println("Completed")
 
         //Delete the subject as cleanup
