@@ -51,7 +51,7 @@ object TestCollector extends LazyLogging {
 class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAll with LazyLogging {
   //These tests must run in parallel
   implicit override def executionContext: ExecutionContextExecutor =
-    ExecutionContext.fromExecutorService(Executors.newWorkStealingPool(8))
+    ExecutionContext.fromExecutorService(Executors.newWorkStealingPool(16))
 
   val paralellism = 2
 
