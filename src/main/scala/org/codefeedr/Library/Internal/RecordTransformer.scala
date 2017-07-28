@@ -20,6 +20,7 @@ package org.codefeedr.Library.Internal
 
 import java.util.UUID
 
+import org.codefeedr.Library.SubjectLibrary
 import org.codefeedr.Model.{ActionType, Record}
 
 import scala.reflect.ClassTag
@@ -30,10 +31,14 @@ import scala.reflect.runtime.{universe => ru}
   * This class can transform objects of any type into records used in the query engine
   * This class is not serializable and should be constructed as whenever needed
   * This class is not thread safe! Create a new instance for each thread
+  * The constructor assumes that this class will only be constructed after the subjectType has actually been registered in the library
   */
-class Bagger[TData: ru.TypeTag](implicit ct: ClassTag[TData]) {
+class RecordTransformer[TData: ru.TypeTag](implicit ct: ClassTag[TData]) {
   //Fetch type information
-  private val subjectType = SubjectTypeFactory.getSubjectType[TData]
+  private val subjectType = SubjectLibrary
+    .GetTypeSync[TData]()
+    .getOrElse(throw new Exception(
+      "The given type was not found in the library, so no bagger could be constructed"))
   private val uuid = UUID.randomUUID().toString
   //Counter used to generate unique identifiers for each event, when combined with the UUID of the bagger instance
   private var Sequence = 0
@@ -74,6 +79,7 @@ class Bagger[TData: ru.TypeTag](implicit ct: ClassTag[TData]) {
   /**
     * Setters, this can be used in the future for non-case class objects
     */
+  /*
   private val setters = {
     subjectType.properties
       .drop(defaultPropertySize)
@@ -83,7 +89,7 @@ class Bagger[TData: ru.TypeTag](implicit ct: ClassTag[TData]) {
         (obj: TData, value: Any) =>
           o.set(obj, value)
       })
-  }
+  }*/
 
   private val constructor = ct.runtimeClass.getConstructors()(0)
 

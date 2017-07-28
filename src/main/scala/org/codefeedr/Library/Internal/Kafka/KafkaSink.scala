@@ -24,7 +24,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.codefeedr.Library.Internal.{Bagger, KeyFactory}
+import org.codefeedr.Library.Internal.{RecordTransformer, KeyFactory}
 import org.codefeedr.Model.{ActionType, Record, RecordIdentifier, SubjectType}
 
 import scala.reflect.ClassTag
@@ -45,10 +45,9 @@ class KafkaSink[TData: ru.TypeTag: ClassTag](subjectType: SubjectType)
   }
 
   @transient private lazy val keyFactory = new KeyFactory(subjectType)
-  @transient private lazy val bagger = new Bagger[TData]()
+  @transient private lazy val bagger = new RecordTransformer[TData]()
 
   @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
-  @transient private var Sequence: Long = 0
 
   //A random identifier for this specific sink
   @transient private lazy val uuid = UUID.randomUUID()

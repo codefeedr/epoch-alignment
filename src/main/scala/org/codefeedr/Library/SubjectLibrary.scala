@@ -71,9 +71,35 @@ object SubjectLibrary extends LazyLogging {
     * @return The subjectType when it is registered in the library
     */
   def GetType[T: ru.TypeTag](): Future[SubjectType] = {
-    val typeDef = SubjectTypeFactory.getSubjectType[T]
-    val r = subjects.get().get(typeDef.name) map (o => Future { o })
+    val r = GetTypeSync[T]().map(o => Future { o })
     r.getOrElse(RegisterAndAwaitType[T]())
+  }
+
+  /**
+    * Retrieve a subjectType for some scala type
+    * Returns none if type was not registered yet (or not yet found in the library)
+    * @tparam T The type to get typedefinition for
+    * @return The type definition, or none if it was not present in the library yet
+    */
+  def GetTypeSync[T: ru.TypeTag](): Option[SubjectType] = {
+    val typeDef = SubjectTypeFactory.getSubjectType[T]
+    subjects.get().get(typeDef.name)
+  }
+
+  /**
+    * Get a type of the given uuid
+    * Returns none if the type has not yet been recieved by the library
+    * @param uuid uuid of the type to try to get
+    * @return Typedefinition, or none if it did not exist in the library
+    */
+  def tryGetType(uuid: String): Option[SubjectType] = {
+    val r = subjects.get().values.filter(o => o.uuid == uuid).toArray
+    if (r.length == 1)
+      Some(r(0))
+    else if (r.length == 0)
+      None
+    else
+      throw new Exception(s"UUID $uuid was not unique in dictionary. This should not happen")
   }
 
   /**
@@ -82,16 +108,11 @@ object SubjectLibrary extends LazyLogging {
     * @param uuid uuid of the type to find
     * @return A future that will resolve when the type is found
     */
-  def GetType(uuid: String)(): Future[SubjectType] = {
-    val r = subjects.get().values.filter(o => o.uuid == uuid).toArray
-    if (r.length == 1) {
-      Future { r(0) }
-    } else if (r.length == 0) {
-      akka.pattern.after(SubjectAwaitTime milliseconds, using = system.scheduler)(GetType(uuid))
-    } else {
-      throw new Exception(s"UUID $uuid was not unique in dictionary. This should not happen")
-    }
-  }
+  def GetType(uuid: String)(): Future[SubjectType] =
+    tryGetType(uuid)
+      .map(o => Future { o })
+      .getOrElse(
+        akka.pattern.after(SubjectAwaitTime milliseconds, using = system.scheduler)(GetType(uuid)))
 
   /**
     * Retrieves the current set of registered subject names
@@ -204,21 +225,25 @@ object SubjectLibrary extends LazyLogging {
       */
     def handleEvent(event: SubjectTypeEvent): Unit =
       event.actionType match {
-        case ActionType.Add => insert(event.subjectType)
+        case ActionType.Add    => insert(event.subjectType)
         case ActionType.Update => update(event.subjectType)
         case ActionType.Remove => delete(event.subjectType)
       }
 
     def insert(s: SubjectType): Unit =
       if (!subjects.contains(s.name)) {
+        logger.debug(s"New subjecttype ${s.name} registered with uuid ${s.uuid}")
         subjects.put(s.name, s)
       }
 
-    def update(s: SubjectType): Unit =
+    def update(s: SubjectType): Unit = {
+      logger.debug(s"subjecttype ${s.name} updated with uuid ${s.uuid}")
       subjects.put(s.name, s)
+    }
 
     def delete(s: SubjectType): Unit =
       if (subjects.contains(s.name)) {
+        logger.debug(s"subjecttype ${s.name} removed with uuid ${s.uuid}")
         subjects.remove(s.name)
       }
   }
