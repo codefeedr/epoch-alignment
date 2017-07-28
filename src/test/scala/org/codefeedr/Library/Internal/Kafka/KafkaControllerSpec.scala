@@ -46,13 +46,4 @@ class KafkaControllerSpec extends AsyncFlatSpec with Matchers {
       contains <- KafkaController.GetTopics().map(o => assert(o.contains(testTopic)))
     } yield contains
   }
-
-  "A kafkaController" should "Not add a topic again if guarantee is called and the topic already exists" in {
-    for {
-      numTopics <- KafkaController.GetTopics().map(o => o.size)
-      _ <- KafkaController.GuaranteeTopic(testTopic)
-      topics1 <- KafkaController.GetTopics().map(o => assert(o.size == numTopics))
-      _ <- KafkaController.DeleteTopic(testTopic)
-    } yield topics1
-  }
 }
