@@ -20,10 +20,10 @@ class RecordTransformerSpec
     with BeforeAndAfterAll {
 
   override def afterAll() {
-    SubjectLibrary.UnRegisterSubject("BaggerTestInt")
-    SubjectLibrary.UnRegisterSubject("BaggerTestString")
-    SubjectLibrary.UnRegisterSubject("BaggerTestObject")
-    SubjectLibrary.UnRegisterSubject("BaggerTestPojo")
+    SubjectLibrary.UnRegisterSubject("BagTestInt")
+    SubjectLibrary.UnRegisterSubject("BagTestString")
+    SubjectLibrary.UnRegisterSubject("BagTestObject")
+    SubjectLibrary.UnRegisterSubject("BagTestPojo")
   }
 
   "A RecordTransformer" should "be able to map integers to a bag" in {
