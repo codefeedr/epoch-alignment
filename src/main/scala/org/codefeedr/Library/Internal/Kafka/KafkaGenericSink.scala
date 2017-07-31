@@ -48,7 +48,7 @@ class KafkaGenericSink[TData: ru.TypeTag: ClassTag](subjectType: SubjectType)
   //A random identifier for this specific sink
   @transient private lazy val uuid = UUID.randomUUID()
 
-  @transient private lazy val Transformer = SubjectFactory.GetMapper[TData](subjectType)
+  @transient private lazy val Transformer = SubjectFactory.GetTransformer[TData](subjectType)
 
   override def close(): Unit = {
     kafkaProducer.close()

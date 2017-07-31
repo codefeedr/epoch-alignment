@@ -18,14 +18,11 @@
 
 package org.codefeedr.Library
 
-import java.util.concurrent.{ExecutorService, Executors, TimeUnit, TimeoutException}
+import java.util.concurrent.Executors
 
 import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, Matchers}
 import org.apache.flink.streaming.api.scala._
-import org.codefeedr.Library.Internal.Kafka.KafkaController
-
-import scala.concurrent.duration._
 import scala.collection.mutable
 import scala.concurrent.{TimeoutException, _}
 import scala.concurrent.duration._
@@ -202,13 +199,14 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
       */
     def createTopology(env: StreamExecutionEnvironment, nr: Int): Future[Unit] = {
       //Construct a new source using the subjectFactory
-      val sourceF = SubjectFactory.GetSource[MyOwnIntegerObject]
-      sourceF.map(source => {
-        val mapped = env
-          .addSource[MyOwnIntegerObject](source)
-          .map { o =>
-            Tuple2(nr, o)
-          }
+      SubjectLibrary.GetType[MyOwnIntegerObject]().map(subjectType => {
+        //Transient lazy because these need to be initioalised at the distributed environment
+        val unMapper = SubjectFactory.GetUnTransformer[MyOwnIntegerObject](subjectType)
+        val source = SubjectFactory.GetSource(subjectType)
+        env
+          .addSource(source)
+          .map(unMapper)
+          .map(o =>Tuple2(nr, o))
           .addSink(o => TestCollector.collect(o))
       })
 
