@@ -18,7 +18,11 @@
 
 package org.codefeedr.Library.Internal
 import java.io.{ByteArrayOutputStream, ObjectOutputStream}
-import org.codefeedr.Model.{Record, SubjectType}
+import java.util.UUID
+
+import org.apache.commons.lang3.Conversion.uuidToByteArray
+import org.codefeedr.Model.{Record, Source, SubjectType}
+
 import scala.language.postfixOps
 
 /**
@@ -26,7 +30,9 @@ import scala.language.postfixOps
   * Should be created lazily on needed environments, and a new instance for every thread
   * Created by Niels on 23/07/2017.
   */
-class KeyFactory(typeInfo: SubjectType) {
+class KeyFactory(typeInfo: SubjectType, sinkUuid: UUID) {
+  private var Sequence: Long = 0
+  private var uuid = uuidToByteArray(sinkUuid,Array[Byte](16),0, 16)
 
   /**
     * Set of indices that contain id fields
@@ -36,14 +42,37 @@ class KeyFactory(typeInfo: SubjectType) {
 
   /**
     * Get a unique identifier using the id fields defined in the type
-    * @param record The record to get the key for
+    * If no id fields are defined, return an auto generated id
     * @return A bytearray as key
     */
-  def GetKey(record: Record): Array[Byte] = {
+  val GetKey: (Record) => Source = {
+    if(typeInfo.properties.exists(o => o.id)) {
+      GetIndexKey
+    } else {
+      _:Record => GetIncrementalKey()
+    }
+  }
+
+  /**
+    * Returns an incremental auto generated key every time the method is called
+    * @return
+    */
+  private def GetIncrementalKey(): Source = {
+    val sequence = Sequence
+    Sequence+=1
+    Source(uuid, Array(sequence.toByte))
+  }
+
+  /**
+    * Generates a key based on the indices defined on the record
+    * @param record
+    * @return
+    */
+  private def GetIndexKey(record: Record): Source = {
     val stream: ByteArrayOutputStream = new ByteArrayOutputStream()
     val oos = new ObjectOutputStream(stream)
     oos.writeObject(idIndices.map(record.data))
     oos.close()
-    stream.toByteArray
+    Source(uuid, stream.toByteArray)
   }
 }

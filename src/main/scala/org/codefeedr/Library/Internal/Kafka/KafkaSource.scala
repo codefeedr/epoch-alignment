@@ -19,7 +19,6 @@
 package org.codefeedr.Library.Internal.Kafka
 
 import java.util.UUID
-import java.util.concurrent.{ExecutorService, Executors, TimeUnit}
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.typeinfo.TypeInformation
@@ -27,7 +26,7 @@ import org.apache.flink.api.java.typeutils.ResultTypeQueryable
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
 import org.apache.flink.streaming.api.scala._
 import org.codefeedr.Library.Internal.RecordTransformer
-import org.codefeedr.Model.{Record, RecordIdentifier, SubjectType}
+import org.codefeedr.Model.{Record, SubjectType}
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
@@ -53,7 +52,7 @@ class KafkaSource[TData: TypeInformation: ru.TypeTag: ClassTag](subjectType: Sub
   }
   @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
 
-  @transient private lazy val bagger = new RecordTransformer[TData]()
+  @transient private lazy val bagger = new RecordTransformer[TData](subjectType)
 
   @transient private lazy val uuid = UUID.randomUUID()
 

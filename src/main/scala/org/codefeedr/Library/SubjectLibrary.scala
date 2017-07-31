@@ -81,7 +81,7 @@ object SubjectLibrary extends LazyLogging {
     * @tparam T The type to get typedefinition for
     * @return The type definition, or none if it was not present in the library yet
     */
-  def GetTypeSync[T: ru.TypeTag](): Option[SubjectType] = {
+  private def GetTypeSync[T: ru.TypeTag](): Option[SubjectType] = {
     val typeDef = SubjectTypeFactory.getSubjectType[T]
     subjects.get().get(typeDef.name)
   }
@@ -92,7 +92,7 @@ object SubjectLibrary extends LazyLogging {
     * @param uuid uuid of the type to try to get
     * @return Typedefinition, or none if it did not exist in the library
     */
-  def tryGetType(uuid: String): Option[SubjectType] = {
+  private def tryGetType(uuid: String): Option[SubjectType] = {
     val r = subjects.get().values.filter(o => o.uuid == uuid).toArray
     if (r.length == 1)
       Some(r(0))

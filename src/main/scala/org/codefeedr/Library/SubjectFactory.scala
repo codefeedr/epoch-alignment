@@ -18,6 +18,8 @@
 
 package org.codefeedr.Library
 
+import java.util.UUID
+
 import org.apache.flink.api.common.typeinfo.TypeInformation
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -25,7 +27,9 @@ import scala.concurrent.Future
 import scala.reflect.runtime.{universe => ru}
 import org.apache.flink.streaming.api.functions.sink.SinkFunction
 import org.apache.flink.streaming.api.functions.source.SourceFunction
-import org.codefeedr.Library.Internal.Kafka.{KafkaController, KafkaSink, KafkaSource}
+import org.codefeedr.Library.Internal.Kafka.{KafkaController, KafkaGenericSink, KafkaSink, KafkaSource}
+import org.codefeedr.Library.Internal.{KeyFactory, RecordTransformer}
+import org.codefeedr.Model.{ActionType, SubjectType, TrailedRecord}
 
 import scala.reflect.ClassTag
 
@@ -38,8 +42,25 @@ object SubjectFactory {
     SubjectLibrary
       .GetType[TData]()
       .flatMap(o =>
-        KafkaController.GuaranteeTopic(s"${o.name}_${o.uuid}").map(_ => new KafkaSink[TData](o)))
+        KafkaController.GuaranteeTopic(s"${o.name}_${o.uuid}").map(_ => new KafkaGenericSink(o)))
   }
+
+
+  /**
+    * Construct a serializable and distributable mapper function from any source type to a TrailedRecord
+    * @tparam TData
+    * @return
+    */
+  def GetMapper[TData:ru.TypeTag:ClassTag](subjectType: SubjectType): TData => TrailedRecord = {
+        val transformer = new RecordTransformer[TData](subjectType)
+        val keyFactory = new KeyFactory(subjectType, UUID.randomUUID())
+        (d:TData) =>  {
+          val record = transformer.Bag(d, ActionType.Add)
+          val trail = keyFactory.GetKey(record)
+          TrailedRecord(record, trail)
+      }
+  }
+
 
   def GetSource[TData: ru.TypeTag: TypeInformation: ClassTag]: Future[SourceFunction[TData]] = {
     SubjectLibrary.GetType[TData]().map(o => new KafkaSource[TData](o))

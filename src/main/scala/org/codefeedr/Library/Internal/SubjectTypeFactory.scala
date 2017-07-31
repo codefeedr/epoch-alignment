@@ -18,13 +18,11 @@
 
 package org.codefeedr.Library.Internal
 
-import java.lang.reflect.Field
 import java.util.UUID
 
 import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.Model.{PropertyType, RecordProperty, SubjectType}
 
-import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
 /**

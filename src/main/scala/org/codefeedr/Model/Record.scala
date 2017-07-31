@@ -22,17 +22,20 @@ import java.util.UUID
 
 import org.apache.flink.api.common.typeinfo.{PrimitiveArrayTypeInfo, TypeInformation, Types}
 
+
+/**
+  * A record with its trail
+  * @param record
+  * @param trail
+  */
+@SerialVersionUID(100L)
+case class TrailedRecord(record:Record, trail: RecordSourceTrail) extends Serializable
+
 /**
   * Created by Niels on 12/07/2017.
   */
 @SerialVersionUID(100L)
-case class Record(data: Array[Any], action: ActionType.Value) extends Serializable
-
-@SerialVersionUID(100L)
-case class RecordIdentifier(sequence: Long, sinkSource: String) extends Serializable
-
-@SerialVersionUID(100L)
-case class RecordSource(sinkUuid: String, typeUuid: String) extends Serializable
+case class Record(data: Array[Any], typeUuid: String, action: ActionType.Value) extends Serializable
 
 @SerialVersionUID(100L)
 case class SubjectType(uuid: String, name: String, properties: Array[RecordProperty])
@@ -43,6 +46,17 @@ case class RecordProperty(name: String, propertyType: PropertyType.Value, id: Bo
     extends Serializable
 
 case class SubjectTypeEvent(subjectType: SubjectType, actionType: ActionType.Value)
+
+
+abstract class RecordSourceTrail
+
+@SerialVersionUID(100L)
+case class ComposedSource(SourceId: Array[Byte], pointers: Array[RecordSourceTrail]) extends RecordSourceTrail with Serializable
+
+@SerialVersionUID(100L)
+case class Source(SourceId: Array[Byte], Key: Array[Byte]) extends RecordSourceTrail with Serializable
+
+
 
 /**
   * Data equals audit trail

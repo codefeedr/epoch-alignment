@@ -1,15 +1,15 @@
 package org.codefeedr.Library.Internal
 
 import org.codefeedr.Library.SubjectLibrary
-import org.codefeedr.Model.Record
+import org.codefeedr.Model.{Record, SubjectType}
 
 import scala.reflect.ClassTag
 
 /**
   * Created by Niels on 28/07/2017.
+  * Utility class for some subjectType
   */
-object RecordUtils {
-
+class RecordUtils(subjectType: SubjectType) {
   /**
     * Get a property of the given name and type on a record
     * Not optimized, but easy to use
@@ -32,15 +32,10 @@ object RecordUtils {
     */
   def getValue(property: String)(implicit record: Record): Any = {
     val subjectUuid = record.data(0).asInstanceOf[String]
-    val sType = SubjectLibrary
-      .tryGetType(subjectUuid)
-      .getOrElse(
-        throw new Exception(
-          s"The type of the passed record (uuid: $subjectUuid) was not found yet in the library"))
-    val propertyIndex = sType.properties
+    val propertyIndex = subjectType.properties
       .indexWhere(o => o.name == property)
     if (propertyIndex == -1) {
-      throw new Exception(s"Property $propertyIndex was not found on type ${sType.name}")
+      throw new Exception(s"Property $propertyIndex was not found on type ${subjectType.name}")
     }
     record.data(propertyIndex)
   }

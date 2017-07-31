@@ -24,31 +24,27 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.codefeedr.Library.Internal.{RecordTransformer, KeyFactory}
-import org.codefeedr.Model.{ActionType, Record, RecordIdentifier, SubjectType}
+import org.codefeedr.Library.Internal.{KeyFactory, RecordTransformer}
+import org.codefeedr.Model._
 
-import scala.reflect.ClassTag
-import scala.reflect.runtime.{universe => ru}
+
 
 /**
-  * A simple kafka sink, pushing all records as "new" data
+  * A simple kafka sink, pushing all records to a kafka topic of the given subjecttype
   * Not thread safe
+  * Serializable (with lazy initialisation)
   * Created by Niels on 11/07/2017.
   */
-class KafkaSink[TData: ru.TypeTag: ClassTag](subjectType: SubjectType)
-    extends RichSinkFunction[TData]
-    with LazyLogging {
+class KafkaSink(subjectType: SubjectType)
+    extends RichSinkFunction[TrailedRecord]
+    with LazyLogging with Serializable {
   @transient private lazy val kafkaProducer = {
-    val producer = KafkaProducerFactory.create[Array[Byte], Record]
+    val producer = KafkaProducerFactory.create[RecordSourceTrail, Record]
     logger.debug(s"Producer $uuid created for topic $topic")
     producer
   }
 
-  @transient private lazy val keyFactory = new KeyFactory(subjectType)
-  @transient private lazy val bagger = new RecordTransformer[TData]()
-
   @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
-
   //A random identifier for this specific sink
   @transient private lazy val uuid = UUID.randomUUID()
 
@@ -60,10 +56,7 @@ class KafkaSink[TData: ru.TypeTag: ClassTag](subjectType: SubjectType)
     super.open(parameters)
   }
 
-  override def invoke(value: TData): Unit = {
-    //Validate if this actually performs
-    val record = bagger.Bag(value, ActionType.Add)
-    kafkaProducer.send(new ProducerRecord(topic, keyFactory.GetKey(record), record))
+  override def invoke(trailedRecord: TrailedRecord): Unit = {
+    kafkaProducer.send(new ProducerRecord(topic, trailedRecord.trail, trailedRecord.record))
   }
-
 }
