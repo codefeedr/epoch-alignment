@@ -117,4 +117,15 @@ class SubjectTypeFactorySpec extends FlatSpec with Matchers {
       }
     }
   }
+
+  "A SubjectTypeFactory" should " expose keyfields given as parameter" in {
+    val t = SubjectTypeFactory.getSubjectType[D](Array("i", "s"))
+    assert(t.properties.filter(o => o.name == "i").count(o => o.id) == 1)
+    assert(t.properties.filter(o => o.name == "s").count(o => o.id) == 1)
+    assert(t.properties.filter(o => o.name == "o").count(o => o.id) == 0)
+  }
+
+  "A SubjectTypeFactory" should " throw an exception when keyfields do not exist" in {
+    assertThrows[Exception](SubjectTypeFactory.getSubjectType[D](Array("A")))
+  }
 }
