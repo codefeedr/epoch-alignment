@@ -18,14 +18,10 @@
 
 package org.codefeedr.Library.Internal
 
-import java.util.UUID
-
-import org.codefeedr.Library.SubjectLibrary
 import org.codefeedr.Model._
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
-import org.apache.commons.lang3.Conversion.uuidToByteArray
 
 
 /**
@@ -34,7 +30,7 @@ import org.apache.commons.lang3.Conversion.uuidToByteArray
   * This class is serializable and can be distributed over the kafka environment
   * The constructor assumes that this class will only be constructed after the subjectType has actually been registered in the library
   */
-class RecordTransformer[TData: ClassTag](subjectType: SubjectType) {
+class RecordTransformer[TData: ru.TypeTag: ClassTag](subjectType: SubjectType) {
   private def ct = implicitly[reflect.ClassTag[TData]]
 
   /**

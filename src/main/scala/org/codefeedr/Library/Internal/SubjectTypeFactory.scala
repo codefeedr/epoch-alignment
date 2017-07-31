@@ -38,7 +38,7 @@ object SubjectTypeFactory extends LazyLogging {
     SubjectType(
       newTypeIdentifier().toString,
       name,
-      getDefaultProperties(idFields.length == 0) ++ properties.map(getRecordProperty(idFields)))
+      properties.map(getRecordProperty(idFields)).toArray)
   }
 
   private def getRecordProperty(idFields: Array[String])(symbol: ru.Symbol): RecordProperty = {
@@ -54,17 +54,6 @@ object SubjectTypeFactory extends LazyLogging {
     RecordProperty(name, propertyType, idFields.contains(name))
   }
 
-  /**
-    * Generate the default property definitions added by our framework
-    * @param isId are the auto generated fields ids
-    * @return Array of the default properties
-    */
-  private def getDefaultProperties(isId: Boolean) =
-    Array(
-      RecordProperty("_Type", PropertyType.String, id = true),
-      RecordProperty("_Sequence", PropertyType.Number, isId),
-      RecordProperty("_Source", PropertyType.String, isId)
-    )
 
   /**
     * Get a subject type for the query language, type tag required
