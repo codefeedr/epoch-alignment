@@ -50,7 +50,8 @@ class KafkaSource(subjectType: SubjectType)
   @transient private lazy val RefreshTime = 100
   @transient private lazy val PollTimeout = 1000
 
-  @transient @volatile private var running = true
+  @transient
+  @volatile private var running = true
 
   override def cancel(): Unit = {
     running = false
