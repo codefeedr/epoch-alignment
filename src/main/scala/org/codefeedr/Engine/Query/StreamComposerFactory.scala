@@ -18,17 +18,26 @@
 
 package org.codefeedr.Engine.Query
 
+
+import org.codefeedr.Library.SubjectLibrary
+
+import scala.concurrent.Future
+
 /**
-  * Classes that represent a query execution tree
   * Created by Niels on 31/07/2017.
   */
-abstract class QueryTree
+object StreamComposerFactory {
+  def GetComposer(query: QueryTree): Future[StreamComposer] = {
+    query match {
+      case SubjectSource(subjectName) => SubjectLibrary.getTypeByName(subjectName).map(o => new SourceStreamComposer(o))
+      case Join(left, right, keysLeft, keysRight, selectLeft, selectRight) => {
+        for {
+          leftComposer <- GetComposer(left)
+          rightComposer <- GetComposer(right)
 
-case class SubjectSource(subjectType: String) extends QueryTree
-
-case class Join(left: QueryTree,
-                right: QueryTree,
-                columnsLeft: Array[String],
-                columnsRight: Array[String],
-                SelectLeft: Array[String],
-                SelectRight: Array[String])
+        } yield
+      }
+      case _ => throw new NotImplementedError("not implemented query subtree")
+    }
+  }
+}

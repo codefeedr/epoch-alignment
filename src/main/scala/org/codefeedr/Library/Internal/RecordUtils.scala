@@ -39,4 +39,24 @@ class RecordUtils(subjectType: SubjectType) {
     }
     record.data(propertyIndex)
   }
+
+
+  /**
+    * Retrieve the respective indices of the properties on
+    * @param properties Properties to find on the subject
+    * @return array of indices, sorted in the same order as the given properties array
+    */
+  def getIndices(properties: Array[String]): Array[Int] = {
+    val r = properties.map(prop =>
+      subjectType.properties.indexWhere(o => o.name == prop)
+    )
+    if (r.contains(-1)) {
+      throw new Exception(s"Some properties given to getSubjectType did not exist: ${
+        properties
+          .filter(o => !subjectType.properties.exists(p => p.name == o))
+          .mkString(", ")
+      }")
+    }
+    r
+  }
 }

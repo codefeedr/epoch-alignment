@@ -138,7 +138,7 @@ object SubjectLibrary extends LazyLogging {
         val event = SubjectTypeEvent(typeDef, ActionType.Add)
         subjectTypeProducer.send(new ProducerRecord(SubjectTopic, typeDef.name, event))
         //Not sure if this is the cleanest way to do this
-        awaitType(typeDef.name)
+        getTypeByName(typeDef.name)
       })
   }
 
@@ -147,10 +147,10 @@ object SubjectLibrary extends LazyLogging {
     * @param typeName name of the type to find
     * @return future that will resolve when the given type has been found
     */
-  private def awaitType(typeName: String): Future[SubjectType] = {
+  def getTypeByName(typeName: String): Future[SubjectType] = {
     if (!subjects.get().contains(typeName)) {
       akka.pattern.after(SubjectAwaitTime milliseconds, using = system.scheduler)(
-        awaitType(typeName))
+        getTypeByName(typeName))
     } else {
       Future {
         subjects.get()(typeName)

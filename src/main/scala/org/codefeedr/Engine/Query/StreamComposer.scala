@@ -18,17 +18,23 @@
 
 package org.codefeedr.Engine.Query
 
+import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
+import org.codefeedr.Model.{SubjectType, TrailedRecord}
+
 /**
-  * Classes that represent a query execution tree
   * Created by Niels on 31/07/2017.
   */
-abstract class QueryTree
+abstract class StreamComposer {
+  /**
+    * Compose the datastream on the given environment
+    * @param env Environment to compose the stream on
+    * @return Datastream result of the composiiton
+    */
+  abstract def Compose(env: StreamExecutionEnvironment): DataStream[TrailedRecord]
 
-case class SubjectSource(subjectType: String) extends QueryTree
-
-case class Join(left: QueryTree,
-                right: QueryTree,
-                columnsLeft: Array[String],
-                columnsRight: Array[String],
-                SelectLeft: Array[String],
-                SelectRight: Array[String])
+  /**
+    * Retrieve typeinformation of the type that is exposed by the Streamcomposer (Note that these types are not necessarily registered on kafka, as it might be an intermediate type)
+    * @return Typeinformation of the type exposed by the stream
+    */
+  abstract def GetExposedType(): SubjectType
+}
