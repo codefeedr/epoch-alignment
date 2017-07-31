@@ -31,35 +31,35 @@ import org.codefeedr.Model.{ActionType, Record, RecordSourceTrail, SubjectType}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-
 /**
   * Created by Niels on 31/07/2017.
   */
-class KafkaGenericSink[TData: ru.TypeTag: ClassTag](subjectType: SubjectType) extends RichSinkFunction[TData]
-  with LazyLogging {
-    @transient private lazy val kafkaProducer = {
-      val producer = KafkaProducerFactory.create[RecordSourceTrail, Record]
-      logger.debug(s"Producer $uuid created for topic $topic")
-      producer
-    }
+class KafkaGenericSink[TData: ru.TypeTag: ClassTag](subjectType: SubjectType)
+    extends RichSinkFunction[TData]
+    with LazyLogging {
+  @transient private lazy val kafkaProducer = {
+    val producer = KafkaProducerFactory.create[RecordSourceTrail, Record]
+    logger.debug(s"Producer $uuid created for topic $topic")
+    producer
+  }
 
-    @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
+  @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
 
-    //A random identifier for this specific sink
-    @transient private lazy val uuid = UUID.randomUUID()
+  //A random identifier for this specific sink
+  @transient private lazy val uuid = UUID.randomUUID()
 
-    @transient private lazy val Transformer = SubjectFactory.GetMapper[TData](subjectType)
+  @transient private lazy val Transformer = SubjectFactory.GetMapper[TData](subjectType)
 
-    override def close(): Unit = {
-      kafkaProducer.close()
-    }
+  override def close(): Unit = {
+    kafkaProducer.close()
+  }
 
-    override def open(parameters: Configuration): Unit = {
-      super.open(parameters)
-    }
+  override def open(parameters: Configuration): Unit = {
+    super.open(parameters)
+  }
 
-    override def invoke(value: TData): Unit = {
-      val data = Transformer.apply(value)
-      kafkaProducer.send(new ProducerRecord(topic, data.trail, data.record))
-    }
+  override def invoke(value: TData): Unit = {
+    val data = Transformer.apply(value)
+    kafkaProducer.send(new ProducerRecord(topic, data.trail, data.record))
+  }
 }

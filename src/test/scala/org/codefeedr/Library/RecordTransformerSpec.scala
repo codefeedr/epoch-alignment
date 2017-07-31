@@ -16,16 +16,10 @@ class BagTestPojo(var intValue: Int)
 class RecordTransformerSpec
     extends AsyncFlatSpec
     with Matchers
-    with LazyLogging
-    with BeforeAndAfterAll {
+    with LazyLogging {
 
 
-  override def afterAll() {
-    SubjectLibrary.UnRegisterSubject("BagTestInt")
-    SubjectLibrary.UnRegisterSubject("BagTestString")
-    SubjectLibrary.UnRegisterSubject("BagTestObject")
-    SubjectLibrary.UnRegisterSubject("BagTestPojo")
-  }
+
 
   "A RecordTransformer" should "be able to map integers to a bag" in {
     val t = SubjectTypeFactory.getSubjectType[BagTestInt]

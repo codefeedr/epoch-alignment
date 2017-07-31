@@ -26,4 +26,7 @@ abstract class QueryTree
 
 case class SubjectSource(subjectType: String) extends QueryTree
 
-case class Join(left: QueryTree, right: QueryTree, columnsLeft: Array[String], columnsRight: Array[String])
+case class Join(left: QueryTree,
+                right: QueryTree,
+                columnsLeft: Array[String],
+                columnsRight: Array[String])

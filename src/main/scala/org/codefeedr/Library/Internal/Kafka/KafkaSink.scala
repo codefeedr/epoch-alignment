@@ -27,8 +27,6 @@ import org.apache.kafka.clients.producer.ProducerRecord
 import org.codefeedr.Library.Internal.{KeyFactory, RecordTransformer}
 import org.codefeedr.Model._
 
-
-
 /**
   * A simple kafka sink, pushing all records to a kafka topic of the given subjecttype
   * Not thread safe
@@ -37,7 +35,8 @@ import org.codefeedr.Model._
   */
 class KafkaSink(subjectType: SubjectType)
     extends RichSinkFunction[TrailedRecord]
-    with LazyLogging with Serializable {
+    with LazyLogging
+    with Serializable {
   @transient private lazy val kafkaProducer = {
     val producer = KafkaProducerFactory.create[RecordSourceTrail, Record]
     logger.debug(s"Producer $uuid created for topic $topic")

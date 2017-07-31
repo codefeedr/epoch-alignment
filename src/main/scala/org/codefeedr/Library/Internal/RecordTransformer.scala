@@ -23,7 +23,6 @@ import org.codefeedr.Model._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-
 /**
   * Created by Niels on 23/07/2017.
   * This class can transform objects of any type into records used in the query engine
@@ -46,9 +45,6 @@ class RecordTransformer[TData: ru.TypeTag: ClassTag](subjectType: SubjectType) {
           o.get(obj)
       })
   }
-
-
-
 
   /**
     * Setters, this can be used in the future for non-case class objects
@@ -75,7 +71,7 @@ class RecordTransformer[TData: ru.TypeTag: ClassTag](subjectType: SubjectType) {
     * @return The record that can be pushed into the query engine
     */
   def Bag(data: TData, action: ActionType.Value): Record = {
-    Record(accessors.map(o => o(data)), subjectType.uuid,action)
+    Record(accessors.map(o => o(data)), subjectType.uuid, action)
   }
 
   /**

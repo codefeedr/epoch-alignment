@@ -52,7 +52,7 @@ class SubjectTypeFactorySpec extends FlatSpec with Matchers {
   "A SubjectTypeFactory" should "Create a new type with int properties" in {
     val t: SubjectType = SubjectTypeFactory.getSubjectType[A]
     assert(t.name == "A")
-    assert(t.properties.length == 4)
+    assert(t.properties.length == 1)
     for (p <- t.properties.filter(o => o.name=="i")) {
       assert(p.propertyType == PropertyType.Number)
     }
@@ -61,7 +61,7 @@ class SubjectTypeFactorySpec extends FlatSpec with Matchers {
   "A SubjectTypeFactory" should "Create a new type with string properties" in {
     val t: SubjectType = SubjectTypeFactory.getSubjectType[B]
     assert(t.name == "B")
-    assert(t.properties.length == 4)
+    assert(t.properties.length == 1)
     for (p <- t.properties.filter(o => o.name=="s")) {
       assert(p.propertyType == PropertyType.String)
     }
@@ -70,7 +70,7 @@ class SubjectTypeFactorySpec extends FlatSpec with Matchers {
   "A SubjectTypeFactory" should "Use any for unknown objects" in {
     val t: SubjectType = SubjectTypeFactory.getSubjectType[C]
     assert(t.name == "C")
-    assert(t.properties.length == 4)
+    assert(t.properties.length == 1)
     for (p <- t.properties.filter(o => o.name=="o")) {
       assert(p.propertyType == PropertyType.Any)
     }
@@ -79,7 +79,7 @@ class SubjectTypeFactorySpec extends FlatSpec with Matchers {
   "A SubjectTypeFactory" should " support multiple properties" in {
     val t: SubjectType = SubjectTypeFactory.getSubjectType[D]
     assert(t.name == "D")
-    assert(t.properties.length == 6)
+    assert(t.properties.length == 3)
     for (p <- t.properties) {
       p.name match {
         case "o" => assert(p.propertyType == PropertyType.Any)
@@ -93,7 +93,7 @@ class SubjectTypeFactorySpec extends FlatSpec with Matchers {
   "A SubjectTypeFactory" should " support case classes " in {
     val t: SubjectType = SubjectTypeFactory.getSubjectType[E]
     assert(t.name == "E")
-    assert(t.properties.length == 6)
+    assert(t.properties.length == 3)
     for (p <- t.properties) {
       p.name match {
         case "o" => assert(p.propertyType == PropertyType.Any)
@@ -107,7 +107,7 @@ class SubjectTypeFactorySpec extends FlatSpec with Matchers {
   "A SubjectTypeFactory" should " ignore definitions " in {
     val t: SubjectType = SubjectTypeFactory.getSubjectType[F]
     assert(t.name == "F")
-    assert(t.properties.length == 4)
+    assert(t.properties.length == 1)
     for (p <- t.properties) {
       p.name match {
         case "o" => assert(p.propertyType == PropertyType.Any)

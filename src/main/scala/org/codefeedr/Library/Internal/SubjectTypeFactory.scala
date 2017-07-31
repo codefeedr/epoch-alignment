@@ -35,10 +35,9 @@ object SubjectTypeFactory extends LazyLogging {
   private def getSubjectTypeInternal(t: ru.Type, idFields: Array[String]): SubjectType = {
     val properties = t.members.filter(o => !o.isMethod)
     val name = t.typeSymbol.name.toString
-    SubjectType(
-      newTypeIdentifier().toString,
-      name,
-      properties.map(getRecordProperty(idFields)).toArray)
+    SubjectType(newTypeIdentifier().toString,
+                name,
+                properties.map(getRecordProperty(idFields)).toArray)
   }
 
   private def getRecordProperty(idFields: Array[String])(symbol: ru.Symbol): RecordProperty = {
@@ -53,7 +52,6 @@ object SubjectTypeFactory extends LazyLogging {
 
     RecordProperty(name, propertyType, idFields.contains(name))
   }
-
 
   /**
     * Get a subject type for the query language, type tag required

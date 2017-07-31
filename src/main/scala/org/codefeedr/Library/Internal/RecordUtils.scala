@@ -10,6 +10,7 @@ import scala.reflect.ClassTag
   * Utility class for some subjectType
   */
 class RecordUtils(subjectType: SubjectType) {
+
   /**
     * Get a property of the given name and type on a record
     * Not optimized, but easy to use
@@ -31,7 +32,6 @@ class RecordUtils(subjectType: SubjectType) {
     * @throws Exception when the property was not found or the record type has not yet been registered in the library
     */
   def getValue(property: String)(implicit record: Record): Any = {
-    val subjectUuid = record.data(0).asInstanceOf[String]
     val propertyIndex = subjectType.properties
       .indexWhere(o => o.name == property)
     if (propertyIndex == -1) {

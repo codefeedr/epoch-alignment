@@ -32,7 +32,7 @@ import scala.language.postfixOps
   */
 class KeyFactory(typeInfo: SubjectType, sinkUuid: UUID) {
   private var Sequence: Long = 0
-  private var uuid = uuidToByteArray(sinkUuid,Array[Byte](16),0, 16)
+  private var uuid = uuidToByteArray(sinkUuid, new Array[Byte](16), 0, 16)
 
   /**
     * Set of indices that contain id fields
@@ -46,10 +46,10 @@ class KeyFactory(typeInfo: SubjectType, sinkUuid: UUID) {
     * @return A bytearray as key
     */
   val GetKey: (Record) => Source = {
-    if(typeInfo.properties.exists(o => o.id)) {
+    if (typeInfo.properties.exists(o => o.id)) {
       GetIndexKey
-    } else {
-      _:Record => GetIncrementalKey()
+    } else { _: Record =>
+      GetIncrementalKey()
     }
   }
 
@@ -59,14 +59,14 @@ class KeyFactory(typeInfo: SubjectType, sinkUuid: UUID) {
     */
   private def GetIncrementalKey(): Source = {
     val sequence = Sequence
-    Sequence+=1
+    Sequence += 1
     Source(uuid, Array(sequence.toByte))
   }
 
   /**
     * Generates a key based on the indices defined on the record
-    * @param record
-    * @return
+    * @param record The record to get the key from
+    * @return The key
     */
   private def GetIndexKey(record: Record): Source = {
     val stream: ByteArrayOutputStream = new ByteArrayOutputStream()
