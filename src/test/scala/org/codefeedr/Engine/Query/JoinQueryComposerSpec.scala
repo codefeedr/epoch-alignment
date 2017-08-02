@@ -1,8 +1,8 @@
 package org.codefeedr.Engine.Query
 
 import com.typesafe.scalalogging.LazyLogging
-import org.codefeedr.Library.Internal.SubjectTypeFactory
-import org.codefeedr.Model.{PropertyType, SubjectType}
+import org.codefeedr.Library.Internal.{RecordTransformer, SubjectTypeFactory}
+import org.codefeedr.Model._
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, FlatSpec, Matchers}
 
 case class SomeJoinTestObject(id: Int, name: String)
@@ -19,6 +19,9 @@ class JoinQueryComposerSpec
 
   val objectType: SubjectType = SubjectTypeFactory.getSubjectType[SomeJoinTestObject](Array("id"))
   val messageType: SubjectType = SubjectTypeFactory.getSubjectType[SomeJoinTestMessage](Array("id"))
+
+  val objectTransformer = new RecordTransformer[SomeJoinTestObject](objectType)
+  val messageTransformer = new RecordTransformer[SomeJoinTestMessage](messageType)
 
   "A buildComposedType method" should "create a new type with the given alias" in {
     val mergedType = JoinQueryComposer.buildComposedType(objectType,
@@ -71,4 +74,31 @@ class JoinQueryComposerSpec
                                           "testObjectMessages"))
   }
 
+  "A PartialKeyFunction" should "Produce equal key when the key values are equal" in {
+    val keyFunction =
+      JoinQueryComposer.buildPartialKeyFunction(Array("objectId", "message"), messageType)
+    val m1 =
+      TrailedRecord(messageTransformer.Bag(SomeJoinTestMessage(1, 1, "a message", Array[Byte]()),
+                                           ActionType.Add),
+                    Source(Array[Byte](), Array[Byte]()))
+    val m2 =
+      TrailedRecord(messageTransformer.Bag(SomeJoinTestMessage(2, 1, "a message", Array[Byte]()),
+                                           ActionType.Add),
+                    Source(Array[Byte](), Array[Byte]()))
+    assert(keyFunction(m1).sameElements(keyFunction(m2)))
+  }
+  "A PartialKeyFunction" should "Produce different keys when the key values are not equal" in {
+    val keyFunction =
+      JoinQueryComposer.buildPartialKeyFunction(Array("objectId", "message"), messageType)
+    val m1 =
+      TrailedRecord(messageTransformer.Bag(SomeJoinTestMessage(1, 1, "a message", Array[Byte]()),
+                                           ActionType.Add),
+                    Source(Array[Byte](), Array[Byte]()))
+    val m2 =
+      TrailedRecord(
+        messageTransformer.Bag(SomeJoinTestMessage(2, 1, "another message", Array[Byte]()),
+                               ActionType.Add),
+        Source(Array[Byte](), Array[Byte]()))
+    assert(!keyFunction(m1).sameElements(keyFunction(m2)))
+  }
 }

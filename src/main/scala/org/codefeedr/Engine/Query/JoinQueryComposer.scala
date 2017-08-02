@@ -80,8 +80,9 @@ object JoinQueryComposer {
     * @param subjectType Type of the subject to join
     * @return
     */
-  private def buildPartialKeyFunction(properties: Array[String],
-                                      subjectType: SubjectType): (TrailedRecord) => Array[Any] = {
+  private[Query] def buildPartialKeyFunction(
+      properties: Array[String],
+      subjectType: SubjectType): (TrailedRecord) => Array[Any] = {
     val indices = new RecordUtils(subjectType).getIndices(properties)
     (r: TrailedRecord) =>
       for (i <- indices) yield r.record.data(i)
