@@ -75,7 +75,6 @@ object SubjectLibrary extends LazyLogging {
     r.getOrElse(RegisterAndAwaitType[T]())
   }
 
-
   /**
     * Retrieve a subjectType for some scala type
     * Returns none if type was not registered yet (or not yet found in the library)

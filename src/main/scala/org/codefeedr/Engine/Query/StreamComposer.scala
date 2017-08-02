@@ -25,6 +25,7 @@ import org.codefeedr.Model.{SubjectType, TrailedRecord}
   * Created by Niels on 31/07/2017.
   */
 abstract class StreamComposer {
+
   /**
     * Compose the datastream on the given environment
     * @param env Environment to compose the stream on

@@ -18,7 +18,6 @@
 
 package org.codefeedr.Engine.Query
 
-
 import org.codefeedr.Library.SubjectLibrary
 
 import scala.concurrent.Future
@@ -30,13 +29,23 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object StreamComposerFactory {
   def GetComposer(query: QueryTree): Future[StreamComposer] = {
     query match {
-      case SubjectSource(subjectName) => SubjectLibrary.getTypeByName(subjectName).map(o => new SourceStreamComposer(o))
-      case Join(left, right, keysLeft, keysRight, selectLeft, selectRight,alias) =>
+      case SubjectSource(subjectName) =>
+        SubjectLibrary.getTypeByName(subjectName).map(o => new SourceStreamComposer(o))
+      case Join(left, right, keysLeft, keysRight, selectLeft, selectRight, alias) =>
         for {
           leftComposer <- GetComposer(left)
           rightComposer <- GetComposer(right)
-          joinedType <- JoinQueryComposer.buildComposedType(leftComposer.GetExposedType(), rightComposer.GetExposedType(),query.asInstanceOf[Join])
-        } yield new JoinQueryComposer(leftComposer, rightComposer,joinedType,keysLeft, keysRight, selectLeft, selectRight)
+          joinedType <- JoinQueryComposer.buildComposedType(leftComposer.GetExposedType(),
+                                                            rightComposer.GetExposedType(),
+                                                            query.asInstanceOf[Join])
+        } yield
+          new JoinQueryComposer(leftComposer,
+                                rightComposer,
+                                joinedType,
+                                keysLeft,
+                                keysRight,
+                                selectLeft,
+                                selectRight)
       case _ => throw new NotImplementedError("not implemented query subtree")
     }
   }

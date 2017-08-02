@@ -32,4 +32,5 @@ case class Join(left: QueryTree,
                 columnsRight: List[String],
                 SelectLeft: List[String],
                 SelectRight: List[String],
-                alias:String) extends QueryTree
+                alias: String)
+    extends QueryTree
