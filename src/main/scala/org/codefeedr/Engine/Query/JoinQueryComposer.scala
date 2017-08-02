@@ -104,7 +104,7 @@ object JoinQueryComposer {
     (data: JoinRecord) =>
       {
         data match {
-          case Left(d)  => leftMapper(d)
+          case Left(d) => leftMapper(d)
           case Right(d) => rightMapper(d)
         }
       }
