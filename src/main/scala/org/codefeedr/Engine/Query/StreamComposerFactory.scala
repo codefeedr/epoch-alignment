@@ -39,13 +39,7 @@ object StreamComposerFactory {
                                                             rightComposer.GetExposedType(),
                                                             query.asInstanceOf[Join])
         } yield
-          new JoinQueryComposer(leftComposer,
-                                rightComposer,
-                                joinedType,
-                                keysLeft,
-                                keysRight,
-                                selectLeft,
-                                selectRight)
+          new JoinQueryComposer(leftComposer, rightComposer, joinedType, query.asInstanceOf[Join])
       case _ => throw new NotImplementedError("not implemented query subtree")
     }
   }

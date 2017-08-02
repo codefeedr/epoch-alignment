@@ -22,16 +22,18 @@ import java.util.UUID
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.codefeedr.Library.Internal.RecordUtils
 import org.codefeedr.Library.SubjectLibrary
-import org.codefeedr.Model.{ComposedSource, Record, SubjectType, TrailedRecord}
+import org.codefeedr.Model._
 
 import scala.collection.TraversableOnce
 import scala.collection.immutable
 import scala.concurrent.Future
-
 import org.apache.flink.api.scala._
+import org.codefeedr.Util
 
-case class JoinState(left: immutable.HashMap[Array[Byte], Record],
-                     right: immutable.HashMap[Array[Byte], Record])
+import scala.collection.immutable.HashMap
+
+case class JoinState(left: immutable.HashMap[RecordSourceTrail, Record],
+                     right: immutable.HashMap[RecordSourceTrail, Record])
 
 abstract class JoinRecord(data: TrailedRecord)
 
@@ -65,27 +67,67 @@ object JoinQueryComposer {
     SubjectLibrary.RegisterAndAwaitType(generatedType)
   }
 
-  def buildMergeFunction(leftType: SubjectType,
-                         rightType: SubjectType,
-                         resultType: SubjectType,
-                         join: Join,
-                         nodeId: Array[Byte]): Unit = {
-    val indicesLeft = new RecordUtils(leftType).getIndices(join.SelectLeft)
-    val indicesRight = new RecordUtils(rightType).getIndices(join.SelectRight)
-
-    (left: TrailedRecord, right: TrailedRecord) =>
-      {
-        val newKey = ComposedSource(nodeId, Array(left.trail, right.trail))
-        val newRecord = Array[Any]()
-      }
-  }
-
-  def getJoinKeyFunction(properties: Array[String],
-                         subjectType: SubjectType): (TrailedRecord) => Array[Any] = {
+  /**
+    * Internal function retrieving a function to obtain the join key for one side of the join
+    * @param properties properties that should be represented in the join key
+    * @param subjectType Type of the subject to join
+    * @return
+    */
+  private def buildPartialKeyFunction(properties: Array[String],
+                                      subjectType: SubjectType): (TrailedRecord) => Array[Any] = {
     val indices = new RecordUtils(subjectType).getIndices(properties)
     (r: TrailedRecord) =>
       for (i <- indices) yield r.record.data(i)
 
+  }
+
+  /**
+    * Build a function that maps a JoinRecord to its join key, using the defined types and join object
+    * @param leftType Type of the objects on the left side of the join
+    * @param rightType Type of the objects on the right side of the join
+    * @param join The join definition itself
+    * @return
+    */
+  def buildKeyFunction(leftType: SubjectType,
+                       rightType: SubjectType,
+                       join: Join): (JoinRecord) => Array[Any] = {
+    val leftMapper = JoinQueryComposer.buildPartialKeyFunction(join.columnsLeft, leftType)
+    val rightMapper =
+      JoinQueryComposer.buildPartialKeyFunction(join.columnsRight, rightType)
+    (data: JoinRecord) =>
+      {
+        data match {
+          case Left(d) => leftMapper(d)
+          case Right(d) => rightMapper(d)
+        }
+      }
+  }
+
+  /**
+    * Build a function that can merge two trailedRecords together using the defined selects in the passed join
+    * @param leftType subjectType of the left record
+    * @param rightType subjectType of the right record
+    * @param resultType subjectType of the result of the merge function
+    * @param join the join definition
+    * @param nodeId to be assigned identifier of this node in the query graph
+    */
+  def buildMergeFunction(
+      leftType: SubjectType,
+      rightType: SubjectType,
+      resultType: SubjectType,
+      join: Join,
+      nodeId: Array[Byte]): (TrailedRecord, TrailedRecord, ActionType.Value) => TrailedRecord = {
+    @transient lazy val indicesLeft = new RecordUtils(leftType).getIndices(join.SelectLeft)
+    @transient lazy val indicesRight = new RecordUtils(rightType).getIndices(join.SelectRight)
+
+    (left: TrailedRecord, right: TrailedRecord, actionType: ActionType.Value) =>
+      {
+        val newKey = ComposedSource(nodeId, Array(left.trail, right.trail))
+        val newData = indicesLeft
+          .map(o => left.record.data(o))
+          .union(indicesRight.map(o => right.record.data(o)))
+        TrailedRecord(Record(newData, resultType.uuid, actionType), newKey)
+      }
   }
 
 }
@@ -96,30 +138,27 @@ object JoinQueryComposer {
 class JoinQueryComposer(leftComposer: StreamComposer,
                         rightComposer: StreamComposer,
                         subjectType: SubjectType,
-                        keysLeft: Array[String],
-                        keysRight: Array[String],
-                        selectLeft: Array[String],
-                        selectRight: Array[String])
+                        join: Join)
     extends StreamComposer {
   override def Compose(env: StreamExecutionEnvironment): DataStream[TrailedRecord] = {
     val leftStream = leftComposer.Compose(env).map(o => Left(o).asInstanceOf[JoinRecord])
     val rightStream = rightComposer.Compose(env).map(o => Right(o).asInstanceOf[JoinRecord])
     val union = leftStream.union(rightStream)
 
-    //Build the keyFunction
-    val leftMapper = JoinQueryComposer.getJoinKeyFunction(keysLeft, leftComposer.GetExposedType())
-    val rightMapper =
-      JoinQueryComposer.getJoinKeyFunction(keysRight, rightComposer.GetExposedType())
-    val keyFunction = (data: JoinRecord) => {
-      data match {
-        case Left(d)  => leftMapper(d)
-        case Right(d) => rightMapper(d)
-      }
-    }
+    //Build function to obtain the key
+    val keyFunction = JoinQueryComposer.buildKeyFunction(leftComposer.GetExposedType(),
+                                                         rightComposer.GetExposedType(),
+                                                         join)
+    //Build function to merge both types
+    val mergeFunction = JoinQueryComposer.buildMergeFunction(
+      leftComposer.GetExposedType(),
+      rightComposer.GetExposedType(),
+      subjectType,
+      join,
+      Util.UuidToByteArray(UUID.randomUUID()))
+    val mapSideJoinFunction = mapSideInnerJoin(mergeFunction) _
     val keyed = union.keyBy(keyFunction)
-
-    val mapped = keyed.flatMapWithState(mapSideInnerJoin)
-
+    val mapped = keyed.flatMapWithState(mapSideJoinFunction)
     mapped
   }
 
@@ -131,9 +170,45 @@ class JoinQueryComposer(leftComposer: StreamComposer,
     * @param inputState current state for the joinkey of the record
     */
   def mapSideInnerJoin(
+      mergeFunction: (TrailedRecord, TrailedRecord, ActionType.Value) => TrailedRecord)(
       record: JoinRecord,
       inputState: Option[JoinState]): (TraversableOnce[TrailedRecord], Option[JoinState]) = {
-    throw new NotImplementedError()
+
+    //This can be done more efficiently, but would make the method even more unreadable
+    val currentState = inputState.getOrElse(
+      JoinState(new HashMap[RecordSourceTrail, Record], new HashMap[RecordSourceTrail, Record]))
+
+    //Seperate handling for left and right
+    record match {
+
+      case Left(data) =>
+        data.record.action match {
+          case ActionType.Add =>
+            //Update the join state by adding the new element
+            val state = Some(
+              JoinState(currentState.left + (data.trail -> data.record), currentState.right))
+            //Joining a new left element will emit all combinations of the left element with all existing right elements
+            val traversable =
+              currentState.right.map(t =>
+                mergeFunction(data, TrailedRecord(t._2, t._1), ActionType.Add))
+            (traversable, state)
+          case _ => throw new NotImplementedError()
+        }
+
+      case Right(data) =>
+        data.record.action match {
+          case ActionType.Add =>
+            val state = Some(
+              //Update the join state by adding the new element
+              JoinState(currentState.left, currentState.right + (data.trail -> data.record)))
+            //Joining a new right element will emit all combinations of the right element with all existing left elements
+            val traversable =
+              currentState.left.map(t =>
+                mergeFunction(TrailedRecord(t._2, t._1), data, ActionType.Add))
+            (traversable, state)
+          case _ => throw new NotImplementedError()
+        }
+    }
   }
 
   /**

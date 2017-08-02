@@ -51,9 +51,9 @@ object SubjectTypeFactory extends LazyLogging {
     //logger.debug(f"property type of $name: ${symbol.info.toString}")
     val propertyType = symbol.typeSignature.typeSymbol.name.toString match {
       case "scala.Int" => PropertyType.Number
-      case "Int"       => PropertyType.Number
-      case "String"    => PropertyType.String
-      case _           => PropertyType.Any
+      case "Int" => PropertyType.Number
+      case "String" => PropertyType.String
+      case _ => PropertyType.Any
     }
 
     RecordProperty(name, propertyType, idFields.contains(name))

@@ -22,6 +22,7 @@ import java.util.UUID
 
 import org.apache.commons.lang3.Conversion.uuidToByteArray
 import org.codefeedr.Model.{Record, Source, SubjectType}
+import org.codefeedr.Util
 
 import scala.language.postfixOps
 
@@ -32,7 +33,7 @@ import scala.language.postfixOps
   */
 class KeyFactory(typeInfo: SubjectType, sinkUuid: UUID) {
   private var Sequence: Long = 0
-  private var uuid = uuidToByteArray(sinkUuid, new Array[Byte](16), 0, 16)
+  private var uuid = Util.UuidToByteArray(sinkUuid)
 
   /**
     * Set of indices that contain id fields
