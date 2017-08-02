@@ -61,7 +61,8 @@ object JoinQueryComposer {
       new RecordUtils(rightType).getIndices(join.SelectLeft).map(o => rightType.properties(o))
     val generatedType =
       SubjectType(UUID.randomUUID().toString, join.alias, propertiesLeft.union(propertiesRight))
-    SubjectLibrary.RegisterAndAwaitType(generatedType) //Call the library. The actual returned type might differ from the passed type
+    //Call the library. The actual returned type might differ from the passed type
+    SubjectLibrary.RegisterAndAwaitType(generatedType)
   }
 
   def buildMergeFunction(leftType: SubjectType,
@@ -74,13 +75,13 @@ object JoinQueryComposer {
 
     (left: TrailedRecord, right: TrailedRecord) =>
       {
-        val newKey = ComposedSource(nodeId, List(left.trail, right.trail))
-        val newRecord = List[Any]()
+        val newKey = ComposedSource(nodeId, Array(left.trail, right.trail))
+        val newRecord = Array[Any]()
       }
   }
 
-  def getJoinKeyFunction(properties: List[String],
-                         subjectType: SubjectType): (TrailedRecord) => List[Any] = {
+  def getJoinKeyFunction(properties: Array[String],
+                         subjectType: SubjectType): (TrailedRecord) => Array[Any] = {
     val indices = new RecordUtils(subjectType).getIndices(properties)
     (r: TrailedRecord) =>
       for (i <- indices) yield r.record.data(i)
@@ -95,10 +96,10 @@ object JoinQueryComposer {
 class JoinQueryComposer(leftComposer: StreamComposer,
                         rightComposer: StreamComposer,
                         subjectType: SubjectType,
-                        keysLeft: List[String],
-                        keysRight: List[String],
-                        selectLeft: List[String],
-                        selectRight: List[String])
+                        keysLeft: Array[String],
+                        keysRight: Array[String],
+                        selectLeft: Array[String],
+                        selectRight: Array[String])
     extends StreamComposer {
   override def Compose(env: StreamExecutionEnvironment): DataStream[TrailedRecord] = {
     val leftStream = leftComposer.Compose(env).map(o => Left(o).asInstanceOf[JoinRecord])
@@ -111,7 +112,7 @@ class JoinQueryComposer(leftComposer: StreamComposer,
       JoinQueryComposer.getJoinKeyFunction(keysRight, rightComposer.GetExposedType())
     val keyFunction = (data: JoinRecord) => {
       data match {
-        case Left(d) => leftMapper(d)
+        case Left(d)  => leftMapper(d)
         case Right(d) => rightMapper(d)
       }
     }
