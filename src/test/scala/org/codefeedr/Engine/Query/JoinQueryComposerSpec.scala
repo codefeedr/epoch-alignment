@@ -101,4 +101,49 @@ class JoinQueryComposerSpec
         Source(Array[Byte](), Array[Byte]()))
     assert(!keyFunction(m1).sameElements(keyFunction(m2)))
   }
+
+  "A MergeFunction" should "map properties from two types into a single type based on given fieldnames, and compose the source trail" in {
+    val mergedType = JoinQueryComposer.buildComposedType(objectType,
+                                                         messageType,
+                                                         Array("name"),
+                                                         Array("id", "message", "dataBag"),
+                                                         "testObjectMessages")
+
+    val o = TrailedRecord(objectTransformer.Bag(SomeJoinTestObject(1, "object 1"), ActionType.Add),
+                          Source(Array[Byte](), Array[Byte](10.toByte)))
+    val m =
+      TrailedRecord(
+        messageTransformer.Bag(SomeJoinTestMessage(2, 3, "a message", Array[Byte](4.toByte)),
+                               ActionType.Add),
+        Source(Array[Byte](), Array[Byte](11.toByte)))
+
+    val mergeFn = JoinQueryComposer.buildMergeFunction(objectType,
+                                                       messageType,
+                                                       mergedType,
+                                                       Array("name"),
+                                                       Array("id", "message", "dataBag"),
+                                                       Array[Byte](12.toByte))
+
+    val merged = mergeFn(o, m, ActionType.Add)
+    assert(merged.record.data(0).asInstanceOf[String].equals("object 1"))
+    assert(merged.record.data(1).asInstanceOf[Int] == 2)
+    assert(merged.record.data(2).asInstanceOf[String].equals("a message"))
+    assert(merged.record.data(3).asInstanceOf[Array[Byte]](0) == 4.toByte)
+    assert(merged.record.action == ActionType.Add)
+    assert(merged.trail.isInstanceOf[ComposedSource])
+    assert(merged.trail.asInstanceOf[ComposedSource].SourceId(0) == 12.toByte)
+    assert(
+      merged.trail
+        .asInstanceOf[ComposedSource]
+        .pointers(0)
+        .asInstanceOf[Source]
+        .Key(0) == 10.toByte)
+    assert(
+      merged.trail
+        .asInstanceOf[ComposedSource]
+        .pointers(1)
+        .asInstanceOf[Source]
+        .Key(0) == 11.toByte)
+  }
+
 }

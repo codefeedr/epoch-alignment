@@ -100,8 +100,7 @@ object JoinQueryComposer {
                        rightType: SubjectType,
                        join: Join): (JoinRecord) => Array[Any] = {
     val leftMapper = JoinQueryComposer.buildPartialKeyFunction(join.columnsLeft, leftType)
-    val rightMapper =
-      JoinQueryComposer.buildPartialKeyFunction(join.columnsRight, rightType)
+    val rightMapper = JoinQueryComposer.buildPartialKeyFunction(join.columnsRight, rightType)
     (data: JoinRecord) =>
       {
         data match {
@@ -116,17 +115,19 @@ object JoinQueryComposer {
     * @param leftType subjectType of the left record
     * @param rightType subjectType of the right record
     * @param resultType subjectType of the result of the merge function
-    * @param join the join definition
+    * @param selectLeft names of the fields that should be selected from the left object type
+    * @param selectRight names of the fields that should be selected from the right object type
     * @param nodeId to be assigned identifier of this node in the query graph
     */
   def buildMergeFunction(
       leftType: SubjectType,
       rightType: SubjectType,
       resultType: SubjectType,
-      join: Join,
+      selectLeft: Array[String],
+      selectRight: Array[String],
       nodeId: Array[Byte]): (TrailedRecord, TrailedRecord, ActionType.Value) => TrailedRecord = {
-    @transient lazy val indicesLeft = new RecordUtils(leftType).getIndices(join.SelectLeft)
-    @transient lazy val indicesRight = new RecordUtils(rightType).getIndices(join.SelectRight)
+    @transient lazy val indicesLeft = new RecordUtils(leftType).getIndices(selectLeft)
+    @transient lazy val indicesRight = new RecordUtils(rightType).getIndices(selectRight)
 
     (left: TrailedRecord, right: TrailedRecord, actionType: ActionType.Value) =>
       {
@@ -136,38 +137,6 @@ object JoinQueryComposer {
           .union(indicesRight.map(o => right.record.data(o)))
         TrailedRecord(Record(newData, resultType.uuid, actionType), newKey)
       }
-  }
-
-}
-
-/**
-  * Created by Niels on 31/07/2017.
-  */
-class JoinQueryComposer(leftComposer: StreamComposer,
-                        rightComposer: StreamComposer,
-                        subjectType: SubjectType,
-                        join: Join)
-    extends StreamComposer {
-  override def Compose(env: StreamExecutionEnvironment): DataStream[TrailedRecord] = {
-    val leftStream = leftComposer.Compose(env).map(o => Left(o).asInstanceOf[JoinRecord])
-    val rightStream = rightComposer.Compose(env).map(o => Right(o).asInstanceOf[JoinRecord])
-    val union = leftStream.union(rightStream)
-
-    //Build function to obtain the key
-    val keyFunction = JoinQueryComposer.buildKeyFunction(leftComposer.GetExposedType(),
-                                                         rightComposer.GetExposedType(),
-                                                         join)
-    //Build function to merge both types
-    val mergeFunction = JoinQueryComposer.buildMergeFunction(
-      leftComposer.GetExposedType(),
-      rightComposer.GetExposedType(),
-      subjectType,
-      join,
-      Util.UuidToByteArray(UUID.randomUUID()))
-    val mapSideJoinFunction = mapSideInnerJoin(mergeFunction) _
-    val keyed = union.keyBy(keyFunction)
-    val mapped = keyed.flatMapWithState(mapSideJoinFunction)
-    mapped
   }
 
   /**
@@ -217,6 +186,38 @@ class JoinQueryComposer(leftComposer: StreamComposer,
           case _ => throw new NotImplementedError()
         }
     }
+  }
+}
+
+/**
+  * Created by Niels on 31/07/2017.
+  */
+class JoinQueryComposer(leftComposer: StreamComposer,
+                        rightComposer: StreamComposer,
+                        subjectType: SubjectType,
+                        join: Join)
+    extends StreamComposer {
+  override def Compose(env: StreamExecutionEnvironment): DataStream[TrailedRecord] = {
+    val leftStream = leftComposer.Compose(env).map(o => Left(o).asInstanceOf[JoinRecord])
+    val rightStream = rightComposer.Compose(env).map(o => Right(o).asInstanceOf[JoinRecord])
+    val union = leftStream.union(rightStream)
+
+    //Build function to obtain the key
+    val keyFunction = JoinQueryComposer.buildKeyFunction(leftComposer.GetExposedType(),
+                                                         rightComposer.GetExposedType(),
+                                                         join)
+    //Build function to merge both types
+    val mergeFunction = JoinQueryComposer.buildMergeFunction(
+      leftComposer.GetExposedType(),
+      rightComposer.GetExposedType(),
+      subjectType,
+      join.SelectLeft,
+      join.SelectRight,
+      Util.UuidToByteArray(UUID.randomUUID()))
+    val mapSideJoinFunction = JoinQueryComposer.mapSideInnerJoin(mergeFunction) _
+    val keyed = union.keyBy(keyFunction)
+    val mapped = keyed.flatMapWithState(mapSideJoinFunction)
+    mapped
   }
 
   /**
