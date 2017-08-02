@@ -48,23 +48,30 @@ object JoinQueryComposer {
   /**
     * Builds a typedefinition for the joined type
     * Called by StreamComposer before creating the JoinQueryComposer
-    * Communicates with potential other instances using the subjectLibrary, for registration of the alias
+    * Note that the type is not yet registered in the subjectLibrary after this method is called
     * @param leftType subject type of the left source
     * @param rightType subject type of the right source
-    * @param join Definition of the join
+    * @param selectLeft properties from left type that should be selected
+    * @param selectRight properties from right type that should be selected
+    * @param alias Name of the type created
     * @return
     */
   def buildComposedType(leftType: SubjectType,
                         rightType: SubjectType,
-                        join: Join): Future[SubjectType] = {
+                        selectLeft: Array[String],
+                        selectRight: Array[String],
+                        alias: String): SubjectType = {
+    if (selectLeft.union(selectRight).length != selectLeft.union(selectRight).distinct.length) {
+      throw new Exception(
+        "A join can not select the same field twice or select a equally named field from both left and right side")
+    }
+
     val propertiesLeft =
-      new RecordUtils(leftType).getIndices(join.SelectLeft).map(o => leftType.properties(o))
+      new RecordUtils(leftType).getIndices(selectLeft).map(o => leftType.properties(o))
     val propertiesRight =
-      new RecordUtils(rightType).getIndices(join.SelectLeft).map(o => rightType.properties(o))
-    val generatedType =
-      SubjectType(UUID.randomUUID().toString, join.alias, propertiesLeft.union(propertiesRight))
-    //Call the library. The actual returned type might differ from the passed type
-    SubjectLibrary.RegisterAndAwaitType(generatedType)
+      new RecordUtils(rightType).getIndices(selectRight).map(o => rightType.properties(o))
+
+    SubjectType(UUID.randomUUID().toString, alias, propertiesLeft.union(propertiesRight))
   }
 
   /**
@@ -97,7 +104,7 @@ object JoinQueryComposer {
     (data: JoinRecord) =>
       {
         data match {
-          case Left(d) => leftMapper(d)
+          case Left(d)  => leftMapper(d)
           case Right(d) => rightMapper(d)
         }
       }
