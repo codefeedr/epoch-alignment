@@ -22,6 +22,7 @@ import org.codefeedr.Library.{SubjectFactory, SubjectLibrary}
 import org.codefeedr.Model.{SubjectType, TrailedRecord}
 
 import scala.concurrent.Future
+import org.apache.flink.api.scala._
 
 /**
   * Created by Niels on 31/07/2017.

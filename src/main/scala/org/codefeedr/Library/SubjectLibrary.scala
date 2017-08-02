@@ -75,6 +75,7 @@ object SubjectLibrary extends LazyLogging {
     r.getOrElse(RegisterAndAwaitType[T]())
   }
 
+
   /**
     * Retrieve a subjectType for some scala type
     * Returns none if type was not registered yet (or not yet found in the library)
@@ -124,21 +125,33 @@ object SubjectLibrary extends LazyLogging {
   }
 
   /**
-    * Register a type and resolve the future once the type has been registered
+    * Registers the given subjectType, or if the subjecttype with the same name has already been registered, returns the already registered type with the same name
     * Returns a value once the requested type has been found
+    * TODO: Acually check if the returned type is the same, and deal with duplicate type definitions
     * @tparam T Type to register
     * @return The subjectType once it has been registered
     */
   private def RegisterAndAwaitType[T: ru.TypeTag](): Future[SubjectType] = {
     val typeDef = SubjectTypeFactory.getSubjectType[T]
-    logger.debug(s"Registering new type ${typeDef.name}")
+    RegisterAndAwaitType(typeDef)
+  }
+
+  /**
+    * Register a type and resolve the future once the type has been registered
+    * Returns a value once the requested type has been found
+    * TODO: Acually check if the returned type is the same, and deal with duplicate type definitions
+    * @param subjectType Type to register or retrieve
+    * @return The subjectType once it has been registered
+    */
+  def RegisterAndAwaitType(subjectType: SubjectType)(): Future[SubjectType] = {
+    logger.debug(s"Registering new type ${subjectType.name}")
     KafkaController
-      .GuaranteeTopic(typeDef.name)
+      .GuaranteeTopic(subjectType.name)
       .flatMap(_ => {
-        val event = SubjectTypeEvent(typeDef, ActionType.Add)
-        subjectTypeProducer.send(new ProducerRecord(SubjectTopic, typeDef.name, event))
+        val event = SubjectTypeEvent(subjectType, ActionType.Add)
+        subjectTypeProducer.send(new ProducerRecord(SubjectTopic, subjectType.name, event))
         //Not sure if this is the cleanest way to do this
-        getTypeByName(typeDef.name)
+        getTypeByName(subjectType.name)
       })
   }
 

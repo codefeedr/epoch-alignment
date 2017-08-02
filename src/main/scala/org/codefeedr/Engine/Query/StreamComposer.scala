@@ -30,11 +30,11 @@ abstract class StreamComposer {
     * @param env Environment to compose the stream on
     * @return Datastream result of the composiiton
     */
-  abstract def Compose(env: StreamExecutionEnvironment): DataStream[TrailedRecord]
+  def Compose(env: StreamExecutionEnvironment): DataStream[TrailedRecord]
 
   /**
     * Retrieve typeinformation of the type that is exposed by the Streamcomposer (Note that these types are not necessarily registered on kafka, as it might be an intermediate type)
     * @return Typeinformation of the type exposed by the stream
     */
-  abstract def GetExposedType(): SubjectType
+  def GetExposedType(): SubjectType
 }
