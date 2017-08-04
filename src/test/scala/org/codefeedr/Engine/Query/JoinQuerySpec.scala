@@ -128,6 +128,7 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
       //Add sources and wait for them to finish
       await(CreateSourceEnvironment(objects))
       await(CreateSourceEnvironment(groups))
+      await(Future{Thread.sleep(3000)})
       await(SubjectLibrary.UnRegisterSubject("TestJoinObject"))
       await(SubjectLibrary.UnRegisterSubject("TestJoinGroup"))
       assert(TestCollector.collectedData.size == 3)
@@ -154,6 +155,7 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
       //Add sources and wait for them to finish
       await(CreateSourceEnvironment(objects))
       await(CreateSourceEnvironment(groups))
+      await(Future{Thread.sleep(3000)})
       await(SubjectLibrary.UnRegisterSubject("TestJoinObject"))
       await(SubjectLibrary.UnRegisterSubject("TestJoinGroup"))
       assert(TestCollector.collectedData.isEmpty)
@@ -180,6 +182,7 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
       //Add sources and wait for them to finish
       await(CreateSourceEnvironment(objects))
       await(CreateSourceEnvironment(groups))
+      await(Future{Thread.sleep(3000)})
       await(SubjectLibrary.UnRegisterSubject("TestJoinObject"))
       await(SubjectLibrary.UnRegisterSubject("TestJoinGroup"))
       assert(TestCollector.collectedData.size == 9)
