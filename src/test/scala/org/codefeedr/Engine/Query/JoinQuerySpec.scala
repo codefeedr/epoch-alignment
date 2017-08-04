@@ -68,7 +68,7 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
     ExecutionContext.fromExecutorService(Executors.newWorkStealingPool(16))
 
   override def beforeEach() {
-    TestCollector.reset()
+
   }
 
 
@@ -120,6 +120,7 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
     val query = Join(SubjectSource("TestJoinObject"), SubjectSource("TestJoinGroup"), Array("group"), Array("id"), Array("id", "message"), Array("name"), "groupedMessage")
 
     async {
+      TestCollector.reset()
       val queryEnvJob = CreateQueryEnvironment(query)
       //Lift the exception so you actually see it
       queryEnvJob.onFailure {
@@ -147,6 +148,7 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
     val query = Join(SubjectSource("TestJoinObject"), SubjectSource("TestJoinGroup"), Array("group"), Array("id"), Array("id", "message"), Array("name"), "groupedMessage")
 
     async {
+      TestCollector.reset()
       val queryEnvJob = CreateQueryEnvironment(query)
       //Lift the exception so you actually see it
       queryEnvJob.onFailure {
@@ -174,6 +176,7 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
     val query = Join(SubjectSource("TestJoinObject"), SubjectSource("TestJoinGroup"), Array("group"), Array("id"), Array("id", "message"), Array("name"), "groupedMessage")
 
     async {
+      TestCollector.reset()
       val queryEnvJob = CreateQueryEnvironment(query)
       //Lift the exception so you actually see it
       queryEnvJob.onFailure {
