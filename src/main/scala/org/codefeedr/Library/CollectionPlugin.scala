@@ -29,7 +29,9 @@ import scala.reflect.runtime.{universe => ru}
   * @param data The data of the collection
   * @tparam TData Type of the data
   */
-class CollectionPlugin[TData:ru.TypeTag: ClassTag:TypeInformation](data: Array[TData]) extends SimplePlugin[TData] {
+class CollectionPlugin[TData: ru.TypeTag: ClassTag: TypeInformation](data: Array[TData])
+    extends SimplePlugin[TData] {
+
   /**
     * Method to implement as plugin to expose a datastream
     * Make sure this implementation is serializable!!!!

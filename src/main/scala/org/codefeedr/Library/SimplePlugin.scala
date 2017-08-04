@@ -40,7 +40,7 @@ abstract class SimplePlugin[TData: ru.TypeTag: ClassTag] extends AbstractPlugin 
     * @param env The environment to create the datastream om
     * @return The datastream itself
     */
-  def GetStream(env:StreamExecutionEnvironment):DataStream[TData]
+  def GetStream(env: StreamExecutionEnvironment): DataStream[TData]
 
   override def CreateSubjectType(): SubjectType = {
     SubjectTypeFactory.getSubjectType[TData]
@@ -49,12 +49,12 @@ abstract class SimplePlugin[TData: ru.TypeTag: ClassTag] extends AbstractPlugin 
   /**
     * Composes the source on the given environment
     * Registers all meta-information
-    * @param env
+    * @param env the environment where the source should be composed on
     * @return
     */
-  override def Compose(env:StreamExecutionEnvironment):Future[Unit] = async {
+  override def Compose(env: StreamExecutionEnvironment): Future[Unit] = async {
     val sink = await(SubjectFactory.GetSink[TData])
-    val stream =GetStream(env)
+    val stream = GetStream(env)
     val withSink = stream.addSink(sink)
   }
 

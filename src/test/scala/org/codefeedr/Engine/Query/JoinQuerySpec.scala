@@ -21,15 +21,16 @@ package org.codefeedr.Engine.Query
 import java.util.concurrent.Executors
 
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
-import org.codefeedr.Library.TestCollector.logger
-import org.codefeedr.Library.{CollectionPlugin, MyOwnIntegerObject, SimplePlugin}
+import org.apache.flink.api.common.typeinfo.TypeInformation
+import org.apache.flink.streaming.api.scala.{StreamExecutionEnvironment, _}
+import org.codefeedr.Library.{CollectionPlugin, SubjectLibrary}
 import org.codefeedr.Model.TrailedRecord
-import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, Matchers}
+import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach, Matchers}
 
 import scala.collection.mutable
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
-import org.apache.flink.streaming.api.scala._
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
+import scala.reflect.ClassTag
+import scala.reflect.runtime.{universe => ru}
 
 case class TestJoinObject(id:Long, group:Long, message:String)
 case class TestJoinGroup(id:Long, name: String)
@@ -39,6 +40,11 @@ import scala.async.Async.{async, await}
 
 
 object TestCollector extends LazyLogging {
+
+  def reset(): Unit = {
+    collectedData = mutable.MutableList[TrailedRecord]()
+  }
+
   var collectedData: mutable.MutableList[TrailedRecord] =
     mutable.MutableList[TrailedRecord]()
 
@@ -55,58 +61,129 @@ object TestCollector extends LazyLogging {
   * Integration test for a join
   * Created by Niels on 04/08/2017.
   */
-class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAll with LazyLogging{
+class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach with LazyLogging{
+  var counter:Int = 0
 
   implicit override def executionContext: ExecutionContextExecutor =
     ExecutionContext.fromExecutorService(Executors.newWorkStealingPool(16))
 
-  "An innerjoin Query" should " produce a record for each join candidate" in {
-
-    val objects = Array(
-      TestJoinObject(1,1,"Message 1"),
-      TestJoinObject(2,1,"Message 2"),
-      TestJoinObject(3,1,"Message 3")
-    )
-    val groups = Array(TestJoinGroup(1,"Group 2"))
-    async {
-      async {
-        val env1 = StreamExecutionEnvironment.createLocalEnvironment()
-        env1.setParallelism(2)
-        logger.debug("Composing env1")
-        await(new CollectionPlugin(objects).Compose(env1))
-        logger.debug("Starting env1")
-        env1.execute()
-        logger.debug("env1 completed")
-      }
-      async {
-        val env2 = StreamExecutionEnvironment.createLocalEnvironment()
-        env2.setParallelism(2)
-        logger.debug("Composing env2")
-        await(new CollectionPlugin(groups).Compose(env2))
-        logger.debug("Starting env2")
-        env2.execute()
-        logger.debug("env2 completed")
-      }
-
-      async {
-        val query = Join(SubjectSource("TestJoinObject"), SubjectSource("TestJoinGroup"), List("group"), List("id"), List("id", "message"), List("name"), "groupedMessage")
-        val queryEnv = StreamExecutionEnvironment.createLocalEnvironment()
-        queryEnv.setParallelism(2)
-        logger.debug("Creating query Composer")
-        val composer = await(StreamComposerFactory.GetComposer(query))
-        logger.debug("Composing queryEnv")
-        val resultStream = composer.Compose(queryEnv)
-        resultStream.addSink(data => TestCollector.collect(data))
-        logger.debug("Starting queryEnv")
-        queryEnv.execute()
-        logger.debug("queryenv completed")
-      }
-    }
-    Thread.sleep(20000)
-
-
-    assert(TestCollector.collectedData.size == 3)
+  override def beforeEach() {
+    TestCollector.reset()
   }
 
+
+  /**
+    * Utility function for tests that creates a source environment with the given data
+    * @param data the data to create environment for
+    * @tparam T type of the data
+    * @return A future that returns when all data has been pushed to kakfa
+    */
+  def CreateSourceEnvironment[T:ru.TypeTag: ClassTag:TypeInformation](data: Array[T]):Future[Unit] = async {
+    val nr = counter
+    counter+=1
+    val env = StreamExecutionEnvironment.createLocalEnvironment()
+    env.setParallelism(1)
+    logger.debug(s"Composing env$nr")
+    await(new CollectionPlugin(data).Compose(env))
+    logger.debug(s"Starting env$nr")
+    env.execute()
+    logger.debug(s"env$nr completed")
+  }
+
+  /**
+    * Utility function that creates a query environment, and probably never completes
+    * @param query The query environment
+    * @return When the environment is done, probably never
+    */
+  def CreateQueryEnvironment(query: QueryTree):Future[Unit] = async {
+    val queryEnv = StreamExecutionEnvironment.createLocalEnvironment()
+    queryEnv.setParallelism(2)
+    logger.debug("Creating query Composer")
+    val composer = await(StreamComposerFactory.GetComposer(query))
+    logger.debug("Composing queryEnv")
+    val resultStream = composer.Compose(queryEnv)
+    resultStream.addSink(data => TestCollector.collect(data))
+    logger.debug("Starting queryEnv")
+    queryEnv.execute()
+    logger.debug("queryenv completed")
+  }
+
+
+  "An innerjoin Query" should " produce a record for each join candidate" in {
+    val objects = Array(
+      TestJoinObject(1, 1, "Message 1"),
+      TestJoinObject(2, 1, "Message 2"),
+      TestJoinObject(3, 1, "Message 3")
+    )
+
+    val groups = Array(TestJoinGroup(1, "Group 1"))
+    val query = Join(SubjectSource("TestJoinObject"), SubjectSource("TestJoinGroup"), Array("group"), Array("id"), Array("id", "message"), Array("name"), "groupedMessage")
+
+    async {
+      val queryEnvJob = CreateQueryEnvironment(query)
+      //Lift the exception so you actually see it
+      queryEnvJob.onFailure {
+        case t: Throwable => throw t
+      }
+      //Add sources and wait for them to finish
+      await(CreateSourceEnvironment(objects))
+      await(CreateSourceEnvironment(groups))
+      await(SubjectLibrary.UnRegisterSubject("TestJoinObject"))
+      await(SubjectLibrary.UnRegisterSubject("TestJoinGroup"))
+      assert(TestCollector.collectedData.size == 3)
+    }
+  }
+
+
+  "An innerjoin Query" should " produce no records if no join candidates are found" in {
+    val objects = Array(
+      TestJoinObject(1, 1, "Message 1"),
+      TestJoinObject(2, 1, "Message 2"),
+      TestJoinObject(3, 1, "Message 3")
+    )
+
+    val groups = Array(TestJoinGroup(2, "Group 2"),TestJoinGroup(3, "Group 3"))
+    val query = Join(SubjectSource("TestJoinObject"), SubjectSource("TestJoinGroup"), Array("group"), Array("id"), Array("id", "message"), Array("name"), "groupedMessage")
+
+    async {
+      val queryEnvJob = CreateQueryEnvironment(query)
+      //Lift the exception so you actually see it
+      queryEnvJob.onFailure {
+        case t: Throwable => throw t
+      }
+      //Add sources and wait for them to finish
+      await(CreateSourceEnvironment(objects))
+      await(CreateSourceEnvironment(groups))
+      await(SubjectLibrary.UnRegisterSubject("TestJoinObject"))
+      await(SubjectLibrary.UnRegisterSubject("TestJoinGroup"))
+      assert(TestCollector.collectedData.isEmpty)
+    }
+  }
+
+
+  "An innerjoin Query" should " Only produce events for new combinations" in {
+    val objects = Array(
+      TestJoinObject(1, 1, "Message 1"),
+      TestJoinObject(2, 1, "Message 2"),
+      TestJoinObject(3, 1, "Message 3")
+    )
+
+    val groups = Array(TestJoinGroup(1, "Group 1"),TestJoinGroup(1, "Group 1 duplicate 1"),TestJoinGroup(1, "Group 1 duplicate 2"))
+    val query = Join(SubjectSource("TestJoinObject"), SubjectSource("TestJoinGroup"), Array("group"), Array("id"), Array("id", "message"), Array("name"), "groupedMessage")
+
+    async {
+      val queryEnvJob = CreateQueryEnvironment(query)
+      //Lift the exception so you actually see it
+      queryEnvJob.onFailure {
+        case t: Throwable => throw t
+      }
+      //Add sources and wait for them to finish
+      await(CreateSourceEnvironment(objects))
+      await(CreateSourceEnvironment(groups))
+      await(SubjectLibrary.UnRegisterSubject("TestJoinObject"))
+      await(SubjectLibrary.UnRegisterSubject("TestJoinGroup"))
+      assert(TestCollector.collectedData.size == 9)
+    }
+  }
 
 }

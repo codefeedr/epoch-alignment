@@ -27,11 +27,11 @@ import scala.concurrent.Future
   * Created by Niels on 04/08/2017.
   */
 abstract class AbstractPlugin {
+
   /**
     * Create a new subjecttype for the plugin
     * @return
     */
-  def CreateSubjectType():SubjectType
-  def Compose(env:StreamExecutionEnvironment):Future[Unit]
+  def CreateSubjectType(): SubjectType
+  def Compose(env: StreamExecutionEnvironment): Future[Unit]
 }
-
