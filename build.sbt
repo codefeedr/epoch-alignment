@@ -39,6 +39,7 @@ libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.1.0"
 libraryDependencies += "org.apache.kafka" % "kafka-clients" % "0.11.0.0"
 libraryDependencies += "com.jsuereth" %% "scala-arm" % "2.0"
 libraryDependencies += "org.scala-lang.modules" % "scala-java8-compat_2.11" % "0.8.0"
+libraryDependencies += "org.scala-lang.modules" %% "scala-async" % "0.9.6"
 
 mainClass in assembly := Some("org.codefeedr.Job")
 

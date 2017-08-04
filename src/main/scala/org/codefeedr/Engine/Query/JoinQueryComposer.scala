@@ -58,7 +58,7 @@ object JoinQueryComposer {
     val propertiesLeft =
       new RecordUtils(leftType).getIndices(join.SelectLeft).map(o => leftType.properties(o))
     val propertiesRight =
-      new RecordUtils(rightType).getIndices(join.SelectLeft).map(o => rightType.properties(o))
+      new RecordUtils(rightType).getIndices(join.SelectRight).map(o => rightType.properties(o))
     val generatedType =
       SubjectType(UUID.randomUUID().toString, join.alias, propertiesLeft.union(propertiesRight))
     SubjectLibrary.RegisterAndAwaitType(generatedType) //Call the library. The actual returned type might differ from the passed type
