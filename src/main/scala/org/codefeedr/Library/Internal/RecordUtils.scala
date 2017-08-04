@@ -45,7 +45,7 @@ class RecordUtils(subjectType: SubjectType) {
     * @param properties Properties to find on the subject
     * @return array of indices, sorted in the same order as the given properties array
     */
-  def getIndices(properties: List[String]): List[Int] = {
+  def getIndices(properties: Array[String]): Array[Int] = {
     val r = properties.map(prop => subjectType.properties.indexWhere(o => o.name == prop))
     if (r.contains(-1)) {
       throw new Exception(s"Some properties given to getSubjectType did not exist: ${properties

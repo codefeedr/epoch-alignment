@@ -22,9 +22,8 @@ import java.util.UUID
 
 import org.apache.commons.lang3.Conversion.uuidToByteArray
 import org.codefeedr.Model.ActionType
+import org.codefeedr.Util
 import org.scalatest.{FlatSpec, Matchers}
-
-
 
 case class KeyFactoryTestClass(a: String, b: String, c: Int)
 
@@ -50,7 +49,7 @@ class KeyFactorySpec extends FlatSpec with Matchers {
     val transformer = new RecordTransformer[KeyFactoryTestClass](t)
     val record1 = transformer.Bag(KeyFactoryTestClass("a", "b", 12), ActionType.Add)
     val k1 = factory.GetKey(record1)
-    assert(k1.SourceId sameElements uuidToByteArray(uuid, new Array[Byte](16), 0, 16))
+    assert(k1.SourceId sameElements Util.UuidToByteArray(uuid))
   }
 
   "A KeyFactory" should "Use keyfields to generate a key if defined" in {

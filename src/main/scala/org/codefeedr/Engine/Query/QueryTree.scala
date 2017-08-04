@@ -28,9 +28,9 @@ case class SubjectSource(subjectType: String) extends QueryTree
 
 case class Join(left: QueryTree,
                 right: QueryTree,
-                columnsLeft: List[String],
-                columnsRight: List[String],
-                SelectLeft: List[String],
-                SelectRight: List[String],
+                columnsLeft: Array[String],
+                columnsRight: Array[String],
+                SelectLeft: Array[String],
+                SelectRight: Array[String],
                 alias: String)
     extends QueryTree

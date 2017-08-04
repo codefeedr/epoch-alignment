@@ -34,10 +34,11 @@ case class TrailedRecord(record: Record, trail: RecordSourceTrail) extends Seria
   * Created by Niels on 12/07/2017.
   */
 @SerialVersionUID(100L)
-case class Record(data: List[Any], typeUuid: String, action: ActionType.Value) extends Serializable
+case class Record(data: Array[Any], typeUuid: String, action: ActionType.Value)
+    extends Serializable
 
 @SerialVersionUID(100L)
-case class SubjectType(uuid: String, name: String, properties: List[RecordProperty])
+case class SubjectType(uuid: String, name: String, properties: Array[RecordProperty])
     extends Serializable
 
 @SerialVersionUID(100L)
@@ -49,7 +50,7 @@ case class SubjectTypeEvent(subjectType: SubjectType, actionType: ActionType.Val
 abstract class RecordSourceTrail
 
 @SerialVersionUID(100L)
-case class ComposedSource(SourceId: Array[Byte], pointers: List[RecordSourceTrail])
+case class ComposedSource(SourceId: Array[Byte], pointers: Array[RecordSourceTrail])
     extends RecordSourceTrail
     with Serializable
 

@@ -18,8 +18,9 @@
 
 package org.codefeedr.Library.Internal.Kafka
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
+import java.io._
 import java.util
+
 import scala.reflect._
 
 /**
@@ -31,6 +32,8 @@ class KafkaDeserializer[T: ClassTag](implicit ct: ClassTag[T])
 
   override def close(): Unit = {}
 
+  @transient lazy private val loader: ClassLoader = Thread.currentThread().getContextClassLoader
+
   /**
     * Prevent deserialisation of something that already is a byte array, as those are also not serialized
     */
@@ -39,7 +42,13 @@ class KafkaDeserializer[T: ClassTag](implicit ct: ClassTag[T])
       data.asInstanceOf[T]
     } else { (data: Array[Byte]) =>
       {
-        val ois = new ObjectInputStream(new ByteArrayInputStream(data))
+        val ois = new ObjectInputStream(new ByteArrayInputStream(data)) {
+
+          //Custom class loader needed
+          //See: https://issues.scala-lang.org/browse/SI-9777
+          override def resolveClass(desc: ObjectStreamClass): Class[_] =
+            Class.forName(desc.getName, false, loader)
+        }
         val value = ois.readObject()
         ois.close()
         value.asInstanceOf[T]
