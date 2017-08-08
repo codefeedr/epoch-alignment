@@ -1,9 +1,10 @@
 language: scala
 scala: 2.11.11
-sudo: false
+sudo: required
 
 services:
   - mongodb
+  - docker
 
 before_cache:
   # Cleanup the cached directories to avoid unnecessary cache updates
@@ -16,6 +17,10 @@ cache:
     - $HOME/.sbt
 
 
+before_install:
+  - docker build -t codefeedr/kafka containers/kafka/
+  - docker run -p 2181:2181 -p 9092:9092 --name kafka --rm --env ADVERTISED_HOST=localhost --env ADVERTISED_PORT=9092 codefeedr/kafka
+  - docker ps -a
 matrix:
   include:
     - env: SCALA_VERSION=2.11.11
@@ -26,6 +31,5 @@ before_script:
   - sleep 10
 
 script:
-  - ./setuptravis.sh
   - sbt scalafmt::test
   - sbt test
