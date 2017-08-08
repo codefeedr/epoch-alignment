@@ -21,7 +21,7 @@ cache:
 
 before_install:
   - docker build -t codefeedr/kafka containers/kafka/
-  - docker run -p 2181:2181 -p 9092:9092 --name kafka --rm --env ADVERTISED_HOST=localhost --env ADVERTISED_PORT=9092 codefeedr/kafka
+  - docker run -p 2181:2181 -p 9092:9092 --name kafka --rm --env ADVERTISED_HOST=localhost --env ADVERTISED_PORT=9092 -d codefeedr/kafka
   - docker ps -a
 matrix:
   include:
