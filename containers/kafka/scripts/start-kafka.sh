@@ -14,6 +14,8 @@ if [ ! -z "$HELIOS_PORT_kafka" ]; then
     ADVERTISED_PORT=`echo $HELIOS_PORT_kafka | cut -d':' -f 2`
 fi
 
+
+: <<'END'
 # Set the external host and port
 if [ ! -z "$ADVERTISED_HOST" -a ! -z "$ADVERTISED_PORT" ]; then
     echo "advertised host: $ADVERTISED_HOST"
@@ -24,28 +26,50 @@ if [ ! -z "$ADVERTISED_HOST" -a ! -z "$ADVERTISED_PORT" ]; then
         sed -r -i "s/#(listeners)=(.*)/\1=$LISTENERS/g" $KAFKA_HOME/config/server.properties
      else
         echo "Adding new config"
-        echo "\n listeners=$LISTENERS" >> $KAFKA_HOME/config/server.properties
+        echo -e "\n" >> $KAFKA_HOME/config/server.properties
+        echo "listeners=$LISTENERS" >> $KAFKA_HOME/config/server.properties
     fi
 else
     echo "No listener configured"
 fi
 
+
+END
+
+# Set the external host and port
+if [ ! -z "$ADVERTISED_HOST" ]; then
+    echo "advertised host: $ADVERTISED_HOST"
+    if grep -q "^advertised.host.name" $KAFKA_HOME/config/server.properties; then
+        sed -r -i "s/#(advertised.host.name)=(.*)/\1=$ADVERTISED_HOST/g" $KAFKA_HOME/config/server.properties
+    else
+        echo "advertised.host.name=$ADVERTISED_HOST" >> $KAFKA_HOME/config/server.properties
+    fi
+fi
+if [ ! -z "$ADVERTISED_PORT" ]; then
+    echo "advertised port: $ADVERTISED_PORT"
+    if grep -q "^advertised.port" $KAFKA_HOME/config/server.properties; then
+        sed -r -i "s/#(advertised.port)=(.*)/\1=$ADVERTISED_PORT/g" $KAFKA_HOME/config/server.properties
+    else
+        echo "advertised.port=$ADVERTISED_PORT" >> $KAFKA_HOME/config/server.properties
+    fi
+fi
+
 # Set the zookeeper chroot
-if [ ! -z "$ZK_CHROOT" ]; then
+#if [ ! -z "$ZK_CHROOT" ]; then
     # wait for zookeeper to start up
-    until /usr/share/zookeeper/bin/zkServer.sh status; do
-      sleep 0.1
-    done
+    #until /usr/share/zookeeper/bin/zkServer.sh status; do
+    #  sleep 0.1
+    #done
 
     # create the chroot node
-    echo "create /$ZK_CHROOT \"\"" | /usr/share/zookeeper/bin/zkCli.sh || {
-        echo "can't create chroot in zookeeper, exit"
-        exit 1
-    }
+    #echo "create /$ZK_CHROOT \"\"" | /usr/share/zookeeper/bin/zkCli.sh || {
+    #    echo "can't create chroot in zookeeper, exit"
+    #    exit 1
+    #}
 
     # configure kafka
-    sed -r -i "s/(zookeeper.connect)=(.*)/\1=localhost:2181\/$ZK_CHROOT/g" $KAFKA_HOME/config/server.properties
-fi
+    # sed -r -i "s/(zookeeper.connect)=(.*)/\1=localhost:2181\/$ZK_CHROOT/g" $KAFKA_HOME/config/server.properties
+# fi
 
 # Allow specification of log retention policies
 if [ ! -z "$LOG_RETENTION_HOURS" ]; then
