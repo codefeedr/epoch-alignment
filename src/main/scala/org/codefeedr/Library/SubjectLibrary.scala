@@ -177,7 +177,7 @@ object SubjectLibrary extends LazyLogging {
     * @param name: String
     * @return A future that returns when the subject has actually been removed from the library
     */
-  private[Library] def UnRegisterSubject(name: String): Future[Unit] = {
+  private[codefeedr] def UnRegisterSubject(name: String): Future[Unit] = {
     //Send the removal event
     //Note that this causes an exception if the type is actually not registered
     val event = SubjectTypeEvent(subjects.get()(name), ActionType.Remove)

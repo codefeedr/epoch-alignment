@@ -85,7 +85,7 @@ class JoinQueryComposerSpec
       TrailedRecord(messageTransformer.Bag(SomeJoinTestMessage(2, 1, "a message", Array[Byte]()),
                                            ActionType.Add),
                     Source(Array[Byte](), Array[Byte]()))
-    assert(keyFunction(m1).sameElements(keyFunction(m2)))
+    assert(keyFunction(m1).equals(keyFunction(m2)))
   }
   "A PartialKeyFunction" should "Produce different keys when the key values are not equal" in {
     val keyFunction =
@@ -99,7 +99,7 @@ class JoinQueryComposerSpec
         messageTransformer.Bag(SomeJoinTestMessage(2, 1, "another message", Array[Byte]()),
                                ActionType.Add),
         Source(Array[Byte](), Array[Byte]()))
-    assert(!keyFunction(m1).sameElements(keyFunction(m2)))
+    assert(!keyFunction(m1).equals(keyFunction(m2)))
   }
 
   "A MergeFunction" should "map properties from two types into a single type based on given fieldnames, and compose the source trail" in {

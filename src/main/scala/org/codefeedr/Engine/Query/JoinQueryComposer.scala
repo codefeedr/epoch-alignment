@@ -76,16 +76,19 @@ object JoinQueryComposer {
 
   /**
     * Internal function retrieving a function to obtain the join key for one side of the join
+    * Would prefer to use something better than a bytearray to string conversion here, but this is easiest for now
+    * Flink only supports Tuples or POJOS for key fields
+    * TODO: Change the key to something better than string
     * @param properties properties that should be represented in the join key
     * @param subjectType Type of the subject to join
     * @return
     */
   private[Query] def buildPartialKeyFunction(
       properties: Array[String],
-      subjectType: SubjectType): (TrailedRecord) => Array[Any] = {
+      subjectType: SubjectType): (TrailedRecord) => String = {
     val indices = new RecordUtils(subjectType).getIndices(properties)
     (r: TrailedRecord) =>
-      for (i <- indices) yield r.record.data(i)
+      new String(Util.serialize(for (i <- indices) yield r.record.data(i)).map(_.toChar))
 
   }
 
@@ -98,7 +101,7 @@ object JoinQueryComposer {
     */
   def buildKeyFunction(leftType: SubjectType,
                        rightType: SubjectType,
-                       join: Join): (JoinRecord) => Array[Any] = {
+                       join: Join): (JoinRecord) => String = {
     val leftMapper = JoinQueryComposer.buildPartialKeyFunction(join.columnsLeft, leftType)
     val rightMapper = JoinQueryComposer.buildPartialKeyFunction(join.columnsRight, rightType)
     (data: JoinRecord) =>
