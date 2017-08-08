@@ -15,7 +15,7 @@ if [ ! -z "$HELIOS_PORT_kafka" ]; then
 fi
 
 
-#: <<'END'
+: <<'END'
 # Set the external host and port
 if [ ! -z "$ADVERTISED_HOST" -a ! -z "$ADVERTISED_PORT" ]; then
     echo "advertised host: $ADVERTISED_HOST"
@@ -34,8 +34,8 @@ else
 fi
 
 
-#END
-: <<'END'
+END
+#: <<'END'
 # Set the external host and port
 if [ ! -z "$ADVERTISED_HOST" ]; then
     echo "advertised host: $ADVERTISED_HOST"
@@ -53,7 +53,7 @@ if [ ! -z "$ADVERTISED_PORT" ]; then
         echo "advertised.port=$ADVERTISED_PORT" >> $KAFKA_HOME/config/server.properties
     fi
 fi
-END
+#END
 # Set the zookeeper chroot
 #if [ ! -z "$ZK_CHROOT" ]; then
     # wait for zookeeper to start up
