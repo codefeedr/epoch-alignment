@@ -1,11 +1,24 @@
-package org.codefeedr.Library.Internal
+/*
+ *  Licensed to the Apache Software Foundation (ASF) under one
+ *  or more contributor license agreements.  See the NOTICE file
+ *  distributed with this work for additional information
+ *  regarding copyright ownership.  The ASF licenses this file
+ *  to you under the Apache License, Version 2.0 (the
+ *  "License"); you may not use this file except in compliance
+ *  with the License.  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 
-import org.apache.kafka.clients.admin.NewTopic
-import org.apache.kafka.common.internals.Topic
-import org.scalatest.{AsyncFlatSpec, FlatSpec, Matchers, fixture}
+package org.codefeedr.Library.Internal.Kafka
 
-import scala.collection.JavaConverters._
-import scala.concurrent._
+import org.scalatest.{AsyncFlatSpec, Matchers}
 
 /**
   * Created by Niels on 11/07/2017.
@@ -32,14 +45,5 @@ class KafkaControllerSpec extends AsyncFlatSpec with Matchers {
       _ <- KafkaController.GuaranteeTopic(testTopic)
       contains <- KafkaController.GetTopics().map(o => assert(o.contains(testTopic)))
     } yield contains
-  }
-
-  "A kafkaController" should "Not add a topic again if guarantee is called and the topic already exists" in {
-    for {
-      numTopics <- KafkaController.GetTopics().map(o => o.size)
-      _ <- KafkaController.GuaranteeTopic(testTopic)
-      topics1 <- KafkaController.GetTopics().map(o => assert(o.size == numTopics))
-      _ <- KafkaController.DeleteTopic(testTopic)
-    } yield topics1
   }
 }

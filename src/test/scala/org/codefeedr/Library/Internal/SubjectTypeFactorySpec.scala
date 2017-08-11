@@ -1,3 +1,21 @@
+/*
+ *  Licensed to the Apache Software Foundation (ASF) under one
+ *  or more contributor license agreements.  See the NOTICE file
+ *  distributed with this work for additional information
+ *  regarding copyright ownership.  The ASF licenses this file
+ *  to you under the Apache License, Version 2.0 (the
+ *  "License"); you may not use this file except in compliance
+ *  with the License.  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 package org.codefeedr.Library.Internal
 
 import org.codefeedr.Model.{PropertyType, SubjectType}
@@ -34,9 +52,8 @@ class SubjectTypeFactorySpec extends FlatSpec with Matchers {
   "A SubjectTypeFactory" should "Create a new type with int properties" in {
     val t: SubjectType = SubjectTypeFactory.getSubjectType[A]
     assert(t.name == "A")
-    assert(t.properties.size == 1)
-    for (p <- t.properties) {
-      assert(p.name == "i")
+    assert(t.properties.length == 1)
+    for (p <- t.properties.filter(o => o.name=="i")) {
       assert(p.propertyType == PropertyType.Number)
     }
   }
@@ -44,9 +61,8 @@ class SubjectTypeFactorySpec extends FlatSpec with Matchers {
   "A SubjectTypeFactory" should "Create a new type with string properties" in {
     val t: SubjectType = SubjectTypeFactory.getSubjectType[B]
     assert(t.name == "B")
-    assert(t.properties.size == 1)
-    for (p <- t.properties) {
-      assert(p.name == "s")
+    assert(t.properties.length == 1)
+    for (p <- t.properties.filter(o => o.name=="s")) {
       assert(p.propertyType == PropertyType.String)
     }
   }
@@ -54,9 +70,8 @@ class SubjectTypeFactorySpec extends FlatSpec with Matchers {
   "A SubjectTypeFactory" should "Use any for unknown objects" in {
     val t: SubjectType = SubjectTypeFactory.getSubjectType[C]
     assert(t.name == "C")
-    assert(t.properties.size == 1)
-    for (p <- t.properties) {
-      assert(p.name == "o")
+    assert(t.properties.length == 1)
+    for (p <- t.properties.filter(o => o.name=="o")) {
       assert(p.propertyType == PropertyType.Any)
     }
   }
@@ -64,12 +79,13 @@ class SubjectTypeFactorySpec extends FlatSpec with Matchers {
   "A SubjectTypeFactory" should " support multiple properties" in {
     val t: SubjectType = SubjectTypeFactory.getSubjectType[D]
     assert(t.name == "D")
-    assert(t.properties.size == 3)
+    assert(t.properties.length == 3)
     for (p <- t.properties) {
       p.name match {
         case "o" => assert(p.propertyType == PropertyType.Any)
         case "i" => assert(p.propertyType == PropertyType.Number)
         case "s" => assert(p.propertyType == PropertyType.String)
+        case _ => assert(true)
       }
     }
   }
@@ -77,12 +93,13 @@ class SubjectTypeFactorySpec extends FlatSpec with Matchers {
   "A SubjectTypeFactory" should " support case classes " in {
     val t: SubjectType = SubjectTypeFactory.getSubjectType[E]
     assert(t.name == "E")
-    assert(t.properties.size == 3)
+    assert(t.properties.length == 3)
     for (p <- t.properties) {
       p.name match {
         case "o" => assert(p.propertyType == PropertyType.Any)
         case "i" => assert(p.propertyType == PropertyType.Number)
         case "s" => assert(p.propertyType == PropertyType.String)
+        case _ => assert(true)
       }
     }
   }
@@ -90,13 +107,25 @@ class SubjectTypeFactorySpec extends FlatSpec with Matchers {
   "A SubjectTypeFactory" should " ignore definitions " in {
     val t: SubjectType = SubjectTypeFactory.getSubjectType[F]
     assert(t.name == "F")
-    assert(t.properties.size == 1)
+    assert(t.properties.length == 1)
     for (p <- t.properties) {
       p.name match {
         case "o" => assert(p.propertyType == PropertyType.Any)
         case "i" => assert(p.propertyType == PropertyType.Number)
         case "s" => assert(p.propertyType == PropertyType.String)
+        case _ => assert(true)
       }
     }
+  }
+
+  "A SubjectTypeFactory" should " expose keyfields given as parameter" in {
+    val t = SubjectTypeFactory.getSubjectType[D](Array("i", "s"))
+    assert(t.properties.filter(o => o.name == "i").count(o => o.id) == 1)
+    assert(t.properties.filter(o => o.name == "s").count(o => o.id) == 1)
+    assert(t.properties.filter(o => o.name == "o").count(o => o.id) == 0)
+  }
+
+  "A SubjectTypeFactory" should " throw an exception when keyfields do not exist" in {
+    assertThrows[Exception](SubjectTypeFactory.getSubjectType[D](Array("A")))
   }
 }
