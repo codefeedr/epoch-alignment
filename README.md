@@ -51,7 +51,7 @@ IntelliJ preferences panel.
 
 ### Option 1: Use docker (Advised)
 1. `docker build -t codefeedr/kafka containers/kafka/` From the root of the project, to build the image
-2. `docker run -p 2181:2181 -p 9092:9092 --name kafka --rm --env ADVERTISED_HOST=localhost --env ADVERTISED_PORT=9092 codefeedr/kafka` to run the container
+2. `docker run -p 2181:2181 -p 9092:9092 --name kafka --rm --env ADVERTISED_HOST=localhost --env ADVERTISED_PORT=9092 --env DELETE_TOPICS=true -d codefeedr/kafka` to run the container
 3. `docker stop kafka` to stop and remove the container again
 4. When using Docker Toolbox, use `docker-machine ip default` to obtain the IP of the docker machine. Place this IP in resources/reference.config for the kafka server and consumers.
 
