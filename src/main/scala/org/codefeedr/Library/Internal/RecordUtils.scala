@@ -1,14 +1,15 @@
 package org.codefeedr.Library.Internal
 
 import org.codefeedr.Library.SubjectLibrary
-import org.codefeedr.Model.Record
+import org.codefeedr.Model.{Record, SubjectType}
 
 import scala.reflect.ClassTag
 
 /**
   * Created by Niels on 28/07/2017.
+  * Utility class for some subjectType
   */
-object RecordUtils {
+class RecordUtils(subjectType: SubjectType) {
 
   /**
     * Get a property of the given name and type on a record
@@ -31,17 +32,26 @@ object RecordUtils {
     * @throws Exception when the property was not found or the record type has not yet been registered in the library
     */
   def getValue(property: String)(implicit record: Record): Any = {
-    val subjectUuid = record.data(0).asInstanceOf[String]
-    val sType = SubjectLibrary
-      .tryGetType(subjectUuid)
-      .getOrElse(
-        throw new Exception(
-          s"The type of the passed record (uuid: $subjectUuid) was not found yet in the library"))
-    val propertyIndex = sType.properties
+    val propertyIndex = subjectType.properties
       .indexWhere(o => o.name == property)
     if (propertyIndex == -1) {
-      throw new Exception(s"Property $propertyIndex was not found on type ${sType.name}")
+      throw new Exception(s"Property $propertyIndex was not found on type ${subjectType.name}")
     }
     record.data(propertyIndex)
+  }
+
+  /**
+    * Retrieve the respective indices of the properties on
+    * @param properties Properties to find on the subject
+    * @return array of indices, sorted in the same order as the given properties array
+    */
+  def getIndices(properties: Array[String]): Array[Int] = {
+    val r = properties.map(prop => subjectType.properties.indexWhere(o => o.name == prop))
+    if (r.contains(-1)) {
+      throw new Exception(s"Some properties given to getSubjectType did not exist: ${properties
+        .filter(o => !subjectType.properties.exists(p => p.name == o))
+        .mkString(", ")}")
+    }
+    r
   }
 }

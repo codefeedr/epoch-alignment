@@ -19,19 +19,12 @@
 package org.codefeedr.Library.Internal.Kafka
 
 import java.util.UUID
-import java.util.concurrent.{ExecutorService, Executors, TimeUnit}
 
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.flink.api.common.typeinfo.TypeInformation
-import org.apache.flink.api.java.typeutils.ResultTypeQueryable
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
-import org.apache.flink.streaming.api.scala._
-import org.codefeedr.Library.Internal.RecordTransformer
-import org.codefeedr.Model.{Record, RecordIdentifier, SubjectType}
+import org.codefeedr.Model.{Record, RecordSourceTrail, SubjectType, TrailedRecord}
 
 import scala.collection.JavaConverters._
-import scala.reflect.ClassTag
-import scala.reflect.runtime.{universe => ru}
 
 /**
   * Use a single thread to perform all polling operations on kafka
@@ -40,21 +33,17 @@ import scala.reflect.runtime.{universe => ru}
 /**
   * Created by Niels on 18/07/2017.
   */
-class KafkaSource[TData: TypeInformation: ru.TypeTag: ClassTag](subjectType: SubjectType)
-    extends RichSourceFunction[TData]
-    with ResultTypeQueryable[TData]
+class KafkaSource(subjectType: SubjectType)
+    extends RichSourceFunction[TrailedRecord]
     with LazyLogging {
 
   @transient private lazy val dataConsumer = {
-    val consumer = KafkaConsumerFactory.create[Array[Byte], Record](uuid.toString)
+    val consumer = KafkaConsumerFactory.create[RecordSourceTrail, Record](uuid.toString)
     consumer.subscribe(Iterable(topic).asJavaCollection)
     logger.debug(s"Source $uuid subscribed on topic $topic as group")
     consumer
   }
   @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
-
-  @transient private lazy val bagger = new RecordTransformer[TData]()
-
   @transient private lazy val uuid = UUID.randomUUID()
 
   //Make this configurable?
@@ -68,7 +57,7 @@ class KafkaSource[TData: TypeInformation: ru.TypeTag: ClassTag](subjectType: Sub
     running = false
   }
 
-  override def run(ctx: SourceFunction.SourceContext[TData]): Unit = {
+  override def run(ctx: SourceFunction.SourceContext[TrailedRecord]): Unit = {
     logger.debug(s"Source $uuid started running.")
 
     val refreshTask = new Runnable {
@@ -79,10 +68,7 @@ class KafkaSource[TData: TypeInformation: ru.TypeTag: ClassTag](subjectType: Sub
             .poll(PollTimeout)
             .iterator()
             .asScala
-            .map(o => {
-              val record = o.value()
-              bagger.Unbag(record)
-            })
+            .map(o => TrailedRecord(o.value(), o.key()))
             .foreach(ctx.collect)
           Thread.sleep(RefreshTime)
         }
@@ -93,9 +79,5 @@ class KafkaSource[TData: TypeInformation: ru.TypeTag: ClassTag](subjectType: Sub
     thread.setDaemon(true)
     thread.start()
     thread.join()
-    //KafkaSourceExecutor.pool.execute(refreshTask)
   }
-
-  override def getProducedType: TypeInformation[TData] = createTypeInformation[TData]
-
 }

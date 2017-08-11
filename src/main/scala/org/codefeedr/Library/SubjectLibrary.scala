@@ -81,7 +81,7 @@ object SubjectLibrary extends LazyLogging {
     * @tparam T The type to get typedefinition for
     * @return The type definition, or none if it was not present in the library yet
     */
-  def GetTypeSync[T: ru.TypeTag](): Option[SubjectType] = {
+  private def GetTypeSync[T: ru.TypeTag](): Option[SubjectType] = {
     val typeDef = SubjectTypeFactory.getSubjectType[T]
     subjects.get().get(typeDef.name)
   }
@@ -92,7 +92,7 @@ object SubjectLibrary extends LazyLogging {
     * @param uuid uuid of the type to try to get
     * @return Typedefinition, or none if it did not exist in the library
     */
-  def tryGetType(uuid: String): Option[SubjectType] = {
+  private def tryGetType(uuid: String): Option[SubjectType] = {
     val r = subjects.get().values.filter(o => o.uuid == uuid).toArray
     if (r.length == 1)
       Some(r(0))
@@ -124,21 +124,33 @@ object SubjectLibrary extends LazyLogging {
   }
 
   /**
-    * Register a type and resolve the future once the type has been registered
+    * Registers the given subjectType, or if the subjecttype with the same name has already been registered, returns the already registered type with the same name
     * Returns a value once the requested type has been found
+    * TODO: Acually check if the returned type is the same, and deal with duplicate type definitions
     * @tparam T Type to register
     * @return The subjectType once it has been registered
     */
   private def RegisterAndAwaitType[T: ru.TypeTag](): Future[SubjectType] = {
     val typeDef = SubjectTypeFactory.getSubjectType[T]
-    logger.debug(s"Registering new type ${typeDef.name}")
+    RegisterAndAwaitType(typeDef)
+  }
+
+  /**
+    * Register a type and resolve the future once the type has been registered
+    * Returns a value once the requested type has been found
+    * TODO: Acually check if the returned type is the same, and deal with duplicate type definitions
+    * @param subjectType Type to register or retrieve
+    * @return The subjectType once it has been registered
+    */
+  def RegisterAndAwaitType(subjectType: SubjectType)(): Future[SubjectType] = {
+    logger.debug(s"Registering new type ${subjectType.name}")
     KafkaController
-      .GuaranteeTopic(typeDef.name)
+      .GuaranteeTopic(subjectType.name)
       .flatMap(_ => {
-        val event = SubjectTypeEvent(typeDef, ActionType.Add)
-        subjectTypeProducer.send(new ProducerRecord(SubjectTopic, typeDef.name, event))
+        val event = SubjectTypeEvent(subjectType, ActionType.Add)
+        subjectTypeProducer.send(new ProducerRecord(SubjectTopic, subjectType.name, event))
         //Not sure if this is the cleanest way to do this
-        awaitType(typeDef.name)
+        getTypeByName(subjectType.name)
       })
   }
 
@@ -147,10 +159,10 @@ object SubjectLibrary extends LazyLogging {
     * @param typeName name of the type to find
     * @return future that will resolve when the given type has been found
     */
-  private def awaitType(typeName: String): Future[SubjectType] = {
+  def getTypeByName(typeName: String): Future[SubjectType] = {
     if (!subjects.get().contains(typeName)) {
       akka.pattern.after(SubjectAwaitTime milliseconds, using = system.scheduler)(
-        awaitType(typeName))
+        getTypeByName(typeName))
     } else {
       Future {
         subjects.get()(typeName)
@@ -165,7 +177,7 @@ object SubjectLibrary extends LazyLogging {
     * @param name: String
     * @return A future that returns when the subject has actually been removed from the library
     */
-  private[Library] def UnRegisterSubject(name: String): Future[Unit] = {
+  private[codefeedr] def UnRegisterSubject(name: String): Future[Unit] = {
     //Send the removal event
     //Note that this causes an exception if the type is actually not registered
     val event = SubjectTypeEvent(subjects.get()(name), ActionType.Remove)
@@ -225,7 +237,7 @@ object SubjectLibrary extends LazyLogging {
       */
     def handleEvent(event: SubjectTypeEvent): Unit =
       event.actionType match {
-        case ActionType.Add    => insert(event.subjectType)
+        case ActionType.Add => insert(event.subjectType)
         case ActionType.Update => update(event.subjectType)
         case ActionType.Remove => delete(event.subjectType)
       }

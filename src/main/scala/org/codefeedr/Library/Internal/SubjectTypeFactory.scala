@@ -18,13 +18,11 @@
 
 package org.codefeedr.Library.Internal
 
-import java.lang.reflect.Field
 import java.util.UUID
 
 import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.Model.{PropertyType, RecordProperty, SubjectType}
 
-import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
 /**
@@ -37,10 +35,15 @@ object SubjectTypeFactory extends LazyLogging {
   private def getSubjectTypeInternal(t: ru.Type, idFields: Array[String]): SubjectType = {
     val properties = t.members.filter(o => !o.isMethod)
     val name = t.typeSymbol.name.toString
-    SubjectType(
-      newTypeIdentifier().toString,
-      name,
-      getDefaultProperties(idFields.length == 0) ++ properties.map(getRecordProperty(idFields)))
+    val r = SubjectType(newTypeIdentifier().toString,
+                        name,
+                        properties.map(getRecordProperty(idFields)).toArray)
+    if (r.properties.count(o => o.id) != idFields.length) {
+      throw new Exception(s"Some idfields given to getSubjectType did not exist: ${idFields
+        .filter(o => !r.properties.map(o => o.name).contains(o))
+        .mkString(", ")}")
+    }
+    r
   }
 
   private def getRecordProperty(idFields: Array[String])(symbol: ru.Symbol): RecordProperty = {
@@ -55,18 +58,6 @@ object SubjectTypeFactory extends LazyLogging {
 
     RecordProperty(name, propertyType, idFields.contains(name))
   }
-
-  /**
-    * Generate the default property definitions added by our framework
-    * @param isId are the auto generated fields ids
-    * @return Array of the default properties
-    */
-  private def getDefaultProperties(isId: Boolean) =
-    Array(
-      RecordProperty("_Type", PropertyType.String, id = true),
-      RecordProperty("_Sequence", PropertyType.Number, isId),
-      RecordProperty("_Source", PropertyType.String, isId)
-    )
 
   /**
     * Get a subject type for the query language, type tag required
