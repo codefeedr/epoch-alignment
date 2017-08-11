@@ -18,8 +18,10 @@
 
 package org.codefeedr.Library.Internal
 
+import org.codefeedr.KafkaTest
 import org.codefeedr.Library.SubjectLibrary
 import org.scalatest._
+import org.scalatest.tagobjects.Slow
 
 import scala.concurrent.ExecutionContextExecutor
 
@@ -32,23 +34,23 @@ class SubjectLibrarySpec extends AsyncFlatSpec with Matchers with BeforeAndAfter
   implicit override def executionContext: ExecutionContextExecutor =
     scala.concurrent.ExecutionContext.Implicits.global
 
-  "A KafkaLibrary" should "be able to register a new type" in {
+  "A KafkaLibrary" should "be able to register a new type" taggedAs (Slow, KafkaTest) in {
     for {
       subject <- SubjectLibrary.GetType[TestTypeA]()
     } yield assert(subject.properties.map(o => o.name).contains("prop1"))
   }
 
-  "A KafkaLibrary" should "list all current registered types" in {
+  "A KafkaLibrary" should "list all current registered types" taggedAs (Slow, KafkaTest) in {
     assert(SubjectLibrary.GetSubjectNames().contains("TestTypeA"))
   }
 
-  "A KafkaLibrary" should "be able to remove a registered type again" in {
+  "A KafkaLibrary" should "be able to remove a registered type again" taggedAs (Slow, KafkaTest) in {
     for {
       _ <- SubjectLibrary.UnRegisterSubject("TestTypeA")
     } yield assert(!SubjectLibrary.GetSubjectNames().contains("TestTypeA"))
   }
 
-  "A KafkaLibrary" should "return the same subjecttype if GetType is called twice in parallel" in {
+  "A KafkaLibrary" should "return the same subjecttype if GetType is called twice in parallel" taggedAs (Slow, KafkaTest) in {
     val t1 = SubjectLibrary.GetType[TestTypeA]()
     val t2 = SubjectLibrary.GetType[TestTypeA]()
     for {
@@ -57,7 +59,7 @@ class SubjectLibrarySpec extends AsyncFlatSpec with Matchers with BeforeAndAfter
     } yield assert(r1.uuid == r2.uuid)
   }
 
-  "A KafkaLibrary" should "return the same subjecttype if GetType is called twice sequential" in {
+  "A KafkaLibrary" should "return the same subjecttype if GetType is called twice sequential" taggedAs (Slow, KafkaTest) in {
     for {
       r1 <- SubjectLibrary.GetType[TestTypeA]()
       r2 <- SubjectLibrary.GetType[TestTypeA]()

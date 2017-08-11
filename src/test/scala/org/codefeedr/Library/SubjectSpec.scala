@@ -23,6 +23,9 @@ import java.util.concurrent.Executors
 import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, Matchers}
 import org.apache.flink.streaming.api.scala._
+import org.codefeedr.KafkaTest
+import org.scalatest.tagobjects.Slow
+
 import scala.collection.mutable
 import scala.concurrent.{TimeoutException, _}
 import scala.concurrent.duration._
@@ -53,7 +56,8 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
 
   val paralellism = 2
 
-  "Kafka-Sinks" should "retrieve all messages published by a source" in {
+  "Kafka-Sinks" should "retrieve all messages published by a source" taggedAs (Slow, KafkaTest) in {
+
     //Create a sink function
     val sinkF = SubjectFactory.GetSink[MyOwnIntegerObject]
     sinkF.flatMap(sink => {
@@ -90,7 +94,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
     })
   }
 
-  "Kafka-Sinks" should " still receive data if they are created before the sink" in {
+  "Kafka-Sinks" should " still receive data if they are created before the sink" taggedAs (Slow, KafkaTest) in {
     //Reset the cache
     TestCollector.collectedData = mutable.MutableList[Tuple2[Int, MyOwnIntegerObject]]()
 
@@ -131,7 +135,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
     })
   }
 
-  "Kafka-Sinks" should " be able to recieve data from multiple sinks" in {
+  "Kafka-Sinks" should " be able to recieve data from multiple sinks" taggedAs (Slow, KafkaTest) in {
     //Reset the cache
     TestCollector.collectedData = mutable.MutableList[Tuple2[Int, MyOwnIntegerObject]]()
 
@@ -199,16 +203,18 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
       */
     def createTopology(env: StreamExecutionEnvironment, nr: Int): Future[Unit] = {
       //Construct a new source using the subjectFactory
-      SubjectLibrary.GetType[MyOwnIntegerObject]().map(subjectType => {
-        //Transient lazy because these need to be initioalised at the distributed environment
-        val unMapper = SubjectFactory.GetUnTransformer[MyOwnIntegerObject](subjectType)
-        val source = SubjectFactory.GetSource(subjectType)
-        env
-          .addSource(source)
-          .map(unMapper)
-          .map(o =>Tuple2(nr, o))
-          .addSink(o => TestCollector.collect(o))
-      })
+      SubjectLibrary
+        .GetType[MyOwnIntegerObject]()
+        .map(subjectType => {
+          //Transient lazy because these need to be initioalised at the distributed environment
+          val unMapper = SubjectFactory.GetUnTransformer[MyOwnIntegerObject](subjectType)
+          val source = SubjectFactory.GetSource(subjectType)
+          env
+            .addSource(source)
+            .map(unMapper)
+            .map(o => Tuple2(nr, o))
+            .addSink(o => TestCollector.collect(o))
+        })
 
     }
   }

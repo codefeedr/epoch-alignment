@@ -57,5 +57,4 @@ abstract class SimplePlugin[TData: ru.TypeTag: ClassTag] extends AbstractPlugin 
     val stream = GetStream(env)
     val withSink = stream.addSink(sink)
   }
-
 }

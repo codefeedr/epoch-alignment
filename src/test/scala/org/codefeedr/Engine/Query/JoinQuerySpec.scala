@@ -23,8 +23,10 @@ import java.util.concurrent.Executors
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.scala.{StreamExecutionEnvironment, _}
+import org.codefeedr.KafkaTest
 import org.codefeedr.Library.{CollectionPlugin, SubjectLibrary}
 import org.codefeedr.Model.TrailedRecord
+import org.scalatest.tagobjects.Slow
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach, Matchers}
 
 import scala.collection.mutable
@@ -32,12 +34,10 @@ import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-case class TestJoinObject(id:Long, group:Long, message:String)
-case class TestJoinGroup(id:Long, name: String)
-
+case class TestJoinObject(id: Long, group: Long, message: String)
+case class TestJoinGroup(id: Long, name: String)
 
 import scala.async.Async.{async, await}
-
 
 object TestCollector extends LazyLogging {
 
@@ -49,28 +49,25 @@ object TestCollector extends LazyLogging {
     mutable.MutableList[TrailedRecord]()
 
   def collect(item: TrailedRecord): Unit = {
-    logger.debug(s"${item.record.data(1).asInstanceOf[String]}-${item.record.data(2).asInstanceOf[String]} recieved")
+    logger.debug(
+      s"${item.record.data(1).asInstanceOf[String]}-${item.record.data(2).asInstanceOf[String]} recieved")
     this.synchronized {
       collectedData += item
     }
   }
 }
 
-
 /**
   * Integration test for a join
   * Created by Niels on 04/08/2017.
   */
-class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach with LazyLogging{
-  var counter:Int = 0
+class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach with LazyLogging {
+  var counter: Int = 0
 
   implicit override def executionContext: ExecutionContextExecutor =
     ExecutionContext.fromExecutorService(Executors.newWorkStealingPool(16))
 
-  override def beforeEach() {
-
-  }
-
+  override def beforeEach() {}
 
   /**
     * Utility function for tests that creates a source environment with the given data
@@ -78,9 +75,10 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
     * @tparam T type of the data
     * @return A future that returns when all data has been pushed to kakfa
     */
-  def CreateSourceEnvironment[T:ru.TypeTag: ClassTag:TypeInformation](data: Array[T]):Future[Unit] = async {
+  def CreateSourceEnvironment[T: ru.TypeTag: ClassTag: TypeInformation](
+      data: Array[T]): Future[Unit] = async {
     val nr = counter
-    counter+=1
+    counter += 1
     val env = StreamExecutionEnvironment.createLocalEnvironment()
     env.setParallelism(1)
     logger.debug(s"Composing env$nr")
@@ -95,7 +93,7 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
     * @param query The query environment
     * @return When the environment is done, probably never
     */
-  def CreateQueryEnvironment(query: QueryTree):Future[Unit] = async {
+  def CreateQueryEnvironment(query: QueryTree): Future[Unit] = async {
     val queryEnv = StreamExecutionEnvironment.createLocalEnvironment()
     queryEnv.setParallelism(2)
     logger.debug("Creating query Composer")
@@ -108,8 +106,7 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
     logger.debug("queryenv completed")
   }
 
-
-  "An innerjoin Query" should " produce a record for each join candidate" in {
+  "An innerjoin Query" should " produce a record for each join candidate" taggedAs (Slow, KafkaTest) in {
     val objects = Array(
       TestJoinObject(1, 1, "Message 1"),
       TestJoinObject(2, 1, "Message 2"),
@@ -117,7 +114,13 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
     )
 
     val groups = Array(TestJoinGroup(1, "Group 1"))
-    val query = Join(SubjectSource("TestJoinObject"), SubjectSource("TestJoinGroup"), Array("group"), Array("id"), Array("id", "message"), Array("name"), "groupedMessage")
+    val query = Join(SubjectSource("TestJoinObject"),
+                     SubjectSource("TestJoinGroup"),
+                     Array("group"),
+                     Array("id"),
+                     Array("id", "message"),
+                     Array("name"),
+                     "groupedMessage")
 
     async {
       TestCollector.reset()
@@ -129,23 +132,28 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
       //Add sources and wait for them to finish
       await(CreateSourceEnvironment(objects))
       await(CreateSourceEnvironment(groups))
-      await(Future{Thread.sleep(3000)})
+      await(Future { Thread.sleep(3000) })
       await(SubjectLibrary.UnRegisterSubject("TestJoinObject"))
       await(SubjectLibrary.UnRegisterSubject("TestJoinGroup"))
       assert(TestCollector.collectedData.size == 3)
     }
   }
 
-
-  "An innerjoin Query" should " produce no records if no join candidates are found" in {
+  "An innerjoin Query" should " produce no records if no join candidates are found" taggedAs (Slow, KafkaTest) in {
     val objects = Array(
       TestJoinObject(1, 1, "Message 1"),
       TestJoinObject(2, 1, "Message 2"),
       TestJoinObject(3, 1, "Message 3")
     )
 
-    val groups = Array(TestJoinGroup(2, "Group 2"),TestJoinGroup(3, "Group 3"))
-    val query = Join(SubjectSource("TestJoinObject"), SubjectSource("TestJoinGroup"), Array("group"), Array("id"), Array("id", "message"), Array("name"), "groupedMessage")
+    val groups = Array(TestJoinGroup(2, "Group 2"), TestJoinGroup(3, "Group 3"))
+    val query = Join(SubjectSource("TestJoinObject"),
+                     SubjectSource("TestJoinGroup"),
+                     Array("group"),
+                     Array("id"),
+                     Array("id", "message"),
+                     Array("name"),
+                     "groupedMessage")
 
     async {
       TestCollector.reset()
@@ -157,23 +165,30 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
       //Add sources and wait for them to finish
       await(CreateSourceEnvironment(objects))
       await(CreateSourceEnvironment(groups))
-      await(Future{Thread.sleep(3000)})
+      await(Future { Thread.sleep(3000) })
       await(SubjectLibrary.UnRegisterSubject("TestJoinObject"))
       await(SubjectLibrary.UnRegisterSubject("TestJoinGroup"))
       assert(TestCollector.collectedData.isEmpty)
     }
   }
 
-
-  "An innerjoin Query" should " Only produce events for new combinations" in {
+  "An innerjoin Query" should " Only produce events for new combinations" taggedAs (Slow, KafkaTest) in {
     val objects = Array(
       TestJoinObject(1, 1, "Message 1"),
       TestJoinObject(2, 1, "Message 2"),
       TestJoinObject(3, 1, "Message 3")
     )
 
-    val groups = Array(TestJoinGroup(1, "Group 1"),TestJoinGroup(1, "Group 1 duplicate 1"),TestJoinGroup(1, "Group 1 duplicate 2"))
-    val query = Join(SubjectSource("TestJoinObject"), SubjectSource("TestJoinGroup"), Array("group"), Array("id"), Array("id", "message"), Array("name"), "groupedMessage")
+    val groups = Array(TestJoinGroup(1, "Group 1"),
+                       TestJoinGroup(1, "Group 1 duplicate 1"),
+                       TestJoinGroup(1, "Group 1 duplicate 2"))
+    val query = Join(SubjectSource("TestJoinObject"),
+                     SubjectSource("TestJoinGroup"),
+                     Array("group"),
+                     Array("id"),
+                     Array("id", "message"),
+                     Array("name"),
+                     "groupedMessage")
 
     async {
       TestCollector.reset()
@@ -185,7 +200,7 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
       //Add sources and wait for them to finish
       await(CreateSourceEnvironment(objects))
       await(CreateSourceEnvironment(groups))
-      await(Future{Thread.sleep(3000)})
+      await(Future { Thread.sleep(3000) })
       await(SubjectLibrary.UnRegisterSubject("TestJoinObject"))
       await(SubjectLibrary.UnRegisterSubject("TestJoinGroup"))
       assert(TestCollector.collectedData.size == 9)
