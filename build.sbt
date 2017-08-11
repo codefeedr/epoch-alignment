@@ -41,6 +41,9 @@ libraryDependencies += "com.jsuereth" %% "scala-arm" % "2.0"
 libraryDependencies += "org.scala-lang.modules" % "scala-java8-compat_2.11" % "0.8.0"
 libraryDependencies += "org.scala-lang.modules" %% "scala-async" % "0.9.6"
 
+//Twitters zookeeper client
+libraryDependencies += "com.twitter" %% "util-zk" % "6.45.0"
+
 mainClass in assembly := Some("org.codefeedr.Job")
 
 // make run command include the provided dependencies
