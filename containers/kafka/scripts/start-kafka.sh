@@ -15,27 +15,25 @@ if [ ! -z "$HELIOS_PORT_kafka" ]; then
 fi
 
 
-: <<'END'
+
 # Set the external host and port
-if [ ! -z "$ADVERTISED_HOST" -a ! -z "$ADVERTISED_PORT" ]; then
-    echo "advertised host: $ADVERTISED_HOST"
-    echo "advertised port: $ADVERTISED_PORT"
-    LISTENERS="PLAINTEXT://$ADVERTISED_HOST:$ADVERTISED_PORT"
-    echo "listeners: $LISTENERS"
-     if grep -q "^#listeners" $KAFKA_HOME/config/server.properties; then
-        sed -r -i "s/#(listeners)=(.*)/\1=$LISTENERS/g" $KAFKA_HOME/config/server.properties
-     else
-        echo "Adding new config"
-        echo -e "\n" >> $KAFKA_HOME/config/server.properties
-        echo "listeners=$LISTENERS" >> $KAFKA_HOME/config/server.properties
-    fi
-else
-    echo "No listener configured"
-fi
+# if [ ! -z "$ADVERTISED_HOST" -a ! -z "$ADVERTISED_PORT" ]; then
+    # echo "advertised host: $ADVERTISED_HOST"
+    # echo "advertised port: $ADVERTISED_PORT"
+    # LISTENERS="PLAINTEXT://$ADVERTISED_HOST:$ADVERTISED_PORT"
+    # echo "listeners: $LISTENERS"
+     # if grep -q "^#listeners" $KAFKA_HOME/config/server.properties; then
+        # sed -r -i "s/#(listeners)=(.*)/\1=$LISTENERS/g" $KAFKA_HOME/config/server.properties
+     # else
+        # echo "Adding new config"
+        # echo -e "\n" >> $KAFKA_HOME/config/server.properties
+        # echo "listeners=$LISTENERS" >> $KAFKA_HOME/config/server.properties
+    # fi
+# else
+    # echo "No listener configured"
+# fi
 
 
-END
-#: <<'END'
 # Set the external host and port
 if [ ! -z "$ADVERTISED_HOST" ]; then
     echo "advertised host: $ADVERTISED_HOST"
@@ -53,7 +51,7 @@ if [ ! -z "$ADVERTISED_PORT" ]; then
         echo "advertised.port=$ADVERTISED_PORT" >> $KAFKA_HOME/config/server.properties
     fi
 fi
-#END
+
 # Set the zookeeper chroot
 #if [ ! -z "$ZK_CHROOT" ]; then
     # wait for zookeeper to start up
