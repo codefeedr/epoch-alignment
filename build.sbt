@@ -55,7 +55,7 @@ lazy val core = (project.dependsOn(model) in file("Core"))
   )
 
 lazy val root = (project in file("."))
-  .dependsOn(core,model)
+  .dependsOn(core)
   .aggregate(core)
 
 mainClass in assembly := Some("org.codefeedr.Job")

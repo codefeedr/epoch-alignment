@@ -35,4 +35,5 @@ before_script:
 
 script:
   - sbt scalafmt::test
+  - sbt package
   - sbt test
