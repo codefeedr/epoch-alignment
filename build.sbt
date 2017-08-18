@@ -40,10 +40,11 @@ val dep_core = Seq(
   "com.twitter" %% "util-zk" % "6.45.0"
 )
 
-lazy val root = (project in file("."))
-  .dependsOn(core)
-  .aggregate(core, model)
-
+lazy val model = (project in file("Model"))
+  .settings(
+    settings,
+    name := "Model"
+  )
 
 lazy val core = (project.dependsOn(model) in file("Core"))
   .settings(
@@ -53,11 +54,9 @@ lazy val core = (project.dependsOn(model) in file("Core"))
     libraryDependencies ++= dep_flink
   )
 
-lazy val model = (project in file("Model"))
-  .settings(
-    settings,
-    name := "Model"
-  )
+lazy val root = (project in file("."))
+  .dependsOn(core)
+  .aggregate(core)
 
 mainClass in assembly := Some("org.codefeedr.Job")
 
