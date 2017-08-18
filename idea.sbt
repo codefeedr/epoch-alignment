@@ -6,7 +6,8 @@ lazy val mainRunner = project
     libraryDependencies := (libraryDependencies in RootProject(file("."))).value
       .map { module =>
         if (module.configurations.equals(Some("provided"))) {
-          module.copy(configurations = None)
+          module
+         // module.copy(configurations = None)
         } else {
           module
         }
