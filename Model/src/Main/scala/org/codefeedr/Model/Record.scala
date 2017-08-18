@@ -18,8 +18,6 @@
 
 package org.codefeedr.Model
 
-
-
 /**
   * Created by Niels on 12/07/2017.
   */
@@ -56,7 +54,6 @@ case class Source(SourceId: Array[Byte], Key: Array[Byte])
   */
 @SerialVersionUID(100L)
 case class TrailedRecord(record: Record, trail: RecordSourceTrail) extends Serializable
-
 
 /**
   * Data equals audit trail

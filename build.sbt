@@ -43,8 +43,7 @@ val dep_core = Seq(
 )
 
 lazy val root = (project in file("."))
-  .settings(
-  )
+  .dependsOn(core)
   .aggregate(core, model)
 
 
@@ -62,8 +61,6 @@ lazy val model = (project in file("Model"))
     name := "Model"
   )
 
-
-
 mainClass in assembly := Some("org.codefeedr.Job")
 
 // make run command include the provided dependencies
@@ -74,4 +71,3 @@ run in Compile := Defaults.runTask(fullClasspath in Compile,
 // exclude Scala library from assembly
 assemblyOption in assembly := (assemblyOption in assembly).value
   .copy(includeScala = false)
-
