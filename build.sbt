@@ -22,6 +22,17 @@ val flinkDependencies = Seq(
 lazy val root = (project in file("."))
   .settings(
     libraryDependencies ++= flinkDependencies
+  ).aggregate(core)
+
+
+lazy val core = (project.dependsOn(model) in file("Core"))
+  .settings(
+    name := "core"
+  )
+
+lazy val model = (project in file("Model"))
+  .settings(
+    name := "Model"
   )
 
 libraryDependencies += "codes.reactive" %% "scala-time" % "0.4.1"
