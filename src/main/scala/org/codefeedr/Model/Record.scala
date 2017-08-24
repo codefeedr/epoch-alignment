@@ -18,41 +18,35 @@
 
 package org.codefeedr.Model
 
-/**
-  * Created by Niels on 12/07/2017.
-  */
-@SerialVersionUID(100L)
-case class Record(data: Array[Any], typeUuid: String, action: ActionType.Value)
-    extends Serializable
 
-@SerialVersionUID(100L)
+
 case class SubjectType(uuid: String, name: String, properties: Array[RecordProperty])
-    extends Serializable
+  extends Serializable
 
-@SerialVersionUID(100L)
 case class RecordProperty(name: String, propertyType: PropertyType.Value, id: Boolean)
-    extends Serializable
+  extends Serializable
 
 case class SubjectTypeEvent(subjectType: SubjectType, actionType: ActionType.Value)
 
 abstract class RecordSourceTrail
 
-@SerialVersionUID(100L)
 case class ComposedSource(SourceId: Array[Byte], pointers: Array[RecordSourceTrail])
-    extends RecordSourceTrail
+  extends RecordSourceTrail
     with Serializable
 
-@SerialVersionUID(100L)
 case class Source(SourceId: Array[Byte], Key: Array[Byte])
-    extends RecordSourceTrail
+  extends RecordSourceTrail
     with Serializable
+
+case class Record(data: Array[Any], typeUuid: String, action: ActionType.Value)
+  extends Serializable
+
 
 /**
   * A record with its trail
   * @param record Record containing the actual data
   * @param trail Trail tacking the source of the record
   */
-@SerialVersionUID(100L)
 case class TrailedRecord(record: Record, trail: RecordSourceTrail) extends Serializable
 
 /**

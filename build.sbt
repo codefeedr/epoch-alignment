@@ -1,3 +1,5 @@
+import sbt.Keys.libraryDependencies
+
 resolvers in ThisBuild ++= Seq(
   "Apache Development Snapshot Repository" at "https://repository.apache.org/content/repositories/snapshots/",
   Resolver.mavenLocal)
@@ -12,7 +14,7 @@ val settings = Seq(
 )
 scalaVersion in ThisBuild := "2.11.11"
 
-val flinkVersion = "1.3.0"
+val flinkVersion = "1.3.2"
 
 val dep_flink = Seq(
   "org.apache.flink" %% "flink-scala" % flinkVersion % "provided",
@@ -40,23 +42,13 @@ val dep_core = Seq(
   "com.twitter" %% "util-zk" % "6.45.0"
 )
 
-lazy val model = (project in file("Model"))
+lazy val root = (project in file("."))
   .settings(
-    settings,
-    name := "Model"
-  )
-
-lazy val core = (project.dependsOn(model) in file("Core"))
-  .settings(
-    settings,
-    name := "Core",
     libraryDependencies ++= dep_core,
     libraryDependencies ++= dep_flink
   )
 
-lazy val root = (project in file("."))
-  .dependsOn(core)
-  .aggregate(model,core)
+
 
 mainClass in assembly := Some("org.codefeedr.Job")
 

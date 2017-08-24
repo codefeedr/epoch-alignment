@@ -40,7 +40,7 @@ class KafkaSource(subjectType: SubjectType)
   @transient private lazy val dataConsumer = {
     val consumer = KafkaConsumerFactory.create[RecordSourceTrail, Record](uuid.toString)
     consumer.subscribe(Iterable(topic).asJavaCollection)
-    logger.debug(s"Source $uuid subscribed on topic $topic as group")
+    logger.debug(s"Source $uuid subscribed on topic $topic as group $uuid")
     consumer
   }
   @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"

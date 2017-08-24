@@ -50,10 +50,12 @@ class KafkaGenericSink[TData: ru.TypeTag: ClassTag](subjectType: SubjectType)
   @transient private lazy val Transformer = SubjectFactory.GetTransformer[TData](subjectType)
 
   override def close(): Unit = {
+    logger.debug(s"Closing producer $uuid")
     kafkaProducer.close()
   }
 
   override def open(parameters: Configuration): Unit = {
+    logger.debug(s"Opening producer $uuid")
     super.open(parameters)
   }
 

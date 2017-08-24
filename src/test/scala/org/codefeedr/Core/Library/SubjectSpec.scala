@@ -62,6 +62,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
     val sinkF = SubjectFactory.GetSink[MyOwnIntegerObject]
     sinkF.flatMap(sink => {
       val env = StreamExecutionEnvironment.createLocalEnvironment()
+
       env.setParallelism(paralellism)
       env.fromCollection(mutable.Set(1, 2, 3).toSeq).map(o => MyOwnIntegerObject(o)).addSink(sink)
       env.execute()
