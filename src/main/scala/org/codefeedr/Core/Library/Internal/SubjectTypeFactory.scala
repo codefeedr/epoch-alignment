@@ -4,8 +4,6 @@ import java.util.UUID
 
 import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.Model.{PropertyType, RecordProperty, SubjectType}
-
-import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
 /**
@@ -17,7 +15,7 @@ object SubjectTypeFactory extends LazyLogging {
 
   private def getSubjectTypeInternal(t: ru.Type, idFields: Array[String]): SubjectType = {
     val properties = t.members.filter(o => !o.isMethod)
-    val name = t.typeSymbol.name.toString
+    val name = getSubjectName(t)
     val r = SubjectType(newTypeIdentifier().toString,
                         name,
                         properties.map(getRecordProperty(idFields)).toArray)
@@ -41,6 +39,20 @@ object SubjectTypeFactory extends LazyLogging {
 
     RecordProperty(name, propertyType, idFields.contains(name))
   }
+
+  /**
+    * Use a generic type to retrieve the subjectName that the given type would produce
+    * @tparam T the type to retrieve th name for
+    * @return the name
+    */
+  def getSubjectName[T: ru.TypeTag]: String = getSubjectName(ru.typeOf[T])
+
+  /**
+    * Use the type to retrieve the subjectName that the given type woul produce
+    * @param t the type to retrieve name for
+    * @return the name of the subject
+    */
+  def getSubjectName(t: ru.Type): String = t.typeSymbol.name.toString
 
   /**
     * Get a subject type for the query language, type tag required

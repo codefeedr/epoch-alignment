@@ -141,7 +141,7 @@ object JoinQueryComposer {
 
   /**
     * Map side inner join function
-    * Assumes that the caller manages the state per join key (so a seperate state exists per unique join key)
+    * Assumes that the caller manages the state per join key (so a separate state exists per unique join key)
     * Usable on flink mapwithstate on a keyed stream
     * @param record The record (left or right) to join
     * @param inputState current state for the joinkey of the record

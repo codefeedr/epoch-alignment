@@ -38,7 +38,7 @@ import scala.reflect.runtime.{universe => ru}
 object SubjectFactory {
   def GetSink[TData: ru.TypeTag: ClassTag]: Future[SinkFunction[TData]] = {
     SubjectLibrary
-      .GetType[TData]()
+      .GetOrCreateType[TData]()
       .flatMap(o =>
         KafkaController.GuaranteeTopic(s"${o.name}_${o.uuid}").map(_ => new KafkaGenericSink(o)))
   }

@@ -41,8 +41,8 @@ object KafkaConsumerFactory {
     val properties = KafkaConfig.consumerPropertes.clone().asInstanceOf[Properties]
     properties.setProperty("group.id", group)
     new KafkaConsumer[TKey, TData](properties,
-                                   new KafkaDeserializer[TKey],
-                                   new KafkaDeserializer[TData])
+                                   new KafkaDeserialiser[TKey],
+                                   new KafkaDeserialiser[TData])
 
   }
 }

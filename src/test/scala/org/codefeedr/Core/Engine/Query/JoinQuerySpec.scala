@@ -24,7 +24,8 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.scala.{StreamExecutionEnvironment, _}
 import org.codefeedr.Core.KafkaTest
-import org.codefeedr.Core.Library.{CollectionPlugin, SubjectLibrary}
+import org.codefeedr.Core.Library.SubjectLibrary
+import org.codefeedr.Core.Plugin.CollectionPlugin
 import org.codefeedr.Model.TrailedRecord
 import org.scalatest.tagobjects.Slow
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach, Matchers}

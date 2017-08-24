@@ -30,12 +30,12 @@ object StreamComposerFactory {
   def GetComposer(query: QueryTree): Future[StreamComposer] = {
     query match {
       case SubjectSource(subjectName) =>
-        SubjectLibrary.getTypeByName(subjectName).map(o => new SourceStreamComposer(o))
+        SubjectLibrary.AwaitTypeRegistration(subjectName).map(o => new SourceStreamComposer(o))
       case Join(left, right, keysLeft, keysRight, selectLeft, selectRight, alias) =>
         for {
           leftComposer <- GetComposer(left)
           rightComposer <- GetComposer(right)
-          joinedType <- SubjectLibrary.RegisterAndAwaitType(
+          joinedType <- SubjectLibrary.GetOrCreateType(alias, () =>
             JoinQueryComposer.buildComposedType(leftComposer.GetExposedType(),
                                                 rightComposer.GetExposedType(),
                                                 selectLeft,

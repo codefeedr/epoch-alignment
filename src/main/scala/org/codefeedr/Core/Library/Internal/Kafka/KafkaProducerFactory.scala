@@ -35,6 +35,6 @@ object KafkaProducerFactory {
     */
   def create[TKey: ClassTag, TData: ClassTag]: KafkaProducer[TKey, TData] =
     new KafkaProducer[TKey, TData](KafkaConfig.properties,
-                                   new KafkaSerializer[TKey],
-                                   new KafkaSerializer[TData])
+                                   new KafkaSerialiser[TKey],
+                                   new KafkaSerialiser[TData])
 }

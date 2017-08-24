@@ -62,7 +62,7 @@ Contains data objects used by the engine. This module is published to the Flink 
 Contains data objects used by the integration tests, that also need to be published to the Flink cluster. In the future maybe refactor this to an "Integration Test" plugin. For now the plugin architecture is not finished yet.
 
 
-## Setup KAFKA
+## Setup KAFKA & Zookeeper
 
 ### Option 1a: Use docker in VirtualBox (Windows 10 Home, OSX)
 1. `docker build -t codefeedr/kafka containers/kafka/` From the root of the project, to build the image

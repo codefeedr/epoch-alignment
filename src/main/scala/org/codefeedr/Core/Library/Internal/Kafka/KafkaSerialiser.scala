@@ -18,36 +18,22 @@
 
 package org.codefeedr.Core.Library.Internal.Kafka
 
-import java.io.{ByteArrayOutputStream, ObjectOutputStream}
 import java.util
+
+import org.codefeedr.Core.Library.Internal.Serialisation.GenericSerialiser
 
 import scala.reflect.ClassTag
 
 /**
   * Created by Niels on 14/07/2017.
   */
-class KafkaSerializer[T: ClassTag](implicit ct: ClassTag[T])
-    extends org.apache.kafka.common.serialization.Serializer[T] {
+class KafkaSerialiser[T: ClassTag]
+    extends org.apache.kafka.common.serialization.Serializer[T]{
   override def configure(configs: util.Map[String, _], isKey: Boolean): Unit = {}
 
-  /**
-    * Prevent double serialization for the cases where bytearrays are directly sent to kafka
-    */
-  private val serializeInternal = {
-    if (classOf[Array[Byte]].isAssignableFrom(ct.getClass)) { (data: T) =>
-      data.asInstanceOf[Array[Byte]]
-    } else { (data: T) =>
-      {
-        val stream: ByteArrayOutputStream = new ByteArrayOutputStream()
-        val oos = new ObjectOutputStream(stream)
-        oos.writeObject(data)
-        oos.close()
-        stream.toByteArray
-      }
-    }
-  }
+  private lazy val GenericSerialiser = new GenericSerialiser[T]()
 
-  override def serialize(topic: String, data: T): Array[Byte] = serializeInternal(data)
+  override def serialize(topic: String, data: T): Array[Byte] = GenericSerialiser.Serialize(data)
 
   override def close(): Unit = {}
 }

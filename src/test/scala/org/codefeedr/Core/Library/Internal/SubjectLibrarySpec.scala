@@ -36,23 +36,26 @@ class SubjectLibrarySpec extends AsyncFlatSpec with Matchers with BeforeAndAfter
 
   "A KafkaLibrary" should "be able to register a new type" taggedAs (Slow, KafkaTest) in {
     for {
-      subject <- SubjectLibrary.GetType[TestTypeA]()
+      subject <- SubjectLibrary.GetOrCreateType[TestTypeA]()
     } yield assert(subject.properties.map(o => o.name).contains("prop1"))
   }
 
   "A KafkaLibrary" should "list all current registered types" taggedAs (Slow, KafkaTest) in {
-    assert(SubjectLibrary.GetSubjectNames().contains("TestTypeA"))
+    for {
+      r <- SubjectLibrary.GetSubjectNames()
+    } yield assert(r.contains("TestTypeA"))
   }
 
   "A KafkaLibrary" should "be able to remove a registered type again" taggedAs (Slow, KafkaTest) in {
     for {
       _ <- SubjectLibrary.UnRegisterSubject("TestTypeA")
-    } yield assert(!SubjectLibrary.GetSubjectNames().contains("TestTypeA"))
+      r <- SubjectLibrary.GetSubjectNames()
+    } yield assert(!r.contains("TestTypeA"))
   }
 
   "A KafkaLibrary" should "return the same subjecttype if GetType is called twice in parallel" taggedAs (Slow, KafkaTest) in {
-    val t1 = SubjectLibrary.GetType[TestTypeA]()
-    val t2 = SubjectLibrary.GetType[TestTypeA]()
+    val t1 = SubjectLibrary.GetOrCreateType[TestTypeA]()
+    val t2 = SubjectLibrary.GetOrCreateType[TestTypeA]()
     for {
       r1 <- t1
       r2 <- t2
@@ -61,8 +64,8 @@ class SubjectLibrarySpec extends AsyncFlatSpec with Matchers with BeforeAndAfter
 
   "A KafkaLibrary" should "return the same subjecttype if GetType is called twice sequential" taggedAs (Slow, KafkaTest) in {
     for {
-      r1 <- SubjectLibrary.GetType[TestTypeA]()
-      r2 <- SubjectLibrary.GetType[TestTypeA]()
+      r1 <- SubjectLibrary.GetOrCreateType[TestTypeA]()
+      r2 <- SubjectLibrary.GetOrCreateType[TestTypeA]()
     } yield assert(r1.uuid == r2.uuid)
   }
 }

@@ -18,42 +18,23 @@
 
 package org.codefeedr.Core.Library.Internal.Kafka
 
-import java.io._
 import java.util
+
+import org.codefeedr.Core.Library.Internal.Serialisation.GenericDeserialiser
 
 import scala.reflect._
 
 /**
   * Created by Niels on 14/07/2017.
   */
-class KafkaDeserializer[T: ClassTag](implicit ct: ClassTag[T])
+class KafkaDeserialiser[T: ClassTag]()
     extends org.apache.kafka.common.serialization.Deserializer[T] {
   override def configure(configs: util.Map[String, _], isKey: Boolean): Unit = {}
 
   override def close(): Unit = {}
 
-  @transient lazy private val loader: ClassLoader = Thread.currentThread().getContextClassLoader
+  private lazy val GenericDeserialiser = new GenericDeserialiser[T]
 
-  /**
-    * Prevent deserialisation of something that already is a byte array, as those are also not serialized
-    */
-  private val deserializeInternal =
-    if (classOf[Array[Byte]].isAssignableFrom(ct.getClass)) { (data: Array[Byte]) =>
-      data.asInstanceOf[T]
-    } else { (data: Array[Byte]) =>
-      {
-        val ois = new ObjectInputStream(new ByteArrayInputStream(data)) {
-
-          //Custom class loader needed
-          //See: https://issues.scala-lang.org/browse/SI-9777
-          override def resolveClass(desc: ObjectStreamClass): Class[_] =
-            Class.forName(desc.getName, false, loader)
-        }
-        val value = ois.readObject()
-        ois.close()
-        value.asInstanceOf[T]
-      }
-    }
-
-  override def deserialize(topic: String, data: Array[Byte]): T = deserializeInternal(data)
+  override def deserialize(topic: String, data: Array[Byte]): T =
+    GenericDeserialiser.Deserialize(data)
 }

@@ -22,13 +22,8 @@ import java.util.UUID
 
 import akka.actor.ActorSystem
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.kafka.clients.consumer.KafkaConsumer
-import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
-import org.codefeedr.Core.Library.Internal.Kafka.{
-  KafkaConsumerFactory,
-  KafkaController,
-  KafkaProducerFactory
-}
+import org.codefeedr.Core.Library.Internal.Kafka._
+import org.codefeedr.Core.Library.Internal.Serialisation.{GenericDeserialiser, GenericSerialiser}
 import org.codefeedr.Core.Library.Internal.SubjectTypeFactory
 import org.codefeedr.Model.{ActionType, SubjectType, SubjectTypeEvent}
 
@@ -36,10 +31,16 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable.Iterable
 import scala.collection.{concurrent, immutable}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.concurrent.duration._
+import scala.concurrent.{Future, Promise}
 import scala.reflect.runtime.{universe => ru}
-
+import scala.async.Async.{async, await}
+import org.codefeedr.Core.Library.Internal.Zookeeper.ZookeeperConfig
+import com.twitter.zk.{ZNode, ZkClient}
+import org.apache.zookeeper.CreateMode
+import org.apache.zookeeper.data.ACL
+import org.codefeedr.TwitterUtils._
+import org.apache.zookeeper.ZooDefs.Ids._
+import scala.util.Try
 /**
   * ThreadSafe
   * Created by Niels on 14/07/2017.
@@ -48,16 +49,29 @@ object SubjectLibrary extends LazyLogging {
   //Topic used to publish all types and topics on
   //MAke this configurable?
   @transient private val SubjectTopic = "Subjects"
+
+  //Zookeeper path where the subjects are stored
+  @transient private val SubjectPath = "/Codefeedr/Subjects"
+
   @transient private val SubjectAwaitTime = 10
   @transient private val PollTimeout = 1000
   @transient private lazy val system = ActorSystem("SubjectLibrary")
   @transient private lazy val uuid = UUID.randomUUID()
 
-  //Producer to send type information
-  @transient private lazy val subjectTypeProducer: KafkaProducer[String, SubjectTypeEvent] =
-    KafkaProducerFactory.create[String, SubjectTypeEvent]
+  @transient private lazy val Deserialiser = new GenericDeserialiser[SubjectType]()
+  @transient private lazy val Serialiser = new GenericSerialiser[SubjectType]()
 
-  @transient private lazy val subjects = new SynchronisedSubjects()
+
+  @transient private lazy val zk:ZkClient = ZookeeperConfig.getClient
+
+
+
+  /**
+    * Get the path to the zookeeper definition of the given subject
+    * @param s the name of the subject
+    * @return the full path to the subject
+    */
+  def GetSubjectPath(s: String):String = SubjectPath.concat("/").concat(s)
 
   /**
     * Retrieve a subjectType for an arbitrary scala type
@@ -65,57 +79,47 @@ object SubjectLibrary extends LazyLogging {
     * @tparam T The type to register
     * @return The subjectType when it is registered in the library
     */
-  def GetType[T: ru.TypeTag](): Future[SubjectType] = {
-    val r = GetTypeSync[T]().map(o => Future { o })
-    r.getOrElse(RegisterAndAwaitType[T]())
+  def GetOrCreateType[T: ru.TypeTag](): Future[SubjectType] = {
+    val name = SubjectTypeFactory.getSubjectName[T]
+    val provider = () => SubjectTypeFactory.getSubjectType[T]
+    GetOrCreateType(name, provider)
   }
 
   /**
-    * Retrieve a subjectType for some scala type
-    * Returns none if type was not registered yet (or not yet found in the library)
-    * @tparam T The type to get typedefinition for
-    * @return The type definition, or none if it was not present in the library yet
+    * Retrieves a subjecttype from the store if one is registered
+    * Otherwise registeres the type in the store
+    * @param subjectName Name of the subject to retrieve
+    * @return
     */
-  private def GetTypeSync[T: ru.TypeTag](): Option[SubjectType] = {
-    val typeDef = SubjectTypeFactory.getSubjectType[T]
-    subjects.get().get(typeDef.name)
+  def GetOrCreateType(subjectName: String, subjectProvider: () => SubjectType) : Future[SubjectType] = {
+    async {
+      if(await(Exists(subjectName))) {
+        await(GetType(subjectName))
+      } else {
+        await(RegisterAndAwaitType(subjectProvider()))
+      }
+    }
   }
 
   /**
-    * Get a type of the given uuid
-    * Returns none if the type has not yet been recieved by the library
-    * @param uuid uuid of the type to try to get
-    * @return Typedefinition, or none if it did not exist in the library
+    * Retrieve the subjectType for the given typename
+    * @param typeName name of the type
+    * @return Future with the subjecttype (or nothing if not found)
     */
-  private def tryGetType(uuid: String): Option[SubjectType] = {
-    val r = subjects.get().values.filter(o => o.uuid == uuid).toArray
-    if (r.length == 1)
-      Some(r(0))
-    else if (r.length == 0)
-      None
-    else
-      throw new Exception(s"UUID $uuid was not unique in dictionary. This should not happen")
+  def GetType(typeName: String): Future[SubjectType] = {
+    val path = GetSubjectPath(typeName)
+    zk(path).getData.apply().map(o => Deserialiser.Deserialize(o.bytes)).asScala
   }
-
-  /**
-    * Get a type with the given uuid.
-    * Remains polling the store untill the given uuid occurs in the store
-    * @param uuid uuid of the type to find
-    * @return A future that will resolve when the type is found
-    */
-  def GetType(uuid: String)(): Future[SubjectType] =
-    tryGetType(uuid)
-      .map(o => Future { o })
-      .getOrElse(
-        akka.pattern.after(SubjectAwaitTime milliseconds, using = system.scheduler)(GetType(uuid)))
 
   /**
     * Retrieves the current set of registered subject names
-    * This set might not contain new subjects straight after GetType is called, if the future is not yet completed
-    * @return
+    * @return A future with the set of registered subjects
     */
-  def GetSubjectNames(): immutable.Set[String] = {
-    subjects.get().values.map(o => o.name).toSet
+  def GetSubjectNames(): Future[immutable.Set[String]] = {
+    async {
+      val children = await(zk(SubjectPath).getChildren.apply().asScala)
+      children.children.map(o => o.name).toSet
+    }
   }
 
   /**
@@ -127,42 +131,54 @@ object SubjectLibrary extends LazyLogging {
     */
   private def RegisterAndAwaitType[T: ru.TypeTag](): Future[SubjectType] = {
     val typeDef = SubjectTypeFactory.getSubjectType[T]
-    RegisterAndAwaitType(typeDef)
+    RegisterAndAwaitType(typeDef).map(_ =>typeDef)
   }
 
   /**
     * Register a type and resolve the future once the type has been registered
     * Returns a value once the requested type has been found
     * TODO: Acually check if the returned type is the same, and deal with duplicate type definitions
+    * TODO: Using ZK ACL?
+    * TODO: Solve the root path creation in a cleaner way
+    * Returns true if the type could be registered
     * @param subjectType Type to register or retrieve
     * @return The subjectType once it has been registered
     */
-  def RegisterAndAwaitType(subjectType: SubjectType)(): Future[SubjectType] = {
+  private def RegisterAndAwaitType(subjectType: SubjectType)(): Future[SubjectType] = {
     logger.debug(s"Registering new type ${subjectType.name}")
-    KafkaController
-      .GuaranteeTopic(subjectType.name)
-      .flatMap(_ => {
-        val event = SubjectTypeEvent(subjectType, ActionType.Add)
-        subjectTypeProducer.send(new ProducerRecord(SubjectTopic, subjectType.name, event))
-        //Not sure if this is the cleanest way to do this
-        getTypeByName(subjectType.name)
-      })
+    val path = GetSubjectPath(subjectType.name)
+    val data = Serialiser.Serialize(subjectType)
+    async {
+      if(!await(pathExists("/Codefeedr"))) {
+        await(zk.apply().map(o => o.create("/Codefeedr", null, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)).asScala)
+      }
+      if(!await(pathExists(SubjectPath))) {
+        await(zk.apply().map(o => o.create(SubjectPath, null, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)).asScala)
+      }
+      await(zk.apply().map(o => o.create(path, data, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)).asScala.map(_ => subjectType))
+    }
   }
-
   /**
-    * Rerursive functions that retrieves the type store until the given name occurs
+    * Returns a future that contains the subjectType of the given name. Waits until the given type actually gets registered
     * @param typeName name of the type to find
     * @return future that will resolve when the given type has been found
     */
-  def getTypeByName(typeName: String): Future[SubjectType] = {
-    if (!subjects.get().contains(typeName)) {
-      akka.pattern.after(SubjectAwaitTime milliseconds, using = system.scheduler)(
-        getTypeByName(typeName))
-    } else {
-      Future {
-        subjects.get()(typeName)
+  def AwaitTypeRegistration(typeName: String): Future[SubjectType] = {
+    async {
+      if (!await(Exists(typeName))) {
+        val p = Promise[SubjectType]
+        val offer = zk(SubjectPath).monitorTree()
+        offer.foreach(o => {
+          logger.debug("Offer got an event")
+          if (o.added.exists(o => o.name == typeName))
+            p.completeWith(GetType(typeName))
+        })
+        await(p.future)
+      } else {
+        await(GetType(typeName))
       }
     }
+
   }
 
   /**
@@ -172,86 +188,32 @@ object SubjectLibrary extends LazyLogging {
     * @param name: String
     * @return A future that returns when the subject has actually been removed from the library
     */
-  private[codefeedr] def UnRegisterSubject(name: String): Future[Unit] = {
-    //Send the removal event
-    //Note that this causes an exception if the type is actually not registered
-    val event = SubjectTypeEvent(subjects.get()(name), ActionType.Remove)
-    subjectTypeProducer.send(new ProducerRecord(SubjectTopic, name, event))
+  private[codefeedr] def UnRegisterSubject(name: String): Future[Boolean] = {
+    logger.debug(s"Registering new type $name")
 
-    IsUnregistered(name)
+    val path = GetSubjectPath(name)
+    async {
+      if(await(Exists(name))) {
+        false
+      } else {
+        await(zk(path).delete().map(_ => true).asScala)
+      }
+    }
   }
 
   /**
-    * Retrieve a future that resolves whenever the given typename is unregistered
-    * Note that this might cause a deadlock when another thread creates the subject again.
-    * Should be fixed if this method is made public and used outside unit tests
-    * @param typeName the name to wait for
+    * Gives true if the given type was defined in the storage
+    * @tparam T Type to know if it was defined
     * @return
     */
-  private def IsUnregistered(typeName: String): Future[Unit] = {
-    if (subjects.get().contains(typeName)) {
-      akka.pattern.after(SubjectAwaitTime milliseconds, using = system.scheduler)(
-        IsUnregistered(typeName))
-    } else {
-      Future {
-        Unit
-      }
-    }
-  }
+  def Exists[T: ru.TypeTag]:Future[Boolean] = Exists(SubjectTypeFactory.getSubjectName[T])
 
   /**
-    * This class is responsible for keeping the current active subjects synchronized
-    * Currently every subject request checks kafka for updates and blocks untill a response has been recieved
+    * Gives a future that is true wif the given type is defined
+    * @param name name of the type that exists or not
+    * @return
     */
-  private class SynchronisedSubjects() {
-    @transient private lazy val subjects = concurrent.TrieMap[String, SubjectType]()
+  def Exists(name:String): Future[Boolean] = pathExists(GetSubjectPath(name))
 
-    @transient private lazy val subjectTypeConsumer: KafkaConsumer[String, SubjectTypeEvent] = {
-      val consumer = KafkaConsumerFactory.create[String, SubjectTypeEvent](uuid.toString)
-      consumer.subscribe(Iterable(SubjectTopic).asJavaCollection)
-      consumer
-    }
-
-    def get(): Map[String, SubjectType] = {
-      this.synchronized {
-        subjectTypeConsumer
-          .poll(PollTimeout)
-          .iterator()
-          .asScala
-          .map(o => o.value())
-          .foreach(handleEvent)
-
-        subjects.toMap
-      }
-    }
-    //Perform initial scan on creation
-
-    /**
-      * Event handler managing the internal state of registered subjects
-      * @param event: SubjectTypeEvent
-      */
-    def handleEvent(event: SubjectTypeEvent): Unit =
-      event.actionType match {
-        case ActionType.Add => insert(event.subjectType)
-        case ActionType.Update => update(event.subjectType)
-        case ActionType.Remove => delete(event.subjectType)
-      }
-
-    def insert(s: SubjectType): Unit =
-      if (!subjects.contains(s.name)) {
-        logger.debug(s"New subjecttype ${s.name} registered with uuid ${s.uuid}")
-        subjects.put(s.name, s)
-      }
-
-    def update(s: SubjectType): Unit = {
-      logger.debug(s"subjecttype ${s.name} updated with uuid ${s.uuid}")
-      subjects.put(s.name, s)
-    }
-
-    def delete(s: SubjectType): Unit =
-      if (subjects.contains(s.name)) {
-        logger.debug(s"subjecttype ${s.name} removed with uuid ${s.uuid}")
-        subjects.remove(s.name)
-      }
-  }
+  private def pathExists(path:String): Future[Boolean] = zk.apply().map(o => o.exists(path,false)).map(o => o !=null).asScala
 }

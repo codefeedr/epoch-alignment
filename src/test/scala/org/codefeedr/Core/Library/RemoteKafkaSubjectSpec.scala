@@ -42,6 +42,7 @@ case class RemoteKafkaSubjectTestInt(value: Int) extends Serializable
     * This is more of an integration test than unit test
     * Created by Niels on 14/07/2017.
     */
+  /*
   class RemoteKafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAll {
     //These tests must run in parallel
     implicit override def executionContext: ExecutionContextExecutor =
@@ -96,6 +97,7 @@ case class RemoteKafkaSubjectTestInt(value: Int) extends Serializable
           })
       })
     }
+    */
 /*
     "Kafka-Sinks" should " still receive data if they are created before the sink" taggedAs (Slow, KafkaTest) in {
       //Reset the cache
@@ -188,7 +190,7 @@ case class RemoteKafkaSubjectTestInt(value: Int) extends Serializable
         })
     }
     */
-
+/*
     class MyOwnSourseQuery(nr: Int) extends Runnable with LazyLogging {
       override def run(): Unit = {
       //  val env = StreamExecutionEnvironment.createRemoteEnvironment(host, port, parallelism,jars:_*)
@@ -208,7 +210,7 @@ case class RemoteKafkaSubjectTestInt(value: Int) extends Serializable
       def createTopology(env: StreamExecutionEnvironment, nr: Int): Future[Unit] = {
         //Construct a new source using the subjectFactory
         SubjectLibrary
-          .GetType[RemoteKafkaSubjectTestInt]()
+          .GetOrCreateType[RemoteKafkaSubjectTestInt]()
           .map(subjectType => {
             //Transient lazy because these need to be initioalised at the distributed environment
             val unMapper = SubjectFactory.GetUnTransformer[RemoteKafkaSubjectTestInt](subjectType)
@@ -223,7 +225,7 @@ case class RemoteKafkaSubjectTestInt(value: Int) extends Serializable
       }
     }
   }
-
+*/
 
 
 

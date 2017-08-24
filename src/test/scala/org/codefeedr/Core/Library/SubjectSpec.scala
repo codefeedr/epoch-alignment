@@ -205,7 +205,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
     def createTopology(env: StreamExecutionEnvironment, nr: Int): Future[Unit] = {
       //Construct a new source using the subjectFactory
       SubjectLibrary
-        .GetType[MyOwnIntegerObject]()
+        .GetOrCreateType[MyOwnIntegerObject]()
         .map(subjectType => {
           //Transient lazy because these need to be initioalised at the distributed environment
           val unMapper = SubjectFactory.GetUnTransformer[MyOwnIntegerObject](subjectType)
