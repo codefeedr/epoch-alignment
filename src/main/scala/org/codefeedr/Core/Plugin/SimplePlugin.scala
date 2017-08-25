@@ -56,6 +56,6 @@ abstract class SimplePlugin[TData: ru.TypeTag: ClassTag] extends AbstractPlugin 
   override def Compose(env: StreamExecutionEnvironment): Future[Unit] = async {
     val sink = await(SubjectFactory.GetSink[TData])
     val stream = GetStream(env)
-    val withSink = stream.addSink(sink)
+    stream.addSink(sink)
   }
 }

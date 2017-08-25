@@ -18,33 +18,18 @@
 
 package org.codefeedr.Model
 
-case class SubjectType(uuid: String, name: String, properties: Array[RecordProperty])
-    extends Serializable
-
 case class RecordProperty(name: String, propertyType: PropertyType.Value, id: Boolean)
     extends Serializable
 
-case class SubjectTypeEvent(subjectType: SubjectType, actionType: ActionType.Value)
-
-abstract class RecordSourceTrail
-
-case class ComposedSource(SourceId: Array[Byte], pointers: Array[RecordSourceTrail])
-    extends RecordSourceTrail
-    with Serializable
-
-case class Source(SourceId: Array[Byte], Key: Array[Byte])
-    extends RecordSourceTrail
-    with Serializable
-
+/**
+  * A record event
+  * Does not contain the trail, because the trail is used as key in the event
+  * @param data The raw data array of the record
+  * @param typeUuid Uuid of the type of the record
+  * @param action Type of event
+  */
 case class Record(data: Array[Any], typeUuid: String, action: ActionType.Value)
     extends Serializable
-
-/**
-  * A record with its trail
-  * @param record Record containing the actual data
-  * @param trail Trail tacking the source of the record
-  */
-case class TrailedRecord(record: Record, trail: RecordSourceTrail) extends Serializable
 
 /**
   * Data equals audit trail
