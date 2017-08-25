@@ -21,26 +21,22 @@ package org.codefeedr.Core.Library
 import java.util.UUID
 
 import akka.actor.ActorSystem
+import com.twitter.zk.ZkClient
 import com.typesafe.scalalogging.LazyLogging
-import org.codefeedr.Core.Library.Internal.Kafka._
+import org.apache.zookeeper.CreateMode
+import org.apache.zookeeper.KeeperException.NodeExistsException
+import org.apache.zookeeper.ZooDefs.Ids._
 import org.codefeedr.Core.Library.Internal.Serialisation.{GenericDeserialiser, GenericSerialiser}
 import org.codefeedr.Core.Library.Internal.SubjectTypeFactory
-import org.codefeedr.Model.{ActionType, SubjectType, SubjectTypeEvent}
+import org.codefeedr.Core.Library.Internal.Zookeeper.ZookeeperConfig
+import org.codefeedr.Model.SubjectType
+import org.codefeedr.TwitterUtils._
 
-import scala.collection.JavaConverters._
-import scala.collection.immutable.Iterable
-import scala.collection.{concurrent, immutable}
+import scala.async.Async.{async, await}
+import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 import scala.reflect.runtime.{universe => ru}
-import scala.async.Async.{async, await}
-import org.codefeedr.Core.Library.Internal.Zookeeper.ZookeeperConfig
-import com.twitter.zk.{ZNode, ZkClient}
-import org.apache.zookeeper.CreateMode
-import org.apache.zookeeper.data.ACL
-import org.codefeedr.TwitterUtils._
-import org.apache.zookeeper.ZooDefs.Ids._
-import scala.util.Try
 /**
   * ThreadSafe
   * Created by Niels on 14/07/2017.
@@ -64,6 +60,17 @@ object SubjectLibrary extends LazyLogging {
 
   @transient private lazy val zk:ZkClient = ZookeeperConfig.getClient
 
+  /**
+    * Initialisation of zookeeper
+    */
+  @transient val Initialized: Future[Boolean] = async {
+    if (!await(pathExists("/Codefeedr"))) {
+      await(zk.apply().map(o => o.create("/Codefeedr", null, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)).asScala)
+    }
+    if (!await(pathExists(SubjectPath))) {
+      await(zk.apply().map(o => o.create(SubjectPath, null, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)).asScala)
+    }
+  }.map(_ => true)
 
 
   /**
@@ -117,8 +124,8 @@ object SubjectLibrary extends LazyLogging {
     */
   def GetSubjectNames(): Future[immutable.Set[String]] = {
     async {
-      val children = await(zk(SubjectPath).getChildren.apply().asScala)
-      children.children.map(o => o.name).toSet
+      val zNode = await(zk(SubjectPath).getChildren.apply().asScala)
+      zNode.children.map(o => o.name).toSet
     }
   }
 
@@ -137,9 +144,7 @@ object SubjectLibrary extends LazyLogging {
   /**
     * Register a type and resolve the future once the type has been registered
     * Returns a value once the requested type has been found
-    * TODO: Acually check if the returned type is the same, and deal with duplicate type definitions
     * TODO: Using ZK ACL?
-    * TODO: Solve the root path creation in a cleaner way
     * Returns true if the type could be registered
     * @param subjectType Type to register or retrieve
     * @return The subjectType once it has been registered
@@ -148,15 +153,12 @@ object SubjectLibrary extends LazyLogging {
     logger.debug(s"Registering new type ${subjectType.name}")
     val path = GetSubjectPath(subjectType.name)
     val data = Serialiser.Serialize(subjectType)
-    async {
-      if(!await(pathExists("/Codefeedr"))) {
-        await(zk.apply().map(o => o.create("/Codefeedr", null, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)).asScala)
+    zk.apply().map(o => o.create(path, data, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT))
+      .asScala.map(_ => subjectType)
+      .recoverWith {
+        //If in the meanwhile some other thing already registered the node, return that node
+        case _:NodeExistsException => GetType(subjectType.name)
       }
-      if(!await(pathExists(SubjectPath))) {
-        await(zk.apply().map(o => o.create(SubjectPath, null, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)).asScala)
-      }
-      await(zk.apply().map(o => o.create(path, data, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)).asScala.map(_ => subjectType))
-    }
   }
   /**
     * Returns a future that contains the subjectType of the given name. Waits until the given type actually gets registered
@@ -193,10 +195,10 @@ object SubjectLibrary extends LazyLogging {
 
     val path = GetSubjectPath(name)
     async {
-      if(await(Exists(name))) {
+      if(!await(Exists(name))) {
         false
       } else {
-        await(zk(path).delete().map(_ => true).asScala)
+        await(zk.apply().map(o => o.delete(path,-1)).map(_ => true).asScala)
       }
     }
   }
@@ -215,5 +217,5 @@ object SubjectLibrary extends LazyLogging {
     */
   def Exists(name:String): Future[Boolean] = pathExists(GetSubjectPath(name))
 
-  private def pathExists(path:String): Future[Boolean] = zk.apply().map(o => o.exists(path,false)).map(o => o !=null).asScala
+  private def pathExists(path:String): Future[Boolean] = zk.apply().map(o => o.exists(path,false)).map(o => o != null).asScala
 }
