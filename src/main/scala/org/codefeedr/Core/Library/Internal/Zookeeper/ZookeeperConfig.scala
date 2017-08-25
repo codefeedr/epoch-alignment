@@ -6,7 +6,6 @@ import com.twitter.util.{Duration, JavaTimer}
 import com.twitter.zk._
 import com.typesafe.config.{Config, ConfigFactory}
 
-
 object ZookeeperConfig {
   @transient lazy val conf: Config = ConfigFactory.load
 
@@ -16,8 +15,10 @@ object ZookeeperConfig {
     */
   def getClient: ZkClient = {
     implicit val timer: JavaTimer = new JavaTimer(true)
-    ZkClient(conf.getString("codefeedr.zookeeper.connectionstring"),
-      Some(Duration(conf.getLong("codefeedr.zookeeper.connectTimeout"),TimeUnit.SECONDS)),
-      Duration(conf.getLong("codefeedr.zookeeper.sessionTimeout"),TimeUnit.SECONDS))
+    ZkClient(
+      conf.getString("codefeedr.zookeeper.connectionstring"),
+      Some(Duration(conf.getLong("codefeedr.zookeeper.connectTimeout"), TimeUnit.SECONDS)),
+      Duration(conf.getLong("codefeedr.zookeeper.sessionTimeout"), TimeUnit.SECONDS)
+    )
   }
 }

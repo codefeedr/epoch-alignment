@@ -18,29 +18,26 @@
 
 package org.codefeedr.Model
 
-
-
 case class SubjectType(uuid: String, name: String, properties: Array[RecordProperty])
-  extends Serializable
+    extends Serializable
 
 case class RecordProperty(name: String, propertyType: PropertyType.Value, id: Boolean)
-  extends Serializable
+    extends Serializable
 
 case class SubjectTypeEvent(subjectType: SubjectType, actionType: ActionType.Value)
 
 abstract class RecordSourceTrail
 
 case class ComposedSource(SourceId: Array[Byte], pointers: Array[RecordSourceTrail])
-  extends RecordSourceTrail
+    extends RecordSourceTrail
     with Serializable
 
 case class Source(SourceId: Array[Byte], Key: Array[Byte])
-  extends RecordSourceTrail
+    extends RecordSourceTrail
     with Serializable
 
 case class Record(data: Array[Any], typeUuid: String, action: ActionType.Value)
-  extends Serializable
-
+    extends Serializable
 
 /**
   * A record with its trail
