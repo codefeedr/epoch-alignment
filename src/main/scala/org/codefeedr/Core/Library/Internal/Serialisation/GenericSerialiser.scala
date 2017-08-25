@@ -30,3 +30,12 @@ class GenericSerialiser[T: ClassTag](implicit ct: ClassTag[T]) {
     */
   def Serialize(data: T): Array[Byte] = serializeInternal(data)
 }
+
+/**
+  * Serialise the given object to byte array
+  */
+object GenericSerialiser {
+  def apply[TData: ClassTag](tData: TData): Array[Byte] = {
+    new GenericSerialiser[TData]().Serialize(tData)
+  }
+}

@@ -84,6 +84,7 @@ object SubjectLibrary extends LazyLogging {
     * @return the full path to the subject
     */
   def GetSubjectPath(s: String): String = SubjectPath.concat("/").concat(s)
+  def GetStatePath(s: String): String = SubjectPath.concat("/").concat(s).concat("/state")
 
   /**
     * Retrieve a subjectType for an arbitrary scala type
@@ -150,6 +151,7 @@ object SubjectLibrary extends LazyLogging {
   /**
     * Register a type and resolve the future once the type has been registered
     * Returns a value once the requested type has been found
+    * New types are automatically created in the open state
     * TODO: Using ZK ACL?
     * Returns true if the type could be registered
     * @param subjectType Type to register or retrieve
@@ -159,12 +161,23 @@ object SubjectLibrary extends LazyLogging {
     logger.debug(s"Registering new type ${subjectType.name}")
     val path = GetSubjectPath(subjectType.name)
     val data = Serialiser.Serialize(subjectType)
+
     zk.apply()
       .map(o => o.create(path, data, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT))
       .asScala
       .map(_ => subjectType)
-      .recoverWith {
-        //If in the meanwhile some other thing already registered the node, return that node
+      .flatMap(
+        o =>
+          zk.apply()
+            .map(
+              o =>
+                o.create(path.concat("/state"),
+                         GenericSerialiser(true),
+                         OPEN_ACL_UNSAFE,
+                         CreateMode.PERSISTENT))
+            .asScala
+            .map(_ => o))
+      .recoverWith { //Register type. When error because node already exists just retrieve this value because the first writer wins.
         case _: NodeExistsException => GetType(subjectType.name)
       }
   }
@@ -175,21 +188,14 @@ object SubjectLibrary extends LazyLogging {
     * @return future that will resolve when the given type has been found
     */
   def AwaitTypeRegistration(typeName: String): Future[SubjectType] = {
-    async {
-      if (!await(Exists(typeName))) {
-        val p = Promise[SubjectType]
-        val offer = zk(SubjectPath).monitorTree()
-        offer.foreach(o => {
-          logger.debug("Offer got an event")
-          if (o.added.exists(o => o.name == typeName))
-            p.completeWith(GetType(typeName))
-        })
-        await(p.future)
-      } else {
-        await(GetType(typeName))
-      }
-    }
-
+    //Make sure to create the offer before exists is called
+    val watch = zk(SubjectPath).getChildren.watch()
+    //This could cause unnessecary calls to Exists
+    Exists(typeName).flatMap(o => {
+      if (o) GetType(typeName)
+      else
+        watch.asScala.flatMap(o => o.update.asScala.flatMap(_ => AwaitTypeRegistration(typeName)))
+    })
   }
 
   /**
@@ -199,16 +205,15 @@ object SubjectLibrary extends LazyLogging {
     * @param name: String
     * @return A future that returns when the subject has actually been removed from the library
     */
-  private[codefeedr] def UnRegisterSubject(name: String): Future[Boolean] = {
-    logger.debug(s"Registering new type $name")
-
+  private[codefeedr] def UnRegisterSubject(name: String): Future[Boolean] = async {
+    logger.debug(s"Deleting type $name")
     val path = GetSubjectPath(name)
-    async {
-      if (!await(Exists(name))) {
-        false
-      } else {
-        await(zk.apply().map(o => o.delete(path, -1)).map(_ => true).asScala)
-      }
+    if (!await(Exists(name))) {
+      false
+    } else {
+      await(zk(GetStatePath(name)).delete(-1).asScala)
+      await(zk(GetSubjectPath(name)).delete(-1).asScala)
+      true
     }
   }
 
@@ -225,6 +230,37 @@ object SubjectLibrary extends LazyLogging {
     * @return
     */
   def Exists(name: String): Future[Boolean] = pathExists(GetSubjectPath(name))
+
+  /**
+    * Closes the subjectType
+    * @param name name of the subject to close
+    * @return a future that resolves when the write was succesful
+    */
+  def Close(name: String): Future[Unit] =
+    zk(GetStatePath(name)).setData(GenericSerialiser(false), -1).asScala.map(_ => Unit)
+
+  /**
+    * Returns a future if the subject with the given name is still open
+    * @param name name of the type
+    * @return a future with boolean if the type was still open
+    */
+  def IsOpen(name: String): Future[Boolean] =
+    zk(GetStatePath(name)).getData.apply().map(o => GenericDeserialiser[Boolean](o.bytes)).asScala
+
+  /**
+    * Constructs a future that resolves whenever the given type closes
+    * @param name name of the type to wait for
+    * @return A future that resolves when the type is closed
+    */
+  def awaitClose(name: String): Future[Unit] = async {
+    //Make sure to create the offer before exists is called
+    val watch = zk(GetStatePath(name)).getData.watch()
+    //This could cause unnessecary calls to Exists
+    IsOpen(name).flatMap(o => {
+      if (!o) Future.successful()
+      else watch.asScala.flatMap(o => o.update.asScala.flatMap(_ => awaitClose(name)))
+    })
+  }
 
   private def pathExists(path: String): Future[Boolean] =
     zk.apply().map(o => o.exists(path, false)).map(o => o != null).asScala

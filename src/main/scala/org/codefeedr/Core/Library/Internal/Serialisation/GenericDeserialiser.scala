@@ -36,3 +36,12 @@ class GenericDeserialiser[T: ClassTag](implicit ct: ClassTag[T]) {
     */
   def Deserialize(data: Array[Byte]): T = deserializeInternal(data)
 }
+
+/**
+  * Deserialise an object serialised by the GenericSerialiser
+  */
+object GenericDeserialiser {
+  def apply[TData: ClassTag](data: Array[Byte]): TData = {
+    new GenericDeserialiser[TData]().Deserialize(data)
+  }
+}

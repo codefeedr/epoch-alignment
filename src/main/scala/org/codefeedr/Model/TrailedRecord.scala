@@ -10,9 +10,9 @@ case class TrailedRecord(record: Record, trail: RecordSourceTrail) extends Seria
 abstract class RecordSourceTrail
 
 case class ComposedSource(SourceId: Array[Byte], pointers: Array[RecordSourceTrail])
-  extends RecordSourceTrail
+    extends RecordSourceTrail
     with Serializable
 
 case class Source(SourceId: Array[Byte], Key: Array[Byte])
-  extends RecordSourceTrail
+    extends RecordSourceTrail
     with Serializable

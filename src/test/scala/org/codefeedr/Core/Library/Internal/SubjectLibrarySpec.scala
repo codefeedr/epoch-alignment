@@ -20,6 +20,7 @@ package org.codefeedr.Core.Library.Internal
 
 import org.codefeedr.Core.ZkTest
 import org.codefeedr.Core.Library.SubjectLibrary
+import org.scalactic.source.Position
 import org.scalatest._
 import org.scalatest.tagobjects.Slow
 
@@ -31,7 +32,7 @@ case class TestTypeA(prop1: String)
 /**
   * Created by Niels on 18/07/2017.
   */
-class SubjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll {
+class SubjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach{
   implicit override def executionContext: ExecutionContextExecutor =
     scala.concurrent.ExecutionContext.Implicits.global
 
@@ -41,6 +42,14 @@ class SubjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll {
       Thread.sleep(10)
     }
   }
+
+  override def afterEach(): Unit = {
+    val r = SubjectLibrary.UnRegisterSubject("TestTypeA")
+    while(!r.isCompleted) {
+      Thread.sleep(10)
+    }
+  }
+
   behavior of "SubjectLibrary"
 
   it should "be able to register and remove a new type" taggedAs (Slow, ZkTest) in async {
@@ -52,32 +61,61 @@ class SubjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll {
     assert(!await(SubjectLibrary.GetSubjectNames()).contains("TestTypeA"))
   }
 
-  it should "return false if delete is called twice" in async {
+  it should "construct subjects as open by default" in async {
+    await(SubjectLibrary.GetOrCreateType[TestTypeA]())
+    assert(await(SubjectLibrary.IsOpen("TestTypeA")))
+  }
+
+  it should "be possible to close subject types" in async {
+    await(SubjectLibrary.GetOrCreateType[TestTypeA]())
+    assert(await(SubjectLibrary.IsOpen("TestTypeA")))
+    await(SubjectLibrary.Close("TestTypeA"))
+    assert(!await(SubjectLibrary.IsOpen("TestTypeA")))
+  }
+
+  "SubjectLibrary.AwaitClose" should "Return a future that resolves when OnClose is called" in async {
+    await(SubjectLibrary.GetOrCreateType[TestTypeA]())
+    val f = SubjectLibrary.awaitClose("TestTypeA")
+    assert(!f.isCompleted)
+    await(SubjectLibrary.Close("TestTypeA"))
+    await(f)
+    assert(!await(SubjectLibrary.IsOpen("TestTypeA")))
+  }
+
+
+  "SubjectLibrary.Delete" should "return false if called twice" in async {
     await(SubjectLibrary.GetOrCreateType[TestTypeA]())
     assert(await(SubjectLibrary.UnRegisterSubject("TestTypeA")))
     assert(!await(SubjectLibrary.UnRegisterSubject("TestTypeA")))
   }
 
-  it should "return false if delete is called on a non existing type" taggedAs(Slow, ZkTest) in async {
+  "SubjectLibrary.Delete" should "return false if called on a non existing type" taggedAs(Slow, ZkTest) in async {
     assert(!await(SubjectLibrary.UnRegisterSubject("SomeNonExistingType")))
   }
 
-  it should "return the same subjecttype if GetType is called twice in parallel" taggedAs (Slow, ZkTest) in async {
+  "SubjectLibrary.GetType" should "return the same subjecttype if GetType is called twice in parallel" taggedAs (Slow, ZkTest) in {
     val t1 = SubjectLibrary.GetOrCreateType[TestTypeA]()
     val t2 = SubjectLibrary.GetOrCreateType[TestTypeA]()
-    val r = await(for {
+    for {
       r1 <- t1
       r2 <- t2
-    } yield assert(r1.uuid == r2.uuid))
-    assert(await(SubjectLibrary.UnRegisterSubject("TestTypeA")))
-    r
+    } yield assert(r1.uuid == r2.uuid)
   }
 
-  it should "return the same subjecttype if GetType is called twice sequential" taggedAs (Slow, ZkTest) in async {
+  "SubjectLibrary.GetType" should "return the same subjecttype if called twice sequential" taggedAs (Slow, ZkTest) in async {
     val r1 = await(SubjectLibrary.GetOrCreateType[TestTypeA]())
     val r2 = await(SubjectLibrary.GetOrCreateType[TestTypeA]())
     val result = assert(r1.uuid == r2.uuid)
-    assert(await(SubjectLibrary.UnRegisterSubject("TestTypeA")))
     result
   }
+
+  "SubjectLibrary.AwaitTypeRegistration" should "Resolve the future when the type is registered" in async {
+    val resolve = SubjectLibrary.AwaitTypeRegistration("TestTypeA")
+    assert(!resolve.isCompleted)
+    val r = await(SubjectLibrary.GetOrCreateType[TestTypeA]())
+    assert(await(resolve).uuid == r.uuid)
+  }
+
+
+
 }
