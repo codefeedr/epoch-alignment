@@ -79,7 +79,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
       } catch {
         case _: TimeoutException => Unit
       }
-      Thread.sleep(5000)
+      Thread.sleep(10000)
       Console.println("Completed")
       //Delete the subject
       SubjectLibrary
@@ -120,7 +120,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
       env.fromCollection(mutable.Set(1, 2, 3).toSeq).map(o => MyOwnIntegerObject(o)).addSink(sink)
       env.execute("sink")
 
-      Thread.sleep(8000)
+      Thread.sleep(10000)
 
       //Delete the subject as cleanup
       SubjectLibrary
@@ -169,7 +169,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
         } catch {
           case _: TimeoutException => Unit
         }
-        Thread.sleep(9000)
+        Thread.sleep(10000)
         Console.println("Completed")
 
         //Delete the subject as cleanup
