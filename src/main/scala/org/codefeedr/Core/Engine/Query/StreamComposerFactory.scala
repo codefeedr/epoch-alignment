@@ -35,12 +35,14 @@ object StreamComposerFactory {
         for {
           leftComposer <- GetComposer(left)
           rightComposer <- GetComposer(right)
-          joinedType <- SubjectLibrary.GetOrCreateType(alias, () =>
-            JoinQueryComposer.buildComposedType(leftComposer.GetExposedType(),
-                                                rightComposer.GetExposedType(),
-                                                selectLeft,
-                                                selectRight,
-                                                alias))
+          joinedType <- SubjectLibrary.GetOrCreateType(
+            alias,
+            () =>
+              JoinQueryComposer.buildComposedType(leftComposer.GetExposedType(),
+                                                  rightComposer.GetExposedType(),
+                                                  selectLeft,
+                                                  selectRight,
+                                                  alias))
         } yield
           new JoinQueryComposer(leftComposer, rightComposer, joinedType, query.asInstanceOf[Join])
       case _ => throw new NotImplementedError("not implemented query subtree")

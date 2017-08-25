@@ -34,6 +34,6 @@ before_script:
   - sleep 10
 
 script:
-  - sbt scalafmt::test
   - sbt package
   - sbt test
+  - sbt scalafmt::test

@@ -37,6 +37,7 @@ import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 import scala.reflect.runtime.{universe => ru}
+
 /**
   * ThreadSafe
   * Created by Niels on 14/07/2017.
@@ -57,28 +58,32 @@ object SubjectLibrary extends LazyLogging {
   @transient private lazy val Deserialiser = new GenericDeserialiser[SubjectType]()
   @transient private lazy val Serialiser = new GenericSerialiser[SubjectType]()
 
-
-  @transient private lazy val zk:ZkClient = ZookeeperConfig.getClient
+  @transient private lazy val zk: ZkClient = ZookeeperConfig.getClient
 
   /**
     * Initialisation of zookeeper
     */
   @transient val Initialized: Future[Boolean] = async {
     if (!await(pathExists("/Codefeedr"))) {
-      await(zk.apply().map(o => o.create("/Codefeedr", null, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)).asScala)
+      await(
+        zk.apply()
+          .map(o => o.create("/Codefeedr", null, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT))
+          .asScala)
     }
     if (!await(pathExists(SubjectPath))) {
-      await(zk.apply().map(o => o.create(SubjectPath, null, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)).asScala)
+      await(
+        zk.apply()
+          .map(o => o.create(SubjectPath, null, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT))
+          .asScala)
     }
   }.map(_ => true)
-
 
   /**
     * Get the path to the zookeeper definition of the given subject
     * @param s the name of the subject
     * @return the full path to the subject
     */
-  def GetSubjectPath(s: String):String = SubjectPath.concat("/").concat(s)
+  def GetSubjectPath(s: String): String = SubjectPath.concat("/").concat(s)
 
   /**
     * Retrieve a subjectType for an arbitrary scala type
@@ -98,9 +103,10 @@ object SubjectLibrary extends LazyLogging {
     * @param subjectName Name of the subject to retrieve
     * @return
     */
-  def GetOrCreateType(subjectName: String, subjectProvider: () => SubjectType) : Future[SubjectType] = {
+  def GetOrCreateType(subjectName: String,
+                      subjectProvider: () => SubjectType): Future[SubjectType] = {
     async {
-      if(await(Exists(subjectName))) {
+      if (await(Exists(subjectName))) {
         await(GetType(subjectName))
       } else {
         await(RegisterAndAwaitType(subjectProvider()))
@@ -138,7 +144,7 @@ object SubjectLibrary extends LazyLogging {
     */
   private def RegisterAndAwaitType[T: ru.TypeTag](): Future[SubjectType] = {
     val typeDef = SubjectTypeFactory.getSubjectType[T]
-    RegisterAndAwaitType(typeDef).map(_ =>typeDef)
+    RegisterAndAwaitType(typeDef).map(_ => typeDef)
   }
 
   /**
@@ -153,13 +159,16 @@ object SubjectLibrary extends LazyLogging {
     logger.debug(s"Registering new type ${subjectType.name}")
     val path = GetSubjectPath(subjectType.name)
     val data = Serialiser.Serialize(subjectType)
-    zk.apply().map(o => o.create(path, data, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT))
-      .asScala.map(_ => subjectType)
+    zk.apply()
+      .map(o => o.create(path, data, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT))
+      .asScala
+      .map(_ => subjectType)
       .recoverWith {
         //If in the meanwhile some other thing already registered the node, return that node
-        case _:NodeExistsException => GetType(subjectType.name)
+        case _: NodeExistsException => GetType(subjectType.name)
       }
   }
+
   /**
     * Returns a future that contains the subjectType of the given name. Waits until the given type actually gets registered
     * @param typeName name of the type to find
@@ -195,10 +204,10 @@ object SubjectLibrary extends LazyLogging {
 
     val path = GetSubjectPath(name)
     async {
-      if(!await(Exists(name))) {
+      if (!await(Exists(name))) {
         false
       } else {
-        await(zk.apply().map(o => o.delete(path,-1)).map(_ => true).asScala)
+        await(zk.apply().map(o => o.delete(path, -1)).map(_ => true).asScala)
       }
     }
   }
@@ -208,14 +217,15 @@ object SubjectLibrary extends LazyLogging {
     * @tparam T Type to know if it was defined
     * @return
     */
-  def Exists[T: ru.TypeTag]:Future[Boolean] = Exists(SubjectTypeFactory.getSubjectName[T])
+  def Exists[T: ru.TypeTag]: Future[Boolean] = Exists(SubjectTypeFactory.getSubjectName[T])
 
   /**
     * Gives a future that is true wif the given type is defined
     * @param name name of the type that exists or not
     * @return
     */
-  def Exists(name:String): Future[Boolean] = pathExists(GetSubjectPath(name))
+  def Exists(name: String): Future[Boolean] = pathExists(GetSubjectPath(name))
 
-  private def pathExists(path:String): Future[Boolean] = zk.apply().map(o => o.exists(path,false)).map(o => o != null).asScala
+  private def pathExists(path: String): Future[Boolean] =
+    zk.apply().map(o => o.exists(path, false)).map(o => o != null).asScala
 }

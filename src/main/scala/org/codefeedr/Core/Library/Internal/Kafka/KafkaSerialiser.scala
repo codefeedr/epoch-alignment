@@ -27,8 +27,7 @@ import scala.reflect.ClassTag
 /**
   * Created by Niels on 14/07/2017.
   */
-class KafkaSerialiser[T: ClassTag]
-    extends org.apache.kafka.common.serialization.Serializer[T]{
+class KafkaSerialiser[T: ClassTag] extends org.apache.kafka.common.serialization.Serializer[T] {
   override def configure(configs: util.Map[String, _], isKey: Boolean): Unit = {}
 
   private lazy val GenericSerialiser = new GenericSerialiser[T]()
