@@ -29,6 +29,7 @@ import org.apache.zookeeper.ZooDefs.Ids._
 import org.codefeedr.Core.Library.Internal.Serialisation.{GenericDeserialiser, GenericSerialiser}
 import org.codefeedr.Core.Library.Internal.SubjectTypeFactory
 import org.codefeedr.Core.Library.Internal.Zookeeper.{ZkUtil, ZookeeperConfig}
+import org.codefeedr.Core.Library.SubjectLibrary.HasSources
 import org.codefeedr.Exceptions._
 import org.codefeedr.Model.SubjectType
 import org.codefeedr.TwitterUtils._
@@ -91,14 +92,25 @@ object SubjectLibrary extends LazyLogging {
   /**
     * Retrieve a subjectType for an arbitrary scala type
     * Creates type information and registers the type in the library
+    * Creates a non-persistent type
     * @tparam T The type to register
     * @return The subjectType when it is registered in the library
     */
-  def GetOrCreateType[T: ru.TypeTag](): Future[SubjectType] = {
+  def GetOrCreateType[T: ru.TypeTag](): Future[SubjectType] = GetOrCreateType[T](persistent = false)
+
+  /**
+    * Retrieve a subjectType for an arbitrary scala type
+    * Creates type information and registers the type in the library
+    * @param persistent Should the type, if it does not exist, be created as persistent?
+    * @tparam T The type to register
+    * @return The subjectType when it is registered in the library
+    */
+  def GetOrCreateType[T: ru.TypeTag](persistent:Boolean): Future[SubjectType] = {
     val name = SubjectTypeFactory.getSubjectName[T]
-    val provider = () => SubjectTypeFactory.getSubjectType[T]
+    val provider = () => SubjectTypeFactory.getSubjectType[T](persistent)
     GetOrCreateType(name, provider)
   }
+
 
   /**
     * Retrieves a subjecttype from the store if one is registered
@@ -249,8 +261,10 @@ object SubjectLibrary extends LazyLogging {
     if (!await(ZkUtil.pathExists(path))) {
       throw SinkNotSubscribedException(uuid.concat(" on ").concat(typeName))
     }
-
     await(ZkUtil.Delete(path))
+
+    //Check if the type needs to be removed
+    await(DeleteIfNoSourcesAndSinks(typeName))
   }
 
   /**
@@ -270,8 +284,46 @@ object SubjectLibrary extends LazyLogging {
     if (!await(ZkUtil.pathExists(path))) {
       throw SourceNotSubscribedException(uuid.concat(" on ").concat(typeName))
     }
-
     await(ZkUtil.Delete(path))
+
+    //Close and/or remove the subject
+    await(CloseIfNoSources(typeName))
+    await(DeleteIfNoSourcesAndSinks(typeName))
+  }
+
+  /**
+    * Checks if the type is not persistent and there are no sources.
+    * If so it closes the subject
+    * @param typeName Type to check
+    * @return A future that resolves when the operation is done
+    */
+  private def CloseIfNoSources(typeName: String): Future[Unit] = async {
+    //For non-persistent types automatically close the subject when all sources are removed
+    val shouldClose = await(for {
+      persistent <- GetType(typeName).map(o => o.persistent)
+      hasSources <- HasSources(typeName)
+    } yield !persistent && !hasSources)
+
+    if(shouldClose) {
+      await(Close(typeName))
+    }
+  }
+
+  /**
+    * Checks if the given type is persistent
+    * If not, and the type has no sinks or sources, removes the entire type
+    * @return A future that resolves when the operation is done
+    */
+  private def DeleteIfNoSourcesAndSinks(typeName: String): Future[Unit] = async {
+    val shouldRemove = await(for {
+      persistent <- GetType(typeName).map(o => o.persistent)
+      hasSources <- HasSources(typeName)
+      hasSinks <- HasSinks(typeName)
+    } yield !persistent && !hasSources && !hasSinks)
+
+    if(shouldRemove) {
+      await(UnRegisterSubject(typeName))
+    }
   }
 
   /**

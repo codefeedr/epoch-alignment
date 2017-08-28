@@ -13,12 +13,12 @@ import scala.reflect.runtime.{universe => ru}
 object SubjectTypeFactory extends LazyLogging {
   private def newTypeIdentifier(): UUID = UUID.randomUUID()
 
-  private def getSubjectTypeInternal(t: ru.Type, idFields: Array[String]): SubjectType = {
+  private def getSubjectTypeInternal(t: ru.Type, idFields: Array[String], persistent: Boolean): SubjectType = {
     val properties = t.members.filter(o => !o.isMethod)
     val name = getSubjectName(t)
     val r = SubjectType(newTypeIdentifier().toString,
                         name,
-                        persistent = false,
+                        persistent = persistent,
                         properties = properties.map(getRecordProperty(idFields)).toArray)
     if (r.properties.count(o => o.id) != idFields.length) {
       throw new Exception(s"Some idfields given to getSubjectType did not exist: ${idFields
@@ -57,19 +57,40 @@ object SubjectTypeFactory extends LazyLogging {
 
   /**
     * Get a subject type for the query language, type tag required
+    * Creates a non-persistent subject
     * @tparam T type of the subject
     * @return Type description of the given type
     */
-  def getSubjectType[T: ru.TypeTag]: SubjectType =
-    getSubjectTypeInternal(ru.typeOf[T], Array.empty[String])
+  def getSubjectType[T: ru.TypeTag]: SubjectType = getSubjectType[T](persistent = false)
+
+
+  /**
+    * Get a subject type for the query language, type tag required
+    * @param persistent Should the created type be persistent or not?
+    * @tparam T type of the subject
+    * @return Type description of the given type
+    */
+  def getSubjectType[T: ru.TypeTag](persistent: Boolean): SubjectType =
+    getSubjectTypeInternal(ru.typeOf[T], Array.empty[String], persistent)
 
   /**
     * Get subject type for the query language, type tag required
+    * Creates a non-persistent subject
     * @param idFields Names of the fields that uniquely identify the record
     * @tparam T Type of the object
     * @return Type description of the given type
     */
   def getSubjectType[T: ru.TypeTag](idFields: Array[String]): SubjectType =
-    getSubjectTypeInternal(ru.typeOf[T], idFields)
+    getSubjectType[T](idFields,persistent = false)
+
+  /**
+    * Get subject type for the query language, type tag required
+    * @param idFields Names of the fields that uniquely identify the record
+    * @param persistent Should the type be persistent
+    * @tparam T Type of the object
+    * @return Type description of the given type
+    */
+  def getSubjectType[T: ru.TypeTag](idFields: Array[String], persistent: Boolean): SubjectType =
+    getSubjectTypeInternal(ru.typeOf[T], idFields, persistent)
 
 }
