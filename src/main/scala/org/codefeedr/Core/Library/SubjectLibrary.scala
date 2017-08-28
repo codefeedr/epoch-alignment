@@ -67,16 +67,10 @@ object SubjectLibrary extends LazyLogging {
     */
   @transient val Initialized: Future[Boolean] = async {
     if (!await(ZkUtil.pathExists("/Codefeedr"))) {
-      await(
-        zk.apply()
-          .map(o => o.create("/Codefeedr", null, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT))
-          .asScala)
+      await(ZkUtil.Create("/Codefeedr"))
     }
     if (!await(ZkUtil.pathExists(SubjectPath))) {
-      await(
-        zk.apply()
-          .map(o => o.create(SubjectPath, null, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT))
-          .asScala)
+       await(ZkUtil.Create(SubjectPath))
     }
   }.map(_ => true)
 
@@ -89,6 +83,7 @@ object SubjectLibrary extends LazyLogging {
   private def GetStatePath(s: String): String = SubjectPath.concat("/").concat(s).concat("/state")
   private def GetSourcePath(s: String): String = SubjectPath.concat("/").concat(s).concat("/source")
   private def GetSinkPath(s: String): String = SubjectPath.concat("/").concat(s).concat("/sink")
+  private def GetSinkPath(s: String,uuid: String): String = SubjectPath.concat("/").concat(s).concat("/sink").concat("/").concat(uuid)
 
   /**
     * Retrieve a subjectType for an arbitrary scala type
@@ -191,6 +186,80 @@ object SubjectLibrary extends LazyLogging {
       else
         watch.asScala.flatMap(o => o.update.asScala.flatMap(_ => AwaitTypeRegistration(typeName)))
     })
+  }
+
+  /**
+    * Register the given uuid as sink of the given type
+    * @param typeName name of the type to register the sink for
+    * @param uuid uuid of the sink
+    * @throws TypeNameNotFoundException when typeName is not registered
+    * @throws SinkAlreadySubscribedException when the given uuid was already registered as sink on the given type
+    * @return A future that resolves when the registration is complete
+    */
+  def RegisterSink(typeName: String, uuid: String): Future[Unit] = async {
+    //Check if type exists
+    await(AssertExists(typeName))
+    val path = GetSinkPath(typeName, uuid)
+
+    //Check if sink does not exist on type
+    if (await(ZkUtil.pathExists(path))) {
+      throw SinkAlreadySubscribedException(uuid.concat(" on ").concat(typeName))
+    }
+
+    await(ZkUtil.Create(path))
+  }
+
+  /**
+    * Unregisters the given sink uuid as sink of the given type
+    * @param typeName name of the type to remove the sink from
+    * @param uuid uuid of the sink
+    * @throws TypeNameNotFoundException when typeName is not registered
+    * @throws SinkNotSubscribedException when the given uuid was not registered as sink on the given type
+    * @return A future that resolves when the removal is complete
+    */
+  def UnRegisterSink(typeName: String, uuid: String): Future[Unit] = async {
+    //Check if type exists
+    await(AssertExists(typeName))
+    val path = GetSinkPath(typeName, uuid)
+
+    //Check if sink does not exist on type
+    if (!await(ZkUtil.pathExists(path))) {
+      throw SinkNotSubscribedException(uuid.concat(" on ").concat(typeName))
+    }
+
+    await(ZkUtil.Delete(path))
+  }
+
+  /**
+    * Gets a list of uuids for all sinks that are subscribed on the type
+    * @param typeName type to check for sinks
+    * @throws TypeNameNotFoundException when typeName is not registered
+    * @return A future that resolves with the registered sinks
+    */
+  def GetSinks(typeName: String): Future[Array[String]] = async {
+    await(AssertExists(typeName))
+    val path = GetSinkPath(typeName)
+    await(zk(path).getChildren.apply().map(o => o.children.map(o => o.name).toArray).asScala)
+  }
+
+  /**
+    * Retrieve a value if the given type has active sinks
+    * @param typeName name of the type to check for active sinks
+    * @throws TypeNameNotFoundException when typeName is not registered
+    * @return Future that will resolve into boolean if a sink exists
+    */
+  def HasSinks(typeName: String): Future[Boolean] = GetSinks(typeName).map(o => o.nonEmpty)
+
+  /**
+    * Method that asserts the given typeName exists
+    * Throws an exception if this is not the case
+    * @param typeName The name of the type to check
+    * @return A future that resolves when the check has completed
+    */
+  def AssertExists(typeName: String): Future[Unit] = async {
+    if(!await(Exists(GetSubjectPath(typeName)))) {
+      throw TypeNameNotFoundException(typeName)
+    }
   }
 
   /**
