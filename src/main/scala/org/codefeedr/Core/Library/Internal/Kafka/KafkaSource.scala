@@ -59,17 +59,19 @@ class KafkaSource(subjectType: SubjectType)
   @volatile private[Kafka] var running = true
 
   override def cancel(): Unit = {
+    logger.debug(s"Source $uuid on subject $topic is cancelled")
     running = false
   }
 
   private[Kafka] def InitRun():Unit = {
     Await.ready(SubjectLibrary.RegisterSource(subjectType.name, uuid.toString), Duration.Inf)
     //Make sure to cancel when the subject closes
-    SubjectLibrary.AwaitClose(subjectType.name).map(_=>cancel())
+    SubjectLibrary.AwaitClose(subjectType.name).onComplete(_=>cancel())
   }
 
   private[Kafka] def FinalizeRun(): Unit = {
     //Finally unsubscribe from the library
+    logger.debug(s"Unsubscribing source $uuid on subject $topic.")
     Await.ready(SubjectLibrary.UnRegisterSource(subjectType.name, uuid.toString), Duration.Inf)
   }
 
@@ -87,6 +89,7 @@ class KafkaSource(subjectType: SubjectType)
         }
         //After cancel poll one last time to make sure all data has been retrieved
         Poll()
+        FinalizeRun()
       }
 
       def Poll(): Unit = {
@@ -97,7 +100,7 @@ class KafkaSource(subjectType: SubjectType)
           .map(o => TrailedRecord(o.value(), o.key()))
           .foreach(ctx.collect)
       }
-      FinalizeRun()
+
     }
     //Maybe refactor this back to just sleeping in the main thread.
     val thread = new Thread(refreshTask)

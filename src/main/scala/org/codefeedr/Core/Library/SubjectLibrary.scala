@@ -434,8 +434,10 @@ object SubjectLibrary extends LazyLogging {
     * @param name name of the subject to close
     * @return a future that resolves when the write was succesful
     */
-  def Close(name: String): Future[Unit] =
+  def Close(name: String): Future[Unit] = {
+    logger.debug(s"closing subject $name")
     zk(GetStatePath(name)).setData(GenericSerialiser(false), -1).asScala.map(_ => Unit)
+  }
 
   /**
     * Returns a future if the subject with the given name is still open
