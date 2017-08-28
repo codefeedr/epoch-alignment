@@ -8,10 +8,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import org.codefeedr.TwitterUtils._
 
-
 object ZkUtil {
   @transient private lazy val zk: ZkClient = ZookeeperConfig.getClient
-
 
   /**
     * Retrieve a boolean if the given path exists on zookeeper
@@ -26,16 +24,15 @@ object ZkUtil {
     * @param path The path to delete
     * @return Future that resolves when the path has been deleted
     */
-  def Delete(path: String):Future[Unit] =
+  def Delete(path: String): Future[Unit] =
     zk(path).delete(-1).map(_ => ()).asScala
-
 
   /**
     * Create the given node without data
     * @param path the path to create
     * @return A future that resolves when the path has been created
     */
-  def Create(path: String):Future[String] = Create(path, null)
+  def Create(path: String): Future[String] = Create(path, null)
 
   /**
     * Creates the given path with the given byte array as data
@@ -44,10 +41,6 @@ object ZkUtil {
     * @return A future that resolves when the path has been created
     */
   def Create(path: String, data: Array[Byte]): Future[String] =
-    zk.apply().map(o => o.create(path,data,OPEN_ACL_UNSAFE,CreateMode.PERSISTENT)).asScala
-
+    zk.apply().map(o => o.create(path, data, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)).asScala
 
 }
-
-
-

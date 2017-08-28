@@ -61,7 +61,6 @@ object SubjectLibrary extends LazyLogging {
 
   @transient private lazy val zk: ZkClient = ZookeeperConfig.getClient
 
-
   /**
     * Initialisation of zookeeper
     */
@@ -70,7 +69,7 @@ object SubjectLibrary extends LazyLogging {
       await(ZkUtil.Create("/Codefeedr"))
     }
     if (!await(ZkUtil.pathExists(SubjectPath))) {
-       await(ZkUtil.Create(SubjectPath))
+      await(ZkUtil.Create(SubjectPath))
     }
   }.map(_ => true)
 
@@ -81,9 +80,13 @@ object SubjectLibrary extends LazyLogging {
     */
   private def GetSubjectPath(s: String): String = SubjectPath.concat("/").concat(s)
   private def GetStatePath(s: String): String = SubjectPath.concat("/").concat(s).concat("/state")
-  private def GetSourcePath(s: String): String = SubjectPath.concat("/").concat(s).concat("/source")
+  private def GetSourcePath(s: String): String =
+    SubjectPath.concat("/").concat(s).concat("/source")
+  private def GetSourcePath(s: String, uuid: String): String =
+    SubjectPath.concat("/").concat(s).concat("/source").concat("/").concat(uuid)
   private def GetSinkPath(s: String): String = SubjectPath.concat("/").concat(s).concat("/sink")
-  private def GetSinkPath(s: String,uuid: String): String = SubjectPath.concat("/").concat(s).concat("/sink").concat("/").concat(uuid)
+  private def GetSinkPath(s: String, uuid: String): String =
+    SubjectPath.concat("/").concat(s).concat("/sink").concat("/").concat(uuid)
 
   /**
     * Retrieve a subjectType for an arbitrary scala type
@@ -160,8 +163,9 @@ object SubjectLibrary extends LazyLogging {
     logger.debug(s"Registering new type ${subjectType.name}")
     val data = Serialiser.Serialize(subjectType)
 
-    ZkUtil.Create(GetSubjectPath(subjectType.name),data)
-      .flatMap(_ => ZkUtil.Create(GetStatePath(subjectType.name),GenericSerialiser(true)))
+    ZkUtil
+      .Create(GetSubjectPath(subjectType.name), data)
+      .flatMap(_ => ZkUtil.Create(GetStatePath(subjectType.name), GenericSerialiser(true)))
       .flatMap(_ => ZkUtil.Create(GetSinkPath(subjectType.name)))
       .flatMap(_ => ZkUtil.Create(GetSourcePath(subjectType.name)))
       .map(_ => subjectType)
@@ -169,8 +173,6 @@ object SubjectLibrary extends LazyLogging {
         case _: NodeExistsException => GetType(subjectType.name)
       }
   }
-
-
 
   /**
     * Returns a future that contains the subjectType of the given name. Waits until the given type actually gets registered
@@ -210,6 +212,27 @@ object SubjectLibrary extends LazyLogging {
   }
 
   /**
+    * Register the given uuid as source of the given type
+    * @param typeName name of the type to register the source for
+    * @param uuid uuid of the source
+    * @throws TypeNameNotFoundException when typeName is not registered
+    * @throws SinkAlreadySubscribedException when the given uuid was already registered as source on the given type
+    * @return A future that resolves when the registration is complete
+    */
+  def RegisterSource(typeName: String, uuid: String): Future[Unit] = async {
+    //Check if type exists
+    await(AssertExists(typeName))
+    val path = GetSourcePath(typeName, uuid)
+
+    //Check if sink does not exist on type
+    if (await(ZkUtil.pathExists(path))) {
+      throw SourceAlreadySubscribedException(uuid.concat(" on ").concat(typeName))
+    }
+
+    await(ZkUtil.Create(path))
+  }
+
+  /**
     * Unregisters the given sink uuid as sink of the given type
     * @param typeName name of the type to remove the sink from
     * @param uuid uuid of the sink
@@ -231,6 +254,27 @@ object SubjectLibrary extends LazyLogging {
   }
 
   /**
+    * Unregisters the given source uuid as source of the given type
+    * @param typeName name of the type to remove the source from
+    * @param uuid uuid of the source
+    * @throws TypeNameNotFoundException when typeName is not registered
+    * @throws SinkNotSubscribedException when the given uuid was not registered as source on the given type
+    * @return A future that resolves when the removal is complete
+    */
+  def UnRegisterSource(typeName: String, uuid: String): Future[Unit] = async {
+    //Check if type exists
+    await(AssertExists(typeName))
+    val path = GetSourcePath(typeName, uuid)
+
+    //Check if sink does not exist on type
+    if (!await(ZkUtil.pathExists(path))) {
+      throw SourceNotSubscribedException(uuid.concat(" on ").concat(typeName))
+    }
+
+    await(ZkUtil.Delete(path))
+  }
+
+  /**
     * Gets a list of uuids for all sinks that are subscribed on the type
     * @param typeName type to check for sinks
     * @throws TypeNameNotFoundException when typeName is not registered
@@ -243,6 +287,18 @@ object SubjectLibrary extends LazyLogging {
   }
 
   /**
+    * Gets a list of uuids for all sources that are subscribed on the type
+    * @param typeName type to check for sources
+    * @throws TypeNameNotFoundException when typeName is not registered
+    * @return A future that resolves with the registered sources
+    */
+  def GetSources(typeName: String): Future[Array[String]] = async {
+    await(AssertExists(typeName))
+    val path = GetSourcePath(typeName)
+    await(zk(path).getChildren.apply().map(o => o.children.map(o => o.name).toArray).asScala)
+  }
+
+  /**
     * Retrieve a value if the given type has active sinks
     * @param typeName name of the type to check for active sinks
     * @throws TypeNameNotFoundException when typeName is not registered
@@ -251,13 +307,21 @@ object SubjectLibrary extends LazyLogging {
   def HasSinks(typeName: String): Future[Boolean] = GetSinks(typeName).map(o => o.nonEmpty)
 
   /**
+    * Retrieve a value if the given type has active sources
+    * @param typeName name of the type to check for active sinks
+    * @throws TypeNameNotFoundException when typeName is not registered
+    * @return Future that will resolve into boolean if a source exists
+    */
+  def HasSources(typeName: String): Future[Boolean] = GetSources(typeName).map(o => o.nonEmpty)
+
+  /**
     * Method that asserts the given typeName exists
     * Throws an exception if this is not the case
     * @param typeName The name of the type to check
     * @return A future that resolves when the check has completed
     */
   def AssertExists(typeName: String): Future[Unit] = async {
-    if(!await(Exists(GetSubjectPath(typeName)))) {
+    if (!await(Exists(typeName))) {
       throw TypeNameNotFoundException(typeName)
     }
   }
@@ -272,19 +336,23 @@ object SubjectLibrary extends LazyLogging {
     */
   private[codefeedr] def UnRegisterSubject(name: String): Future[Boolean] = {
     logger.debug(s"Deleting type $name")
+
     val path = GetSubjectPath(name)
     Exists(name).flatMap(o =>
-    if(o) {
-      async {
-        await(ZkUtil.Delete(GetStatePath(name)))
-        await(ZkUtil.Delete(GetSourcePath(name)))
-        await(ZkUtil.Delete(GetSinkPath(name)))
-        await(ZkUtil.Delete(GetSubjectPath(name)))
-        true
-      }
-    } else {
-      //Return false because subject was not deleted
-      Future.successful(false)
+      if (o) {
+        async {
+          if (await(HasSinks(name))) throw ActiveSinkException(name)
+          if (await(HasSources(name))) throw ActiveSourceException(name)
+
+          await(ZkUtil.Delete(GetStatePath(name)))
+          await(ZkUtil.Delete(GetSourcePath(name)))
+          await(ZkUtil.Delete(GetSinkPath(name)))
+          await(ZkUtil.Delete(GetSubjectPath(name)))
+          true
+        }
+      } else {
+        //Return false because subject was not deleted
+        Future.successful(false)
     })
   }
 
@@ -332,6 +400,5 @@ object SubjectLibrary extends LazyLogging {
       else watch.asScala.flatMap(o => o.update.asScala.flatMap(_ => awaitClose(name)))
     })
   }
-
 
 }

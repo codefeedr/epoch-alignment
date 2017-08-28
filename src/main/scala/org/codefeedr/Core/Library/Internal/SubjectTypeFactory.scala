@@ -17,7 +17,8 @@ object SubjectTypeFactory extends LazyLogging {
     val properties = t.members.filter(o => !o.isMethod)
     val name = getSubjectName(t)
     val r = SubjectType(newTypeIdentifier().toString,
-                        name,persistent = false,
+                        name,
+                        persistent = false,
                         properties = properties.map(getRecordProperty(idFields)).toArray)
     if (r.properties.count(o => o.id) != idFields.length) {
       throw new Exception(s"Some idfields given to getSubjectType did not exist: ${idFields
