@@ -22,11 +22,11 @@ import org.codefeedr.Core.ZkTest
 import org.codefeedr.Core.Library.SubjectLibrary
 import org.codefeedr.Exceptions._
 import org.scalatest._
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.tagobjects.Slow
 
 import scala.async.Async.{async, await}
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.reflect.{ClassTag, classTag}
 
 case class TestTypeA(prop1: String)
@@ -43,30 +43,10 @@ class SubjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with Befor
   val SourceUuid = "ThisIsSourceUUID"
 
   override def beforeAll(): Unit = {
-    //TODO: If someone knows a better way to await a future in beforeAll, please let me know
-    while(!SubjectLibrary.Initialized.isCompleted) {
-      Thread.sleep(10)
-    }
-    UnregisterSinkSourceSubject()
+    Await.ready(SubjectLibrary.Initialized, Duration.Inf)
   }
 
-  def UnregisterSinkSourceSubject(): Unit = {
-    val si = SubjectLibrary.UnRegisterSink(TestTypeName,SinkUuid)
-    while(!si.isCompleted) {
-      Thread.sleep(10)
-    }
-    val so = SubjectLibrary.UnRegisterSource(TestTypeName,SourceUuid)
-    while(!so.isCompleted) {
-      Thread.sleep(10)
-    }
-    val r = SubjectLibrary.UnRegisterSubject(TestTypeName)
-    while(!r.isCompleted) {
-      Thread.sleep(10)
-    }
-    if(r.value.get.isFailure) {
-      throw new Exception("Unable to remove TestTypeA")
-    }
-  }
+  def CleanSubject(): Unit =  Await.ready(SubjectLibrary.ForceUnRegisterSubject(TestTypeName), Duration.Inf)
 
   def assertFails[TException<: Exception: ClassTag](f:Future[_]): Future[Assertion] = async {
     val exception = await(f.failed)
@@ -74,7 +54,7 @@ class SubjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with Befor
   }
 
   override def afterEach(): Unit = {
-    UnregisterSinkSourceSubject()
+    CleanSubject()
   }
 
   behavior of "SubjectLibrary"
@@ -102,7 +82,7 @@ class SubjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with Befor
 
   "SubjectLibrary.AwaitClose" should "Return a future that resolves when OnClose is called" in async {
     await(SubjectLibrary.GetOrCreateType[TestTypeA]())
-    val f = SubjectLibrary.awaitClose(TestTypeName)
+    val f = SubjectLibrary.AwaitClose(TestTypeName)
     assert(!f.isCompleted)
     SubjectLibrary.Close(TestTypeName)
     await(f)

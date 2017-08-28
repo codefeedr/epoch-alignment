@@ -379,6 +379,13 @@ object SubjectLibrary extends LazyLogging {
   }
 
   /**
+    * Removes a subject and all its children without perfoming any checks
+    * @param name the subject to delete
+    * @return a future that resolves when the delete is done
+    */
+  private[codefeedr] def ForceUnRegisterSubject(name: String): Future[Unit] = ZkUtil.DeleteRecursive(GetSubjectPath(name))
+
+  /**
     * Un-register a subject from the library
     * TODO: Refactor this to some recursive delete
     * @throws ActiveSinkException when the subject still has an active sink
@@ -443,13 +450,13 @@ object SubjectLibrary extends LazyLogging {
     * @param name name of the type to wait for
     * @return A future that resolves when the type is closed
     */
-  def awaitClose(name: String): Future[Unit] = async {
+  def AwaitClose(name: String): Future[Unit] = async {
     //Make sure to create the offer before exists is called
     val watch = zk(GetStatePath(name)).getData.watch()
     //This could cause unnessecary calls to Exists
     IsOpen(name).flatMap(o => {
       if (!o) Future.successful()
-      else watch.asScala.flatMap(o => o.update.asScala.flatMap(_ => awaitClose(name)))
+      else watch.asScala.flatMap(o => o.update.asScala.flatMap(_ => AwaitClose(name)))
     })
   }
 
