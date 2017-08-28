@@ -83,8 +83,10 @@ object SubjectLibrary extends LazyLogging {
     * @param s the name of the subject
     * @return the full path to the subject
     */
-  def GetSubjectPath(s: String): String = SubjectPath.concat("/").concat(s)
-  def GetStatePath(s: String): String = SubjectPath.concat("/").concat(s).concat("/state")
+  private def GetSubjectPath(s: String): String = SubjectPath.concat("/").concat(s)
+  private def GetStatePath(s: String): String = SubjectPath.concat("/").concat(s).concat("/state")
+  private def GetSourcePath(s: String): String = SubjectPath.concat("/").concat(s).concat("/source")
+  private def GetSinkPath(s: String): String = SubjectPath.concat("/").concat(s).concat("/sink")
 
   /**
     * Retrieve a subjectType for an arbitrary scala type
@@ -159,28 +161,19 @@ object SubjectLibrary extends LazyLogging {
     */
   private def RegisterAndAwaitType(subjectType: SubjectType)(): Future[SubjectType] = {
     logger.debug(s"Registering new type ${subjectType.name}")
-    val path = GetSubjectPath(subjectType.name)
     val data = Serialiser.Serialize(subjectType)
 
-    zk.apply()
-      .map(o => o.create(path, data, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT))
-      .asScala
+    Create(GetSubjectPath(subjectType.name),data)
+      .flatMap(_ => Create(GetStatePath(subjectType.name),GenericSerialiser(true)))
+      .flatMap(_ => Create(GetSinkPath(subjectType.name)))
+      .flatMap(_ => Create(GetSourcePath(subjectType.name)))
       .map(_ => subjectType)
-      .flatMap(
-        o =>
-          zk.apply()
-            .map(
-              o =>
-                o.create(path.concat("/state"),
-                         GenericSerialiser(true),
-                         OPEN_ACL_UNSAFE,
-                         CreateMode.PERSISTENT))
-            .asScala
-            .map(_ => o))
       .recoverWith { //Register type. When error because node already exists just retrieve this value because the first writer wins.
         case _: NodeExistsException => GetType(subjectType.name)
       }
   }
+
+
 
   /**
     * Returns a future that contains the subjectType of the given name. Waits until the given type actually gets registered
@@ -205,17 +198,46 @@ object SubjectLibrary extends LazyLogging {
     * @param name: String
     * @return A future that returns when the subject has actually been removed from the library
     */
-  private[codefeedr] def UnRegisterSubject(name: String): Future[Boolean] = async {
+  private[codefeedr] def UnRegisterSubject(name: String): Future[Boolean] = {
     logger.debug(s"Deleting type $name")
     val path = GetSubjectPath(name)
-    if (!await(Exists(name))) {
-      false
+    Exists(name).flatMap(o =>
+    if(o) {
+      async {
+        await(Delete(GetStatePath(name)))
+        await(Delete(GetSourcePath(name)))
+        await(Delete(GetSinkPath(name)))
+        await(Delete(GetSubjectPath(name)))
+        true
+      }
     } else {
-      await(zk(GetStatePath(name)).delete(-1).asScala)
-      await(zk(GetSubjectPath(name)).delete(-1).asScala)
-      true
-    }
+      Future.successful(false)
+    })
   }
+
+
+
+  private def Delete(path: String):Future[Unit] =
+    zk(path).delete(-1).map(_ => ()).asScala
+
+
+  /**
+    * Create the given node without data
+    * @param path the path to create
+    * @return A future that resolves when the path has been created
+    */
+  private def Create(path: String):Future[String] = Create(path, null)
+
+  /**
+    * Creates the given path with the given byte array as data
+    * @param path the absolute path to create
+    * @param data the data to store at the path
+    * @return A future that resolves when the path has been created
+    */
+  private def Create(path: String, data: Array[Byte]): Future[String] =
+    zk.apply().map(o => o.create(path,data,OPEN_ACL_UNSAFE,CreateMode.PERSISTENT)).asScala
+
+
 
   /**
     * Gives true if the given type was defined in the storage

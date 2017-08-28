@@ -41,12 +41,22 @@ class SubjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with Befor
     while(!SubjectLibrary.Initialized.isCompleted) {
       Thread.sleep(10)
     }
+    val r = SubjectLibrary.UnRegisterSubject("TestTypeA")
+    while(!r.isCompleted) {
+      Thread.sleep(10)
+    }
+    if(r.value.get.isFailure) {
+      throw new Exception("Unable to remove TestTypeA")
+    }
   }
 
   override def afterEach(): Unit = {
     val r = SubjectLibrary.UnRegisterSubject("TestTypeA")
     while(!r.isCompleted) {
       Thread.sleep(10)
+    }
+    if(r.value.get.isFailure) {
+      throw new Exception("Unable to remove TestTypeA")
     }
   }
 
@@ -77,7 +87,7 @@ class SubjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with Befor
     await(SubjectLibrary.GetOrCreateType[TestTypeA]())
     val f = SubjectLibrary.awaitClose("TestTypeA")
     assert(!f.isCompleted)
-    await(SubjectLibrary.Close("TestTypeA"))
+    SubjectLibrary.Close("TestTypeA")
     await(f)
     assert(!await(SubjectLibrary.IsOpen("TestTypeA")))
   }

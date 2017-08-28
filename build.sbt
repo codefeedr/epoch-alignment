@@ -35,16 +35,19 @@ val dep_core = Seq(
   "org.apache.kafka" % "kafka-clients" % "0.11.0.0",
   "com.jsuereth" %% "scala-arm" % "2.0",
   "org.scala-lang.modules" % "scala-java8-compat_2.11" % "0.8.0",
-  "org.scala-lang.modules" %% "scala-async" % "0.9.6",
+  "org.scala-lang.modules" %% "scala-async" % "0.9.7",
 
   //Twitters zookeeper client
   "com.twitter" %% "util-zk" % "6.45.0"
 )
 
+
+
 lazy val root = (project in file("."))
   .settings(
     libraryDependencies ++= dep_core,
-    libraryDependencies ++= dep_flink
+    libraryDependencies ++= dep_flink,
+    libraryDependencies ~= { _.map(_.exclude("org.slf4j", "slf4j-log4j12")) }
   )
 
 

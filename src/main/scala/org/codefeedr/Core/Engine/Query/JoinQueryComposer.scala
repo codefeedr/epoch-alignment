@@ -68,7 +68,7 @@ object JoinQueryComposer {
     val propertiesRight =
       new RecordUtils(rightType).getIndices(selectRight).map(o => rightType.properties(o))
 
-    SubjectType(UUID.randomUUID().toString, alias, propertiesLeft.union(propertiesRight))
+    SubjectType(UUID.randomUUID().toString, alias, persistent = false,propertiesLeft.union(propertiesRight))
   }
 
   /**
