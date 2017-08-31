@@ -23,10 +23,11 @@ import org.codefeedr.Core.Library.SubjectLibrary
 import org.codefeedr.Exceptions._
 import org.scalatest._
 import org.scalatest.tagobjects.Slow
+import org.scalatest.time.Milliseconds
 
 import scala.async.Async.{async, await}
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContextExecutor, Future}
+import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContextExecutor, Future, TimeoutException}
 import scala.reflect.{ClassTag, classTag}
 
 case class TestTypeA(prop1: String)
@@ -64,6 +65,7 @@ class SubjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with Befor
     val subject = await(SubjectLibrary.GetOrCreateType[TestTypeA]())
     assert(subject.properties.map(o => o.name).contains("prop1"))
     assert(await(SubjectLibrary.GetSubjectNames()).contains(TestTypeName))
+    assert(await(SubjectLibrary.IsOpen(TestTypeName)))
     assert(await(SubjectLibrary.UnRegisterSubject(TestTypeName)))
     assert(!await(SubjectLibrary.GetSubjectNames()).contains(TestTypeName))
   }
@@ -83,7 +85,7 @@ class SubjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with Befor
   "SubjectLibrary.AwaitClose" should "Return a future that resolves when OnClose is called" in async {
     await(SubjectLibrary.GetOrCreateType[TestTypeA]())
     val f = SubjectLibrary.AwaitClose(TestTypeName)
-    assert(!f.isCompleted)
+    assertThrows[TimeoutException](Await.ready(f, Duration(100, MILLISECONDS)))
     SubjectLibrary.Close(TestTypeName)
     await(f)
     assert(!await(SubjectLibrary.IsOpen(TestTypeName)))

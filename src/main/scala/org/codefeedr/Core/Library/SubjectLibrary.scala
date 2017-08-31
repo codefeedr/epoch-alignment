@@ -96,7 +96,8 @@ object SubjectLibrary extends LazyLogging {
     * @tparam T The type to register
     * @return The subjectType when it is registered in the library
     */
-  def GetOrCreateType[T: ru.TypeTag](): Future[SubjectType] = GetOrCreateType[T](persistent = false)
+  def GetOrCreateType[T: ru.TypeTag](): Future[SubjectType] =
+    GetOrCreateType[T](persistent = false)
 
   /**
     * Retrieve a subjectType for an arbitrary scala type
@@ -105,12 +106,11 @@ object SubjectLibrary extends LazyLogging {
     * @tparam T The type to register
     * @return The subjectType when it is registered in the library
     */
-  def GetOrCreateType[T: ru.TypeTag](persistent:Boolean): Future[SubjectType] = {
+  def GetOrCreateType[T: ru.TypeTag](persistent: Boolean): Future[SubjectType] = {
     val name = SubjectTypeFactory.getSubjectName[T]
     val provider = () => SubjectTypeFactory.getSubjectType[T](persistent)
     GetOrCreateType(name, provider)
   }
-
 
   /**
     * Retrieves a subjecttype from the store if one is registered
@@ -304,7 +304,7 @@ object SubjectLibrary extends LazyLogging {
       hasSources <- HasSources(typeName)
     } yield !persistent && !hasSources)
 
-    if(shouldClose) {
+    if (shouldClose) {
       await(Close(typeName))
     }
   }
@@ -321,7 +321,7 @@ object SubjectLibrary extends LazyLogging {
       hasSinks <- HasSinks(typeName)
     } yield !persistent && !hasSources && !hasSinks)
 
-    if(shouldRemove) {
+    if (shouldRemove) {
       await(UnRegisterSubject(typeName))
     }
   }
@@ -383,7 +383,8 @@ object SubjectLibrary extends LazyLogging {
     * @param name the subject to delete
     * @return a future that resolves when the delete is done
     */
-  private[codefeedr] def ForceUnRegisterSubject(name: String): Future[Unit] = ZkUtil.DeleteRecursive(GetSubjectPath(name))
+  private[codefeedr] def ForceUnRegisterSubject(name: String): Future[Unit] =
+    ZkUtil.DeleteRecursive(GetSubjectPath(name))
 
   /**
     * Un-register a subject from the library
@@ -454,12 +455,15 @@ object SubjectLibrary extends LazyLogging {
     */
   def AwaitClose(name: String): Future[Unit] = async {
     //Make sure to create the offer before exists is called
-    val watch = zk(GetStatePath(name)).getData.watch()
-    //This could cause unnessecary calls to Exists
-    IsOpen(name).flatMap(o => {
-      if (!o) Future.successful()
-      else watch.asScala.flatMap(o => o.update.asScala.flatMap(_ => AwaitClose(name)))
-    })
+    val watch = await(zk(GetStatePath(name)).getData.watch().asScala)
+
+    val isOpen = await(IsOpen(name))
+    //This could cause unnecessary calls to Exists
+    if (!isOpen) {
+      Future.successful()
+    } else {
+      await(watch.update.asScala.flatMap(_ => AwaitClose(name)))
+    }
   }
 
 }

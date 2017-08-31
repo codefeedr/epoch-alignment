@@ -13,7 +13,9 @@ import scala.reflect.runtime.{universe => ru}
 object SubjectTypeFactory extends LazyLogging {
   private def newTypeIdentifier(): UUID = UUID.randomUUID()
 
-  private def getSubjectTypeInternal(t: ru.Type, idFields: Array[String], persistent: Boolean): SubjectType = {
+  private def getSubjectTypeInternal(t: ru.Type,
+                                     idFields: Array[String],
+                                     persistent: Boolean): SubjectType = {
     val properties = t.members.filter(o => !o.isMethod)
     val name = getSubjectName(t)
     val r = SubjectType(newTypeIdentifier().toString,
@@ -63,7 +65,6 @@ object SubjectTypeFactory extends LazyLogging {
     */
   def getSubjectType[T: ru.TypeTag]: SubjectType = getSubjectType[T](persistent = false)
 
-
   /**
     * Get a subject type for the query language, type tag required
     * @param persistent Should the created type be persistent or not?
@@ -81,7 +82,7 @@ object SubjectTypeFactory extends LazyLogging {
     * @return Type description of the given type
     */
   def getSubjectType[T: ru.TypeTag](idFields: Array[String]): SubjectType =
-    getSubjectType[T](idFields,persistent = false)
+    getSubjectType[T](idFields, persistent = false)
 
   /**
     * Get subject type for the query language, type tag required

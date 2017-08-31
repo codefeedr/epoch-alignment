@@ -54,12 +54,12 @@ class KafkaGenericSink[TData: ru.TypeTag: ClassTag](subjectType: SubjectType)
   override def close(): Unit = {
     logger.debug(s"Closing producer $uuid")
     kafkaProducer.close()
-    Await.ready(SubjectLibrary.UnRegisterSink(subjectType.name, uuid.toString),Duration.Inf)
+    Await.ready(SubjectLibrary.UnRegisterSink(subjectType.name, uuid.toString), Duration.Inf)
   }
 
   override def open(parameters: Configuration): Unit = {
     logger.debug(s"Opening producer $uuid")
-    Await.ready(SubjectLibrary.RegisterSink(subjectType.name, uuid.toString),Duration.Inf)
+    Await.ready(SubjectLibrary.RegisterSink(subjectType.name, uuid.toString), Duration.Inf)
     super.open(parameters)
   }
 

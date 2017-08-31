@@ -34,7 +34,8 @@ object ZkUtil {
     * @return
     */
   def DeleteRecursive(path: String): Future[Unit] = async {
-    val childPaths = await(zk(path).getChildren.apply().map(o => o.children.map(o => o.path)).asScala)
+    val childPaths =
+      await(zk(path).getChildren.apply().map(o => o.children.map(o => o.path)).asScala)
     await(Future.sequence(childPaths.map(DeleteRecursive)))
     await(Delete(path))
   }
@@ -54,7 +55,5 @@ object ZkUtil {
     */
   def Create(path: String, data: Array[Byte]): Future[String] =
     zk.apply().map(o => o.create(path, data, OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)).asScala
-
-
 
 }

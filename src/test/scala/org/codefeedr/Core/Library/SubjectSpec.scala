@@ -24,6 +24,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
 import org.apache.flink.streaming.api.scala._
 import org.codefeedr.Core.KafkaTest
+import org.codefeedr.Model.TrailedRecord
 import org.scalatest.tagobjects.Slow
 
 import scala.collection.mutable
@@ -64,7 +65,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
   }
 
   override def beforeAll(): Unit = {
-    Await.ready(SubjectLibrary.Initialized, Duration.Inf)
+    Await.ready(SubjectLibrary.Initialized,Duration(120, SECONDS))
   }
   /**
     * Creates test input
@@ -83,7 +84,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
     logger.debug("Finished producing test sequence")
   }
 
-  def CleanSubject(): Unit =  Await.ready(SubjectLibrary.ForceUnRegisterSubject(testSubjectName), Duration.Inf)
+  def CleanSubject(): Unit =  Await.ready(SubjectLibrary.ForceUnRegisterSubject(testSubjectName),Duration(120, SECONDS))
 
   def CreateSourceQuery(nr: Int):Future[Unit] = {
     Future {
@@ -94,13 +95,13 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
 
   "Kafka-Sinks" should "retrieve all messages published by a source" taggedAs (Slow, KafkaTest) in async {
     //Create persistent environment so that the finite source will not immediately close the type
-    await(SubjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = true))
-
-    //Generate some test input
-    await(CreateTestInput())
+    await(SubjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = false))
 
     //Creating fake query environments
     val environments = Future.sequence(Seq(CreateSourceQuery(1),CreateSourceQuery(2) ,CreateSourceQuery(3)))
+
+    //Generate some test input
+    await(CreateTestInput())
 
     Console.println("Closing subject type, should close the queries")
     await(SubjectLibrary.Close(testSubjectName))
@@ -120,14 +121,16 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
     assert(TestCollector.collectedData.count(o => o._2.value == 3) == 3)
   }
 
-  "Kafka-Sinks" should " still receive data if they are created before the sink" taggedAs (Slow, KafkaTest) in async {
+
+  it should " still receive data if they are created before the sink" taggedAs (Slow, KafkaTest) in async {
     //No persistent type needed now because the sources are created first
-    await(SubjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = false))
+    await(SubjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = true))
+
+    await(CreateTestInput())
 
     //Creating fake query environments
     val environments = Future.sequence(Seq(CreateSourceQuery(1),CreateSourceQuery(2) ,CreateSourceQuery(3)))
 
-    await(CreateTestInput())
 
     Console.println("Closing subject type, should close the queries")
     await(SubjectLibrary.Close(testSubjectName))
@@ -143,12 +146,14 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
     assert(TestCollector.collectedData.count(o => o._2.value == 3) == 3)
   }
 
-  "Kafka-Sinks" should " be able to recieve data from multiple sinks" taggedAs (Slow, KafkaTest) in async {
+  it should " be able to recieve data from multiple sinks" taggedAs (Slow, KafkaTest) in async {
+    await(SubjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = true))
+
+    val environments = Future.sequence(Seq(CreateSourceQuery(1),CreateSourceQuery(2) ,CreateSourceQuery(3)))
+
     await(Future.sequence(for (_ <- 1 to 3) yield {
       CreateTestInput()
     }))
-
-    val environments = Future.sequence(Seq(CreateSourceQuery(1),CreateSourceQuery(2) ,CreateSourceQuery(3)))
 
     Console.println("Closing subject type, should close the queries")
     await(SubjectLibrary.Close(testSubjectName))
@@ -165,32 +170,35 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
 
   }
 
+
   class MyOwnSourceQuery(nr: Int) extends Runnable with LazyLogging {
     override def run(): Unit = {
-      val env = StreamExecutionEnvironment.createLocalEnvironment()
-      env.setParallelism(parallelism)
-      Await.ready(createTopology(env, nr),Duration(120, SECONDS))
+      val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
+      Await.ready(createTopology(env, nr), Duration(120, SECONDS))
       logger.debug(s"Starting environment $nr")
       env.execute(s"job$nr")
       logger.debug(s"Environment $nr finished")
     }
 
     /**
-      * Create a simple topology that converts the integer object to a string
+      * Create a simple topology that converts records back into MyOwnIntegerObjects and passes it to a testcollecter
+      *
       * @param env Stream Execution Environment to create topology on
-      * @param nr Number used to identify topology in the test
+      * @param nr  Number used to identify topology in the test
       */
-    def createTopology(env: StreamExecutionEnvironment, nr: Int): Future[Unit] = async {
-      //Construct a new source using the subjectFactory
-      val subjectType = await(SubjectLibrary.GetOrCreateType[MyOwnIntegerObject]())
-      //Transient lazy because these need to be initialized at the distributed environment
-      val unMapper = SubjectFactory.GetUnTransformer[MyOwnIntegerObject](subjectType)
-      val source = SubjectFactory.GetSource(subjectType)
-      env
-        .addSource(source)
-        .map(unMapper)
-        .map(o => Tuple2(nr, o))
-        .addSink(o => TestCollector.collect(o))
-    }
+
+    def createTopology(env: StreamExecutionEnvironment, nr: Int): Future[Unit] =
+    //Construct a new source using the subjectFactory
+      SubjectLibrary
+        .GetOrCreateType[MyOwnIntegerObject]()
+        .map(subjectType => {
+          val transformer = SubjectFactory.GetUnTransformer[MyOwnIntegerObject](subjectType)
+          val source = SubjectFactory.GetSource(subjectType)
+          env
+            .addSource(source)
+            .map(transformer)
+            .map(o => Tuple2(nr, o))
+            .addSink(o => TestCollector.collect(o))
+        })
   }
 }
