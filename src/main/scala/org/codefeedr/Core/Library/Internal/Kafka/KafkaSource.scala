@@ -54,13 +54,20 @@ class KafkaSource(subjectType: SubjectType)
   //Make this configurable?
   @transient private lazy val RefreshTime = 100
   @transient private lazy val PollTimeout = 1000
+  @transient private lazy val ClosePromise: Promise[Unit] = Promise[Unit]()
 
   @transient
   @volatile private[Kafka] var running = true
+  @transient @volatile private var started = false
 
   override def cancel(): Unit = {
     logger.debug(s"Source $uuid on subject $topic is cancelled")
     running = false
+    if(!started) {
+      //If the source never started call finalize manually
+      FinalizeRun()
+    }
+
   }
 
   private[Kafka] def InitRun(): Unit = {
@@ -75,9 +82,20 @@ class KafkaSource(subjectType: SubjectType)
     logger.debug(s"Unsubscribing source $uuid on subject $topic.")
     Await.ready(SubjectLibrary.UnRegisterSource(subjectType.name, uuid.toString),
                 Duration(120, SECONDS))
+    //Notify of the closing
+    ClosePromise.success()
   }
 
+  /**
+    * @return A future that resolves when the source has been close
+    */
+  private[Kafka] def AwaitClose(): Future[Unit] = ClosePromise.future
+
   override def run(ctx: SourceFunction.SourceContext[TrailedRecord]): Unit = {
+    started = true
+    if(!running) {
+      throw new Exception(s"$uuid already cancelled. Cannot start a cancelled source")
+    }
     logger.debug(s"Source $uuid started running.")
     InitRun()
 

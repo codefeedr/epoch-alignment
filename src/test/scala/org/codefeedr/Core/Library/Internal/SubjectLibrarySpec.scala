@@ -199,16 +199,16 @@ class SubjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with Befor
     await(assertFails[ActiveSourceException](SubjectLibrary.UnRegisterSubject(TestTypeName)))
   }
 
-  "SubjectLibrary.UnregisterSource" should "close the subject is not persistent and all sources are removed" in async {
+  "SubjectLibrary.UnregisterSink" should "close the subject is not persistent and all sinks are removed" in async {
     await(SubjectLibrary.GetOrCreateType[TestTypeA]())
-    await(SubjectLibrary.RegisterSource(TestTypeName, "Source1"))
-    await(SubjectLibrary.RegisterSource(TestTypeName, "Source2"))
-    //Register a sink because otherwise the type would be removed
-    await(SubjectLibrary.RegisterSink(TestTypeName, SinkUuid))
+    await(SubjectLibrary.RegisterSink(TestTypeName, "Sink1"))
+    await(SubjectLibrary.RegisterSink(TestTypeName, "Sink2"))
+    //Register a source because otherwise the type would be removed
+    await(SubjectLibrary.RegisterSource(TestTypeName, SourceUuid))
     assert(await(SubjectLibrary.IsOpen(TestTypeName)))
-    await(SubjectLibrary.UnRegisterSource(TestTypeName,"Source1"))
+    await(SubjectLibrary.UnRegisterSink(TestTypeName,"Sink1"))
     assert(await(SubjectLibrary.IsOpen(TestTypeName)))
-    await(SubjectLibrary.UnRegisterSource(TestTypeName,"Source2"))
+    await(SubjectLibrary.UnRegisterSink(TestTypeName,"Sink2"))
     assert(!await(SubjectLibrary.IsOpen(TestTypeName)))
   }
 

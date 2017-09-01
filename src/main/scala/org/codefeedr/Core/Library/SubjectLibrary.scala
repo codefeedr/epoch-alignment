@@ -264,6 +264,7 @@ object SubjectLibrary extends LazyLogging {
     await(ZkUtil.Delete(path))
 
     //Check if the type needs to be removed
+    await(CloseIfNoSinks(typeName))
     await(DeleteIfNoSourcesAndSinks(typeName))
   }
 
@@ -287,22 +288,22 @@ object SubjectLibrary extends LazyLogging {
     await(ZkUtil.Delete(path))
 
     //Close and/or remove the subject
-    await(CloseIfNoSources(typeName))
     await(DeleteIfNoSourcesAndSinks(typeName))
   }
 
   /**
-    * Checks if the type is not persistent and there are no sources.
+    * Checks if the type is not persistent and there are no sinks.
     * If so it closes the subject
     * @param typeName Type to check
     * @return A future that resolves when the operation is done
     */
-  private def CloseIfNoSources(typeName: String): Future[Unit] = async {
+  private def CloseIfNoSinks(typeName: String): Future[Unit] = async {
     //For non-persistent types automatically close the subject when all sources are removed
     val shouldClose = await(for {
       persistent <- GetType(typeName).map(o => o.persistent)
-      hasSources <- HasSources(typeName)
-    } yield !persistent && !hasSources)
+      hasSinks <- HasSinks(typeName)
+      isOpen <- IsOpen(typeName)
+    } yield !persistent && !hasSinks && isOpen)
 
     if (shouldClose) {
       await(Close(typeName))
@@ -463,6 +464,25 @@ object SubjectLibrary extends LazyLogging {
       Future.successful()
     } else {
       await(watch.update.asScala.flatMap(_ => AwaitClose(name)))
+    }
+  }
+
+  /**
+    * Constructs a future that resolves whenever the type is removed
+    * TODO: Optimize this with a promise instead of a recursive watch
+    * @param name name of the type to watch
+    * @return a future that resolves when the type has been removed
+    */
+  def AwaitRemove(name: String): Future[Unit] = async {
+    //Make sure to create the offer before exists is called
+    val watch = await(zk(GetSubjectPath(name)).getData.watch().asScala)
+
+    val exists = await(Exists(name))
+    //This could cause unnecessary calls to Exists
+    if (!exists) {
+      Future.successful()
+    } else {
+      await(watch.update.asScala.flatMap(_ => AwaitRemove(name)))
     }
   }
 
