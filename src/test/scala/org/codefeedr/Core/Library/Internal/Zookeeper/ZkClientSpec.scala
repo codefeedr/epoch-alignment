@@ -17,10 +17,25 @@
  *
  */
 
-package org.codefeedr.Core
+package org.codefeedr.Core.Library.Internal.Zookeeper
 
-import org.scalatest.Tag
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
-object KafkaTest extends Tag("org.codefeedr.tags.KafkaTest")
-object ZkTest extends Tag("org.codefeedr.tags.ZkTest")
-object DistributedTest extends Tag("org.codefeedr.tags.DistributedTest")
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.async.Async.{async, await}
+
+class ZkClientSpec  extends FlatSpec with Matchers with BeforeAndAfterEach {
+
+
+
+
+  override def afterEach(): Unit = {
+    Await.ready(ZkClient.DeleteRecursive("/"), Duration(10, SECONDS))
+  }
+
+  "A ZkClient" should "Be able to create nodes "in async {
+    await(ZkClient.Create("/test/somenode"))
+    assert(await(ZkClient.Exists("/test/somenode")))
+  }
+}

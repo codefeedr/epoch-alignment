@@ -1,5 +1,3 @@
-
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -21,25 +19,7 @@
 
 package org.codefeedr.Core.Library.Internal.Zookeeper
 
-import java.util.concurrent.TimeUnit
+import org.apache.zookeeper.KeeperException
+import org.apache.zookeeper.data.Stat
 
-import com.twitter.util.{Duration, JavaTimer}
-import com.twitter.zk._
-import com.typesafe.config.{Config, ConfigFactory}
-
-object ZookeeperConfig {
-  @transient lazy val conf: Config = ConfigFactory.load
-
-  /**
-    * Constructs a new zookeeper client using configuration.
-    * @return the newly constructed zookeeperclient
-    */
-  def getClient: ZkClient = {
-    implicit val timer: JavaTimer = new JavaTimer(true)
-    ZkClient(
-      conf.getString("codefeedr.zookeeper.connectionstring"),
-      Some(Duration(conf.getLong("codefeedr.zookeeper.connectTimeout"), TimeUnit.SECONDS)),
-      Duration(conf.getLong("codefeedr.zookeeper.sessionTimeout"), TimeUnit.SECONDS)
-    )
-  }
-}
+case class ZkClientException(exception: KeeperException, path: Option[String], stat: Option[Stat], ctx: Option[Any])  extends RuntimeException(exception)

@@ -36,9 +36,6 @@ val dep_core = Seq(
   "com.jsuereth" %% "scala-arm" % "2.0",
   "org.scala-lang.modules" % "scala-java8-compat_2.11" % "0.8.0",
   "org.scala-lang.modules" %% "scala-async" % "0.9.7",
-
-  //Twitters zookeeper client
-  "com.twitter" %% "util-zk" % "6.45.0"
 )
 
 

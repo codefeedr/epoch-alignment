@@ -20,9 +20,35 @@
  */
 
 package org.codefeedr.Core.Library.Internal.Zookeeper
-import org.apache.zookeeper._
 
+import scala.concurrent.{Future, Promise}
+import scala.reflect.ClassTag
 
-class ZkNode {
+/**
+  * UtilityClass
+  * @param path
+  */
+class ZkNode(path: String) {
+  /**
+    * Name of the node
+    */
+  val Name: String = path.split('/').last
 
+  def GetData[T: ClassTag]():Future[T] = ZkClient.GetData[T](path)
+  def GetChild(name: String):ZkNode = new ZkNode(s"$path/$name")
+  def GetChildren():Future[List[ZkNode]] = ZkClient.GetChildren(path).map(o => o.map(p => new ZkNode(p)))
+
+  /**
+    * Creates a future that watches the node until the data matches the given condition
+    * @param condition Condition that should be true for the future to resolve
+    * @tparam T Type of the node
+    * @return a future that resolves when the given condition is true
+    */
+  def AwaitCondition[T](condition: T => Boolean): Future[T] = ZkClient.AwaitCondition(path, condition)
+  def AwaitChild[T](child: String): Future[T] = ZkClient.AwaitChild(path, child)
+
+}
+
+object ZkNode {
+  def apply(path: String) = new ZkNode(path)
 }
