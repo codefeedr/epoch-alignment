@@ -1,38 +1,17 @@
-/*
- *  Licensed to the Apache Software Foundation (ASF) under one
- *  or more contributor license agreements.  See the NOTICE file
- *  distributed with this work for additional information
- *  regarding copyright ownership.  The ASF licenses this file
- *  to you under the Apache License, Version 2.0 (the
- *  "License"); you may not use this file except in compliance
- *  with the License.  You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+
 
 package org.codefeedr.Core.Library
 
 import java.util.UUID
 
 import akka.actor.ActorSystem
-import com.twitter.zk.ZkClient
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.zookeeper.CreateMode
 import org.apache.zookeeper.KeeperException.NodeExistsException
-import org.apache.zookeeper.ZooDefs.Ids._
 import org.codefeedr.Core.Library.Internal.Serialisation.{GenericDeserialiser, GenericSerialiser}
 import org.codefeedr.Core.Library.Internal.SubjectTypeFactory
 import org.codefeedr.Core.Library.Internal.Zookeeper.{ZkUtil, ZookeeperConfig}
-import org.codefeedr.Core.Library.SubjectLibrary.HasSources
 import org.codefeedr.Exceptions._
 import org.codefeedr.Model.SubjectType
-import org.codefeedr.TwitterUtils._
 
 import scala.async.Async.{async, await}
 import scala.collection.immutable
@@ -192,6 +171,8 @@ object SubjectLibrary extends LazyLogging {
     * @return future that will resolve when the given type has been found
     */
   def AwaitTypeRegistration(typeName: String): Future[SubjectType] = {
+    zk(SubjectPath).getChildren.monitor()
+
     //Make sure to create the offer before exists is called
     val watch = zk(SubjectPath).getChildren.watch()
     //This could cause unnessecary calls to Exists

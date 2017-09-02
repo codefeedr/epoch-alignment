@@ -1,3 +1,5 @@
+
+
 package org.codefeedr.Model
 
 case class SubjectType(uuid: String,

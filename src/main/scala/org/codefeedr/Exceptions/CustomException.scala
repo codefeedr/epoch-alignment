@@ -1,3 +1,5 @@
+
+
 package org.codefeedr.Exceptions
 
 case class ActiveSinkException(message: String) extends Exception(message)

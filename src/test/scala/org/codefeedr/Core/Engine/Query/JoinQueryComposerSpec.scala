@@ -1,3 +1,5 @@
+
+
 package org.codefeedr.Core.Engine.Query
 
 import com.typesafe.scalalogging.LazyLogging
