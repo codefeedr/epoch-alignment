@@ -23,18 +23,21 @@ package org.codefeedr.Core.Library.Internal.Zookeeper
 
 import java.util
 
+import scala.collection.JavaConverters._
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.zookeeper.AsyncCallback._
 import org.apache.zookeeper.KeeperException.Code
+import org.apache.zookeeper.Watcher.Event
 import org.apache.zookeeper.Watcher.Event._
 import org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE
 import org.apache.zookeeper._
 import org.apache.zookeeper.data.Stat
 import org.codefeedr.Core.Library.Internal.Serialisation.{GenericDeserialiser, GenericSerialiser}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.async.Async.{async, await}
+import scala.async.Async._
 import scala.reflect.ClassTag
 
 
@@ -79,7 +82,7 @@ object ZkClient {
   def Close(): Unit = zk.close()
 
   /**
-    * Get the raw bytedarray at the specific node
+    * Get the raw bytearray at the specific node
     * @param path path to the node
     * @return a promise that resolves into the raw data
     */
@@ -93,7 +96,29 @@ object ZkClient {
     resultPromise.future
   }
 
+  /**
+    * Get the data of the node on the given path, and deserialize to the given generic parameter
+    * @param path path of the node
+    * @tparam T type to deserialize to
+    * @return deserialized data
+    */
   def GetData[T: ClassTag](path: String): Future[T] = GetRawData(path).map(GenericDeserialiser[T])
+
+  /**
+    * Sets the data on the given node.
+    * @param path path to the node to set data on. This path should already exist. To create a node use CreateWithData
+    * @tparam T the object to serialise and set on the node
+    * @return a future that resolves into the path to the node once the set has been completed
+    */
+  def SetData[T: ClassTag](path: String, data: T, ctx: Option[Any] = None): Future[String] = {
+    val resultPromise = Promise[String]
+    zk.setData(path, GenericSerialiser[T](data),-1, new StatCallback {
+      override def processResult(rc: Int, path: String, c: scala.Any, stat: Stat): Unit = {
+        HandleResponse[String](resultPromise, rc, path, Some(c), path, stat)
+      }
+    },ctx)
+    resultPromise.future
+  }
 
   /**
     * Internal method used to satisfy the result promise, and perform custom error handling
@@ -105,7 +130,7 @@ object ZkClient {
     * @param stat Zookeeper stat object
     * @tparam T type of the data and promise
     */
-  private def HandleResponse[T](p: Promise[T], rc: Int, path: String, ctx: Option[Any], data: T = null, stat: Stat = null): Unit = {
+  private def HandleResponse[T](p: Promise[T], rc: Int, path: String, ctx: Option[Any], data: T, stat: Stat = null): Unit = {
     Code.get(rc) match {
       case Code.OK => p.success(data)
       case error if path == null => p.failure(ZkClientException(KeeperException.create(error), Option(path), Option(stat),ctx))
@@ -113,9 +138,6 @@ object ZkClient {
     }
   }
 
-  private def HandleEvent[T](p: Promise[T], watchedEvent: WatchedEvent, handler: (Promise[T], WatchedEvent) => Unit): Unit = {
-
-  }
 
   /**
     * Creates a node with the given data (serialises data to byte array)
@@ -141,7 +163,7 @@ object ZkClient {
     val resultPromise = Promise[Unit]()
     zk.create(path, data,OPEN_ACL_UNSAFE, CreateMode.PERSISTENT,  new StringCallback {
       override def processResult(rc: Int, path: String, ignore: Any, name: String) {
-        HandleResponse(resultPromise, rc, path,ctx)
+        HandleResponse[Unit](resultPromise, rc, path,ctx,Unit)
       }
     },ctx)
       resultPromise.future
@@ -157,7 +179,7 @@ object ZkClient {
     val resultPromise = Promise[Unit]
     zk.delete(path,-1, new VoidCallback {
       override def processResult(rc: Int, path: String, ctx: Any): Unit = {
-        HandleResponse(resultPromise, rc, path, Some(ctx))
+        HandleResponse[Unit](resultPromise, rc, path, Some(ctx),Unit)
       }
     },ctx)
     resultPromise.future
@@ -169,11 +191,11 @@ object ZkClient {
     * @param ctx context
     * @return An array of full paths to the children
     */
-  def GetChildren(path: String, ctx: Option[Any] = None): Future[List[String]] = {
-    val resultPromise = Promise[List[String]]
+  def GetChildren(path: String, ctx: Option[Any] = None): Future[Iterable[String]] = {
+    val resultPromise = Promise[Iterable[String]]
     zk.getChildren(path,false,new ChildrenCallback {
       override def processResult(rc: Int, path: String, ctx: scala.Any, children: util.List[String]): Unit = {
-        HandleResponse(resultPromise,rc,path,Some(ctx),children)
+        HandleResponse[Iterable[String]](resultPromise,rc,path,Some(ctx),children.asScala)
       }
     },ctx)
     resultPromise.future
@@ -210,32 +232,69 @@ object ZkClient {
   }
 
   /**
+    * Creates a future that resolves when the node at the given path is removed
+    * Future also resolves if the node does not exist
+    * @param path path to the node to await removal
+    * @return A future that resolves when the given node is removed
+    */
+  def AwaitRemoval(path: String): Future[Unit] = {
+    val promise = Promise[Unit]
+    PlaceAwaitRemovalWatch(promise, path)
+    promise.future
+  }
+
+  private def PlaceAwaitRemovalWatch(p:Promise[Unit], path:String): Unit = {
+    zk.exists(path, new Watcher {
+      override def process(event: WatchedEvent): Unit = {
+        if (!p.isCompleted) {
+          if (event.getType == Event.EventType.NodeDeleted) {
+            p.success()
+          } else {
+            PlaceAwaitRemovalWatch(p, path)
+          }
+        }
+      }
+    },new StatCallback {
+      override def processResult(rc: Int, path: String, c: scala.Any, stat: Stat): Unit = {
+        //If the code gets here, the node has been removed in between the firing and placing of the watch
+        if(!p.isCompleted && stat==null) {
+          HandleResponse[Unit](p, rc, path, Some(c), Unit, stat)
+        }
+      }
+    },None)
+  }
+
+
+
+  /**
     * Watches a nodes children until it actually has the given child
     * @param path path of the node to watch
     * @param child name of the child to wait for
     * @return a future that resolves when the node has a child with the given name
     */
-  def AwaitChild[T:ClassTag](path: String, child: String): Future[Unit] = {
-    val promise = Promise[Unit]
+  def AwaitChild[T:ClassTag](path: String, child: String): Future[String] = {
+    val promise = Promise[String]
     PlaceAwaitChildWatch(promise, path, child)
     promise.future
   }
 
-  private def PlaceAwaitChildWatch(p: Promise[Unit], path: String, nemo: String): Unit = {
+  private def PlaceAwaitChildWatch(p: Promise[String], path: String, nemo: String): Unit = {
     zk.getChildren(path, new Watcher {
       override def process(event: WatchedEvent): Unit = {
-        HandleEvent(p, event, (promise, _) => {
-          if(!promise.isCompleted) {
+        if(!p.isCompleted) {
+          if(event.getType == Event.EventType.NodeDeleted) {
+            p.failure(NodeDeletedException(path))
+          } else {
             PlaceAwaitChildWatch(p, path, nemo)
           }
-        })
+        }
       }
     }, new ChildrenCallback {
       override def processResult(rc: Int, path: String, ctx: scala.Any, children: util.List[String]): Unit = {
         //The promise could already be completed at this point by the previous trigger
         if(!p.isCompleted) {
           if (children.contains(nemo)) {
-            HandleResponse(p, rc, path, Some(ctx))
+            HandleResponse[String](p, rc, path, Some(ctx),nemo)
           }
         }
       }
@@ -266,19 +325,16 @@ object ZkClient {
   private def PlaceAwaitConditionWatch[T:ClassTag](p: Promise[T], path: String, condition: T => Boolean): Unit = {
     zk.getData(path,new Watcher {
       override def process(event: WatchedEvent): Unit =
-        HandleEvent(p, event, (promise, _) => {
-          if(!promise.isCompleted) {
-            PlaceAwaitConditionWatch(p, path, condition)
-          }
-        })
-
+        if(!p.isCompleted) {
+          PlaceAwaitConditionWatch(p, path, condition)
+        }
     }, new DataCallback {
       override def processResult(rc: Int, path: String, ctx: scala.Any, data: Array[Byte], stat: Stat): Unit = {
         //The promise could already be completed at this point by the previous trigger
         if(!p.isCompleted) {
-          val data = GenericDeserialiser[T](data)
-          if (condition(data)) {
-          HandleResponse(p, rc, path, Some(ctx), data)
+          val serialised = GenericDeserialiser[T](data)
+          if (condition(serialised)) {
+            HandleResponse[T](p, rc, path, Some(ctx), serialised)
           }
         }
       }

@@ -1,3 +1,5 @@
+package org.codefeedr.Core.input
+
 
 
 /*
@@ -19,6 +21,7 @@
  *
  */
 
+import org.codefeedr.Core.input.GithubConnector
 import org.scalatest._
 
 class GitHubConnectorTest extends AsyncFlatSpec with Matchers {

@@ -24,6 +24,7 @@ import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.async.Async.{async, await}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class ZkClientSpec  extends FlatSpec with Matchers with BeforeAndAfterEach {
 

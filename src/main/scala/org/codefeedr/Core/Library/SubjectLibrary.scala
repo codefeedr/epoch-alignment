@@ -1,5 +1,3 @@
-
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -21,21 +19,18 @@
 
 package org.codefeedr.Core.Library
 
-import java.util.UUID
-
-import akka.actor.ActorSystem
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.zookeeper.KeeperException.NodeExistsException
-import org.codefeedr.Core.Library.Internal.Serialisation.{GenericDeserialiser, GenericSerialiser}
+import org.codefeedr.Core.Library.Internal.Serialisation.GenericSerialiser
 import org.codefeedr.Core.Library.Internal.SubjectTypeFactory
-import org.codefeedr.Core.Library.Internal.Zookeeper.{ZkClient, ZkNode}
+import org.codefeedr.Core.Library.Internal.Zookeeper.ZkNode
 import org.codefeedr.Exceptions._
 import org.codefeedr.Model.SubjectType
 
 import scala.async.Async.{async, await}
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Future
 import scala.reflect.runtime.{universe => ru}
 
 /**
@@ -43,25 +38,13 @@ import scala.reflect.runtime.{universe => ru}
   * Created by Niels on 14/07/2017.
   */
 object SubjectLibrary extends LazyLogging {
-  //Topic used to publish all types and topics on
-  //MAke this configurable?
-  @transient private val SubjectTopic = "Subjects"
-
   //Zookeeper path where the subjects are stored
   @transient private val SubjectPath = "/Codefeedr/Subjects"
-
-  @transient private val SubjectAwaitTime = 10
-  @transient private val PollTimeout = 1000
-  @transient private lazy val system = ActorSystem("SubjectLibrary")
-  @transient private lazy val uuid = UUID.randomUUID()
-
-  @transient private lazy val Deserialiser = new GenericDeserialiser[SubjectType]()
-  @transient private lazy val Serialiser = new GenericSerialiser[SubjectType]()
 
   /**
     * Initialisation of zookeeper
     */
-  @transient val Initialized: Future[Boolean] = ZkClient.Create(SubjectPath).map(_ => true)
+  @transient val Initialized: Future[Boolean] = ZkNode(SubjectPath).Create().map(_ => true)
 
 
   /**
@@ -69,15 +52,15 @@ object SubjectLibrary extends LazyLogging {
     * @param s the name of the subject
     * @return the full path to the subject
     */
-  private def GetSubjectPath(s: String): String = SubjectPath.concat("/").concat(s)
-  private def GetStatePath(s: String): String = SubjectPath.concat("/").concat(s).concat("/state")
-  private def GetSourcePath(s: String): String =
-    SubjectPath.concat("/").concat(s).concat("/source")
-  private def GetSourcePath(s: String, uuid: String): String =
-    SubjectPath.concat("/").concat(s).concat("/source").concat("/").concat(uuid)
-  private def GetSinkPath(s: String): String = SubjectPath.concat("/").concat(s).concat("/sink")
-  private def GetSinkPath(s: String, uuid: String): String =
-    SubjectPath.concat("/").concat(s).concat("/sink").concat("/").concat(uuid)
+  private def GetSubjectNode(s: String): ZkNode = ZkNode(SubjectPath.concat("/").concat(s))
+  private def GetStateNode(s: String): ZkNode = ZkNode(SubjectPath.concat("/").concat(s).concat("/state"))
+  private def GetSourceNode(s: String): ZkNode =
+    ZkNode(SubjectPath.concat("/").concat(s).concat("/source"))
+  private def GetSourceNode(s: String, uuid: String): ZkNode =
+    ZkNode(SubjectPath.concat("/").concat(s).concat("/source").concat("/").concat(uuid))
+  private def GetSinkNode(s: String): ZkNode = ZkNode(SubjectPath.concat("/").concat(s).concat("/sink"))
+  private def GetSinkNode(s: String, uuid: String): ZkNode =
+    ZkNode(SubjectPath.concat("/").concat(s).concat("/sink").concat("/").concat(uuid))
 
   /**
     * Retrieve a subjectType for an arbitrary scala type
@@ -124,7 +107,7 @@ object SubjectLibrary extends LazyLogging {
     * @param typeName name of the type
     * @return Future with the subjecttype (or nothing if not found)
     */
-  def GetType(typeName: String): Future[SubjectType] = ZkNode(GetSubjectPath(typeName)).GetData[SubjectType]()
+  def GetType(typeName: String): Future[SubjectType] = GetSubjectNode(typeName).GetData[SubjectType]()
 
   /**
     * Retrieves the current set of registered subject names
@@ -159,9 +142,9 @@ object SubjectLibrary extends LazyLogging {
   private def RegisterAndAwaitType(subjectType: SubjectType)(): Future[SubjectType] = {
     logger.debug(s"Registering new type ${subjectType.name}")
 
-    ZkClient.CreateWithData(GetStatePath(subjectType.name), true).flatMap(_ =>
-    ZkClient.Create(GetSinkPath(subjectType.name))).flatMap(_ =>
-    ZkClient.Create(GetSourcePath(subjectType.name))).map(_ => subjectType)
+    GetStateNode(subjectType.name).Create(true).flatMap(_ =>
+      GetSinkNode(subjectType.name).Create()).flatMap(_ =>
+      GetSourceNode(subjectType.name).Create()).map(_ => subjectType)
     .recoverWith { //Register type. When error because node already exists just retrieve this value because the first writer wins.
       case _: NodeExistsException => GetType(subjectType.name)
     }
@@ -186,14 +169,14 @@ object SubjectLibrary extends LazyLogging {
   def RegisterSink(typeName: String, uuid: String): Future[Unit] = async {
     //Check if type exists
     await(AssertExists(typeName))
-    val path = GetSinkPath(typeName, uuid)
+    val sinkNode = GetSinkNode(typeName, uuid)
 
     //Check if sink does not exist on type
-    if (await(ZkClient.Exists(path))) {
+    if (await(sinkNode.Exists)) {
       throw SinkAlreadySubscribedException(uuid.concat(" on ").concat(typeName))
     }
 
-    await(ZkClient.Create(path))
+    await(sinkNode.Create())
   }
 
   /**
@@ -207,14 +190,14 @@ object SubjectLibrary extends LazyLogging {
   def RegisterSource(typeName: String, uuid: String): Future[Unit] = async {
     //Check if type exists
     await(AssertExists(typeName))
-    val path = GetSourcePath(typeName, uuid)
+    val sourceNode = GetSourceNode(typeName, uuid)
 
     //Check if sink does not exist on type
-    if (await(ZkClient.Exists(path))) {
+    if (await(sourceNode.Exists)) {
       throw SourceAlreadySubscribedException(uuid.concat(" on ").concat(typeName))
     }
 
-    await(ZkClient.Create(path))
+    await(sourceNode.Create())
   }
 
   /**
@@ -228,13 +211,13 @@ object SubjectLibrary extends LazyLogging {
   def UnRegisterSink(typeName: String, uuid: String): Future[Unit] = async {
     //Check if type exists
     await(AssertExists(typeName))
-    val path = GetSinkPath(typeName, uuid)
+    val sinkNode = GetSinkNode(typeName, uuid)
 
     //Check if sink does not exist on type
-    if (!await(ZkClient.Exists(path))) {
+    if (!await(sinkNode.Exists)) {
       throw SinkNotSubscribedException(uuid.concat(" on ").concat(typeName))
     }
-    await(ZkClient.Delete(path))
+    await(sinkNode.Delete)
 
     //Check if the type needs to be removed
     await(CloseIfNoSinks(typeName))
@@ -252,13 +235,13 @@ object SubjectLibrary extends LazyLogging {
   def UnRegisterSource(typeName: String, uuid: String): Future[Unit] = async {
     //Check if type exists
     await(AssertExists(typeName))
-    val path = GetSourcePath(typeName, uuid)
+    val sourceNode = GetSourceNode(typeName, uuid)
 
     //Check if sink does not exist on type
-    if (!await(ZkClient.Exists(path))) {
+    if (!await(sourceNode.Exists)) {
       throw SourceNotSubscribedException(uuid.concat(" on ").concat(typeName))
     }
-    await(ZkClient.Delete(path))
+    await(sourceNode.Delete)
 
     //Close and/or remove the subject
     await(DeleteIfNoSourcesAndSinks(typeName))
@@ -308,8 +291,8 @@ object SubjectLibrary extends LazyLogging {
     */
   def GetSinks(typeName: String): Future[Array[String]] = async {
     await(AssertExists(typeName))
-    val path = GetSinkPath(typeName)
-    await(ZkNode(path).GetChildren()).map(o => o.Name).toArray
+    val sinkNode = GetSinkNode(typeName)
+    await(sinkNode.GetChildren()).map(o => o.Name).toArray
   }
 
   /**
@@ -320,8 +303,8 @@ object SubjectLibrary extends LazyLogging {
     */
   def GetSources(typeName: String): Future[Array[String]] = async {
     await(AssertExists(typeName))
-    val path = GetSourcePath(typeName)
-    await(ZkNode(path).GetChildren()).map(o => o.Name).toArray
+    val sourceNode = GetSourceNode(typeName)
+    await(sourceNode.GetChildren()).map(o => o.Name).toArray
   }
 
   /**
@@ -358,7 +341,7 @@ object SubjectLibrary extends LazyLogging {
     * @return a future that resolves when the delete is done
     */
   private[codefeedr] def ForceUnRegisterSubject(name: String): Future[Unit] =
-    ZkClient.DeleteRecursive(GetSubjectPath(name))
+    GetSubjectNode(name).DeleteRecursive
 
   /**
     * Un-register a subject from the library
@@ -371,17 +354,12 @@ object SubjectLibrary extends LazyLogging {
   private[codefeedr] def UnRegisterSubject(name: String): Future[Boolean] = {
     logger.debug(s"Deleting type $name")
 
-    val path = GetSubjectPath(name)
     Exists(name).flatMap(o =>
       if (o) {
         async {
           if (await(HasSinks(name))) throw ActiveSinkException(name)
           if (await(HasSources(name))) throw ActiveSourceException(name)
-
-          await(ZkClient.Delete(GetStatePath(name)))
-          await(ZkClient.Delete(GetSourcePath(name)))
-          await(ZkClient.Delete(GetSinkPath(name)))
-          await(ZkClient.Delete(GetSubjectPath(name)))
+          await(GetSubjectNode(name).DeleteRecursive)
           true
         }
       } else {
@@ -402,7 +380,7 @@ object SubjectLibrary extends LazyLogging {
     * @param name name of the type that exists or not
     * @return
     */
-  def Exists(name: String): Future[Boolean] = ZkClient.Exists(GetSubjectPath(name))
+  def Exists(name: String): Future[Boolean] = GetSubjectNode(name).Exists
 
   /**
     * Closes the subjectType
@@ -411,7 +389,7 @@ object SubjectLibrary extends LazyLogging {
     */
   def Close(name: String): Future[Unit] = {
     logger.debug(s"closing subject $name")
-    zk(GetStatePath(name)).setData(GenericSerialiser(false), -1).asScala.map(_ => Unit)
+    GetStateNode(name).SetData(GenericSerialiser(false))
   }
 
   /**
@@ -420,43 +398,22 @@ object SubjectLibrary extends LazyLogging {
     * @return a future with boolean if the type was still open
     */
   def IsOpen(name: String): Future[Boolean] =
-    zk(GetStatePath(name)).getData.apply().map(o => GenericDeserialiser[Boolean](o.bytes)).asScala
+    GetStateNode(name).GetData()
 
   /**
     * Constructs a future that resolves whenever the given type closes
     * @param name name of the type to wait for
     * @return A future that resolves when the type is closed
     */
-  def AwaitClose(name: String): Future[Unit] = async {
-    //Make sure to create the offer before exists is called
-    val watch = await(zk(GetStatePath(name)).getData.watch().asScala)
+  def AwaitClose(name: String): Future[Unit] =
+    GetStateNode(name).AwaitCondition[Boolean](o => !o).map(_ => Unit)
 
-    val isOpen = await(IsOpen(name))
-    //This could cause unnecessary calls to Exists
-    if (!isOpen) {
-      Future.successful()
-    } else {
-      await(watch.update.asScala.flatMap(_ => AwaitClose(name)))
-    }
-  }
 
   /**
     * Constructs a future that resolves whenever the type is removed
-    * TODO: Optimize this with a promise instead of a recursive watch
     * @param name name of the type to watch
     * @return a future that resolves when the type has been removed
     */
-  def AwaitRemove(name: String): Future[Unit] = async {
-    //Make sure to create the offer before exists is called
-    val watch = await(zk(GetSubjectPath(name)).getData.watch().asScala)
-
-    val exists = await(Exists(name))
-    //This could cause unnecessary calls to Exists
-    if (!exists) {
-      Future.successful()
-    } else {
-      await(watch.update.asScala.flatMap(_ => AwaitRemove(name)))
-    }
-  }
+  def AwaitRemove(name: String): Future[Unit] = GetSubjectNode(name).AwaitRemoval()
 
 }

@@ -23,3 +23,5 @@ import org.apache.zookeeper.KeeperException
 import org.apache.zookeeper.data.Stat
 
 case class ZkClientException(exception: KeeperException, path: Option[String], stat: Option[Stat], ctx: Option[Any])  extends RuntimeException(exception)
+
+case class NodeDeletedException(path: String) extends RuntimeException
