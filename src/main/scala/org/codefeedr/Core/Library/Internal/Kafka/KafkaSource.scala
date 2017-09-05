@@ -1,5 +1,3 @@
-
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -61,12 +59,17 @@ class KafkaSource(subjectType: SubjectType)
 
   @transient
   @volatile private[Kafka] var running = true
-  @transient @volatile private var started = false
+  @transient
+  @volatile private var started = false
 
   override def cancel(): Unit = {
     logger.debug(s"Source $uuid on subject $topic is cancelled")
+    if (!started) {
+      logger.debug(
+        s"Source $uuid was cancelled before being started. When started source will still process all events and then terminate.")
+    }
     running = false
-    if(!started) {
+    if (!started) {
       //If the source never started call finalize manually
       FinalizeRun()
     }
@@ -96,8 +99,8 @@ class KafkaSource(subjectType: SubjectType)
 
   override def run(ctx: SourceFunction.SourceContext[TrailedRecord]): Unit = {
     started = true
-    if(!running) {
-      throw new Exception(s"$uuid already cancelled. Cannot start a cancelled source")
+    if (!running) {
+      logger.debug(s"$uuid already cancelled. Processing events and terminating")
     }
     logger.debug(s"Source $uuid started running.")
     InitRun()

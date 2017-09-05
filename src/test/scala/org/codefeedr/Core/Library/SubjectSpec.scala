@@ -64,12 +64,11 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
 
   override def beforeEach(): Unit = {
     CleanSubject()
+    Await.ready(SubjectLibrary.Initialize(),Duration(1, SECONDS))
     TestCollector.collectedData = mutable.MutableList[(Int, MyOwnIntegerObject)]()
   }
 
-  override def beforeAll(): Unit = {
-    Await.ready(SubjectLibrary.Initialize(),Duration(1, SECONDS))
-  }
+
   /**
     * Creates test input
     * @return
@@ -98,7 +97,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
 
   "Kafka-Sinks" should "retrieve all messages published by a source" taggedAs (Slow, KafkaTest) in async {
     //Create persistent environment so that the finite source will not immediately close the type
-    await(SubjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = false))
+    val t = await(SubjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = true))
 
     //Creating fake query environments
     val environments = Future.sequence(Seq(CreateSourceQuery(1),CreateSourceQuery(2) ,CreateSourceQuery(3)))
@@ -127,7 +126,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
 
   it should " still receive data if they are created before the sink" taggedAs (Slow, KafkaTest) in async {
     //No persistent type needed now because the sources are created first
-    await(SubjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = true))
+    val t = await(SubjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = true))
 
     await(CreateTestInput())
 
