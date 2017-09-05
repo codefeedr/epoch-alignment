@@ -68,7 +68,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
   }
 
   override def beforeAll(): Unit = {
-    Await.ready(SubjectLibrary.Initialized,Duration(120, SECONDS))
+    Await.ready(SubjectLibrary.Initialize(),Duration(1, SECONDS))
   }
   /**
     * Creates test input
@@ -87,7 +87,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
     logger.debug("Finished producing test sequence")
   }
 
-  def CleanSubject(): Unit =  Await.ready(SubjectLibrary.ForceUnRegisterSubject(testSubjectName),Duration(120, SECONDS))
+  def CleanSubject(): Unit =  Await.ready(SubjectLibrary.ForceUnRegisterSubject(testSubjectName),Duration(1, SECONDS))
 
   def CreateSourceQuery(nr: Int):Future[Unit] = {
     Future {

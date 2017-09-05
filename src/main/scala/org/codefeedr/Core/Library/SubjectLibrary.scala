@@ -41,10 +41,7 @@ object SubjectLibrary extends LazyLogging {
   //Zookeeper path where the subjects are stored
   @transient private val SubjectPath = "/Codefeedr/Subjects"
 
-  /**
-    * Initialisation of zookeeper
-    */
-  @transient val Initialized: Future[Boolean] = ZkNode(SubjectPath).Create().map(_ => true)
+
 
 
   /**
@@ -58,6 +55,14 @@ object SubjectLibrary extends LazyLogging {
   private def GetSourceNode(s: String, uuid: String): ZkNode = ZkNode(s"$SubjectPath/$s/source/$uuid")
   private def GetSinkNode(s: String): ZkNode = ZkNode(s"$SubjectPath/$s/sink")
   private def GetSinkNode(s: String, uuid: String): ZkNode = ZkNode(s"$SubjectPath/$s/sink/$uuid")
+
+  /**
+    * Initalisation method
+    * @return true when initialisation is done
+    */
+  def Initialize(): Future[Boolean] =
+   ZkNode(SubjectPath).Create().map(_ => true)
+
 
   /**
     * Retrieve a subjectType for an arbitrary scala type
@@ -92,7 +97,7 @@ object SubjectLibrary extends LazyLogging {
                       subjectProvider: () => SubjectType): Future[SubjectType] =  async {
 
     if (await(Exists(subjectName))) {
-      await(GetType(subjectName))
+      await(GetType(subjectName).map(o => o.get))
     } else {
       await(RegisterAndAwaitType(subjectProvider()))
     }
@@ -104,7 +109,7 @@ object SubjectLibrary extends LazyLogging {
     * @param typeName name of the type
     * @return Future with the subjecttype (or nothing if not found)
     */
-  def GetType(typeName: String): Future[SubjectType] = GetSubjectNode(typeName).GetData[SubjectType]().map(o => o.get)
+  def GetType(typeName: String): Future[Option[SubjectType]] = GetSubjectNode(typeName).GetData[SubjectType]()
 
   /**
     * Retrieves the current set of registered subject names
@@ -138,12 +143,14 @@ object SubjectLibrary extends LazyLogging {
     */
   private def RegisterAndAwaitType(subjectType: SubjectType)(): Future[SubjectType] = {
     logger.debug(s"Registering new type ${subjectType.name}")
-
-    GetStateNode(subjectType.name).Create(true).flatMap(_ =>
-      GetSinkNode(subjectType.name).Create()).flatMap(_ =>
-      GetSourceNode(subjectType.name).Create()).map(_ => subjectType)
-    .recoverWith { //Register type. When error because node already exists just retrieve this value because the first writer wins.
-      case _: NodeExistsException => GetType(subjectType.name)
+    async {
+      await(GetSubjectNode(subjectType.name).Create[SubjectType](subjectType))
+      await(GetStateNode(subjectType.name).Create[Boolean](true))
+      await(GetSinkNode(subjectType.name).Create())
+      await(GetSourceNode(subjectType.name).Create())
+      subjectType
+    }.recoverWith { //Register type. When error because node already exists just retrieve this value because the first writer wins.
+      case _: NodeExistsException => GetType(subjectType.name).map(o => o.get)
     }
   }
 
@@ -152,7 +159,12 @@ object SubjectLibrary extends LazyLogging {
     * @param typeName name of the type to find
     * @return future that will resolve when the given type has been found
     */
-  def AwaitTypeRegistration(typeName: String): Future[SubjectType] = ZkNode(SubjectPath).AwaitChild(typeName).flatMap(GetType)
+  def AwaitTypeRegistration(typeName: String): Future[SubjectType] = async {
+    await(ZkNode(SubjectPath).AwaitChild(typeName))
+    //Make sure to await the last registered child node, so the method does not return until the type has fully been registered
+    //await(GetSubjectNode(typeName).AwaitChild("source"))
+    await(GetType(typeName).map(o => o.get))
+  }
 
 
   /**
@@ -253,7 +265,7 @@ object SubjectLibrary extends LazyLogging {
   private def CloseIfNoSinks(typeName: String): Future[Unit] = async {
     //For non-persistent types automatically close the subject when all sources are removed
     val shouldClose = await(for {
-      persistent <- GetType(typeName).map(o => o.persistent)
+      persistent <- GetType(typeName).map(o => o.get.persistent)
       hasSinks <- HasSinks(typeName)
       isOpen <- IsOpen(typeName)
     } yield !persistent && !hasSinks && isOpen)
@@ -270,7 +282,7 @@ object SubjectLibrary extends LazyLogging {
     */
   private def DeleteIfNoSourcesAndSinks(typeName: String): Future[Unit] = async {
     val shouldRemove = await(for {
-      persistent <- GetType(typeName).map(o => o.persistent)
+      persistent <- GetType(typeName).map(o => o.get.persistent)
       hasSources <- HasSources(typeName)
       hasSinks <- HasSinks(typeName)
     } yield !persistent && !hasSources && !hasSinks)
@@ -386,7 +398,7 @@ object SubjectLibrary extends LazyLogging {
     */
   def Close(name: String): Future[Unit] = {
     logger.debug(s"closing subject $name")
-    GetStateNode(name).SetData(GenericSerialiser(false))
+    GetStateNode(name).SetData[Boolean](false)
   }
 
   /**
@@ -395,7 +407,7 @@ object SubjectLibrary extends LazyLogging {
     * @return a future with boolean if the type was still open
     */
   def IsOpen(name: String): Future[Boolean] =
-    GetStateNode(name).GetData().map(o => o.get)
+    GetStateNode(name).GetData[Boolean]().map(o => o.get)
 
   /**
     * Constructs a future that resolves whenever the given type closes

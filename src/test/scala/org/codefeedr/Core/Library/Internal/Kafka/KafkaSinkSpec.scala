@@ -25,8 +25,8 @@ import org.codefeedr.Core.Library.SubjectLibrary
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, BeforeAndAfterEach}
 
 import scala.async.Async.{async, await}
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContextExecutor, Future, TimeoutException}
 
 case class TestKafkaSinkSubject(prop1: String)
 
@@ -39,7 +39,7 @@ class KafkaSinkSpec extends AsyncFlatSpec with BeforeAndAfterEach with BeforeAnd
   }
 
   override def beforeAll(): Unit = {
-    Await.ready(SubjectLibrary.Initialized, Duration.Inf)
+    Await.ready(SubjectLibrary.Initialize(), Duration(1, SECONDS))
   }
 
   def CleanSubject(): Unit =  Await.ready(SubjectLibrary.ForceUnRegisterSubject(testSubjectName), Duration.Inf)

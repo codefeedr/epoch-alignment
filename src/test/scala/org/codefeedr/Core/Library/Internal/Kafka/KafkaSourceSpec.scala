@@ -42,7 +42,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with BeforeAndAfterEach with BeforeA
   }
 
   override def beforeAll(): Unit = {
-    Await.ready(SubjectLibrary.Initialized, Duration(10, SECONDS))
+    Await.ready(SubjectLibrary.Initialize(), Duration(1, SECONDS))
   }
 
   def CleanSubject(): Unit =  Await.ready(SubjectLibrary.ForceUnRegisterSubject(testSubjectName), Duration(10, SECONDS))
@@ -62,10 +62,10 @@ class KafkaSourceSpec extends AsyncFlatSpec with BeforeAndAfterEach with BeforeA
     await(SubjectLibrary.Close(testSubjectName))
 
     //Await the close
-    Await.ready(sourceClose, Duration(10, SECONDS))
+    Await.ready(sourceClose, Duration(1, SECONDS))
     assert(!source.running)
     //It should remove itself from the library when it has stopped running, causing the type to be removed
-    Await.ready(SubjectLibrary.AwaitClose(testSubjectName), Duration(10, SECONDS))
+    Await.ready(SubjectLibrary.AwaitClose(testSubjectName), Duration(1, SECONDS))
     assert(true)
   }
 }

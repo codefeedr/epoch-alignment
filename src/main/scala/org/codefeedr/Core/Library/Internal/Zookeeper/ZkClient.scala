@@ -307,8 +307,13 @@ class ZkClient {
       override def processResult(rc: Int, path: String, ctx: scala.Any, children: util.List[String]): Unit = {
         //The promise could already be completed at this point by the previous trigger
         if(!p.isCompleted) {
-          if (children.contains(nemo)) {
+          if (children != null && children.contains(nemo)) {
             HandleResponse[String](p, rc, path, Some(ctx),nemo)
+          }
+          val code =  Code.get(rc)
+          code match {
+            case Code.OK =>
+            case error => p.failure(ZkClientException(KeeperException.create(error, path), Option(path),None,Some(ctx)))
           }
         }
       }
