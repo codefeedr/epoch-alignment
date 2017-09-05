@@ -1,5 +1,3 @@
-
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -32,6 +30,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * @param path Path to the node on zookeeper
   */
 class ZkNode(path: String) {
+
   /**
     * Name of the node
     */
@@ -49,11 +48,13 @@ class ZkNode(path: String) {
     * @tparam T type of the data
     * @return a future of the used path
     */
-  def Create[T:ClassTag](data: T): Future[String] = ZkClient().CreateWithData(path, data).map(_ => path)
+  def Create[T: ClassTag](data: T): Future[String] =
+    ZkClient().CreateWithData(path, data).map(_ => path)
 
-  def GetData[T: ClassTag]():Future[Option[T]] = ZkClient().GetData[T](path)
-  def GetChild(name: String):ZkNode = new ZkNode(s"$path/$name")
-  def GetChildren():Future[Iterable[ZkNode]] = ZkClient().GetChildren(path).map(o => o.map(p => new ZkNode(p)))
+  def GetData[T: ClassTag](): Future[Option[T]] = ZkClient().GetData[T](path)
+  def GetChild(name: String): ZkNode = new ZkNode(s"$path/$name")
+  def GetChildren(): Future[Iterable[ZkNode]] =
+    ZkClient().GetChildren(path).map(o => o.map(p => new ZkNode(p)))
 
   /**
     * Creates a future that watches the node until the data matches the given condition
@@ -61,7 +62,8 @@ class ZkNode(path: String) {
     * @tparam T Type of the node
     * @return a future that resolves when the given condition is true
     */
-  def AwaitCondition[T:ClassTag](condition: T => Boolean): Future[T] = ZkClient().AwaitCondition(path, condition)
+  def AwaitCondition[T: ClassTag](condition: T => Boolean): Future[T] =
+    ZkClient().AwaitCondition(path, condition)
 
   /**
     * Creates a future that awaits the registration of a specific child
@@ -82,14 +84,15 @@ class ZkNode(path: String) {
     * @tparam T Data to set
     * @return a future that resolves when the data has been set
     */
-  def SetData[T:ClassTag](data: T): Future[Unit] = ZkClient().SetData[T](path, data).map(_=>Unit)
-
+  def SetData[T: ClassTag](data: T): Future[Unit] =
+    ZkClient().SetData[T](path, data).map(_ => Unit)
 
   /**
     * Checks if the node exists
     * @return a future with the result
     */
   def Exists(): Future[Boolean] = ZkClient().Exists(path)
+
   /**
     * Delete the current node
     * @return a future that resolves when the node has been deleted

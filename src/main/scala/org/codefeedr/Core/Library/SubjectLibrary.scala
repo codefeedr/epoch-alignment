@@ -41,9 +41,6 @@ object SubjectLibrary extends LazyLogging {
   //Zookeeper path where the subjects are stored
   @transient private val SubjectPath = "/Codefeedr/Subjects"
 
-
-
-
   /**
     * Get the path to the zookeeper definition of the given subject
     * @param s the name of the subject
@@ -52,7 +49,8 @@ object SubjectLibrary extends LazyLogging {
   private def GetSubjectNode(s: String): ZkNode = ZkNode(s"$SubjectPath/$s")
   private def GetStateNode(s: String): ZkNode = ZkNode(s"$SubjectPath/$s/state")
   private def GetSourceNode(s: String): ZkNode = ZkNode(s"$SubjectPath/$s/source")
-  private def GetSourceNode(s: String, uuid: String): ZkNode = ZkNode(s"$SubjectPath/$s/source/$uuid")
+  private def GetSourceNode(s: String, uuid: String): ZkNode =
+    ZkNode(s"$SubjectPath/$s/source/$uuid")
   private def GetSinkNode(s: String): ZkNode = ZkNode(s"$SubjectPath/$s/sink")
   private def GetSinkNode(s: String, uuid: String): ZkNode = ZkNode(s"$SubjectPath/$s/sink/$uuid")
 
@@ -61,8 +59,7 @@ object SubjectLibrary extends LazyLogging {
     * @return true when initialisation is done
     */
   def Initialize(): Future[Boolean] =
-   ZkNode(SubjectPath).Create().map(_ => true)
-
+    ZkNode(SubjectPath).Create().map(_ => true)
 
   /**
     * Retrieve a subjectType for an arbitrary scala type
@@ -94,7 +91,7 @@ object SubjectLibrary extends LazyLogging {
     * @return
     */
   def GetOrCreateType(subjectName: String,
-                      subjectProvider: () => SubjectType): Future[SubjectType] =  async {
+                      subjectProvider: () => SubjectType): Future[SubjectType] = async {
 
     if (await(Exists(subjectName))) {
       await(GetType(subjectName).map(o => o.get))
@@ -109,7 +106,8 @@ object SubjectLibrary extends LazyLogging {
     * @param typeName name of the type
     * @return Future with the subjecttype (or nothing if not found)
     */
-  def GetType(typeName: String): Future[Option[SubjectType]] = GetSubjectNode(typeName).GetData[SubjectType]()
+  def GetType(typeName: String): Future[Option[SubjectType]] =
+    GetSubjectNode(typeName).GetData[SubjectType]()
 
   /**
     * Retrieves the current set of registered subject names
@@ -118,7 +116,6 @@ object SubjectLibrary extends LazyLogging {
   def GetSubjectNames(): Future[immutable.Set[String]] = async {
     await(ZkNode(SubjectPath).GetChildren()).map(o => o.Name).toSet
   }
-
 
   /**
     * Registers the given subjectType, or if the subjecttype with the same name has already been registered, returns the already registered type with the same name
@@ -165,7 +162,6 @@ object SubjectLibrary extends LazyLogging {
     //await(GetSubjectNode(typeName).AwaitChild("source"))
     await(GetType(typeName).map(o => o.get))
   }
-
 
   /**
     * Register the given uuid as sink of the given type
@@ -416,7 +412,6 @@ object SubjectLibrary extends LazyLogging {
     */
   def AwaitClose(name: String): Future[Unit] =
     GetStateNode(name).AwaitCondition[Boolean](o => !o).map(_ => Unit)
-
 
   /**
     * Constructs a future that resolves whenever the type is removed
