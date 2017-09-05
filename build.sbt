@@ -14,6 +14,8 @@ val settings = Seq(
 )
 scalaVersion in ThisBuild := "2.11.11"
 
+parallelExecution in Test := false
+
 val flinkVersion = "1.3.2"
 val dep_flink = Seq(
   "org.apache.flink" %% "flink-scala" % flinkVersion % "provided",

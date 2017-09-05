@@ -27,6 +27,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
 import org.apache.flink.streaming.api.scala._
 import org.codefeedr.Core.KafkaTest
+import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
 import org.codefeedr.Model.TrailedRecord
 import org.scalatest.tagobjects.Slow
 
@@ -63,7 +64,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
   val testSubjectName = "MyOwnIntegerObject"
 
   override def beforeEach(): Unit = {
-    CleanSubject()
+    Await.ready(ZkClient().DeleteRecursive("/"), Duration(1, SECONDS))
     Await.ready(SubjectLibrary.Initialize(),Duration(1, SECONDS))
     TestCollector.collectedData = mutable.MutableList[(Int, MyOwnIntegerObject)]()
   }
@@ -85,8 +86,6 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
     env.execute()
     logger.debug("Finished producing test sequence")
   }
-
-  def CleanSubject(): Unit =  Await.ready(SubjectLibrary.ForceUnRegisterSubject(testSubjectName),Duration(1, SECONDS))
 
   def CreateSourceQuery(nr: Int):Future[Unit] = {
     Future {

@@ -37,8 +37,9 @@ class KafkaSinkSpec extends AsyncFlatSpec with BeforeAndAfterEach with BeforeAnd
 
   override def beforeEach(): Unit = {
     Await.ready(ZkClient().DeleteRecursive("/"), Duration(1, SECONDS))
-    Await.ready(SubjectLibrary.Initialize(), Duration(1, SECONDS))
+    Await.ready(SubjectLibrary.Initialize(),Duration(1, SECONDS))
   }
+
 
 
 

@@ -21,13 +21,25 @@
 
 package org.codefeedr.Core.Library.Internal.Kafka
 
-import org.scalatest.{AsyncFlatSpec, Matchers}
+import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
+import org.codefeedr.Core.Library.{SubjectLibrary}
+import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach, Matchers}
+
+import scala.concurrent.Await
+import scala.concurrent.duration.{Duration, SECONDS}
 
 /**
   * Created by Niels on 11/07/2017.
   */
-class KafkaControllerSpec extends AsyncFlatSpec with Matchers {
+class KafkaControllerSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach {
   val testTopic = "TestTopic"
+
+  override def beforeEach(): Unit = {
+    Await.ready(ZkClient().DeleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(SubjectLibrary.Initialize(),Duration(1, SECONDS))
+  }
+
+
 
   "A kafkaController" should "be able to create new topics" in {
     for {
