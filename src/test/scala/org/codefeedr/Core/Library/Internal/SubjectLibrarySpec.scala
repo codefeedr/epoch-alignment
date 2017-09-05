@@ -47,7 +47,7 @@ class SubjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with Befor
   val SourceUuid = "ThisIsSourceUUID"
 
   override def beforeAll(): Unit = {
-    Await.ready(SubjectLibrary.Initialized, Duration.Inf)
+    Await.ready(SubjectLibrary.Initialized, Duration(1, SECONDS))
   }
 
   def CleanSubject(): Unit =  Await.ready(SubjectLibrary.ForceUnRegisterSubject(TestTypeName), Duration.Inf)

@@ -42,6 +42,7 @@ class ZkClientSpec  extends FlatSpec with Matchers with BeforeAndAfterEach with 
   }
 
   "A ZkClient" should "Be able to delete nodes "in async {
+    assert(!await(ZkClient().Exists("/test/somenode")))
     await(ZkClient().Create("/test/somenode"))
     assert(await(ZkClient().Exists("/test/somenode")))
     await(ZkClient().Delete("/test/somenode"))
@@ -77,6 +78,8 @@ class ZkClientSpec  extends FlatSpec with Matchers with BeforeAndAfterEach with 
     assert(children.exists(o => o == "node1"))
     assert(children.exists(o => o== "node2"))
   }
+
+
 
   "A ZkClient" should "Be able to await construction of a child" taggedAs Slow in async {
     await(ZkClient().Create("/test"))

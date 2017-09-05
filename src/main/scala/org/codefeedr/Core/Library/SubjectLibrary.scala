@@ -52,15 +52,12 @@ object SubjectLibrary extends LazyLogging {
     * @param s the name of the subject
     * @return the full path to the subject
     */
-  private def GetSubjectNode(s: String): ZkNode = ZkNode(SubjectPath.concat("/").concat(s))
-  private def GetStateNode(s: String): ZkNode = ZkNode(SubjectPath.concat("/").concat(s).concat("/state"))
-  private def GetSourceNode(s: String): ZkNode =
-    ZkNode(SubjectPath.concat("/").concat(s).concat("/source"))
-  private def GetSourceNode(s: String, uuid: String): ZkNode =
-    ZkNode(SubjectPath.concat("/").concat(s).concat("/source").concat("/").concat(uuid))
-  private def GetSinkNode(s: String): ZkNode = ZkNode(SubjectPath.concat("/").concat(s).concat("/sink"))
-  private def GetSinkNode(s: String, uuid: String): ZkNode =
-    ZkNode(SubjectPath.concat("/").concat(s).concat("/sink").concat("/").concat(uuid))
+  private def GetSubjectNode(s: String): ZkNode = ZkNode(s"$SubjectPath/$s")
+  private def GetStateNode(s: String): ZkNode = ZkNode(s"$SubjectPath/$s/state")
+  private def GetSourceNode(s: String): ZkNode = ZkNode(s"$SubjectPath/$s/source")
+  private def GetSourceNode(s: String, uuid: String): ZkNode = ZkNode(s"$SubjectPath/$s/source/$uuid")
+  private def GetSinkNode(s: String): ZkNode = ZkNode(s"$SubjectPath/$s/sink")
+  private def GetSinkNode(s: String, uuid: String): ZkNode = ZkNode(s"$SubjectPath/$s/sink/$uuid")
 
   /**
     * Retrieve a subjectType for an arbitrary scala type
