@@ -84,6 +84,13 @@ class ZkClient {
     connectPromise.future
   }
 
+  /**
+    * Prepends codefeedr to the zookeeper path so that no actual data outside the codefeedr path can be mutated (for example to destroy kafka)
+    * @param s
+    * @return
+    */
+  private def PrependPath(s:String) = s"/CodeFeedr/$s"
+
   def Close(): Unit = zk.close()
 
   /**
@@ -93,7 +100,7 @@ class ZkClient {
     */
   def GetRawData(path: String, ctx: Option[Any] = None, watch: Option[Watcher] = None): Future[Array[Byte]] = {
     val resultPromise = Promise[Array[Byte]]
-    zk.getData(path,watch.orNull,new DataCallback {
+    zk.getData(PrependPath(path),watch.orNull,new DataCallback {
       override def processResult(rc: Int, path: String, ctx: scala.Any, data: Array[Byte], stat: Stat): Unit = {
         HandleResponse[Array[Byte]](resultPromise, rc, path, Option(ctx),data, stat)
       }
@@ -117,7 +124,7 @@ class ZkClient {
     */
   def SetData[T: ClassTag](path: String, data: T, ctx: Option[Any] = None): Future[String] = {
     val resultPromise = Promise[String]
-    zk.setData(path, GenericSerialiser[T](data),-1, new StatCallback {
+    zk.setData(PrependPath(path), GenericSerialiser[T](data),-1, new StatCallback {
       override def processResult(rc: Int, path: String, c: scala.Any, stat: Stat): Unit = {
         HandleResponse[String](resultPromise, rc, path, Some(c), path, stat)
       }
@@ -166,7 +173,7 @@ class ZkClient {
       await(Create(path.take(p)))
     }
     val resultPromise = Promise[Unit]()
-    zk.create(path, data,OPEN_ACL_UNSAFE, CreateMode.PERSISTENT,  new StringCallback {
+    zk.create(PrependPath(path), data,OPEN_ACL_UNSAFE, CreateMode.PERSISTENT,  new StringCallback {
       override def processResult(rc: Int, path: String, ignore: Any, name: String) {
         HandleResponse[Unit](resultPromise, rc, path,ctx,Unit)
       }
@@ -182,7 +189,7 @@ class ZkClient {
     */
   def Delete(path: String, ctx: Option[Any] = None): Future[Unit] = {
     val resultPromise = Promise[Unit]
-    zk.delete(path,-1, new VoidCallback {
+    zk.delete(PrependPath(path),-1, new VoidCallback {
       override def processResult(rc: Int, path: String, ctx: Any): Unit = {
         HandleResponse[Unit](resultPromise, rc, path, Some(ctx),Unit)
       }
@@ -198,7 +205,7 @@ class ZkClient {
     */
   def GetChildren(path: String, ctx: Option[Any] = None): Future[Iterable[String]] = {
     val resultPromise = Promise[Iterable[String]]
-    zk.getChildren(path,false,new ChildrenCallback {
+    zk.getChildren(PrependPath(path),false,new ChildrenCallback {
       override def processResult(rc: Int, path: String, ctx: scala.Any, children: util.List[String]): Unit = {
         HandleResponse[Iterable[String]](resultPromise,rc,path,Some(ctx),children.asScala)
       }
@@ -213,23 +220,24 @@ class ZkClient {
     */
   def DeleteRecursive(path: String): Future[Unit] = async {
     val children = await(GetChildren(path))
-    await(Future.sequence(children.map(DeleteRecursive)))
+    await(Future.sequence(children.map(o => s"$path/$o").map(DeleteRecursive)))
     await(Delete(path))
   }
 
   /**
     * Check if a path exists
+    * TODO: Proper handling of errors entering from RC
     * @param path The path to check if it exists
     * @return
     */
   def Exists(path: String, ctx: Option[Any] = None): Future[Boolean] = {
     val resultPromise = Promise[Boolean]
-    zk.exists(path,false, new StatCallback {
+    zk.exists(PrependPath(path),false, new StatCallback {
       override def processResult(rc: Int, path: String, ctx: scala.Any, stat: Stat): Unit = {
         if(stat == null) {
-          HandleResponse(resultPromise,rc,path, Some(ctx),false)
+          resultPromise.success(false)
         } else {
-          HandleResponse(resultPromise,rc,path, Some(ctx),true)
+          resultPromise.success(true)
         }
       }
     }, ctx)
@@ -249,7 +257,7 @@ class ZkClient {
   }
 
   private def PlaceAwaitRemovalWatch(p:Promise[Unit], path:String): Unit = {
-    zk.exists(path, new Watcher {
+    zk.exists(PrependPath(path), new Watcher {
       override def process(event: WatchedEvent): Unit = {
         if (!p.isCompleted) {
           if (event.getType == Event.EventType.NodeDeleted) {
@@ -284,7 +292,7 @@ class ZkClient {
   }
 
   private def PlaceAwaitChildWatch(p: Promise[String], path: String, nemo: String): Unit = {
-    zk.getChildren(path, new Watcher {
+    zk.getChildren(PrependPath(path), new Watcher {
       override def process(event: WatchedEvent): Unit = {
         if(!p.isCompleted) {
           if(event.getType == Event.EventType.NodeDeleted) {
@@ -328,7 +336,7 @@ class ZkClient {
     * @tparam T type of the data of the node
     */
   private def PlaceAwaitConditionWatch[T:ClassTag](p: Promise[T], path: String, condition: T => Boolean): Unit = {
-    zk.getData(path,new Watcher {
+    zk.getData(PrependPath(path),new Watcher {
       override def process(event: WatchedEvent): Unit =
         if(!p.isCompleted) {
           PlaceAwaitConditionWatch(p, path, condition)

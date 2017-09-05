@@ -89,18 +89,18 @@ class ZkNode(path: String) {
     * Checks if the node exists
     * @return a future with the result
     */
-  def Exists: Future[Boolean] = ZkClient().Exists(path)
+  def Exists(): Future[Boolean] = ZkClient().Exists(path)
   /**
     * Delete the current node
     * @return a future that resolves when the node has been deleted
     */
-  def Delete: Future[Unit] = ZkClient().Delete(path)
+  def Delete(): Future[Unit] = ZkClient().Delete(path)
 
   /**
     * Delete the current node and all its children
     * @return a future that resolves when the node has been deleted
     */
-  def DeleteRecursive: Future[Unit] = ZkClient().DeleteRecursive(path)
+  def DeleteRecursive(): Future[Unit] = ZkClient().DeleteRecursive(path)
 }
 
 object ZkNode {

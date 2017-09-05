@@ -89,14 +89,14 @@ object SubjectLibrary extends LazyLogging {
     * @return
     */
   def GetOrCreateType(subjectName: String,
-                      subjectProvider: () => SubjectType): Future[SubjectType] = {
-    async {
-      if (await(Exists(subjectName))) {
-        await(GetType(subjectName))
-      } else {
-        await(RegisterAndAwaitType(subjectProvider()))
-      }
+                      subjectProvider: () => SubjectType): Future[SubjectType] =  async {
+
+    if (await(Exists(subjectName))) {
+      await(GetType(subjectName))
+    } else {
+      await(RegisterAndAwaitType(subjectProvider()))
     }
+
   }
 
   /**

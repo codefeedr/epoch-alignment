@@ -21,6 +21,7 @@
 
 package org.codefeedr.Core.Library.Internal
 
+import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
 import org.codefeedr.Core.ZkTest
 import org.codefeedr.Core.Library.SubjectLibrary
 import org.codefeedr.Exceptions._
@@ -47,10 +48,12 @@ class SubjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with Befor
   val SourceUuid = "ThisIsSourceUUID"
 
   override def beforeAll(): Unit = {
-    Await.ready(SubjectLibrary.Initialized, Duration(1, SECONDS))
+    Await.ready(ZkClient().DeleteRecursive("/"), Duration(1, SECONDS))
   }
 
-  def CleanSubject(): Unit =  Await.ready(SubjectLibrary.ForceUnRegisterSubject(TestTypeName), Duration.Inf)
+  override def beforeEach(): Unit = {
+    Await.ready(SubjectLibrary.Initialized, Duration(1, SECONDS))
+  }
 
   def assertFails[TException<: Exception: ClassTag](f:Future[_]): Future[Assertion] = async {
     val exception = await(f.failed)
@@ -58,13 +61,14 @@ class SubjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with Befor
   }
 
   override def afterEach(): Unit = {
-    CleanSubject()
+    Await.ready(ZkClient().DeleteRecursive("/"), Duration(1, SECONDS))
   }
 
   behavior of "SubjectLibrary"
 
   it should "be able to register and remove a new type" taggedAs (Slow, ZkTest) in async {
-    assert(!await(SubjectLibrary.GetSubjectNames()).contains(TestTypeName))
+    val children = await(SubjectLibrary.GetSubjectNames())
+    assert(!children.contains(TestTypeName))
     val subject = await(SubjectLibrary.GetOrCreateType[TestTypeA]())
     assert(subject.properties.map(o => o.name).contains("prop1"))
     assert(await(SubjectLibrary.GetSubjectNames()).contains(TestTypeName))
