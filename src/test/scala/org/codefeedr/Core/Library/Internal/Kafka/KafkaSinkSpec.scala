@@ -21,6 +21,7 @@
 
 package org.codefeedr.Core.Library.Internal.Kafka
 
+import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
 import org.codefeedr.Core.Library.SubjectLibrary
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, BeforeAndAfterEach}
 
@@ -34,15 +35,11 @@ class KafkaSinkSpec extends AsyncFlatSpec with BeforeAndAfterEach with BeforeAnd
 
   val testSubjectName = "TestKafkaSinkSubject"
 
-  override def afterEach(): Unit = {
-    CleanSubject()
-  }
-
-  override def beforeAll(): Unit = {
+  override def beforeEach(): Unit = {
+    Await.ready(ZkClient().DeleteRecursive("/"), Duration(1, SECONDS))
     Await.ready(SubjectLibrary.Initialize(), Duration(1, SECONDS))
   }
 
-  def CleanSubject(): Unit =  Await.ready(SubjectLibrary.ForceUnRegisterSubject(testSubjectName), Duration.Inf)
 
 
   "A KafkaSink" should "Register and remove itself in the SubjectLibrary" in async {

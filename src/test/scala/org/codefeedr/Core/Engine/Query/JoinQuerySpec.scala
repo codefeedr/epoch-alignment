@@ -27,6 +27,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.scala.{StreamExecutionEnvironment, _}
 import org.codefeedr.Core.KafkaTest
+import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
 import org.codefeedr.Core.Library.SubjectLibrary
 import org.codefeedr.Core.Plugin.CollectionPlugin
 import org.codefeedr.Model.TrailedRecord
@@ -34,7 +35,8 @@ import org.scalatest.tagobjects.Slow
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach, Matchers}
 
 import scala.collection.mutable
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
+import scala.concurrent.duration.{Duration, SECONDS}
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
@@ -71,7 +73,10 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
   implicit override def executionContext: ExecutionContextExecutor =
     ExecutionContext.fromExecutorService(Executors.newWorkStealingPool(16))
 
-  override def beforeEach() {}
+  override def beforeEach(): Unit = {
+    Await.ready(ZkClient().DeleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(SubjectLibrary.Initialize(), Duration(1, SECONDS))
+  }
 
   /**
     * Utility function for tests that creates a source environment with the given data

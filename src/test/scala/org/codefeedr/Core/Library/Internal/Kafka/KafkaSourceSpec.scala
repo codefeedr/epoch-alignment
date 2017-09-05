@@ -22,6 +22,7 @@
 package org.codefeedr.Core.Library.Internal.Kafka
 
 import org.apache.flink.streaming.api.functions.source.SourceFunction.SourceContext
+import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
 import org.codefeedr.Core.Library.SubjectLibrary
 import org.codefeedr.Model.TrailedRecord
 import org.scalatest.time.Seconds
@@ -37,15 +38,12 @@ class KafkaSourceSpec extends AsyncFlatSpec with BeforeAndAfterEach with BeforeA
 
   val testSubjectName = "TestKafkaSourceSubject"
 
-  override def afterEach(): Unit = {
-    CleanSubject()
-  }
-
-  override def beforeAll(): Unit = {
+  override def beforeEach(): Unit = {
+    Await.ready(ZkClient().DeleteRecursive("/"), Duration(1, SECONDS))
     Await.ready(SubjectLibrary.Initialize(), Duration(1, SECONDS))
   }
 
-  def CleanSubject(): Unit =  Await.ready(SubjectLibrary.ForceUnRegisterSubject(testSubjectName), Duration(10, SECONDS))
+
 
 
   "A KafkaSource" should "Register and remove itself in the SubjectLibrary" in async {
