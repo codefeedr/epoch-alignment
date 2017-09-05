@@ -21,10 +21,10 @@ package org.codefeedr.Core.Library.Internal.Zookeeper
 
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FlatSpec, Matchers}
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent._
+import scala.concurrent.duration._
+import scala.async.Async._
 
 class ZkClientSpec  extends FlatSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll {
 
@@ -38,4 +38,60 @@ class ZkClientSpec  extends FlatSpec with Matchers with BeforeAndAfterEach with 
     await(ZkClient().Create("/test/somenode"))
     assert(await(ZkClient().Exists("/test/somenode")))
   }
+
+  "A ZkClient" should "Be able to delete nodes "in async {
+    await(ZkClient().Create("/test/somenode"))
+    assert(await(ZkClient().Exists("/test/somenode")))
+    await(ZkClient().Delete("/test/somenode"))
+    assert(!await(ZkClient().Exists("/test/somenode")))
+  }
+
+  "A ZkClient" should "Be able to delete nodes recursively "in async {
+    await(ZkClient().Create("/test/somenode"))
+    assert(await(ZkClient().Exists("/test/somenode")))
+    await(ZkClient().DeleteRecursive("/test"))
+    assert(!await(ZkClient().Exists("/test/somenode")))
+  }
+
+  "A ZkClient" should "Be able to create nodes with data "in async {
+    await(ZkClient().CreateWithData("/test/somenode", "hello"))
+    assert(await(ZkClient().Exists("/test/somenode")) )
+    assert(await(ZkClient().GetData[String]("\"/test/somenode\"")) == "hello")
+  }
+
+  "A ZkClient" should "Be able to create nodes without data and set data"in async {
+    await(ZkClient().Create("/test/somenode"))
+    assert(await(ZkClient().Exists("/test/somenode")) )
+    assert(await(ZkClient().GetData[String]("\"/test/somenode\"")) == null)
+    await(ZkClient().SetData("/test/somenode", "test"))
+    assert(await(ZkClient().GetData[String]("\"/test/somenode\"")) == "test")
+  }
+
+  "A ZkClient" should "Be able to await construction of a child" in async {
+    await(ZkClient().Create("/test"))
+    val future = ZkClient().AwaitChild("/test","child").map(_ => assert(true))
+    assertThrows[TimeoutException](Await.ready(future, Duration(100, MILLISECONDS)))
+    await(ZkClient().Create("/test/child"))
+    Await.ready(future, Duration(100, MILLISECONDS))
+  }
+
+  "A ZkClient" should "Be able to await removal of a node" in async {
+    await(ZkClient().Create("/test/somenode"))
+    val future = ZkClient().AwaitRemoval("/test/somenode").map(_ => assert(true))
+    assertThrows[TimeoutException](Await.ready(future, Duration(100, MILLISECONDS)))
+    await(ZkClient().Delete("/test/somenode"))
+    Await.ready(future, Duration(100, MILLISECONDS))
+  }
+
+
+  "A ZkClient" should "Be able to await a condition based on a given method" in async {
+    await(ZkClient().CreateWithData("/test/somenode", "nothello"))
+    val future = ZkClient().AwaitCondition("/test/somenode", (o:String) => o == "hello").map(_ => assert(true))
+    assertThrows[TimeoutException](Await.ready(future, Duration(100, MILLISECONDS)))
+    await(ZkClient().SetData("/test/somenode", "hello"))
+    Await.ready(future, Duration(100, MILLISECONDS))
+  }
+
+
+
 }
