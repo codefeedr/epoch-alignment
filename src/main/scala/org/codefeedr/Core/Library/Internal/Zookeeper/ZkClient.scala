@@ -75,7 +75,7 @@ class ZkClient {
     zk = new ZooKeeper(connectionString, sessionTimeout.toMillis.toInt, new Watcher {
       override def process(event: WatchedEvent): Unit = {
             event.getState match {
-            case KeeperState.SyncConnected => connectPromise.success()
+            case KeeperState.SyncConnected => connectPromise.completeWith(Create(""))
             case KeeperState.Expired => Connect()
             case _ =>
           }
@@ -89,7 +89,7 @@ class ZkClient {
     * @param s
     * @return
     */
-  private def PrependPath(s:String) = s"/CodeFeedr/$s"
+  private def PrependPath(s:String) = s"/CodeFeedr$s"
 
   def Close(): Unit = zk.close()
 
@@ -114,7 +114,7 @@ class ZkClient {
     * @tparam T type to deserialize to
     * @return deserialized data
     */
-  def GetData[T: ClassTag](path: String): Future[T] = GetRawData(path).map(GenericDeserialiser[T])
+  def GetData[T: ClassTag](path: String): Future[Option[T]] = GetRawData(path).map(o => if (o != null) Some(GenericDeserialiser[T](o)) else None )
 
   /**
     * Sets the data on the given node.
@@ -168,7 +168,7 @@ class ZkClient {
     */
   def Create(path: String, data: Array[Byte] = null, ctx: Option[Any] = None): Future[Unit] = async {
     val p = path.lastIndexOf("/")
-    if(p != 0) {
+    if(p > 0) { //Both 0 and -1 should continue
       //Create child nodes if needed
       await(Create(path.take(p)))
     }
@@ -219,8 +219,9 @@ class ZkClient {
     * @return A future that resolves when the node has been deleted
     */
   def DeleteRecursive(path: String): Future[Unit] = async {
-    val children = await(GetChildren(path))
-    await(Future.sequence(children.map(o => s"$path/$o").map(DeleteRecursive)))
+    val p = if(path == "/") "" else path
+    val children = await(GetChildren(p))
+    await(Future.sequence(children.map(o => s"$p/$o").map(DeleteRecursive)))
     await(Delete(path))
   }
 

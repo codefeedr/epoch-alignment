@@ -51,7 +51,7 @@ class ZkNode(path: String) {
     */
   def Create[T:ClassTag](data: T): Future[String] = ZkClient().CreateWithData(path, data).map(_ => path)
 
-  def GetData[T: ClassTag]():Future[T] = ZkClient().GetData[T](path)
+  def GetData[T: ClassTag]():Future[Option[T]] = ZkClient().GetData[T](path)
   def GetChild(name: String):ZkNode = new ZkNode(s"$path/$name")
   def GetChildren():Future[Iterable[ZkNode]] = ZkClient().GetChildren(path).map(o => o.map(p => new ZkNode(p)))
 

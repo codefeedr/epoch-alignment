@@ -104,7 +104,7 @@ object SubjectLibrary extends LazyLogging {
     * @param typeName name of the type
     * @return Future with the subjecttype (or nothing if not found)
     */
-  def GetType(typeName: String): Future[SubjectType] = GetSubjectNode(typeName).GetData[SubjectType]()
+  def GetType(typeName: String): Future[SubjectType] = GetSubjectNode(typeName).GetData[SubjectType]().map(o => o.get)
 
   /**
     * Retrieves the current set of registered subject names
@@ -395,7 +395,7 @@ object SubjectLibrary extends LazyLogging {
     * @return a future with boolean if the type was still open
     */
   def IsOpen(name: String): Future[Boolean] =
-    GetStateNode(name).GetData()
+    GetStateNode(name).GetData().map(o => o.get)
 
   /**
     * Constructs a future that resolves whenever the given type closes

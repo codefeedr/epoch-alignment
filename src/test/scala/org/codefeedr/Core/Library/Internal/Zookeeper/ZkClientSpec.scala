@@ -31,7 +31,7 @@ class ZkClientSpec  extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
 
 
 
-  override def afterEach(): Unit = {
+  override def beforeEach(): Unit = {
     Await.ready(ZkClient().DeleteRecursive("/"), Duration(1, SECONDS))
   }
 
@@ -59,15 +59,15 @@ class ZkClientSpec  extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
   "A ZkClient" should "Be able to create nodes with data "in async {
     await(ZkClient().CreateWithData("/ZkClientSpec/somenode", "hello"))
     assert(await(ZkClient().Exists("/ZkClientSpec/somenode")) )
-    assert(await(ZkClient().GetData[String]("/ZkClientSpec/somenode")) == "hello")
+    assert(await(ZkClient().GetData[String]("/ZkClientSpec/somenode")).get == "hello")
   }
 
   "A ZkClient" should "Be able to create nodes without data and set data"in async {
     await(ZkClient().Create("/ZkClientSpec/somenode"))
-    assert(await(ZkClient().Exists("/ZkClientSpec/somenode")) )
-    assert(await(ZkClient().GetData[String]("/ZkClientSpec/somenode")) == null)
+    assert(await(ZkClient().Exists("/ZkClientSpec/somenode")))
+    assert(await(ZkClient().GetData[String]("/ZkClientSpec/somenode")).isEmpty)
     await(ZkClient().SetData("/ZkClientSpec/somenode", "test"))
-    assert(await(ZkClient().GetData[String]("/ZkClientSpec/somenode")) == "test")
+    assert(await(ZkClient().GetData[String]("/ZkClientSpec/somenode")).get =="test")
   }
 
   "A ZkClient" should "Be able to retrieve children of a node" in async {
