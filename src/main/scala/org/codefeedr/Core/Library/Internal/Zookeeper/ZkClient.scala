@@ -56,9 +56,10 @@ class ZkClient {
 
   @transient private var zk: ZooKeeper = _
 
-  def ZkClient() {
-    Await.ready(Connect(), connectTimeout)
-  }
+  //A zkClient should always be connected
+  //More clean solutions introduce a lot of complexity for very little performance gain
+  Await.ready(Connect(), connectTimeout)
+
 
   /**
     * Connect to the zookeeper server
@@ -70,6 +71,7 @@ class ZkClient {
     if(zk != null) {
       Close()
     }
+
     zk = new ZooKeeper(connectionString, sessionTimeout.toMillis.toInt, new Watcher {
       override def process(event: WatchedEvent): Unit = {
             event.getState match {

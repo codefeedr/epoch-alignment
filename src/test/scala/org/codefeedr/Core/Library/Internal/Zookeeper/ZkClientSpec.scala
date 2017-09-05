@@ -26,12 +26,14 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import scala.async.Async._
 
+import org.scalatest.tagobjects.Slow
+
 class ZkClientSpec  extends FlatSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll {
 
 
 
   override def afterEach(): Unit = {
-    Await.ready(ZkClient().DeleteRecursive("/"), Duration(10, SECONDS))
+    Await.ready(ZkClient().DeleteRecursive("/"), Duration(1, SECONDS))
   }
 
   "A ZkClient" should "Be able to create nodes "in async {
@@ -67,29 +69,38 @@ class ZkClientSpec  extends FlatSpec with Matchers with BeforeAndAfterEach with 
     assert(await(ZkClient().GetData[String]("\"/test/somenode\"")) == "test")
   }
 
-  "A ZkClient" should "Be able to await construction of a child" in async {
+  "A ZkClient" should "Be able to retrieve children of a node" in async {
+    await(ZkClient().Create("/test/node1"))
+    await(ZkClient().Create("/test/node2"))
+    val children = await(ZkClient().GetChildren("/Test"))
+    assert(children.size == 2)
+    assert(children.exists(o => o == "node1"))
+    assert(children.exists(o => o== "node2"))
+  }
+
+  "A ZkClient" should "Be able to await construction of a child" taggedAs Slow in async {
     await(ZkClient().Create("/test"))
     val future = ZkClient().AwaitChild("/test","child").map(_ => assert(true))
     assertThrows[TimeoutException](Await.ready(future, Duration(100, MILLISECONDS)))
     await(ZkClient().Create("/test/child"))
-    Await.ready(future, Duration(100, MILLISECONDS))
+    Await.ready(future, Duration(1, SECONDS))
   }
 
-  "A ZkClient" should "Be able to await removal of a node" in async {
+  "A ZkClient" should "Be able to await removal of a node" taggedAs Slow in async {
     await(ZkClient().Create("/test/somenode"))
     val future = ZkClient().AwaitRemoval("/test/somenode").map(_ => assert(true))
     assertThrows[TimeoutException](Await.ready(future, Duration(100, MILLISECONDS)))
     await(ZkClient().Delete("/test/somenode"))
-    Await.ready(future, Duration(100, MILLISECONDS))
+    Await.ready(future, Duration(1, SECONDS))
   }
 
 
-  "A ZkClient" should "Be able to await a condition based on a given method" in async {
+  "A ZkClient" should "Be able to await a condition based on a given method" taggedAs Slow in async {
     await(ZkClient().CreateWithData("/test/somenode", "nothello"))
     val future = ZkClient().AwaitCondition("/test/somenode", (o:String) => o == "hello").map(_ => assert(true))
     assertThrows[TimeoutException](Await.ready(future, Duration(100, MILLISECONDS)))
     await(ZkClient().SetData("/test/somenode", "hello"))
-    Await.ready(future, Duration(100, MILLISECONDS))
+    Await.ready(future, Duration(1, SECONDS))
   }
 
 
