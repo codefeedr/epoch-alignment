@@ -45,16 +45,19 @@ import scala.reflect.ClassTag
   * ZkClient class
   * Took inspiration from https://github.com/bigtoast/async-zookeeper-client
   */
-object ZkClient {
-  @transient lazy val conf: Config = ConfigFactory.load
-  @transient lazy val connectionString: String = conf.getString("codefeedr.zookeeper.connectionstring")
-  @transient lazy val connectTimeout = Duration(conf.getLong("codefeedr.zookeeper.connectTimeout"), SECONDS)
-  @transient lazy val sessionTimeout = Duration(conf.getLong("codefeedr.zookeeper.sessionTimeout"), SECONDS)
+class ZkClient {
+  @transient private lazy val conf: Config = ConfigFactory.load
+  @transient private lazy val connectionString: String = conf.getString("codefeedr.zookeeper.connectionstring")
+  @transient private lazy val connectTimeout = Duration(conf.getLong("codefeedr.zookeeper.connectTimeout"), SECONDS)
+  @transient private lazy val sessionTimeout = Duration(conf.getLong("codefeedr.zookeeper.sessionTimeout"), SECONDS)
 
-  @transient lazy val assignPromise: Promise[Unit] = Promise[Unit]()
-  @transient lazy val connectPromise: Promise[Unit] = Promise[Unit]()
+  @transient private lazy val connectPromise: Promise[Unit] = Promise[Unit]()
 
   @transient private var zk: ZooKeeper = _
+
+  def ZkClient() {
+    Await.ready(Connect(), connectTimeout)
+  }
 
   /**
     * Connect to the zookeeper server
@@ -68,13 +71,12 @@ object ZkClient {
     }
     zk = new ZooKeeper(connectionString, sessionTimeout.toMillis.toInt, new Watcher {
       override def process(event: WatchedEvent): Unit = {
-        assignPromise.future onSuccess
-          {case _ => event.getState match {
+            event.getState match {
             case KeeperState.SyncConnected => connectPromise.success()
             case KeeperState.Expired => Connect()
             case _ =>
-          }}
-      }
+          }
+        }
     })
     connectPromise.future
   }
@@ -352,9 +354,11 @@ object ZkClient {
     * @return a reference to a node in the zookeeper store
     */
   def GetNode(path: String): ZkNode = new ZkNode(path)
+}
 
-  //Make sure that all clients are connected when they are constructed
-  //TODO: Do we want to construct the zookeeper client properly asynchronous aswel?
-  //Currently it is a singleton, so seems to add a lot of complexity for little gain
-    Await.ready(Connect(), connectTimeout)
+
+object ZkClient {
+  @transient lazy val client: ZkClient = new ZkClient()
+  def apply(): ZkClient = client
+
 }
