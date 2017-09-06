@@ -55,7 +55,7 @@ object TestCollector extends LazyLogging {
   * This is more of an integration test than unit test
   * Created by Niels on 14/07/2017.
   */
-class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach with LazyLogging {
+class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach with LazyLogging with LibraryServices {
   this: LibraryServices =>
 
   //These tests must run in parallel

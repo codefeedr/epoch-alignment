@@ -67,7 +67,7 @@ object TestCollector extends LazyLogging {
   * Integration test for a join
   * Created by Niels on 04/08/2017.
   */
-class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach with LazyLogging {
+class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach with LazyLogging with LibraryServices {
   this: LibraryServices =>
 
   var counter: Int = 0

@@ -25,13 +25,16 @@ import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
 import org.codefeedr.Core.Library.{LibraryServices, SubjectLibrary}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach, Matchers}
 
+import scala.async.Async.{async,await}
+
 import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, SECONDS}
+
 
 /**
   * Created by Niels on 11/07/2017.
   */
-class KafkaControllerSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach {
+class KafkaControllerSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach with LibraryServices{
   this: LibraryServices =>
   val testTopic = "TestTopic"
 
@@ -40,26 +43,17 @@ class KafkaControllerSpec extends AsyncFlatSpec with Matchers with BeforeAndAfte
     Await.ready(subjectLibrary.Initialize(),Duration(1, SECONDS))
   }
 
-
-
-  "A kafkaController" should "be able to create new topics" in {
-    for {
-      _ <- KafkaController.CreateTopic(testTopic)
-      validate <- KafkaController.GetTopics().map(o => assert(o.contains(testTopic)))
-    } yield validate
+  "A kafkaController" should "be able to create and delete new topics" in async {
+      await(KafkaController.CreateTopic(testTopic))
+      assert(await(KafkaController.GetTopics()).contains(testTopic))
+      await(KafkaController.DeleteTopic(testTopic))
+      assert(!await(KafkaController.GetTopics()).contains(testTopic))
   }
 
-  "A kafkaController" should "be able to remove a newly created topic. If this fails in kafka 'delete.topic.enable' is set to false (by default)" in {
-    for {
-      _ <- KafkaController.DeleteTopic(testTopic)
-      list <- KafkaController.GetTopics().map(o => assert(!o.contains(testTopic)))
-    } yield list
-  }
-
-  "A kafkaController" should "create a new topic if guarantee is called and it does not exist yet" in {
-    for {
-      _ <- KafkaController.GuaranteeTopic(testTopic)
-      contains <- KafkaController.GetTopics().map(o => assert(o.contains(testTopic)))
-    } yield contains
+  "A kafkaController" should "create a new topic if guarantee is called and it does not exist yet" in async {
+    await(KafkaController.GuaranteeTopic(testTopic))
+    assert(await(KafkaController.GetTopics()).contains(testTopic))
+    await(KafkaController.DeleteTopic(testTopic))
+    assert(!await(KafkaController.GetTopics()).contains(testTopic))
   }
 }

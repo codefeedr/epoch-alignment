@@ -39,7 +39,7 @@ case class TestTypeA(prop1: String)
 /**
   * Created by Niels on 18/07/2017.
   */
-class subjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach{
+class subjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach with LibraryServices{
   this: LibraryServices =>
 
   implicit override def executionContext: ExecutionContextExecutor =

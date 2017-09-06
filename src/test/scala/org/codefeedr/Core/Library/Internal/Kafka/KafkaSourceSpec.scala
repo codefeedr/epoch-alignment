@@ -34,7 +34,7 @@ import scala.concurrent.duration._
 
 case class TestKafkaSourceSubject(prop1: String)
 
-class KafkaSourceSpec extends AsyncFlatSpec with BeforeAndAfterEach with BeforeAndAfterAll{
+class KafkaSourceSpec extends AsyncFlatSpec with BeforeAndAfterEach with BeforeAndAfterAll with LibraryServices {
   this: LibraryServices =>
 
   val testSubjectName = "TestKafkaSourceSubject"

@@ -31,7 +31,7 @@ import scala.concurrent.{Await, ExecutionContextExecutor, Future, TimeoutExcepti
 
 case class TestKafkaSinkSubject(prop1: String)
 
-class KafkaSinkSpec extends AsyncFlatSpec with BeforeAndAfterEach with BeforeAndAfterAll{
+class KafkaSinkSpec extends AsyncFlatSpec with BeforeAndAfterEach with BeforeAndAfterAll with LibraryServices {
   this: LibraryServices =>
 
 
