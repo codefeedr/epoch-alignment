@@ -22,7 +22,7 @@
 package org.codefeedr.Core.Library.Internal.Kafka
 
 import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
-import org.codefeedr.Core.Library.{SubjectLibrary}
+import org.codefeedr.Core.Library.{LibraryServices, SubjectLibrary}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach, Matchers}
 
 import scala.concurrent.Await
@@ -32,11 +32,12 @@ import scala.concurrent.duration.{Duration, SECONDS}
   * Created by Niels on 11/07/2017.
   */
 class KafkaControllerSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach {
+  this: LibraryServices =>
   val testTopic = "TestTopic"
 
   override def beforeEach(): Unit = {
-    Await.ready(ZkClient().DeleteRecursive("/"), Duration(1, SECONDS))
-    Await.ready(SubjectLibrary.Initialize(),Duration(1, SECONDS))
+    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(subjectLibrary.Initialize(),Duration(1, SECONDS))
   }
 
 

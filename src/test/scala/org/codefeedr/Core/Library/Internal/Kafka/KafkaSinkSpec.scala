@@ -22,7 +22,7 @@
 package org.codefeedr.Core.Library.Internal.Kafka
 
 import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
-import org.codefeedr.Core.Library.SubjectLibrary
+import org.codefeedr.Core.Library.{LibraryServices, SubjectLibrary}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, BeforeAndAfterEach}
 
 import scala.async.Async.{async, await}
@@ -32,27 +32,29 @@ import scala.concurrent.{Await, ExecutionContextExecutor, Future, TimeoutExcepti
 case class TestKafkaSinkSubject(prop1: String)
 
 class KafkaSinkSpec extends AsyncFlatSpec with BeforeAndAfterEach with BeforeAndAfterAll{
+  this: LibraryServices =>
+
 
   val testSubjectName = "TestKafkaSinkSubject"
 
   override def beforeEach(): Unit = {
-    Await.ready(ZkClient().DeleteRecursive("/"), Duration(1, SECONDS))
-    Await.ready(SubjectLibrary.Initialize(),Duration(1, SECONDS))
+    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(subjectLibrary.Initialize(),Duration(1, SECONDS))
   }
 
 
 
 
   "A KafkaSink" should "Register and remove itself in the SubjectLibrary" in async {
-    val subject = await(SubjectLibrary.GetOrCreateType[TestKafkaSinkSubject]())
-    await(SubjectLibrary.RegisterSource(testSubjectName, "SomeSource"))
-    val sink = new KafkaGenericSink[TestKafkaSinkSubject](subject)
-    assert(!await(SubjectLibrary.GetSinks(testSubjectName)).contains(sink.uuid.toString))
+    val subject = await(subjectLibrary.GetOrCreateType[TestKafkaSinkSubject]())
+    await(subjectLibrary.RegisterSource(testSubjectName, "SomeSource"))
+    val sink = new KafkaGenericSink[TestKafkaSinkSubject](subject,subjectLibrary)
+    assert(!await(subjectLibrary.GetSinks(testSubjectName)).contains(sink.uuid.toString))
     sink.open(null)
-    assert(await(SubjectLibrary.GetSinks(testSubjectName)).contains(sink.uuid.toString))
+    assert(await(subjectLibrary.GetSinks(testSubjectName)).contains(sink.uuid.toString))
     sink.close()
-    val r = assert(!await(SubjectLibrary.GetSinks(testSubjectName)).contains(sink.uuid.toString))
-    await(SubjectLibrary.UnRegisterSource(testSubjectName, "SomeSource"))
+    val r = assert(!await(subjectLibrary.GetSinks(testSubjectName)).contains(sink.uuid.toString))
+    await(subjectLibrary.UnRegisterSource(testSubjectName, "SomeSource"))
     r
   }
 }

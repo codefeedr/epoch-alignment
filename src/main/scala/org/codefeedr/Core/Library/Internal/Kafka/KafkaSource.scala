@@ -39,7 +39,7 @@ import scala.util.Try
 /**
   * Created by Niels on 18/07/2017.
   */
-class KafkaSource(subjectType: SubjectType)
+class KafkaSource(subjectType: SubjectType, subjectLibrary: SubjectLibrary)
     extends RichSourceFunction[TrailedRecord]
     with LazyLogging {
 
@@ -77,16 +77,16 @@ class KafkaSource(subjectType: SubjectType)
   }
 
   private[Kafka] def InitRun(): Unit = {
-    Await.ready(SubjectLibrary.RegisterSource(subjectType.name, uuid.toString),
+    Await.ready(subjectLibrary.RegisterSource(subjectType.name, uuid.toString),
                 Duration(120, SECONDS))
     //Make sure to cancel when the subject closes
-    SubjectLibrary.AwaitClose(subjectType.name).onComplete(_ => cancel())
+    subjectLibrary.AwaitClose(subjectType.name).onComplete(_ => cancel())
   }
 
   private[Kafka] def FinalizeRun(): Unit = {
     //Finally unsubscribe from the library
     logger.debug(s"Unsubscribing source $uuid on subject $topic.")
-    Await.ready(SubjectLibrary.UnRegisterSource(subjectType.name, uuid.toString),
+    Await.ready(subjectLibrary.UnRegisterSource(subjectType.name, uuid.toString),
                 Duration(120, SECONDS))
     //Notify of the closing
     ClosePromise.success()

@@ -36,7 +36,7 @@ import scala.reflect.runtime.{universe => ru}
 /**
   * Created by Niels on 31/07/2017.
   */
-class KafkaGenericSink[TData: ru.TypeTag: ClassTag](subjectType: SubjectType)
+class KafkaGenericSink[TData: ru.TypeTag: ClassTag](subjectType: SubjectType, subjectLibrary:SubjectLibrary)
     extends RichSinkFunction[TData]
     with LazyLogging {
   @transient private lazy val kafkaProducer = {
@@ -55,12 +55,12 @@ class KafkaGenericSink[TData: ru.TypeTag: ClassTag](subjectType: SubjectType)
   override def close(): Unit = {
     logger.debug(s"Closing producer $uuid")
     kafkaProducer.close()
-    Await.ready(SubjectLibrary.UnRegisterSink(subjectType.name, uuid.toString), Duration.Inf)
+    Await.ready(subjectLibrary.UnRegisterSink(subjectType.name, uuid.toString), Duration.Inf)
   }
 
   override def open(parameters: Configuration): Unit = {
     logger.debug(s"Opening producer $uuid")
-    Await.ready(SubjectLibrary.RegisterSink(subjectType.name, uuid.toString), Duration.Inf)
+    Await.ready(subjectLibrary.RegisterSink(subjectType.name, uuid.toString), Duration.Inf)
     super.open(parameters)
   }
 

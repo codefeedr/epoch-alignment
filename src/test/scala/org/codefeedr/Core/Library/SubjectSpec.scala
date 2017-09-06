@@ -56,6 +56,8 @@ object TestCollector extends LazyLogging {
   * Created by Niels on 14/07/2017.
   */
 class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach with LazyLogging {
+  this: LibraryServices =>
+
   //These tests must run in parallel
   implicit override def executionContext: ExecutionContextExecutor =
     ExecutionContext.fromExecutorService(Executors.newWorkStealingPool(16))
@@ -64,8 +66,8 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
   val testSubjectName = "MyOwnIntegerObject"
 
   override def beforeEach(): Unit = {
-    Await.ready(ZkClient().DeleteRecursive("/"), Duration(1, SECONDS))
-    Await.ready(SubjectLibrary.Initialize(),Duration(1, SECONDS))
+    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(subjectLibrary.Initialize(),Duration(1, SECONDS))
     TestCollector.collectedData = mutable.MutableList[(Int, MyOwnIntegerObject)]()
   }
 
@@ -96,7 +98,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
 
   "Kafka-Sinks" should "retrieve all messages published by a source" taggedAs (Slow, KafkaTest) in async {
     //Create persistent environment so that the finite source will not immediately close the type
-    val t = await(SubjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = true))
+    val t = await(subjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = true))
 
     //Creating fake query environments
     val environments = Future.sequence(Seq(CreateSourceQuery(1),CreateSourceQuery(2) ,CreateSourceQuery(3)))
@@ -105,13 +107,13 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
     await(CreateTestInput())
 
     Console.println("Closing subject type, should close the queries")
-    await(SubjectLibrary.Close(testSubjectName))
+    await(subjectLibrary.Close(testSubjectName))
     Console.println("Waiting for completion of queries")
     await(environments)
     println("Completed")
 
     //Clean up subject
-    await(SubjectLibrary.UnRegisterSubject(testSubjectName))
+    await(subjectLibrary.UnRegisterSubject(testSubjectName))
 
     //Assert results
     assert(TestCollector.collectedData.count(o => o._1 == 1) == 3)
@@ -125,7 +127,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
 
   it should " still receive data if they are created before the sink" taggedAs (Slow, KafkaTest) in async {
     //No persistent type needed now because the sources are created first
-    val t = await(SubjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = true))
+    val t = await(subjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = true))
 
     await(CreateTestInput())
 
@@ -134,7 +136,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
 
 
     Console.println("Closing subject type, should close the queries")
-    await(SubjectLibrary.Close(testSubjectName))
+    await(subjectLibrary.Close(testSubjectName))
     Console.println("Waiting for completion of queries")
     await(environments)
     println("Completed")
@@ -148,7 +150,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
   }
 
   it should " be able to recieve data from multiple sinks" taggedAs (Slow, KafkaTest) in async {
-    await(SubjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = true))
+    await(subjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = true))
 
     val environments = Future.sequence(Seq(CreateSourceQuery(1),CreateSourceQuery(2) ,CreateSourceQuery(3)))
 
@@ -157,7 +159,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
     }))
 
     Console.println("Closing subject type, should close the queries")
-    await(SubjectLibrary.Close(testSubjectName))
+    await(subjectLibrary.Close(testSubjectName))
     Console.println("Waiting for completion of queries")
     await(environments)
     println("Completed")
@@ -190,7 +192,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
 
     def createTopology(env: StreamExecutionEnvironment, nr: Int): Future[Unit] =
     //Construct a new source using the subjectFactory
-      SubjectLibrary
+      subjectLibrary
         .GetOrCreateType[MyOwnIntegerObject]()
         .map(subjectType => {
           val transformer = SubjectFactory.GetUnTransformer[MyOwnIntegerObject](subjectType)

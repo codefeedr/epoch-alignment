@@ -65,7 +65,7 @@ class ZkClient {
     * If already connected, reconnects
     * @return a future that resolves when a connection has been made
     */
-  def Connect(): Future[Unit] = {
+  private def Connect(): Future[Unit] = {
     //If zookeeper already assigned first close existing connection
     if (zk != null) {
       Close()
@@ -94,7 +94,7 @@ class ZkClient {
     */
   private def PrependPath(s: String) = s"/CodeFeedr$s"
 
-  def Close(): Unit = zk.close()
+  private def Close(): Unit = zk.close()
 
   /**
     * Get the raw bytearray at the specific node
@@ -102,8 +102,8 @@ class ZkClient {
     * @return a promise that resolves into the raw data
     */
   def GetRawData(path: String,
-                 ctx: Option[Any] = None,
-                 watch: Option[Watcher] = None): Future[Array[Byte]] = {
+                          ctx: Option[Any] = None,
+                          watch: Option[Watcher] = None): Future[Array[Byte]] = {
     val resultPromise = Promise[Array[Byte]]
     zk.getData(
       PrependPath(path),
@@ -381,9 +381,9 @@ class ZkClient {
               case error =>
                 p.failure(
                   ZkClientException(KeeperException.create(error, path),
-                                    Option(path),
-                                    None,
-                                    Some(ctx)))
+                    Option(path),
+                    None,
+                    Some(ctx)))
             }
           }
         }
@@ -442,21 +442,4 @@ class ZkClient {
       None
     )
   }
-
-  /**
-    * @return a node representing the root
-    */
-  def GetRoot(): ZkNode = new ZkNode("/")
-
-  /**
-    * @param path absolute path to the node to retrieve
-    * @return a reference to a node in the zookeeper store
-    */
-  def GetNode(path: String): ZkNode = new ZkNode(path)
-}
-
-object ZkClient {
-  @transient lazy val client: ZkClient = new ZkClient()
-  def apply(): ZkClient = client
-
 }

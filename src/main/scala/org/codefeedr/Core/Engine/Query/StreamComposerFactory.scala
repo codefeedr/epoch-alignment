@@ -19,7 +19,7 @@
 
 package org.codefeedr.Core.Engine.Query
 
-import org.codefeedr.Core.Library.SubjectLibrary
+import org.codefeedr.Core.Library.{LibraryServices, SubjectLibrary}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -27,16 +27,17 @@ import scala.concurrent.Future
 /**
   * Created by Niels on 31/07/2017.
   */
-object StreamComposerFactory {
+trait StreamComposerFactoryFacade {
+  this: LibraryServices =>
   def GetComposer(query: QueryTree): Future[StreamComposer] = {
     query match {
       case SubjectSource(subjectName) =>
-        SubjectLibrary.AwaitTypeRegistration(subjectName).map(o => new SourceStreamComposer(o))
+        subjectLibrary.AwaitTypeRegistration(subjectName).map(o => new SourceStreamComposer(o))
       case Join(left, right, keysLeft, keysRight, selectLeft, selectRight, alias) =>
         for {
           leftComposer <- GetComposer(left)
           rightComposer <- GetComposer(right)
-          joinedType <- SubjectLibrary.GetOrCreateType(
+          joinedType <- subjectLibrary.GetOrCreateType(
             alias,
             () =>
               JoinQueryComposer.buildComposedType(leftComposer.GetExposedType(),
@@ -50,3 +51,5 @@ object StreamComposerFactory {
     }
   }
 }
+
+object StreamComposerFactory extends StreamComposerFactoryFacade with LibraryServices

@@ -23,7 +23,7 @@ package org.codefeedr.Core.Library.Internal
 
 import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
 import org.codefeedr.Core.ZkTest
-import org.codefeedr.Core.Library.SubjectLibrary
+import org.codefeedr.Core.Library.{LibraryServices}
 import org.codefeedr.Exceptions._
 import org.scalatest._
 import org.scalatest.tagobjects.Slow
@@ -39,8 +39,8 @@ case class TestTypeA(prop1: String)
 /**
   * Created by Niels on 18/07/2017.
   */
-class SubjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach{
-
+class subjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach{
+  this: LibraryServices =>
 
   implicit override def executionContext: ExecutionContextExecutor =
     scala.concurrent.ExecutionContext.Implicits.global
@@ -54,8 +54,8 @@ class SubjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with Befor
   }
 
   override def beforeEach(): Unit = {
-    Await.ready(ZkClient().DeleteRecursive("/"), Duration(1, SECONDS))
-    Await.ready(SubjectLibrary.Initialize(), Duration(1, SECONDS))
+    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(subjectLibrary.Initialize(), Duration(1, SECONDS))
   }
 
   def assertFails[TException<: Exception: ClassTag](f:Future[_]): Future[Assertion] = async {
@@ -64,55 +64,55 @@ class SubjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with Befor
   }
 
 
-  "SubjectLibrary" should "be able to register and remove a new type" taggedAs (Slow, ZkTest) in async {
-      val children = await(SubjectLibrary.GetSubjectNames())
+  "subjectLibrary" should "be able to register and remove a new type" taggedAs (Slow, ZkTest) in async {
+      val children = await(subjectLibrary.GetSubjectNames())
       assert(!children.contains(TestTypeName))
-      val subject = await(SubjectLibrary.GetOrCreateType[TestTypeA]())
+      val subject = await(subjectLibrary.GetOrCreateType[TestTypeA]())
       assert(subject.properties.map(o => o.name).contains("prop1"))
-      assert(await(SubjectLibrary.GetSubjectNames()).contains(TestTypeName))
-      assert(await(SubjectLibrary.IsOpen(TestTypeName)))
-      assert(await(SubjectLibrary.UnRegisterSubject(TestTypeName)))
-      assert(!await(SubjectLibrary.GetSubjectNames()).contains(TestTypeName))
+      assert(await(subjectLibrary.GetSubjectNames()).contains(TestTypeName))
+      assert(await(subjectLibrary.IsOpen(TestTypeName)))
+      assert(await(subjectLibrary.UnRegisterSubject(TestTypeName)))
+      assert(!await(subjectLibrary.GetSubjectNames()).contains(TestTypeName))
     }
 
     it should "construct subjects as open by default" in async {
-      await(SubjectLibrary.GetOrCreateType[TestTypeA]())
-      assert(await(SubjectLibrary.IsOpen(TestTypeName)))
+      await(subjectLibrary.GetOrCreateType[TestTypeA]())
+      assert(await(subjectLibrary.IsOpen(TestTypeName)))
     }
 
       it should "be possible to close subject types" in async {
-        await(SubjectLibrary.GetOrCreateType[TestTypeA]())
-        assert(await(SubjectLibrary.IsOpen(TestTypeName)))
-        await(SubjectLibrary.Close(TestTypeName))
-        assert(!await(SubjectLibrary.IsOpen(TestTypeName)))
+        await(subjectLibrary.GetOrCreateType[TestTypeA]())
+        assert(await(subjectLibrary.IsOpen(TestTypeName)))
+        await(subjectLibrary.Close(TestTypeName))
+        assert(!await(subjectLibrary.IsOpen(TestTypeName)))
       }
 
-      "SubjectLibrary.AwaitClose" should "Return a future that resolves when OnClose is called" in async {
-        await(SubjectLibrary.GetOrCreateType[TestTypeA]())
-        val f = SubjectLibrary.AwaitClose(TestTypeName)
+      "subjectLibrary.AwaitClose" should "Return a future that resolves when OnClose is called" in async {
+        await(subjectLibrary.GetOrCreateType[TestTypeA]())
+        val f = subjectLibrary.AwaitClose(TestTypeName)
         assertThrows[TimeoutException](Await.ready(f, Duration(100, MILLISECONDS)))
-        SubjectLibrary.Close(TestTypeName)
+        subjectLibrary.Close(TestTypeName)
         await(f)
-        assert(!await(SubjectLibrary.IsOpen(TestTypeName)))
+        assert(!await(subjectLibrary.IsOpen(TestTypeName)))
       }
 
 
-      "SubjectLibrary.Delete" should "return false if called twice" in async {
-        await(SubjectLibrary.GetOrCreateType[TestTypeA]())
-        assert(await(SubjectLibrary.UnRegisterSubject(TestTypeName)))
-        assert(!await(SubjectLibrary.UnRegisterSubject(TestTypeName)))
+      "subjectLibrary.Delete" should "return false if called twice" in async {
+        await(subjectLibrary.GetOrCreateType[TestTypeA]())
+        assert(await(subjectLibrary.UnRegisterSubject(TestTypeName)))
+        assert(!await(subjectLibrary.UnRegisterSubject(TestTypeName)))
       }
 
-      "SubjectLibrary.Delete" should "return false if called on a non existing type" taggedAs(Slow, ZkTest) in async {
-        assert(!await(SubjectLibrary.UnRegisterSubject("SomeNonExistingType")))
+      "subjectLibrary.Delete" should "return false if called on a non existing type" taggedAs(Slow, ZkTest) in async {
+        assert(!await(subjectLibrary.UnRegisterSubject("SomeNonExistingType")))
       }
 
 
   //TODO: Support this? Not very relevant because types are currently created by a single manager
   /*
-  "SubjectLibrary.GetType" should "return the same subjecttype if GetType is called twice in parallel" taggedAs (Slow, ZkTest) in {
-    val t1 = SubjectLibrary.GetOrCreateType[TestTypeA]()
-    val t2 = SubjectLibrary.GetOrCreateType[TestTypeA]()
+  "subjectLibrary.GetType" should "return the same subjecttype if GetType is called twice in parallel" taggedAs (Slow, ZkTest) in {
+    val t1 = subjectLibrary.GetOrCreateType[TestTypeA]()
+    val t2 = subjectLibrary.GetOrCreateType[TestTypeA]()
     for {
       r1 <- t1
       r2 <- t2
@@ -121,123 +121,123 @@ class SubjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with Befor
 */
 
 
-  "SubjectLibrary.GetType" should "return the same subjecttype if called twice sequential" taggedAs (Slow, ZkTest) in async {
-    val r1 = await(SubjectLibrary.GetOrCreateType[TestTypeA]())
-    val r2 = await(SubjectLibrary.GetOrCreateType[TestTypeA]())
+  "subjectLibrary.GetType" should "return the same subjecttype if called twice sequential" taggedAs (Slow, ZkTest) in async {
+    val r1 = await(subjectLibrary.GetOrCreateType[TestTypeA]())
+    val r2 = await(subjectLibrary.GetOrCreateType[TestTypeA]())
     val result = assert(r1.uuid == r2.uuid)
     result
   }
 
 
-  "SubjectLibrary.AwaitTypeRegistration" should "Resolve the future when the type is registered" in async {
-    val resolve = SubjectLibrary.AwaitTypeRegistration(TestTypeName)
+  "subjectLibrary.AwaitTypeRegistration" should "Resolve the future when the type is registered" in async {
+    val resolve = subjectLibrary.AwaitTypeRegistration(TestTypeName)
     assertThrows[TimeoutException](Await.ready(resolve, Duration(100, MILLISECONDS)))
-    val r = await(SubjectLibrary.GetOrCreateType[TestTypeA]())
+    val r = await(subjectLibrary.GetOrCreateType[TestTypeA]())
     val resolved = await(resolve)
     assert(resolved.uuid == r.uuid)
   }
 
-  "SubjectLibrary.GetSinks" should "Be able to retrieve registered sinks" in async {
-    await(SubjectLibrary.GetOrCreateType[TestTypeA]())
-    assert(await(SubjectLibrary.GetSinks(TestTypeName)).isEmpty)
-    await(SubjectLibrary.RegisterSink(TestTypeName,SinkUuid))
-    assert(await(SubjectLibrary.GetSinks(TestTypeName)).contains(SinkUuid))
+  "subjectLibrary.GetSinks" should "Be able to retrieve registered sinks" in async {
+    await(subjectLibrary.GetOrCreateType[TestTypeA]())
+    assert(await(subjectLibrary.GetSinks(TestTypeName)).isEmpty)
+    await(subjectLibrary.RegisterSink(TestTypeName,SinkUuid))
+    assert(await(subjectLibrary.GetSinks(TestTypeName)).contains(SinkUuid))
   }
-  "SubjectLibrary.GetSources" should "Be able to retrieve registered sources" in async {
-    await(SubjectLibrary.GetOrCreateType[TestTypeA]())
-    assert(await(SubjectLibrary.GetSources(TestTypeName)).isEmpty)
-    await(SubjectLibrary.RegisterSource(TestTypeName,SourceUuid))
-    assert(await(SubjectLibrary.GetSources(TestTypeName)).contains(SourceUuid))
-  }
-
-  "SubjectLibrary.RegisterSink" should "Throw an exception when called twice" in async {
-    await(SubjectLibrary.GetOrCreateType[TestTypeA]())
-    await(SubjectLibrary.RegisterSink(TestTypeName,SinkUuid))
-    await(assertFails[SinkAlreadySubscribedException](SubjectLibrary.RegisterSink(TestTypeName,SinkUuid)))
-  }
-  "SubjectLibrary.RegisterSource" should "Throw an exception when called twice" in async {
-    await(SubjectLibrary.GetOrCreateType[TestTypeA]())
-    await(SubjectLibrary.RegisterSource(TestTypeName,SourceUuid))
-    await(assertFails[SourceAlreadySubscribedException](SubjectLibrary.RegisterSource(TestTypeName,SourceUuid)))
+  "subjectLibrary.GetSources" should "Be able to retrieve registered sources" in async {
+    await(subjectLibrary.GetOrCreateType[TestTypeA]())
+    assert(await(subjectLibrary.GetSources(TestTypeName)).isEmpty)
+    await(subjectLibrary.RegisterSource(TestTypeName,SourceUuid))
+    assert(await(subjectLibrary.GetSources(TestTypeName)).contains(SourceUuid))
   }
 
-  "SubjectLibrary.RegisterSink" should "Throw an exception the type name does not exist" in {
-    assertFails[TypeNameNotFoundException](SubjectLibrary.RegisterSink(TestTypeName,SinkUuid))
+  "subjectLibrary.RegisterSink" should "Throw an exception when called twice" in async {
+    await(subjectLibrary.GetOrCreateType[TestTypeA]())
+    await(subjectLibrary.RegisterSink(TestTypeName,SinkUuid))
+    await(assertFails[SinkAlreadySubscribedException](subjectLibrary.RegisterSink(TestTypeName,SinkUuid)))
   }
-  "SubjectLibrary.RegisterSource" should "Throw an exception the type name does not exist" in {
-    assertFails[TypeNameNotFoundException](SubjectLibrary.RegisterSource(TestTypeName,SourceUuid))
-  }
-
-
-
-  "SubjectLibrary.UnRegisterSink" should "Throw an exception when sink is not registered" in async {
-    await(SubjectLibrary.GetOrCreateType[TestTypeA]())
-    await(assertFails[SinkNotSubscribedException](SubjectLibrary.UnRegisterSink(TestTypeName,SinkUuid)))
+  "subjectLibrary.RegisterSource" should "Throw an exception when called twice" in async {
+    await(subjectLibrary.GetOrCreateType[TestTypeA]())
+    await(subjectLibrary.RegisterSource(TestTypeName,SourceUuid))
+    await(assertFails[SourceAlreadySubscribedException](subjectLibrary.RegisterSource(TestTypeName,SourceUuid)))
   }
 
-  "SubjectLibrary.UnRegisterSource" should "Throw an exception when sink is not registered" in async {
-    await(SubjectLibrary.GetOrCreateType[TestTypeA]())
-    await(assertFails[SourceNotSubscribedException](SubjectLibrary.UnRegisterSource(TestTypeName,SourceUuid)))
+  "subjectLibrary.RegisterSink" should "Throw an exception the type name does not exist" in {
+    assertFails[TypeNameNotFoundException](subjectLibrary.RegisterSink(TestTypeName,SinkUuid))
+  }
+  "subjectLibrary.RegisterSource" should "Throw an exception the type name does not exist" in {
+    assertFails[TypeNameNotFoundException](subjectLibrary.RegisterSource(TestTypeName,SourceUuid))
   }
 
 
-  "SubjectLibrary.HasSink" should "Return true when a type has a sink and false otherwise" in async {
-    await(SubjectLibrary.GetOrCreateType[TestTypeA](persistent = true))
-    assert(!await(SubjectLibrary.HasSinks(TestTypeName)))
-    await(SubjectLibrary.RegisterSink(TestTypeName,SinkUuid))
-    assert(await(SubjectLibrary.HasSinks(TestTypeName)))
-    await(SubjectLibrary.UnRegisterSink(TestTypeName,SinkUuid))
-    assert(!await(SubjectLibrary.HasSinks(TestTypeName)))
+
+  "subjectLibrary.UnRegisterSink" should "Throw an exception when sink is not registered" in async {
+    await(subjectLibrary.GetOrCreateType[TestTypeA]())
+    await(assertFails[SinkNotSubscribedException](subjectLibrary.UnRegisterSink(TestTypeName,SinkUuid)))
   }
 
-  "SubjectLibrary.HasSource" should "Return true when a type has a source and false otherwise" in async {
-    await(SubjectLibrary.GetOrCreateType[TestTypeA](persistent = true))
-    assert(!await(SubjectLibrary.HasSources(TestTypeName)))
-    await(SubjectLibrary.RegisterSource(TestTypeName,SourceUuid))
-    assert(await(SubjectLibrary.HasSources(TestTypeName)))
-    await(SubjectLibrary.UnRegisterSource(TestTypeName,SourceUuid))
-    assert(!await(SubjectLibrary.HasSources(TestTypeName)))
+  "subjectLibrary.UnRegisterSource" should "Throw an exception when sink is not registered" in async {
+    await(subjectLibrary.GetOrCreateType[TestTypeA]())
+    await(assertFails[SourceNotSubscribedException](subjectLibrary.UnRegisterSource(TestTypeName,SourceUuid)))
   }
 
-  "SubjectLibrary.UnregisterSubject" should "Throw an exception when the given subject has an active sink" in async {
-    await(SubjectLibrary.GetOrCreateType[TestTypeA]())
-    await(SubjectLibrary.RegisterSink(TestTypeName, SinkUuid))
-    await(assertFails[ActiveSinkException](SubjectLibrary.UnRegisterSubject(TestTypeName)))
+
+  "subjectLibrary.HasSink" should "Return true when a type has a sink and false otherwise" in async {
+    await(subjectLibrary.GetOrCreateType[TestTypeA](persistent = true))
+    assert(!await(subjectLibrary.HasSinks(TestTypeName)))
+    await(subjectLibrary.RegisterSink(TestTypeName,SinkUuid))
+    assert(await(subjectLibrary.HasSinks(TestTypeName)))
+    await(subjectLibrary.UnRegisterSink(TestTypeName,SinkUuid))
+    assert(!await(subjectLibrary.HasSinks(TestTypeName)))
   }
 
-  "SubjectLibrary.UnregisterSource" should "Throw an exception when the given subject has an active source" in async {
-    await(SubjectLibrary.GetOrCreateType[TestTypeA]())
-    await(SubjectLibrary.RegisterSource(TestTypeName, SourceUuid))
-    await(assertFails[ActiveSourceException](SubjectLibrary.UnRegisterSubject(TestTypeName)))
+  "subjectLibrary.HasSource" should "Return true when a type has a source and false otherwise" in async {
+    await(subjectLibrary.GetOrCreateType[TestTypeA](persistent = true))
+    assert(!await(subjectLibrary.HasSources(TestTypeName)))
+    await(subjectLibrary.RegisterSource(TestTypeName,SourceUuid))
+    assert(await(subjectLibrary.HasSources(TestTypeName)))
+    await(subjectLibrary.UnRegisterSource(TestTypeName,SourceUuid))
+    assert(!await(subjectLibrary.HasSources(TestTypeName)))
   }
 
-  "SubjectLibrary.UnregisterSink" should "close the subject is not persistent and all sinks are removed" in async {
-    await(SubjectLibrary.GetOrCreateType[TestTypeA]())
-    await(SubjectLibrary.RegisterSink(TestTypeName, "Sink1"))
-    await(SubjectLibrary.RegisterSink(TestTypeName, "Sink2"))
+  "subjectLibrary.UnregisterSubject" should "Throw an exception when the given subject has an active sink" in async {
+    await(subjectLibrary.GetOrCreateType[TestTypeA]())
+    await(subjectLibrary.RegisterSink(TestTypeName, SinkUuid))
+    await(assertFails[ActiveSinkException](subjectLibrary.UnRegisterSubject(TestTypeName)))
+  }
+
+  "subjectLibrary.UnregisterSource" should "Throw an exception when the given subject has an active source" in async {
+    await(subjectLibrary.GetOrCreateType[TestTypeA]())
+    await(subjectLibrary.RegisterSource(TestTypeName, SourceUuid))
+    await(assertFails[ActiveSourceException](subjectLibrary.UnRegisterSubject(TestTypeName)))
+  }
+
+  "subjectLibrary.UnregisterSink" should "close the subject is not persistent and all sinks are removed" in async {
+    await(subjectLibrary.GetOrCreateType[TestTypeA]())
+    await(subjectLibrary.RegisterSink(TestTypeName, "Sink1"))
+    await(subjectLibrary.RegisterSink(TestTypeName, "Sink2"))
     //Register a source because otherwise the type would be removed
-    await(SubjectLibrary.RegisterSource(TestTypeName, SourceUuid))
-    assert(await(SubjectLibrary.IsOpen(TestTypeName)))
-    await(SubjectLibrary.UnRegisterSink(TestTypeName,"Sink1"))
-    assert(await(SubjectLibrary.IsOpen(TestTypeName)))
-    await(SubjectLibrary.UnRegisterSink(TestTypeName,"Sink2"))
-    assert(!await(SubjectLibrary.IsOpen(TestTypeName)))
+    await(subjectLibrary.RegisterSource(TestTypeName, SourceUuid))
+    assert(await(subjectLibrary.IsOpen(TestTypeName)))
+    await(subjectLibrary.UnRegisterSink(TestTypeName,"Sink1"))
+    assert(await(subjectLibrary.IsOpen(TestTypeName)))
+    await(subjectLibrary.UnRegisterSink(TestTypeName,"Sink2"))
+    assert(!await(subjectLibrary.IsOpen(TestTypeName)))
   }
 
-  "SubjectLibrary.UnregisterSink" should "remove the type if a non-persistent subject no longer has any sinks/sources" in async {
-    await(SubjectLibrary.GetOrCreateType[TestTypeA]())
-    await(SubjectLibrary.RegisterSink(TestTypeName, SinkUuid))
-    assert(await(SubjectLibrary.Exists(TestTypeName)))
-    await(SubjectLibrary.UnRegisterSink(TestTypeName, SinkUuid))
-    assert(!await(SubjectLibrary.Exists(TestTypeName)))
+  "subjectLibrary.UnregisterSink" should "remove the type if a non-persistent subject no longer has any sinks/sources" in async {
+    await(subjectLibrary.GetOrCreateType[TestTypeA]())
+    await(subjectLibrary.RegisterSink(TestTypeName, SinkUuid))
+    assert(await(subjectLibrary.Exists(TestTypeName)))
+    await(subjectLibrary.UnRegisterSink(TestTypeName, SinkUuid))
+    assert(!await(subjectLibrary.Exists(TestTypeName)))
   }
 
-  "SubjectLibrary.UnregisterSource" should "remove the type if a non-persistent subject no longer has any sinks/sources" in async {
-    await(SubjectLibrary.GetOrCreateType[TestTypeA]())
-    await(SubjectLibrary.RegisterSource(TestTypeName, SourceUuid))
-    assert(await(SubjectLibrary.Exists(TestTypeName)))
-    await(SubjectLibrary.UnRegisterSource(TestTypeName, SourceUuid))
-    assert(!await(SubjectLibrary.Exists(TestTypeName)))
+  "subjectLibrary.UnregisterSource" should "remove the type if a non-persistent subject no longer has any sinks/sources" in async {
+    await(subjectLibrary.GetOrCreateType[TestTypeA]())
+    await(subjectLibrary.RegisterSource(TestTypeName, SourceUuid))
+    assert(await(subjectLibrary.Exists(TestTypeName)))
+    await(subjectLibrary.UnRegisterSource(TestTypeName, SourceUuid))
+    assert(!await(subjectLibrary.Exists(TestTypeName)))
   }
 
 }

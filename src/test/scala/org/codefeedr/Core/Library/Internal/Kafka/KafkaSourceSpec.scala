@@ -23,7 +23,7 @@ package org.codefeedr.Core.Library.Internal.Kafka
 
 import org.apache.flink.streaming.api.functions.source.SourceFunction.SourceContext
 import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
-import org.codefeedr.Core.Library.SubjectLibrary
+import org.codefeedr.Core.Library.{LibraryServices, SubjectLibrary}
 import org.codefeedr.Model.TrailedRecord
 import org.scalatest.time.Seconds
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, BeforeAndAfterEach}
@@ -35,12 +35,13 @@ import scala.concurrent.duration._
 case class TestKafkaSourceSubject(prop1: String)
 
 class KafkaSourceSpec extends AsyncFlatSpec with BeforeAndAfterEach with BeforeAndAfterAll{
+  this: LibraryServices =>
 
   val testSubjectName = "TestKafkaSourceSubject"
 
   override def beforeEach(): Unit = {
-    Await.ready(ZkClient().DeleteRecursive("/"), Duration(1, SECONDS))
-    Await.ready(SubjectLibrary.Initialize(),Duration(1, SECONDS))
+    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(subjectLibrary.Initialize(),Duration(1, SECONDS))
   }
 
 
@@ -48,23 +49,23 @@ class KafkaSourceSpec extends AsyncFlatSpec with BeforeAndAfterEach with BeforeA
 
 
   "A KafkaSource" should "Register and remove itself in the SubjectLibrary" in async {
-    val subject = await(SubjectLibrary.GetOrCreateType[TestKafkaSourceSubject](persistent = false))
-    val source = new KafkaSource(subject)
-    assert(!await(SubjectLibrary.GetSources(testSubjectName)).contains(source.uuid.toString))
+    val subject = await(subjectLibrary.GetOrCreateType[TestKafkaSourceSubject](persistent = false))
+    val source = new KafkaSource(subject, subjectLibrary)
+    assert(!await(subjectLibrary.GetSources(testSubjectName)).contains(source.uuid.toString))
     source.InitRun()
-    assert(await(SubjectLibrary.GetSources(testSubjectName)).contains(source.uuid.toString))
+    assert(await(subjectLibrary.GetSources(testSubjectName)).contains(source.uuid.toString))
     assert(source.running)
 
     val sourceClose = source.AwaitClose()
 
     //Close the subject so the sink should close itself
-    await(SubjectLibrary.Close(testSubjectName))
+    await(subjectLibrary.Close(testSubjectName))
 
     //Await the close
     Await.ready(sourceClose, Duration(1, SECONDS))
     assert(!source.running)
     //It should remove itself from the library when it has stopped running, causing the type to be removed
-    Await.ready(SubjectLibrary.AwaitClose(testSubjectName), Duration(1, SECONDS))
+    Await.ready(subjectLibrary.AwaitClose(testSubjectName), Duration(1, SECONDS))
     assert(true)
   }
 }

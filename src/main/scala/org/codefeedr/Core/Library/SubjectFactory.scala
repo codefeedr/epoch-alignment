@@ -36,12 +36,13 @@ import scala.reflect.runtime.{universe => ru}
   * ThreadSafe
   * Created by Niels on 18/07/2017.
   */
-object SubjectFactory {
+trait SubjectFactoryController {
+  this: LibraryServices =>
   def GetSink[TData: ru.TypeTag: ClassTag]: Future[SinkFunction[TData]] = {
-    SubjectLibrary
+    subjectLibrary
       .GetOrCreateType[TData]()
       .flatMap(o =>
-        KafkaController.GuaranteeTopic(s"${o.name}_${o.uuid}").map(_ => new KafkaGenericSink(o)))
+        KafkaController.GuaranteeTopic(s"${o.name}_${o.uuid}").map(_ => new KafkaGenericSink(o,subjectLibrary)))
   }
 
   /**
@@ -76,6 +77,8 @@ object SubjectFactory {
   }
 
   def GetSource(subjectType: SubjectType): SourceFunction[TrailedRecord] = {
-    new KafkaSource(subjectType)
+    new KafkaSource(subjectType,subjectLibrary)
   }
 }
+
+object SubjectFactory extends SubjectFactoryController with LibraryServices

@@ -28,7 +28,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.scala.{StreamExecutionEnvironment, _}
 import org.codefeedr.Core.KafkaTest
 import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
-import org.codefeedr.Core.Library.SubjectLibrary
+import org.codefeedr.Core.Library.{LibraryServices, SubjectLibrary}
 import org.codefeedr.Core.Plugin.CollectionPlugin
 import org.codefeedr.Model.TrailedRecord
 import org.scalatest.tagobjects.Slow
@@ -68,14 +68,16 @@ object TestCollector extends LazyLogging {
   * Created by Niels on 04/08/2017.
   */
 class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach with LazyLogging {
+  this: LibraryServices =>
+
   var counter: Int = 0
 
   implicit override def executionContext: ExecutionContextExecutor =
     ExecutionContext.fromExecutorService(Executors.newWorkStealingPool(16))
 
   override def beforeEach(): Unit = {
-    Await.ready(ZkClient().DeleteRecursive("/"), Duration(1, SECONDS))
-    Await.ready(SubjectLibrary.Initialize(), Duration(1, SECONDS))
+    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(subjectLibrary.Initialize(), Duration(1, SECONDS))
   }
 
   /**
@@ -142,8 +144,8 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
       await(CreateSourceEnvironment(objects))
       await(CreateSourceEnvironment(groups))
       await(Future { Thread.sleep(3000) })
-      await(SubjectLibrary.UnRegisterSubject("TestJoinObject"))
-      await(SubjectLibrary.UnRegisterSubject("TestJoinGroup"))
+      await(subjectLibrary.UnRegisterSubject("TestJoinObject"))
+      await(subjectLibrary.UnRegisterSubject("TestJoinGroup"))
       assert(TestCollector.collectedData.size == 3)
     }
   }
@@ -175,8 +177,8 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
       await(CreateSourceEnvironment(objects))
       await(CreateSourceEnvironment(groups))
       await(Future { Thread.sleep(3000) })
-      await(SubjectLibrary.UnRegisterSubject("TestJoinObject"))
-      await(SubjectLibrary.UnRegisterSubject("TestJoinGroup"))
+      await(subjectLibrary.UnRegisterSubject("TestJoinObject"))
+      await(subjectLibrary.UnRegisterSubject("TestJoinGroup"))
       assert(TestCollector.collectedData.isEmpty)
     }
   }
@@ -210,8 +212,8 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
       await(CreateSourceEnvironment(objects))
       await(CreateSourceEnvironment(groups))
       await(Future { Thread.sleep(3000) })
-      await(SubjectLibrary.UnRegisterSubject("TestJoinObject"))
-      await(SubjectLibrary.UnRegisterSubject("TestJoinGroup"))
+      await(subjectLibrary.UnRegisterSubject("TestJoinObject"))
+      await(subjectLibrary.UnRegisterSubject("TestJoinGroup"))
       assert(TestCollector.collectedData.size == 9)
     }
   }
