@@ -43,7 +43,7 @@ class SubjectLibrary(val zk: ZkClient) extends LazyLogging {
   //Zookeeper path where the subjects are stored
   @transient private val SubjectPath = "/Codefeedr/Subjects"
 
-  implicit val zkClient: ZkClient = zk
+  @transient implicit val zkClient: ZkClient = zk
   /**
     * Get the path to the zookeeper definition of the given subject
     *

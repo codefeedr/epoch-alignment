@@ -26,7 +26,7 @@ import java.util.concurrent.Executors
 import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
 import org.apache.flink.streaming.api.scala._
-import org.codefeedr.Core.KafkaTest
+import org.codefeedr.Core.{KafkaTest}
 import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
 import org.codefeedr.Model.TrailedRecord
 import org.scalatest.tagobjects.Slow
@@ -35,21 +35,27 @@ import scala.collection.mutable
 import scala.concurrent.{TimeoutException, _}
 import scala.concurrent.duration._
 import scala.async.Async.{async, await}
+import scala.util.{Failure, Success}
+
 
 @SerialVersionUID(100L)
 case class MyOwnIntegerObject(value: Int) extends Serializable
+
 
 object TestCollector extends LazyLogging {
   var collectedData: mutable.MutableList[(Int, MyOwnIntegerObject)] =
     mutable.MutableList[(Int, MyOwnIntegerObject)]()
 
-  def collect(item: (Int, MyOwnIntegerObject)): Unit = {
-    logger.debug(s"${item._1} recieved ${item._2}")
+
+  def collect(nr:Int)(myOwnIntegerObject: MyOwnIntegerObject): Unit = {
+    logger.debug(s"${nr} recieved ${myOwnIntegerObject}")
     this.synchronized {
-      collectedData += item
+      collectedData += Tuple2(nr, myOwnIntegerObject)
     }
   }
 }
+
+
 
 /**
   * This is more of an integration test than unit test
@@ -57,6 +63,7 @@ object TestCollector extends LazyLogging {
   */
 class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach with LazyLogging with LibraryServices {
   this: LibraryServices =>
+
 
   //These tests must run in parallel
   implicit override def executionContext: ExecutionContextExecutor =
@@ -67,16 +74,17 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
 
   override def beforeEach(): Unit = {
     Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
-    Await.ready(subjectLibrary.Initialize(),Duration(1, SECONDS))
+    Await.ready(subjectLibrary.Initialize(), Duration(1, SECONDS))
     TestCollector.collectedData = mutable.MutableList[(Int, MyOwnIntegerObject)]()
   }
 
 
   /**
     * Creates test input
+    *
     * @return
     */
-  def CreateTestInput():Future[Unit] = async {
+  def CreateTestInput(): Future[Unit] = async {
     //Create a sink function
     val sink = await(SubjectFactory.GetSink[MyOwnIntegerObject])
 
@@ -89,19 +97,19 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
     logger.debug("Finished producing test sequence")
   }
 
-  def CreateSourceQuery(nr: Int):Future[Unit] = {
+  def CreateSourceQuery(nr: Int): Future[Unit] = {
     Future {
-      new MyOwnSourceQuery(nr).run()
+      new MyOwnSourceQuery(nr, parallelism).run()
     }
   }
 
 
-  "Kafka-Sinks" should "retrieve all messages published by a source" taggedAs (Slow, KafkaTest) in async {
+  "Kafka-Sinks" should "retrieve all messages published by a source" taggedAs(Slow, KafkaTest) in async {
     //Create persistent environment so that the finite source will not immediately close the type
     val t = await(subjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = true))
 
     //Creating fake query environments
-    val environments = Future.sequence(Seq(CreateSourceQuery(1),CreateSourceQuery(2) ,CreateSourceQuery(3)))
+    val environments = Future.sequence(Seq(CreateSourceQuery(1), CreateSourceQuery(2), CreateSourceQuery(3)))
 
     //Generate some test input
     await(CreateTestInput())
@@ -125,14 +133,14 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
   }
 
 
-  it should " still receive data if they are created before the sink" taggedAs (Slow, KafkaTest) in async {
+  it should " still receive data if they are created before the sink" taggedAs(Slow, KafkaTest) in async {
     //No persistent type needed now because the sources are created first
     val t = await(subjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = true))
 
     await(CreateTestInput())
 
     //Creating fake query environments
-    val environments = Future.sequence(Seq(CreateSourceQuery(1),CreateSourceQuery(2) ,CreateSourceQuery(3)))
+    val environments = Future.sequence(Seq(CreateSourceQuery(1), CreateSourceQuery(2), CreateSourceQuery(3)))
 
 
     Console.println("Closing subject type, should close the queries")
@@ -149,10 +157,10 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
     assert(TestCollector.collectedData.count(o => o._2.value == 3) == 3)
   }
 
-  it should " be able to recieve data from multiple sinks" taggedAs (Slow, KafkaTest) in async {
+  it should " be able to recieve data from multiple sinks" taggedAs(Slow, KafkaTest) in async {
     await(subjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = true))
 
-    val environments = Future.sequence(Seq(CreateSourceQuery(1),CreateSourceQuery(2) ,CreateSourceQuery(3)))
+    val environments = Future.sequence(Seq(CreateSourceQuery(1), CreateSourceQuery(2), CreateSourceQuery(3)))
 
     await(Future.sequence(for (_ <- 1 to 3) yield {
       CreateTestInput()
@@ -172,36 +180,49 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
     assert(TestCollector.collectedData.count(o => o._2.value == 3) == 9)
 
   }
+}
 
+class MyOwnSourceQuery(nr: Int, parallelism: Int) extends Runnable with LazyLogging {
 
-  class MyOwnSourceQuery(nr: Int) extends Runnable with LazyLogging {
-    override def run(): Unit = {
-      val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
-      Await.ready(createTopology(env, nr), Duration(120, SECONDS))
-      logger.debug(s"Starting environment $nr")
-      env.execute(s"job$nr")
-      logger.debug(s"Environment $nr finished")
+  @transient private object Library extends LibraryServices
+
+  implicit def executionContext: ExecutionContextExecutor =
+    ExecutionContext.fromExecutorService(Executors.newWorkStealingPool(16))
+
+  override def run(): Unit = {
+    val env = StreamExecutionEnvironment.createLocalEnvironment()
+    val topology = createTopology(env, nr)
+    Await.ready(topology, Duration(120, SECONDS))
+    topology.value match {
+      case Some(Success(x)) => println(s"Topology has been created")
+      case Some(Failure(e)) => throw e
+      case _ => throw new Exception("Cannot get here")
     }
 
-    /**
-      * Create a simple topology that converts records back into MyOwnIntegerObjects and passes it to a testcollecter
-      *
-      * @param env Stream Execution Environment to create topology on
-      * @param nr  Number used to identify topology in the test
-      */
+    logger.debug(s"Starting environment $nr")
+    env.execute(s"job$nr")
+    logger.debug(s"Environment $nr finished")
+  }
 
-    def createTopology(env: StreamExecutionEnvironment, nr: Int): Future[Unit] =
-    //Construct a new source using the subjectFactory
-      subjectLibrary
-        .GetOrCreateType[MyOwnIntegerObject]()
-        .map(subjectType => {
-          val transformer = SubjectFactory.GetUnTransformer[MyOwnIntegerObject](subjectType)
-          val source = SubjectFactory.GetSource(subjectType)
-          env
-            .addSource(source)
-            .map(transformer)
-            .map(o => Tuple2(nr, o))
-            .addSink(o => TestCollector.collect(o))
-        })
+  /**
+    * Create a simple topology that converts records back into MyOwnIntegerObjects and passes it to a testcollecter
+    *
+    * @param env Stream Execution Environment to create topology on
+    * @param nr  Number used to identify topology in the test
+    */
+
+  def createTopology(env: StreamExecutionEnvironment, nr: Int): Future[Unit] = async {
+    val subjectType = await(Library.subjectLibrary.GetOrCreateType[MyOwnIntegerObject]())
+    val transformer = SubjectFactory.GetUnTransformer[MyOwnIntegerObject](subjectType)
+    val source = SubjectFactory.GetSource(subjectType)
+    val r =() => {
+      val num = nr
+      env
+        .addSource(source)
+        .map(transformer)
+        //.addSink(o => Console.println(s"Got something: ${o.value}"))
+        .addSink(o => TestCollector.collect(num)(o))
+    }
+    r()
   }
 }

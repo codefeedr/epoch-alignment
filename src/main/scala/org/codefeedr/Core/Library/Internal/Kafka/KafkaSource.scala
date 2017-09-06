@@ -23,7 +23,7 @@ import java.util.UUID
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
-import org.codefeedr.Core.Library.SubjectLibrary
+import org.codefeedr.Core.Library.{LibraryServices}
 import org.codefeedr.Model.{Record, RecordSourceTrail, SubjectType, TrailedRecord}
 
 import scala.collection.JavaConverters._
@@ -37,11 +37,12 @@ import scala.util.Try
   * Note that new objects will still exist per distributed environment
   */
 /**
+  * Because this class needs to be serializable and the LibraryServices are not, no dependency injection structure can be used here :(
   * Created by Niels on 18/07/2017.
   */
-class KafkaSource(subjectType: SubjectType, subjectLibrary: SubjectLibrary)
+class KafkaSource(subjectType: SubjectType)
     extends RichSourceFunction[TrailedRecord]
-    with LazyLogging {
+    with LazyLogging with Serializable with LibraryServices {
 
   @transient private lazy val dataConsumer = {
     val consumer = KafkaConsumerFactory.create[RecordSourceTrail, Record](uuid.toString)
@@ -147,3 +148,4 @@ class KafkaSource(subjectType: SubjectType, subjectLibrary: SubjectLibrary)
     thread.join()
   }
 }
+

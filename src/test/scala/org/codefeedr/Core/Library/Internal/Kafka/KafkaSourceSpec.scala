@@ -22,7 +22,7 @@
 package org.codefeedr.Core.Library.Internal.Kafka
 
 import org.apache.flink.streaming.api.functions.source.SourceFunction.SourceContext
-import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
+import org.codefeedr.Core.Library.Internal.Zookeeper.{ZkClient, ZkNode}
 import org.codefeedr.Core.Library.{LibraryServices, SubjectLibrary}
 import org.codefeedr.Model.TrailedRecord
 import org.scalatest.time.Seconds
@@ -50,13 +50,15 @@ class KafkaSourceSpec extends AsyncFlatSpec with BeforeAndAfterEach with BeforeA
 
   "A KafkaSource" should "Register and remove itself in the SubjectLibrary" in async {
     val subject = await(subjectLibrary.GetOrCreateType[TestKafkaSourceSubject](persistent = false))
-    val source = new KafkaSource(subject, subjectLibrary)
+    val source = new KafkaSource(subject)
     assert(!await(subjectLibrary.GetSources(testSubjectName)).contains(source.uuid.toString))
     source.InitRun()
     assert(await(subjectLibrary.GetSources(testSubjectName)).contains(source.uuid.toString))
     assert(source.running)
 
     val sourceClose = source.AwaitClose()
+    val subjectRemove = subjectLibrary.AwaitRemove(testSubjectName)
+
 
     //Close the subject so the sink should close itself
     await(subjectLibrary.Close(testSubjectName))
@@ -65,7 +67,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with BeforeAndAfterEach with BeforeA
     Await.ready(sourceClose, Duration(1, SECONDS))
     assert(!source.running)
     //It should remove itself from the library when it has stopped running, causing the type to be removed
-    Await.ready(subjectLibrary.AwaitClose(testSubjectName), Duration(1, SECONDS))
+    Await.ready(subjectRemove, Duration(1, SECONDS))
     assert(true)
   }
 }

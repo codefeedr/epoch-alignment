@@ -22,6 +22,6 @@ package org.codefeedr.Core.Library
 import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
 
 trait LibraryServices {
-  val zkClient: ZkClient = new ZkClient()
-  val subjectLibrary: SubjectLibrary = new SubjectLibrary(zkClient)
+  @transient lazy val zkClient: ZkClient = new ZkClient()
+  @transient lazy val subjectLibrary: SubjectLibrary = new SubjectLibrary(zkClient)
 }

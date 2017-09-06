@@ -30,6 +30,7 @@ import org.codefeedr.Model._
 /**
   * A simple kafka sink, pushing all records to a kafka topic of the given subjecttype
   * Not thread safe
+  * Because this class needs to be serializable and the LibraryServices are not, no dependency injection structure can be used here :(
   * Serializable (with lazy initialisation)
   * Created by Niels on 11/07/2017.
   */

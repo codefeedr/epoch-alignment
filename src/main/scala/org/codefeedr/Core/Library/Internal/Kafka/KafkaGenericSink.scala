@@ -25,7 +25,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.codefeedr.Core.Library.{SubjectFactory, SubjectLibrary}
+import org.codefeedr.Core.Library.{LibraryServices, SubjectFactory, SubjectLibrary}
 import org.codefeedr.Model.{ActionType, Record, RecordSourceTrail, SubjectType}
 
 import scala.concurrent.duration.Duration
@@ -36,9 +36,10 @@ import scala.reflect.runtime.{universe => ru}
 /**
   * Created by Niels on 31/07/2017.
   */
-class KafkaGenericSink[TData: ru.TypeTag: ClassTag](subjectType: SubjectType, subjectLibrary:SubjectLibrary)
+class KafkaGenericSink[TData: ru.TypeTag: ClassTag](subjectType: SubjectType)
     extends RichSinkFunction[TData]
-    with LazyLogging {
+    with LazyLogging
+with LibraryServices{
   @transient private lazy val kafkaProducer = {
     val producer = KafkaProducerFactory.create[RecordSourceTrail, Record]
     logger.debug(s"Producer $uuid created for topic $topic")
