@@ -31,9 +31,12 @@ import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
 import org.codefeedr.Model.TrailedRecord
 import org.scalatest.tagobjects.Slow
 
+
 import scala.collection.mutable
 import scala.concurrent.{TimeoutException, _}
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
+
 import scala.async.Async.{async, await}
 import scala.util.{Failure, Success}
 
@@ -64,10 +67,6 @@ object TestCollector extends LazyLogging {
 class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach with LazyLogging with LibraryServices {
   this: LibraryServices =>
 
-
-  //These tests must run in parallel
-  implicit override def executionContext: ExecutionContextExecutor =
-    ExecutionContext.fromExecutorService(Executors.newWorkStealingPool(16))
 
   val parallelism = 2
   val testSubjectName = "MyOwnIntegerObject"
@@ -184,9 +183,6 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
 class MyOwnSourceQuery(nr: Int, parallelism: Int) extends Runnable with LazyLogging {
 
   @transient private object Library extends LibraryServices
-
-  implicit def executionContext: ExecutionContextExecutor =
-    ExecutionContext.fromExecutorService(Executors.newWorkStealingPool(16))
 
   override def run(): Unit = {
     val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)

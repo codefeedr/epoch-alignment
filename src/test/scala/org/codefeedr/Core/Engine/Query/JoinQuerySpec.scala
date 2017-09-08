@@ -73,8 +73,6 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
   var counter: Int = 0
   val parallelism: Int = 2
 
-  implicit override def executionContext: ExecutionContextExecutor =
-    ExecutionContext.fromExecutorService(Executors.newWorkStealingPool(16))
 
   override def beforeEach(): Unit = {
     Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
