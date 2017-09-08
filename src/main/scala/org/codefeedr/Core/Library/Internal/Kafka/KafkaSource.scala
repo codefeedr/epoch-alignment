@@ -42,7 +42,9 @@ import scala.util.Try
   */
 class KafkaSource(subjectType: SubjectType)
     extends RichSourceFunction[TrailedRecord]
-    with LazyLogging with Serializable with LibraryServices {
+    with LazyLogging
+    with Serializable
+    with LibraryServices {
 
   @transient private lazy val dataConsumer = {
     val consumer = KafkaConsumerFactory.create[RecordSourceTrail, Record](uuid.toString)
@@ -148,4 +150,3 @@ class KafkaSource(subjectType: SubjectType)
     thread.join()
   }
 }
-

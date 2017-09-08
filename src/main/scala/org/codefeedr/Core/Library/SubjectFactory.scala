@@ -36,8 +36,7 @@ import scala.reflect.runtime.{universe => ru}
   * ThreadSafe
   * Created by Niels on 18/07/2017.
   */
-class SubjectFactoryController {
-  this: LibraryServices =>
+class SubjectFactoryController { this: LibraryServices =>
   def GetSink[TData: ru.TypeTag: ClassTag]: Future[SinkFunction[TData]] = {
     subjectLibrary
       .GetOrCreateType[TData]()
@@ -69,23 +68,18 @@ class SubjectFactoryController {
     * @tparam TData Type of the object to transform to
     * @return The object
     */
-  def GetUnTransformer[TData: ru.TypeTag: ClassTag](subjectType: SubjectType): TrailedRecord => TData = {
-    (r: TrailedRecord) => {
+  def GetUnTransformer[TData: ru.TypeTag: ClassTag](
+      subjectType: SubjectType): TrailedRecord => TData = { (r: TrailedRecord) =>
+    {
       val transformer = new RecordTransformer[TData](subjectType)
       transformer.Unbag(r.record)
     }
   }
 
-
-
   def GetSource(subjectType: SubjectType): SourceFunction[TrailedRecord] = {
     new KafkaSource(subjectType)
   }
 
-
-
 }
 // with LibraryServices
-object SubjectFactory extends SubjectFactoryController with LibraryServices {
-
-}
+object SubjectFactory extends SubjectFactoryController with LibraryServices {}

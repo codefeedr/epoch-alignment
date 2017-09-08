@@ -33,8 +33,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.reflect.runtime.{universe => ru}
 
-
-
 /**
   * ThreadSafe
   * Created by Niels on 14/07/2017.
@@ -44,6 +42,7 @@ class SubjectLibrary(val zk: ZkClient) extends LazyLogging {
   @transient private val SubjectPath = "/Codefeedr/Subjects"
 
   @transient implicit val zkClient: ZkClient = zk
+
   /**
     * Get the path to the zookeeper definition of the given subject
     *
@@ -401,7 +400,7 @@ class SubjectLibrary(val zk: ZkClient) extends LazyLogging {
       } else {
         //Return false because subject was not deleted
         Future.successful(false)
-      })
+    })
   }
 
   /**
@@ -456,7 +455,5 @@ class SubjectLibrary(val zk: ZkClient) extends LazyLogging {
     * @return a future that resolves when the type has been removed
     */
   def AwaitRemove(name: String): Future[Unit] = GetSubjectNode(name).AwaitRemoval()
-
-
 
 }

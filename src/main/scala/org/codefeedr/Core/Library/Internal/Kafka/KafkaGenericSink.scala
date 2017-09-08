@@ -39,7 +39,7 @@ import scala.reflect.runtime.{universe => ru}
 class KafkaGenericSink[TData: ru.TypeTag: ClassTag](subjectType: SubjectType)
     extends RichSinkFunction[TData]
     with LazyLogging
-with LibraryServices{
+    with LibraryServices {
   @transient private lazy val kafkaProducer = {
     val producer = KafkaProducerFactory.create[RecordSourceTrail, Record]
     logger.debug(s"Producer $uuid created for topic $topic")

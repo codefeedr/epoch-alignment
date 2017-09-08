@@ -35,13 +35,13 @@ class GenericDeserialiser[T: ClassTag](implicit ct: ClassTag[T]) {
       data.asInstanceOf[T]
     } else { (data: Array[Byte]) =>
       {
-        if(data != null) {
+        if (data != null) {
           val ois = new ObjectInputStream(new ByteArrayInputStream(data)) {
 
             //Custom class loader needed
             //See: https://issues.scala-lang.org/browse/SI-9777
             override def resolveClass(desc: ObjectStreamClass): Class[_] =
-            Class.forName(desc.getName, false, loader)
+              Class.forName(desc.getName, false, loader)
           }
           val value = ois.readObject()
           ois.close()

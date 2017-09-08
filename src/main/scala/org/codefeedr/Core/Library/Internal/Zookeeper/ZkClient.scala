@@ -102,8 +102,8 @@ class ZkClient {
     * @return a promise that resolves into the raw data
     */
   def GetRawData(path: String,
-                          ctx: Option[Any] = None,
-                          watch: Option[Watcher] = None): Future[Array[Byte]] = {
+                 ctx: Option[Any] = None,
+                 watch: Option[Watcher] = None): Future[Array[Byte]] = {
     val resultPromise = Promise[Array[Byte]]
     zk.getData(
       PrependPath(path),
@@ -381,9 +381,9 @@ class ZkClient {
               case error =>
                 p.failure(
                   ZkClientException(KeeperException.create(error, path),
-                    Option(path),
-                    None,
-                    Some(ctx)))
+                                    Option(path),
+                                    None,
+                                    Some(ctx)))
             }
           }
         }
