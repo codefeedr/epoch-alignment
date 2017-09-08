@@ -56,7 +56,7 @@ object TestCollector extends LazyLogging {
 
   def collect(item: TrailedRecord): Unit = {
     logger.debug(
-      s"${item.record.data(1).asInstanceOf[String]}-${item.record.data(2).asInstanceOf[String]} recieved")
+      s"${item.record.data(1).asInstanceOf[String]}-${item.record.data(2).asInstanceOf[String]} received")
     this.synchronized {
       collectedData += item
     }
@@ -77,6 +77,7 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
   override def beforeEach(): Unit = {
     Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
     Await.ready(subjectLibrary.Initialize(), Duration(1, SECONDS))
+    TestCollector.reset()
   }
 
   /**
@@ -88,6 +89,7 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
   def CreateSourceEnvironment[T: ru.TypeTag: ClassTag: TypeInformation](data: Array[T]): Future[Unit] = async {
     val nr = counter
     counter += 1
+    await(subjectLibrary.GetOrCreateType[T](persistent = true))
     val env = StreamExecutionEnvironment.createLocalEnvironment(1)
     logger.debug(s"Composing env$nr")
     await(new CollectionPlugin(data).Compose(env))
@@ -102,7 +104,7 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
     * @return When the environment is done, probably never
     */
   def CreateQueryEnvironment(query: QueryTree): Future[Unit] = async {
-    val queryEnv = StreamExecutionEnvironment.createLocalEnvironment(2)
+    val queryEnv = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
     logger.debug("Creating query Composer")
     val composer = await(StreamComposerFactory.GetComposer(query))
     logger.debug("Composing queryEnv")
@@ -130,15 +132,14 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
                      "groupedMessage")
 
     async {
-      TestCollector.reset()
+      await(CreateSourceEnvironment(objects))
+      await(CreateSourceEnvironment(groups))
       val queryEnvJob = CreateQueryEnvironment(query)
       //Lift the exception so you actually see it
       queryEnvJob.onFailure {
         case t: Throwable => throw t
       }
       //Add sources and wait for them to finish
-      await(CreateSourceEnvironment(objects))
-      await(CreateSourceEnvironment(groups))
       logger.debug(s"Waiting for query environment to complete")
       await(queryEnvJob)
       logger.debug(s"Query environment completed")
@@ -163,15 +164,15 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
                      "groupedMessage")
 
     async {
-      TestCollector.reset()
+      //Add sources and wait for them to finish
+      await(CreateSourceEnvironment(objects))
+      await(CreateSourceEnvironment(groups))
+
       val queryEnvJob = CreateQueryEnvironment(query)
       //Lift the exception so you actually see it
       queryEnvJob.onFailure {
         case t: Throwable => throw t
       }
-      //Add sources and wait for them to finish
-      await(CreateSourceEnvironment(objects))
-      await(CreateSourceEnvironment(groups))
       logger.debug(s"Waiting for query environment to complete")
       await(queryEnvJob)
       logger.debug(s"Query environment completed")
@@ -198,15 +199,16 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
                      "groupedMessage")
 
     async {
-      TestCollector.reset()
+      //Add sources and wait for them to finish
+      await(CreateSourceEnvironment(objects))
+      await(CreateSourceEnvironment(groups))
+      
       val queryEnvJob = CreateQueryEnvironment(query)
       //Lift the exception so you actually see it
       queryEnvJob.onFailure {
         case t: Throwable => throw t
       }
-      //Add sources and wait for them to finish
-      await(CreateSourceEnvironment(objects))
-      await(CreateSourceEnvironment(groups))
+
       logger.debug(s"Waiting for query environment to complete")
       await(queryEnvJob)
       logger.debug(s"Query environment completed")
