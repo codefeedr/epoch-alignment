@@ -42,9 +42,6 @@ class KafkaSinkSpec extends AsyncFlatSpec with BeforeAndAfterEach with BeforeAnd
     Await.ready(subjectLibrary.Initialize(),Duration(1, SECONDS))
   }
 
-
-
-
   "A KafkaSink" should "Register and remove itself in the SubjectLibrary" in async {
     val subject = await(subjectLibrary.GetOrCreateType[TestKafkaSinkSubject]())
     await(subjectLibrary.RegisterSource(testSubjectName, "SomeSource"))
