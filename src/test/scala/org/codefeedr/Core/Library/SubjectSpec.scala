@@ -89,8 +89,7 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
     val sink = await(SubjectFactory.GetSink[MyOwnIntegerObject])
 
     //Source environment
-    val env = StreamExecutionEnvironment.createLocalEnvironment()
-    env.setParallelism(parallelism)
+    val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
     env.fromCollection(mutable.Set(1, 2, 3).toSeq).map(o => MyOwnIntegerObject(o)).addSink(sink)
     logger.debug("Starting test sequence")
     env.execute()
@@ -190,7 +189,7 @@ class MyOwnSourceQuery(nr: Int, parallelism: Int) extends Runnable with LazyLogg
     ExecutionContext.fromExecutorService(Executors.newWorkStealingPool(16))
 
   override def run(): Unit = {
-    val env = StreamExecutionEnvironment.createLocalEnvironment()
+    val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
     val topology = createTopology(env, nr)
     Await.ready(topology, Duration(120, SECONDS))
     topology.value match {
@@ -220,7 +219,6 @@ class MyOwnSourceQuery(nr: Int, parallelism: Int) extends Runnable with LazyLogg
       env
         .addSource(source)
         .map(transformer)
-        //.addSink(o => Console.println(s"Got something: ${o.value}"))
         .addSink(o => TestCollector.collect(num)(o))
     }
     r()

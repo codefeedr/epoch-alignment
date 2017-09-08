@@ -71,6 +71,7 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
   this: LibraryServices =>
 
   var counter: Int = 0
+  val parallelism: Int = 2
 
   implicit override def executionContext: ExecutionContextExecutor =
     ExecutionContext.fromExecutorService(Executors.newWorkStealingPool(16))
@@ -86,12 +87,10 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
     * @tparam T type of the data
     * @return A future that returns when all data has been pushed to kakfa
     */
-  def CreateSourceEnvironment[T: ru.TypeTag: ClassTag: TypeInformation](
-      data: Array[T]): Future[Unit] = async {
+  def CreateSourceEnvironment[T: ru.TypeTag: ClassTag: TypeInformation](data: Array[T]): Future[Unit] = async {
     val nr = counter
     counter += 1
-    val env = StreamExecutionEnvironment.createLocalEnvironment()
-    env.setParallelism(1)
+    val env = StreamExecutionEnvironment.createLocalEnvironment(1)
     logger.debug(s"Composing env$nr")
     await(new CollectionPlugin(data).Compose(env))
     logger.debug(s"Starting env$nr")
@@ -100,13 +99,12 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
   }
 
   /**
-    * Utility function that creates a query environment, and probably never completes
+    * Utility function that creates a query environment and executes it
     * @param query The query environment
     * @return When the environment is done, probably never
     */
   def CreateQueryEnvironment(query: QueryTree): Future[Unit] = async {
-    val queryEnv = StreamExecutionEnvironment.createLocalEnvironment()
-    queryEnv.setParallelism(2)
+    val queryEnv = StreamExecutionEnvironment.createLocalEnvironment(2)
     logger.debug("Creating query Composer")
     val composer = await(StreamComposerFactory.GetComposer(query))
     logger.debug("Composing queryEnv")
@@ -143,9 +141,9 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
       //Add sources and wait for them to finish
       await(CreateSourceEnvironment(objects))
       await(CreateSourceEnvironment(groups))
-      await(Future { Thread.sleep(3000) })
-      await(subjectLibrary.UnRegisterSubject("TestJoinObject"))
-      await(subjectLibrary.UnRegisterSubject("TestJoinGroup"))
+      logger.debug(s"Waiting for query environment to complete")
+      await(queryEnvJob)
+      logger.debug(s"Query environment completed")
       assert(TestCollector.collectedData.size == 3)
     }
   }
@@ -176,9 +174,9 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
       //Add sources and wait for them to finish
       await(CreateSourceEnvironment(objects))
       await(CreateSourceEnvironment(groups))
-      await(Future { Thread.sleep(3000) })
-      await(subjectLibrary.UnRegisterSubject("TestJoinObject"))
-      await(subjectLibrary.UnRegisterSubject("TestJoinGroup"))
+      logger.debug(s"Waiting for query environment to complete")
+      await(queryEnvJob)
+      logger.debug(s"Query environment completed")
       assert(TestCollector.collectedData.isEmpty)
     }
   }
@@ -211,9 +209,9 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
       //Add sources and wait for them to finish
       await(CreateSourceEnvironment(objects))
       await(CreateSourceEnvironment(groups))
-      await(Future { Thread.sleep(3000) })
-      await(subjectLibrary.UnRegisterSubject("TestJoinObject"))
-      await(subjectLibrary.UnRegisterSubject("TestJoinGroup"))
+      logger.debug(s"Waiting for query environment to complete")
+      await(queryEnvJob)
+      logger.debug(s"Query environment completed")
       assert(TestCollector.collectedData.size == 9)
     }
   }

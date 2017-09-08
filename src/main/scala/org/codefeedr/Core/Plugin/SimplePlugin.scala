@@ -38,8 +38,8 @@ abstract class SimplePlugin[TData: ru.TypeTag: ClassTag] extends AbstractPlugin 
 
   /**
     * Method to implement as plugin to expose a datastream
-    * Make sure this implementation is serializable!!!!
-    * @param env The environment to create the datastream om
+    * Make sure this implementation is serializable!
+    * @param env The environment to create the datastream on
     * @return The datastream itself
     */
   def GetStream(env: StreamExecutionEnvironment): DataStream[TData]
