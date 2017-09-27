@@ -100,7 +100,7 @@ class JoinQuerySpec extends FullIntegrationSpec {
     }
   }
 
-  it should " Only produce events for new combinations" taggedAs (Slow, KafkaTest) in {
+  it should " Only produce events for new combinations" taggedAs (Slow, KafkaTest) in async {
     //Create a set of objects
     val objects = Array(
       TestJoinObject(1, 1, "Message 1"),
@@ -122,11 +122,12 @@ class JoinQuerySpec extends FullIntegrationSpec {
                      Array("name"),
                      "groupedMessage")
 
-    //Run all environments
-    async {
+      //Run all environments
+
       //Add sources and wait for them to finish
       val objectType = await(RunSourceEnvironment(objects))
       val groupType = await(RunSourceEnvironment(groups))
+
       //Validate that the data is actually sent
       assert(await(AwaitAllData(objectType)).size == 3)
       assert(await(AwaitAllData(groupType)).size == 3)
@@ -134,6 +135,6 @@ class JoinQuerySpec extends FullIntegrationSpec {
       val queryResultType = await(RunQueryEnvironment(query))
       val result = await(AwaitAllData(queryResultType))
       assert(result.size == 9)
-    }
+
   }
 }

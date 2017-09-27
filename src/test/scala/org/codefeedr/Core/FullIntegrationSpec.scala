@@ -56,8 +56,8 @@ class FullIntegrationSpec extends AsyncFlatSpec with Matchers with LazyLogging w
     * @return
     */
   def AwaitAllData(subject:SubjectType): Future[Array[TrailedRecord]] = async {
-    val source = new KafkaSource(subject)
     await(subjectLibrary.AssertExists(subject.name))
+    val source = new KafkaSource(subject)
     val result = new mutable.ArrayBuffer[TrailedRecord]()
     source.runLocal(result.append(_))
     result.toArray
