@@ -24,19 +24,17 @@ package org.codefeedr.Core.Library
 import java.util.concurrent.Executors
 
 import com.typesafe.scalalogging.LazyLogging
-import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
+import org.scalatest._
 import org.apache.flink.streaming.api.scala._
-import org.codefeedr.Core.{KafkaTest}
+import org.codefeedr.Core.{FullIntegrationSpec, KafkaTest}
 import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
 import org.codefeedr.Model.TrailedRecord
 import org.scalatest.tagobjects.Slow
-
 
 import scala.collection.mutable
 import scala.concurrent.{TimeoutException, _}
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
-
 import scala.async.Async.{async, await}
 import scala.util.{Failure, Success}
 
@@ -56,44 +54,23 @@ object TestCollector extends LazyLogging {
       collectedData += Tuple2(nr, myOwnIntegerObject)
     }
   }
+
+  //Clear the collected data
+  def reset():Unit = {
+    collectedData = mutable.MutableList[(Int, MyOwnIntegerObject)]()
+  }
 }
 
 
 
 /**
-  * This is more of an integration test than unit test
+  * Integration tests that tests the functionality of a plugin
+  * Do not take this class as an example how to write tests for query functionality
+  * See JoinQuerySpec for a better example
   * Created by Niels on 14/07/2017.
   */
-class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach with LazyLogging with LibraryServices {
-  this: LibraryServices =>
-
-
-  val parallelism = 2
+class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
   val testSubjectName = "MyOwnIntegerObject"
-
-  override def beforeEach(): Unit = {
-    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
-    Await.ready(subjectLibrary.Initialize(), Duration(1, SECONDS))
-    TestCollector.collectedData = mutable.MutableList[(Int, MyOwnIntegerObject)]()
-  }
-
-
-  /**
-    * Creates test input
-    *
-    * @return
-    */
-  def CreateTestInput(): Future[Unit] = async {
-    //Create a sink function
-    val sink = await(SubjectFactory.GetSink[MyOwnIntegerObject])
-
-    //Source environment
-    val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
-    env.fromCollection(mutable.Set(1, 2, 3).toSeq).map(o => MyOwnIntegerObject(o)).addSink(sink)
-    logger.debug("Starting test sequence")
-    env.execute()
-    logger.debug("Finished producing test sequence")
-  }
 
   def CreateSourceQuery(nr: Int): Future[Unit] = {
     Future {
@@ -102,15 +79,19 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
   }
 
 
+  override def afterEach(): Unit = {
+    super.afterEach()
+    TestCollector.reset()
+  }
+
+
   "Kafka-Sinks" should "retrieve all messages published by a source" taggedAs(Slow, KafkaTest) in async {
-    //Create persistent environment so that the finite source will not immediately close the type
-    val t = await(subjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = true))
+    //Generate some test input
+    await(RunSourceEnvironment[MyOwnIntegerObject](mutable.Set(1, 2, 3).map(o => MyOwnIntegerObject(o)).toArray))
 
     //Creating fake query environments
     val environments = Future.sequence(Seq(CreateSourceQuery(1), CreateSourceQuery(2), CreateSourceQuery(3)))
 
-    //Generate some test input
-    await(CreateTestInput())
 
     Console.println("Closing subject type, should close the queries")
     await(subjectLibrary.Close(testSubjectName))
@@ -132,14 +113,11 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
 
 
   it should " still receive data if they are created before the sink" taggedAs(Slow, KafkaTest) in async {
-    //No persistent type needed now because the sources are created first
-    val t = await(subjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = true))
-
-    await(CreateTestInput())
+    //Generate some test input
+    await(RunSourceEnvironment[MyOwnIntegerObject](mutable.Set(1, 2, 3).map(o => MyOwnIntegerObject(o)).toArray))
 
     //Creating fake query environments
     val environments = Future.sequence(Seq(CreateSourceQuery(1), CreateSourceQuery(2), CreateSourceQuery(3)))
-
 
     Console.println("Closing subject type, should close the queries")
     await(subjectLibrary.Close(testSubjectName))
@@ -156,12 +134,10 @@ class KafkaSubjectSpec extends AsyncFlatSpec with Matchers with BeforeAndAfterAl
   }
 
   it should " be able to recieve data from multiple sinks" taggedAs(Slow, KafkaTest) in async {
-    await(subjectLibrary.GetOrCreateType[MyOwnIntegerObject](persistent = true))
-
     val environments = Future.sequence(Seq(CreateSourceQuery(1), CreateSourceQuery(2), CreateSourceQuery(3)))
 
     await(Future.sequence(for (_ <- 1 to 3) yield {
-      CreateTestInput()
+      RunSourceEnvironment[MyOwnIntegerObject](mutable.Set(1, 2, 3).map(o => MyOwnIntegerObject(o)).toArray)
     }))
 
     Console.println("Closing subject type, should close the queries")

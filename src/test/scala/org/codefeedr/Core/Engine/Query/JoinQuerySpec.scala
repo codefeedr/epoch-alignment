@@ -24,7 +24,6 @@ package org.codefeedr.Core.Engine.Query
 
 import org.apache.flink.api.scala._
 import org.codefeedr.Core.{FullIntegrationSpec, KafkaTest}
-import org.codefeedr.Core.Library.{LibraryServices}
 import org.scalatest.tagobjects.Slow
 
 
@@ -39,8 +38,6 @@ import scala.async.Async.{async, await}
   * Created by Niels on 04/08/2017.
   */
 class JoinQuerySpec extends FullIntegrationSpec {
-  this: LibraryServices =>
-
 
   "An InnerJoinQuery" should " produce a record for each join candidate" taggedAs (Slow, KafkaTest) in {
       val objects = Array(
@@ -59,8 +56,12 @@ class JoinQuerySpec extends FullIntegrationSpec {
         "groupedMessage")
 
     async {
-      await(RunSourceEnvironment(objects))
-      await(RunSourceEnvironment(groups))
+      val objectType = await(RunSourceEnvironment(objects))
+      val groupType = await(RunSourceEnvironment(groups))
+
+      assert(await(AwaitAllData(objectType)).size == 3)
+      assert(await(AwaitAllData(groupType)).size == 1)
+
       val resultType = await(RunQueryEnvironment(query))
       val result = await(AwaitAllData(resultType))
       assert(result.size == 3)
@@ -87,8 +88,12 @@ class JoinQuerySpec extends FullIntegrationSpec {
 
     async {
       //Add sources and wait for them to finish
-      await(RunSourceEnvironment(objects))
-      await(RunSourceEnvironment(groups))
+      val objectType = await(RunSourceEnvironment(objects))
+      val groupType = await(RunSourceEnvironment(groups))
+
+      assert(await(AwaitAllData(objectType)).size == 3)
+      assert(await(AwaitAllData(groupType)).size == 1)
+
       val resultType = await(RunQueryEnvironment(query))
       val result = await(AwaitAllData(resultType))
       assert(result.isEmpty)
@@ -96,16 +101,19 @@ class JoinQuerySpec extends FullIntegrationSpec {
   }
 
   it should " Only produce events for new combinations" taggedAs (Slow, KafkaTest) in {
+    //Create a set of objects
     val objects = Array(
       TestJoinObject(1, 1, "Message 1"),
       TestJoinObject(2, 1, "Message 2"),
       TestJoinObject(3, 1, "Message 3")
     )
 
+    //Create a set of groups to join with
     val groups = Array(TestJoinGroup(1, "Group 1"),
                        TestJoinGroup(1, "Group 1 duplicate 1"),
                        TestJoinGroup(1, "Group 1 duplicate 2"))
 
+    //Create the query
     val query = Join(SubjectSource("TestJoinObject"),
                      SubjectSource("TestJoinGroup"),
                      Array("group"),
@@ -114,10 +122,15 @@ class JoinQuerySpec extends FullIntegrationSpec {
                      Array("name"),
                      "groupedMessage")
 
+    //Run all environments
     async {
       //Add sources and wait for them to finish
-      await(RunSourceEnvironment(objects))
-      await(RunSourceEnvironment(groups))
+      val objectType = await(RunSourceEnvironment(objects))
+      val groupType = await(RunSourceEnvironment(groups))
+
+      assert(await(AwaitAllData(objectType)).size == 3)
+      assert(await(AwaitAllData(groupType)).size == 3)
+
       val queryResultType = await(RunQueryEnvironment(query))
       val result = await(AwaitAllData(queryResultType))
       assert(result.size == 9)

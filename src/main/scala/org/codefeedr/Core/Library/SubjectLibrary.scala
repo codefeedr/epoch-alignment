@@ -91,6 +91,7 @@ class SubjectLibrary(val zk: ZkClient) extends LazyLogging {
     */
   def GetOrCreateType[T: ru.TypeTag](persistent: Boolean): Future[SubjectType] = {
     val name = SubjectTypeFactory.getSubjectName[T]
+    logger.debug(s"Getting or creating type $name with persistency: $persistent")
     val provider = () => SubjectTypeFactory.getSubjectType[T](persistent)
     GetOrCreateType(name, provider)
   }
@@ -158,7 +159,7 @@ class SubjectLibrary(val zk: ZkClient) extends LazyLogging {
     logger.debug(s"Registering new type ${subjectType.name}")
     async {
       await(GetSubjectNode(subjectType.name).Create[SubjectType](subjectType))
-      await(GetStateNode(subjectType.name).Create[Boolean](true))
+      await(GetStateNode(subjectType.name).Create[Boolean](subjectType.persistent))
       await(GetSinkNode(subjectType.name).Create())
       await(GetSourceNode(subjectType.name).Create())
       subjectType
@@ -244,8 +245,13 @@ class SubjectLibrary(val zk: ZkClient) extends LazyLogging {
     }
     await(sinkNode.Delete)
 
+    logger.debug(s"${await(GetSinks(typeName)).size} sinks remaining. Persistent: ${await(GetType(typeName).map(o => o.get.persistent))}")
+
     //Check if the type needs to be removed
     await(CloseIfNoSinks(typeName))
+
+
+
     await(DeleteIfNoSourcesAndSinks(typeName))
   }
 

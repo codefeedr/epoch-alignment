@@ -223,7 +223,8 @@ class subjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with Befor
     await(subjectLibrary.UnRegisterSink(TestTypeName,"Sink2"))
     assert(!await(subjectLibrary.IsOpen(TestTypeName)))
   }
-
+/*
+  TODO: This functionality is disabled because we need to discuss if we want this functionality. Auto-removing subjects might confuse users and makes writing tests harder
   "subjectLibrary.UnregisterSink" should "remove the type if a non-persistent subject no longer has any sinks/sources" in async {
     await(subjectLibrary.GetOrCreateType[TestTypeA]())
     await(subjectLibrary.RegisterSink(TestTypeName, SinkUuid))
@@ -239,5 +240,5 @@ class subjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with Befor
     await(subjectLibrary.UnRegisterSource(TestTypeName, SourceUuid))
     assert(!await(subjectLibrary.Exists(TestTypeName)))
   }
-
+*/
 }

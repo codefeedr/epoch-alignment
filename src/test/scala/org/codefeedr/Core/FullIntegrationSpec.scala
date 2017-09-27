@@ -27,7 +27,7 @@ import org.codefeedr.Core.Library.Internal.Kafka.{KafkaConsumerFactory, KafkaPro
 import org.codefeedr.Core.Library.{LibraryServices, SubjectFactory}
 import org.codefeedr.Core.Plugin.CollectionPlugin
 import org.codefeedr.Model.{SubjectType, TrailedRecord}
-import org.scalatest.{AsyncFlatSpec, FutureOutcome, Matchers}
+import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach, FutureOutcome, Matchers}
 
 import scala.async.Async.{async, await}
 import scala.collection.mutable
@@ -36,25 +36,19 @@ import scala.concurrent.duration.{Duration, SECONDS}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-class FullIntegrationSpec extends AsyncFlatSpec with Matchers with LazyLogging with LibraryServices {
+class FullIntegrationSpec extends AsyncFlatSpec with Matchers with LazyLogging with LibraryServices with BeforeAndAfterEach {
   this: LibraryServices =>
 
   val parallelism: Int = 2
 
-
-  /**
-    * Cleans the zookeeper library before every test runs, and reinitializes the subjectLibrary
-    * @param test
-    * @return
-    */
-  override def withFixture(test: NoArgAsyncTest): FutureOutcome = {
+  override def beforeEach(): Unit = {
     Await.ready(subjectLibrary.Initialize(), Duration(1, SECONDS))
-    complete {
-      super.withFixture(test)
-    } lastly {
-      Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
-    }
   }
+
+  override def afterEach(): Unit = {
+    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
+  }
+
 
   /**
     * Awaits all data of the given subject
@@ -95,18 +89,16 @@ class FullIntegrationSpec extends AsyncFlatSpec with Matchers with LazyLogging w
     * Utility function for tests that creates a source environment with the given data
     * @param data the data to create environment for
     * @tparam T type of the data
-    * @return A future that returns when all data has been pushed to kakfa
+    * @return A future that returns when all data has been pushed to kakfa, with the subjectType that was used
     */
-  def RunSourceEnvironment[T: ru.TypeTag: ClassTag: TypeInformation](data: Array[T]): Future[Unit] = async {
-    val t = await(subjectLibrary.GetOrCreateType[T](persistent = true))
-    val env = StreamExecutionEnvironment.createLocalEnvironment(1)
+  def RunSourceEnvironment[T: ru.TypeTag: ClassTag: TypeInformation](data: Array[T]): Future[SubjectType] = async {
+    val t = await(subjectLibrary.GetOrCreateType[T]())
+    val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
     logger.debug(s"Composing env for ${t.name}")
     await(new CollectionPlugin(data).Compose(env))
     logger.debug(s"Starting env for ${t.name}")
     env.execute()
     logger.debug(s"Completed env for ${t.name}")
+    t
   }
-
-
 }
-
