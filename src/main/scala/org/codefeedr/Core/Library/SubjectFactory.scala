@@ -21,9 +21,9 @@ package org.codefeedr.Core.Library
 
 import java.util.UUID
 
-import org.apache.flink.streaming.api.functions.sink.SinkFunction
+import org.apache.flink.streaming.api.functions.sink.{RichSinkFunction, SinkFunction}
 import org.apache.flink.streaming.api.functions.source.SourceFunction
-import org.codefeedr.Core.Library.Internal.Kafka.{KafkaController, KafkaGenericSink, KafkaSource}
+import org.codefeedr.Core.Library.Internal.Kafka._
 import org.codefeedr.Core.Library.Internal.{KeyFactory, RecordTransformer}
 import org.codefeedr.Model.{ActionType, SubjectType, TrailedRecord}
 
@@ -43,6 +43,14 @@ class SubjectFactoryController { this: LibraryServices =>
       .flatMap(o =>
         KafkaController.GuaranteeTopic(s"${o.name}_${o.uuid}").map(_ => new KafkaGenericSink(o)))
   }
+
+  /**
+    * Get a generic sink for the given type
+    * @param subjectType
+    * @return
+    */
+  def GetSink(subjectType: SubjectType): SinkFunction[TrailedRecord] =
+    new TrailedRecordSink(subjectType)
 
   /**
     * Construct a serializable and distributable mapper function from any source type to a TrailedRecord

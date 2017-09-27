@@ -296,10 +296,12 @@ class SubjectLibrary(val zk: ZkClient) extends LazyLogging {
   /**
     * Checks if the given type is persistent
     * If not, and the type has no sinks or sources, removes the entire type
-    *
+    * TODO: Temporary disabled, because we need to discuss if we even want this
     * @return A future that resolves when the operation is done
     */
   private def DeleteIfNoSourcesAndSinks(typeName: String): Future[Unit] = async {
+
+    /*
     val shouldRemove = await(for {
       persistent <- GetType(typeName).map(o => o.get.persistent)
       hasSources <- HasSources(typeName)
@@ -309,6 +311,7 @@ class SubjectLibrary(val zk: ZkClient) extends LazyLogging {
     if (shouldRemove) {
       await(UnRegisterSubject(typeName))
     }
+   */
   }
 
   /**

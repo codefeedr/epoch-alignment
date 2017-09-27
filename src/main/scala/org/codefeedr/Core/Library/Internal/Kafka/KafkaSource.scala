@@ -100,7 +100,7 @@ class KafkaSource(subjectType: SubjectType)
     */
   private[Kafka] def AwaitClose(): Future[Unit] = ClosePromise.future
 
-  override def run(ctx: SourceFunction.SourceContext[TrailedRecord]): Unit = {
+  def runLocal(collector: TrailedRecord => Unit): Unit = {
     started = true
     if (!running) {
       logger.debug(s"$uuid already cancelled. Processing events and terminating")
@@ -136,7 +136,7 @@ class KafkaSource(subjectType: SubjectType)
           .map(o => TrailedRecord(o.value(), o.key()))
           .foreach(o => {
             foundRecords = true
-            ctx.collect(o)
+            collector(o)
           })
         logger.debug(s"$uuid completed poll")
         foundRecords
@@ -149,4 +149,6 @@ class KafkaSource(subjectType: SubjectType)
     thread.start()
     thread.join()
   }
+
+  override def run(ctx: SourceFunction.SourceContext[TrailedRecord]): Unit = runLocal(ctx.collect)
 }

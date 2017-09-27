@@ -21,133 +21,54 @@
 
 package org.codefeedr.Core.Engine.Query
 
-import java.util.concurrent.Executors
 
-import com.typesafe.scalalogging.LazyLogging
-import org.apache.flink.api.common.typeinfo.TypeInformation
-import org.apache.flink.streaming.api.scala.{StreamExecutionEnvironment, _}
-import org.codefeedr.Core.KafkaTest
-import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
-import org.codefeedr.Core.Library.{LibraryServices, SubjectLibrary}
-import org.codefeedr.Core.Plugin.CollectionPlugin
-import org.codefeedr.Model.TrailedRecord
+import org.apache.flink.api.scala._
+import org.codefeedr.Core.{FullIntegrationSpec, KafkaTest}
+import org.codefeedr.Core.Library.{LibraryServices}
 import org.scalatest.tagobjects.Slow
-import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach, Matchers}
 
-import scala.collection.mutable
-import scala.concurrent.duration.{Duration, SECONDS}
-import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
-import scala.reflect.ClassTag
-import scala.reflect.runtime.{universe => ru}
 
 case class TestJoinObject(id: Long, group: Long, message: String)
 case class TestJoinGroup(id: Long, name: String)
 
 import scala.async.Async.{async, await}
 
-object TestCollector extends LazyLogging {
-
-  def reset(): Unit = {
-    collectedData = mutable.MutableList[TrailedRecord]()
-  }
-
-  var collectedData: mutable.MutableList[TrailedRecord] =
-    mutable.MutableList[TrailedRecord]()
-
-  def collect(item: TrailedRecord): Unit = {
-    logger.debug(
-      s"${item.record.data(1).asInstanceOf[String]}-${item.record.data(2).asInstanceOf[String]} received")
-    this.synchronized {
-      collectedData += item
-    }
-  }
-}
 
 /**
   * Integration test for a join
   * Created by Niels on 04/08/2017.
   */
-class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach with LazyLogging with LibraryServices {
+class JoinQuerySpec extends FullIntegrationSpec {
   this: LibraryServices =>
 
-  var counter: Int = 0
-  val parallelism: Int = 2
 
+  "An InnerJoinQuery" should " produce a record for each join candidate" taggedAs (Slow, KafkaTest) in {
+      val objects = Array(
+        TestJoinObject(1, 1, "Message 1"),
+        TestJoinObject(2, 1, "Message 2"),
+        TestJoinObject(3, 1, "Message 3")
+      )
 
-  override def beforeEach(): Unit = {
-    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
-    Await.ready(subjectLibrary.Initialize(), Duration(1, SECONDS))
-    TestCollector.reset()
-  }
-
-  /**
-    * Utility function for tests that creates a source environment with the given data
-    * @param data the data to create environment for
-    * @tparam T type of the data
-    * @return A future that returns when all data has been pushed to kakfa
-    */
-  def CreateSourceEnvironment[T: ru.TypeTag: ClassTag: TypeInformation](data: Array[T]): Future[Unit] = async {
-    val nr = counter
-    counter += 1
-    await(subjectLibrary.GetOrCreateType[T](persistent = true))
-    val env = StreamExecutionEnvironment.createLocalEnvironment(1)
-    logger.debug(s"Composing env$nr")
-    await(new CollectionPlugin(data).Compose(env))
-    logger.debug(s"Starting env$nr")
-    env.execute()
-    logger.debug(s"env$nr completed")
-  }
-
-  /**
-    * Utility function that creates a query environment and executes it
-    * @param query The query environment
-    * @return When the environment is done, probably never
-    */
-  def CreateQueryEnvironment(query: QueryTree): Future[Unit] = async {
-    val queryEnv = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
-    logger.debug("Creating query Composer")
-    val composer = await(StreamComposerFactory.GetComposer(query))
-    logger.debug("Composing queryEnv")
-    val resultStream = composer.Compose(queryEnv)
-    resultStream.addSink(data => TestCollector.collect(data))
-    logger.debug("Starting queryEnv")
-    queryEnv.execute()
-    logger.debug("queryenv completed")
-  }
-
-  "An innerjoin Query" should " produce a record for each join candidate" taggedAs (Slow, KafkaTest) in {
-    val objects = Array(
-      TestJoinObject(1, 1, "Message 1"),
-      TestJoinObject(2, 1, "Message 2"),
-      TestJoinObject(3, 1, "Message 3")
-    )
-
-    val groups = Array(TestJoinGroup(1, "Group 1"))
-    val query = Join(SubjectSource("TestJoinObject"),
-                     SubjectSource("TestJoinGroup"),
-                     Array("group"),
-                     Array("id"),
-                     Array("id", "message"),
-                     Array("name"),
-                     "groupedMessage")
+      val groups = Array(TestJoinGroup(1, "Group 1"))
+      val query = Join(SubjectSource("TestJoinObject"),
+        SubjectSource("TestJoinGroup"),
+        Array("group"),
+        Array("id"),
+        Array("id", "message"),
+        Array("name"),
+        "groupedMessage")
 
     async {
-      await(CreateSourceEnvironment(objects))
-      await(CreateSourceEnvironment(groups))
-      val queryEnvJob = CreateQueryEnvironment(query)
-      //Lift the exception so you actually see it
-      queryEnvJob.onFailure {
-        case t: Throwable => throw t
-      }
-      //Add sources and wait for them to finish
-      logger.debug(s"Waiting for query environment to complete")
-      await(queryEnvJob)
-      logger.debug(s"Query environment completed")
-      assert(TestCollector.collectedData.size == 3)
+      await(RunSourceEnvironment(objects))
+      await(RunSourceEnvironment(groups))
+      val resultType = await(RunQueryEnvironment(query))
+      val result = await(AwaitAllData(resultType))
+      assert(result.size == 3)
     }
   }
 
-  "An innerjoin Query" should " produce no records if no join candidates are found" taggedAs (Slow, KafkaTest) in {
+
+  it should " produce no records if no join candidates are found" taggedAs (Slow, KafkaTest) in {
     val objects = Array(
       TestJoinObject(1, 1, "Message 1"),
       TestJoinObject(2, 1, "Message 2"),
@@ -155,6 +76,7 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
     )
 
     val groups = Array(TestJoinGroup(2, "Group 2"), TestJoinGroup(3, "Group 3"))
+
     val query = Join(SubjectSource("TestJoinObject"),
                      SubjectSource("TestJoinGroup"),
                      Array("group"),
@@ -165,22 +87,15 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
 
     async {
       //Add sources and wait for them to finish
-      await(CreateSourceEnvironment(objects))
-      await(CreateSourceEnvironment(groups))
-
-      val queryEnvJob = CreateQueryEnvironment(query)
-      //Lift the exception so you actually see it
-      queryEnvJob.onFailure {
-        case t: Throwable => throw t
-      }
-      logger.debug(s"Waiting for query environment to complete")
-      await(queryEnvJob)
-      logger.debug(s"Query environment completed")
-      assert(TestCollector.collectedData.isEmpty)
+      await(RunSourceEnvironment(objects))
+      await(RunSourceEnvironment(groups))
+      val resultType = await(RunQueryEnvironment(query))
+      val result = await(AwaitAllData(resultType))
+      assert(result.isEmpty)
     }
   }
 
-  "An innerjoin Query" should " Only produce events for new combinations" taggedAs (Slow, KafkaTest) in {
+  it should " Only produce events for new combinations" taggedAs (Slow, KafkaTest) in {
     val objects = Array(
       TestJoinObject(1, 1, "Message 1"),
       TestJoinObject(2, 1, "Message 2"),
@@ -190,6 +105,7 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
     val groups = Array(TestJoinGroup(1, "Group 1"),
                        TestJoinGroup(1, "Group 1 duplicate 1"),
                        TestJoinGroup(1, "Group 1 duplicate 2"))
+
     val query = Join(SubjectSource("TestJoinObject"),
                      SubjectSource("TestJoinGroup"),
                      Array("group"),
@@ -200,20 +116,11 @@ class JoinQuerySpec extends AsyncFlatSpec with Matchers with BeforeAndAfterEach 
 
     async {
       //Add sources and wait for them to finish
-      await(CreateSourceEnvironment(objects))
-      await(CreateSourceEnvironment(groups))
-      
-      val queryEnvJob = CreateQueryEnvironment(query)
-      //Lift the exception so you actually see it
-      queryEnvJob.onFailure {
-        case t: Throwable => throw t
-      }
-
-      logger.debug(s"Waiting for query environment to complete")
-      await(queryEnvJob)
-      logger.debug(s"Query environment completed")
-      assert(TestCollector.collectedData.size == 9)
+      await(RunSourceEnvironment(objects))
+      await(RunSourceEnvironment(groups))
+      val queryResultType = await(RunQueryEnvironment(query))
+      val result = await(AwaitAllData(queryResultType))
+      assert(result.size == 9)
     }
   }
-
 }

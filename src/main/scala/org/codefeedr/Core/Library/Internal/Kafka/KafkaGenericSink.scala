@@ -36,34 +36,10 @@ import scala.reflect.runtime.{universe => ru}
 /**
   * Created by Niels on 31/07/2017.
   */
-class KafkaGenericSink[TData: ru.TypeTag: ClassTag](subjectType: SubjectType)
-    extends RichSinkFunction[TData]
-    with LazyLogging
-    with LibraryServices {
-  @transient private lazy val kafkaProducer = {
-    val producer = KafkaProducerFactory.create[RecordSourceTrail, Record]
-    logger.debug(s"Producer $uuid created for topic $topic")
-    producer
-  }
-
-  @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
-
-  //A random identifier for this specific sink
-  @transient private[Kafka] lazy val uuid = UUID.randomUUID()
+class KafkaGenericSink[TData: ru.TypeTag: ClassTag](val subjectType: SubjectType)
+    extends KafkaSink[TData] {
 
   @transient private lazy val Transformer = SubjectFactory.GetTransformer[TData](subjectType)
-
-  override def close(): Unit = {
-    logger.debug(s"Closing producer $uuid")
-    kafkaProducer.close()
-    Await.ready(subjectLibrary.UnRegisterSink(subjectType.name, uuid.toString), Duration.Inf)
-  }
-
-  override def open(parameters: Configuration): Unit = {
-    logger.debug(s"Opening producer $uuid")
-    Await.ready(subjectLibrary.RegisterSink(subjectType.name, uuid.toString), Duration.Inf)
-    super.open(parameters)
-  }
 
   override def invoke(value: TData): Unit = {
     val data = Transformer.apply(value)
