@@ -22,6 +22,7 @@
 package org.codefeedr.Core.Library.Internal.Kafka
 
 import org.apache.flink.streaming.api.functions.source.SourceFunction.SourceContext
+import org.codefeedr.Core.FullIntegrationSpec
 import org.codefeedr.Core.Library.Internal.Zookeeper.{ZkClient, ZkNode}
 import org.codefeedr.Core.Library.{LibraryServices, SubjectLibrary}
 import org.codefeedr.Model.TrailedRecord
@@ -34,22 +35,16 @@ import scala.concurrent.duration._
 
 case class TestKafkaSourceSubject(prop1: String)
 
-class KafkaSourceSpec extends AsyncFlatSpec with BeforeAndAfterEach with BeforeAndAfterAll with LibraryServices {
-  this: LibraryServices =>
-
+class KafkaSourceSpec extends FullIntegrationSpec {
   val testSubjectName = "TestKafkaSourceSubject"
 
-  override def beforeEach(): Unit = {
-    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
-    Await.ready(subjectLibrary.Initialize(),Duration(1, SECONDS))
-  }
 
 
 
 
 
   "A KafkaSource" should "Register and remove itself in the SubjectLibrary" in async {
-    val subject = await(subjectLibrary.GetOrCreateType[TestKafkaSourceSubject](persistent = false))
+    val subject = await(subjectLibrary.GetOrCreateType[TestKafkaSourceSubject](persistent = true))
     val source = new KafkaSource(subject)
     assert(!await(subjectLibrary.GetSources(testSubjectName)).contains(source.uuid.toString))
     source.InitRun()
