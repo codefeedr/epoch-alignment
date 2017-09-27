@@ -86,9 +86,11 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
 
 
   "Kafka-Sinks" should "retrieve all messages published by a source" taggedAs(Slow, KafkaTest) in async {
+    assert(!await(subjectLibrary.Exists(testSubjectName)))
     //Generate some test input
     await(RunSourceEnvironment[MyOwnIntegerObject](mutable.Set(1, 2, 3).map(o => MyOwnIntegerObject(o)).toArray))
 
+    Thread.sleep(5000)
     //Creating fake query environments
     val environments = Future.sequence(Seq(CreateSourceQuery(1), CreateSourceQuery(2), CreateSourceQuery(3)))
 
@@ -113,6 +115,8 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
 
 
   it should " still receive data if they are created before the sink" taggedAs(Slow, KafkaTest) in async {
+    assert(!await(subjectLibrary.Exists(testSubjectName)))
+
     //Generate some test input
     await(RunSourceEnvironment[MyOwnIntegerObject](mutable.Set(1, 2, 3).map(o => MyOwnIntegerObject(o)).toArray))
 
@@ -134,6 +138,8 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
   }
 
   it should " be able to recieve data from multiple sinks" taggedAs(Slow, KafkaTest) in async {
+    assert(!await(subjectLibrary.Exists(testSubjectName)))
+
     val environments = Future.sequence(Seq(CreateSourceQuery(1), CreateSourceQuery(2), CreateSourceQuery(3)))
 
     await(Future.sequence(for (_ <- 1 to 3) yield {

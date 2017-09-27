@@ -200,6 +200,8 @@ class SubjectLibrary(val zk: ZkClient) extends LazyLogging {
       throw SinkAlreadySubscribedException(uuid.concat(" on ").concat(typeName))
     }
 
+    logger.debug(s"Registering sink $uuid on $typeName")
+
     await(sinkNode.Create())
   }
 
@@ -245,12 +247,11 @@ class SubjectLibrary(val zk: ZkClient) extends LazyLogging {
     }
     await(sinkNode.Delete)
 
-    logger.debug(s"${await(GetSinks(typeName)).size} sinks remaining. Persistent: ${await(GetType(typeName).map(o => o.get.persistent))}")
+    logger.debug(s"${await(GetSinks(typeName)).size} sinks remaining. Persistent: ${await(
+      GetType(typeName).map(o => o.get.persistent))}")
 
     //Check if the type needs to be removed
     await(CloseIfNoSinks(typeName))
-
-
 
     await(DeleteIfNoSourcesAndSinks(typeName))
   }

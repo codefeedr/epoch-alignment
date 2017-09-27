@@ -58,6 +58,7 @@ class KafkaSource(subjectType: SubjectType)
   //Make this configurable?
   @transient private lazy val RefreshTime = 100
   @transient private lazy val PollTimeout = 1000
+  @transient private lazy val kafkaLatency = 1000
   @transient private lazy val ClosePromise: Promise[Unit] = Promise[Unit]()
 
   @transient
@@ -91,6 +92,7 @@ class KafkaSource(subjectType: SubjectType)
     logger.debug(s"Unsubscribing source $uuid on subject $topic.")
     Await.ready(subjectLibrary.UnRegisterSource(subjectType.name, uuid.toString),
                 Duration(120, SECONDS))
+    dataConsumer.close()
     //Notify of the closing
     ClosePromise.success()
   }
@@ -110,13 +112,13 @@ class KafkaSource(subjectType: SubjectType)
 
     val refreshTask = new Runnable {
       override def run(): Unit = {
+        //Poll at least once
+        Poll()
         while (running) {
-          delay(RefreshTime)
+          Poll()
         }
-        //After cancel poll keep polling until all data has been received
-        while (Poll()) {
-          delay(RefreshTime)
-        }
+        //Keep polling until no more data
+        while (Poll()) {}
         FinalizeRun()
       }
 

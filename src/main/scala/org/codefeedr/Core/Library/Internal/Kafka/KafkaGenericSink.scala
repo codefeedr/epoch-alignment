@@ -43,6 +43,7 @@ class KafkaGenericSink[TData: ru.TypeTag: ClassTag](val subjectType: SubjectType
 
   override def invoke(value: TData): Unit = {
     val data = Transformer.apply(value)
+    logger.debug(s"Producer $uuid sending a message to topic $topic")
     kafkaProducer.send(new ProducerRecord(topic, data.trail, data.record))
   }
 }

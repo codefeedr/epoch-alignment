@@ -63,6 +63,7 @@ abstract class KafkaSink[TSink]
   }
 
   override def open(parameters: Configuration): Unit = {
+    kafkaProducer
     logger.debug(s"Opening producer $uuid")
     Await.ready(subjectLibrary.RegisterSink(subjectType.name, uuid.toString), Duration.Inf)
   }
@@ -71,6 +72,7 @@ abstract class KafkaSink[TSink]
 
 class TrailedRecordSink(override val subjectType: SubjectType) extends KafkaSink[TrailedRecord] {
   override def invoke(trailedRecord: TrailedRecord): Unit = {
+    logger.debug(s"Producer $uuid sending a message to topic $topic")
     kafkaProducer.send(new ProducerRecord(topic, trailedRecord.trail, trailedRecord.record))
   }
 }
