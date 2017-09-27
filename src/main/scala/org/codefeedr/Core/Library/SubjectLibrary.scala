@@ -159,7 +159,7 @@ class SubjectLibrary(val zk: ZkClient) extends LazyLogging {
     logger.debug(s"Registering new type ${subjectType.name}")
     async {
       await(GetSubjectNode(subjectType.name).Create[SubjectType](subjectType))
-      await(GetStateNode(subjectType.name).Create[Boolean](subjectType.persistent))
+      await(GetStateNode(subjectType.name).Create[Boolean](true))
       await(GetSinkNode(subjectType.name).Create())
       await(GetSourceNode(subjectType.name).Create())
       subjectType
