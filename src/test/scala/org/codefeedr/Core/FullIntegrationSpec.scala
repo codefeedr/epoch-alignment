@@ -36,9 +36,7 @@ import scala.concurrent.duration.{Duration, SECONDS}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-class FullIntegrationSpec extends AsyncFlatSpec with Matchers with LazyLogging with LibraryServices with BeforeAndAfterEach {
-  this: LibraryServices =>
-
+class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogging with LibraryServices with BeforeAndAfterEach {
   val parallelism: Int = 2
 
   override def beforeEach(): Unit = {

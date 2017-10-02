@@ -28,6 +28,7 @@ import org.scalatest.tagobjects.Slow
 
 
 case class TestJoinObject(id: Long, group: Long, message: String)
+
 case class TestJoinGroup(id: Long, name: String)
 
 import scala.async.Async.{async, await}

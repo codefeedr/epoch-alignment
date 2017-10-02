@@ -20,6 +20,7 @@
 package org.codefeedr.Core.Library.Internal.Zookeeper
 
 import org.codefeedr.Core.Library.LibraryServices
+import org.codefeedr.Core.LibraryServiceSpec
 import org.scalatest._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -28,10 +29,7 @@ import scala.concurrent.duration._
 import scala.async.Async._
 import org.scalatest.tagobjects.Slow
 
-class ZkClientSpec  extends AsyncFlatSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with LibraryServices {
-  this: LibraryServices =>
-
-
+class ZkClientSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll {
 
   override def beforeEach(): Unit = {
     Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))

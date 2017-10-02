@@ -36,7 +36,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.async.Async._
-
 import scala.reflect.ClassTag
 
 /**
@@ -94,7 +93,10 @@ class ZkClient {
     */
   private def PrependPath(s: String) = s"/CodeFeedr$s"
 
-  private def Close(): Unit = zk.close()
+  /**
+    * Closes the connection to the zkClient
+    */
+  def Close(): Unit = zk.close()
 
   /**
     * Get the raw bytearray at the specific node

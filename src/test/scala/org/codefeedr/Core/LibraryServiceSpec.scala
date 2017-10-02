@@ -17,17 +17,15 @@
  *
  */
 
-package org.codefeedr.Core.Library
+package org.codefeedr.Core
 
-import resource._
-import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
+import org.codefeedr.Core.Library.LibraryServices
+import org.scalatest.AsyncFlatSpec
 
-trait LibraryServices {
-  @transient lazy val zkClient: ZkClient = LibraryServices.zkClient
-  @transient lazy val subjectLibrary: SubjectLibrary = LibraryServices.subjectLibrary
-}
+/**
+  * Base spec class that has asyncflatspec with libraryServices
+  */
+class LibraryServiceSpec extends AsyncFlatSpec with LibraryServices {
+  this: LibraryServices =>
 
-object LibraryServices {
-  @transient lazy val zkClient: ZkClient = new ZkClient()
-  @transient lazy val subjectLibrary: SubjectLibrary = new SubjectLibrary(zkClient)
 }

@@ -140,11 +140,13 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
   it should " be able to recieve data from multiple sinks" taggedAs(Slow, KafkaTest) in async {
     assert(!await(subjectLibrary.Exists(testSubjectName)))
 
-    val environments = Future.sequence(Seq(CreateSourceQuery(1), CreateSourceQuery(2), CreateSourceQuery(3)))
-
     await(Future.sequence(for (_ <- 1 to 3) yield {
       RunSourceEnvironment[MyOwnIntegerObject](mutable.Set(1, 2, 3).map(o => MyOwnIntegerObject(o)).toArray)
     }))
+
+    val environments = Future.sequence(Seq(CreateSourceQuery(1), CreateSourceQuery(2), CreateSourceQuery(3)))
+
+
 
     Console.println("Closing subject type, should close the queries")
     await(subjectLibrary.Close(testSubjectName))

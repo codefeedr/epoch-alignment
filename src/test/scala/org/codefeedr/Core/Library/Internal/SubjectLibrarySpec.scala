@@ -22,8 +22,8 @@
 package org.codefeedr.Core.Library.Internal
 
 import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
-import org.codefeedr.Core.ZkTest
-import org.codefeedr.Core.Library.{LibraryServices}
+import org.codefeedr.Core.{LibraryServiceSpec, ZkTest}
+import org.codefeedr.Core.Library.LibraryServices
 import org.codefeedr.Exceptions._
 import org.scalatest._
 import org.scalatest.tagobjects.Slow
@@ -39,8 +39,7 @@ case class TestTypeA(prop1: String)
 /**
   * Created by Niels on 18/07/2017.
   */
-class subjectLibrarySpec extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach with LibraryServices{
-  this: LibraryServices =>
+class subjectLibrarySpec extends LibraryServiceSpec with BeforeAndAfterAll with BeforeAndAfterEach {
 
   implicit override def executionContext: ExecutionContextExecutor =
     scala.concurrent.ExecutionContext.Implicits.global
