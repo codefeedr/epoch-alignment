@@ -30,17 +30,19 @@ import org.apache.flink.api.common.functions.MapFunction
 
 import org.apache.flink.streaming.api.scala._
 
-class KafkaTableSource(subjectType: SubjectType) extends StreamTableSource[Row]{
+class KafkaTableSource(subjectType: SubjectType) extends StreamTableSource[Row] {
   val source: SourceFunction[TrailedRecord] = SubjectFactory.GetSource(subjectType)
 
   //Map the TrailedRecord provided by the source to a row
   override def getDataStream(execEnv: StreamExecutionEnvironment) = {
     //<3 the java API (not)
-    execEnv.addSource(source).map(
-      new MapFunction[TrailedRecord, Row]() {
-        override def map(value: TrailedRecord): Row = value.row
-      }
-    )
+    execEnv
+      .addSource(source)
+      .map(
+        new MapFunction[TrailedRecord, Row]() {
+          override def map(value: TrailedRecord): Row = value.row
+        }
+      )
   }
 
   override def getReturnType = ???
