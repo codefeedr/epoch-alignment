@@ -149,11 +149,11 @@ class JoinQueryComposerSpec
         Source(Array[Byte](), Array[Byte](11.toByte)))
 
     val merged = mergeFn(o, m, ActionType.Add)
-    assert(merged.record.data(0).asInstanceOf[String].equals("object 1"))
-    assert(merged.record.data(1).asInstanceOf[Int] == 2)
-    assert(merged.record.data(2).asInstanceOf[String].equals("a message"))
-    assert(merged.record.data(3).asInstanceOf[Array[Byte]](0) == 4.toByte)
-    assert(merged.record.action == ActionType.Add)
+    assert(merged.field(0).asInstanceOf[String].equals("object 1"))
+    assert(merged.field(1).asInstanceOf[Int] == 2)
+    assert(merged.field(2).asInstanceOf[String].equals("a message"))
+    assert(merged.field(3).asInstanceOf[Array[Byte]](0) == 4.toByte)
+    assert(merged.action == ActionType.Add)
     assert(merged.trail.isInstanceOf[ComposedSource])
     assert(merged.trail.asInstanceOf[ComposedSource].SourceId(0) == 12.toByte)
     assert(
@@ -199,11 +199,11 @@ class JoinQueryComposerSpec
 
     val (r1, state1) = joinFunction(Left(o), state)
     assert(r1.isEmpty)
-    assert(state1.get.left.values.toArray.contains(o.record))
+    assert(state1.get.left.values.toArray.contains(o))
 
     val (r2, state2) = joinFunction(Right(m), state)
     assert(r2.isEmpty)
-    assert(state2.get.right.values.toArray.contains(m.record))
+    assert(state2.get.right.values.toArray.contains(m))
   }
 
   "A InnerJoinFunction" should "emit a value when a join partner has been found" in {
@@ -220,12 +220,12 @@ class JoinQueryComposerSpec
 
     val (r1, state1) = joinFunction(Left(o), state)
     assert(r1.isEmpty)
-    assert(state1.get.left.values.toArray.contains(o.record))
+    assert(state1.get.left.values.toArray.contains(o))
 
     val (r2, state2) = joinFunction(Right(m), state1)
     assert(r2.size == 1)
-    assert(state2.get.right.values.toArray.contains(m.record))
-    assert(state2.get.left.values.toArray.contains(o.record))
+    assert(state2.get.right.values.toArray.contains(m))
+    assert(state2.get.left.values.toArray.contains(o))
   }
 
   "A InnerJoinFunction" should "emit a cross join when multiple join partners are found in" in {
@@ -253,15 +253,15 @@ class JoinQueryComposerSpec
     val (r2, state2) = joinFunction(Right(m), state1)
     val (r3, state3) = joinFunction(Left(o2), state2)
     assert(r3.size == 1)
-    assert(state3.get.right.values.toArray.contains(m.record))
-    assert(state3.get.left.values.toArray.contains(o.record))
-    assert(state3.get.left.values.toArray.contains(o2.record))
+    assert(state3.get.right.values.toArray.contains(m))
+    assert(state3.get.left.values.toArray.contains(o))
+    assert(state3.get.left.values.toArray.contains(o2))
     val (r4, state4) = joinFunction(Right(m2), state3)
     assert(r4.size == 2)
-    assert(state4.get.right.values.toArray.contains(m.record))
-    assert(state4.get.right.values.toArray.contains(m2.record))
-    assert(state4.get.left.values.toArray.contains(o.record))
-    assert(state4.get.left.values.toArray.contains(o2.record))
+    assert(state4.get.right.values.toArray.contains(m))
+    assert(state4.get.right.values.toArray.contains(m2))
+    assert(state4.get.left.values.toArray.contains(o))
+    assert(state4.get.left.values.toArray.contains(o2))
   }
   "A InnerJoinFunction" should "not add an element to its state twice if it occurs twice" in {
     val state = None: Option[JoinState]
@@ -288,11 +288,11 @@ class JoinQueryComposerSpec
     val (r2, state2) = joinFunction(Right(m), state1)
     val (r3, state3) = joinFunction(Left(o), state2)
     assert(r3.size == 1)
-    assert(state3.get.right.values.toArray.count(l => l.equals(m.record)) == 1)
-    assert(state3.get.left.values.toArray.count(l => l.equals(o.record)) == 1)
+    assert(state3.get.right.values.toArray.count(l => l.equals(m)) == 1)
+    assert(state3.get.left.values.toArray.count(l => l.equals(o)) == 1)
     val (r4, state4) = joinFunction(Right(m), state3)
     assert(r4.size == 1)
-    assert(state3.get.right.values.toArray.count(l => l.equals(m.record)) == 1)
-    assert(state3.get.left.values.toArray.count(l => l.equals(o.record)) == 1)
+    assert(state3.get.right.values.toArray.count(l => l.equals(m)) == 1)
+    assert(state3.get.left.values.toArray.count(l => l.equals(o)) == 1)
   }
 }

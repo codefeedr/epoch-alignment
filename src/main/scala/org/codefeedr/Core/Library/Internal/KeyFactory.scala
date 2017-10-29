@@ -73,7 +73,7 @@ class KeyFactory(typeInfo: SubjectType, sinkUuid: UUID) {
   private def GetIndexKey(record: Record): Source = {
     val stream: ByteArrayOutputStream = new ByteArrayOutputStream()
     val oos = new ObjectOutputStream(stream)
-    oos.writeObject(idIndices.map(record.data))
+    oos.writeObject(idIndices.map(record.field))
     oos.close()
     Source(uuid, stream.toByteArray)
   }

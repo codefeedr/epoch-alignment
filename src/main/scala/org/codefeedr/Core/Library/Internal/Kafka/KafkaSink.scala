@@ -24,6 +24,7 @@ import java.util.UUID
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction
+import org.apache.flink.types.Row
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.codefeedr.Core.Library.LibraryServices
 import org.codefeedr.Model._
@@ -45,7 +46,7 @@ abstract class KafkaSink[TSink]
     with LibraryServices {
 
   @transient protected lazy val kafkaProducer = {
-    val producer = KafkaProducerFactory.create[RecordSourceTrail, Record]
+    val producer = KafkaProducerFactory.create[RecordSourceTrail, Row]
     logger.debug(s"Producer $uuid created for topic $topic")
     producer
   }
@@ -67,12 +68,11 @@ abstract class KafkaSink[TSink]
     logger.debug(s"Opening producer $uuid")
     Await.ready(subjectLibrary.RegisterSink(subjectType.name, uuid.toString), Duration.Inf)
   }
-
 }
 
 class TrailedRecordSink(override val subjectType: SubjectType) extends KafkaSink[TrailedRecord] {
   override def invoke(trailedRecord: TrailedRecord): Unit = {
     logger.debug(s"Producer $uuid sending a message to topic $topic")
-    kafkaProducer.send(new ProducerRecord(topic, trailedRecord.trail, trailedRecord.record))
+    kafkaProducer.send(new ProducerRecord(topic, trailedRecord.trail, trailedRecord.row))
   }
 }

@@ -55,7 +55,7 @@ class RecordUtils(subjectType: SubjectType) {
     if (propertyIndex == -1) {
       throw new Exception(s"Property $propertyIndex was not found on type ${subjectType.name}")
     }
-    record.data(propertyIndex)
+    record.field(propertyIndex)
   }
 
   /**

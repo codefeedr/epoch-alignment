@@ -23,7 +23,8 @@ import java.util.UUID
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
-import org.codefeedr.Core.Library.{LibraryServices}
+import org.apache.flink.types.Row
+import org.codefeedr.Core.Library.LibraryServices
 import org.codefeedr.Model.{Record, RecordSourceTrail, SubjectType, TrailedRecord}
 
 import scala.collection.JavaConverters._
@@ -47,7 +48,7 @@ class KafkaSource(subjectType: SubjectType)
     with LibraryServices {
 
   @transient private lazy val dataConsumer = {
-    val consumer = KafkaConsumerFactory.create[RecordSourceTrail, Record](uuid.toString)
+    val consumer = KafkaConsumerFactory.create[RecordSourceTrail, Row](uuid.toString)
     consumer.subscribe(Iterable(topic).asJavaCollection)
     logger.debug(s"Source $uuid subscribed on topic $topic as group $uuid")
     consumer
@@ -135,7 +136,7 @@ class KafkaSource(subjectType: SubjectType)
           .poll(PollTimeout)
           .iterator()
           .asScala
-          .map(o => TrailedRecord(o.value(), o.key()))
+          .map(o => TrailedRecord(o.value()))
           .foreach(o => {
             foundRecords = true
             collector(o)

@@ -89,7 +89,7 @@ object JoinQueryComposer {
       subjectType: SubjectType): (TrailedRecord) => String = {
     val indices = new RecordUtils(subjectType).getIndices(properties)
     (r: TrailedRecord) =>
-      new String(Util.serialize(for (i <- indices) yield r.record.data(i)).map(_.toChar))
+      new String(Util.serialize(for (i <- indices) yield r.field(i)).map(_.toChar))
 
   }
 
@@ -137,8 +137,8 @@ object JoinQueryComposer {
       {
         val newKey = ComposedSource(nodeId, Array(left.trail, right.trail))
         val newData = indicesLeft
-          .map(o => left.record.data(o))
-          .union(indicesRight.map(o => right.record.data(o)))
+          .map(o => left.field(o))
+          .union(indicesRight.map(o => right.field(o)))
         TrailedRecord(Record(newData, resultType.uuid, actionType), newKey)
       }
   }
@@ -163,11 +163,11 @@ object JoinQueryComposer {
     record match {
 
       case Left(data) =>
-        data.record.action match {
+        data.action match {
           case ActionType.Add =>
             //Update the join state by adding the new element
             val state = Some(
-              JoinState(currentState.left + (data.trail -> data.record), currentState.right))
+              JoinState(currentState.left + (data.trail -> data), currentState.right))
             //Joining a new left element will emit all combinations of the left element with all existing right elements
             val traversable =
               currentState.right.map(t =>
@@ -177,11 +177,11 @@ object JoinQueryComposer {
         }
 
       case Right(data) =>
-        data.record.action match {
+        data.action match {
           case ActionType.Add =>
             val state = Some(
               //Update the join state by adding the new element
-              JoinState(currentState.left, currentState.right + (data.trail -> data.record)))
+              JoinState(currentState.left, currentState.right + (data.trail -> data)))
             //Joining a new right element will emit all combinations of the right element with all existing left elements
             val traversable =
               currentState.left.map(t =>

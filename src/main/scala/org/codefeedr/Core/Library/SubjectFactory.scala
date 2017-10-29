@@ -80,7 +80,7 @@ class SubjectFactoryController { this: LibraryServices =>
       subjectType: SubjectType): TrailedRecord => TData = { (r: TrailedRecord) =>
     {
       val transformer = new RecordTransformer[TData](subjectType)
-      transformer.Unbag(r.record)
+      transformer.Unbag(r)
     }
   }
 
