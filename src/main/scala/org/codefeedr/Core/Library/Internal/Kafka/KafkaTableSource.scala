@@ -27,7 +27,7 @@ import org.codefeedr.Core.Engine.Query.SubjectSource
 import org.codefeedr.Core.Library.SubjectFactory
 import org.codefeedr.Model.{SubjectType, TrailedRecord}
 import org.apache.flink.api.common.functions.MapFunction
-
+import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.scala._
 
 class KafkaTableSource(subjectType: SubjectType) extends StreamTableSource[Row] {
@@ -45,5 +45,9 @@ class KafkaTableSource(subjectType: SubjectType) extends StreamTableSource[Row] 
       )
   }
 
-  override def getReturnType = ???
+  /**
+    * Use subjectType to get row type information
+    * @return
+    */
+  override def getReturnType: TypeInformation[Row] = ???
 }

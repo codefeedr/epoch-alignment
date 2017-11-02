@@ -22,6 +22,7 @@
 package org.codefeedr.Core.Engine.Query
 
 import com.typesafe.scalalogging.LazyLogging
+import org.apache.flink.streaming.api.scala._
 import org.codefeedr.Core.Library.Internal.{RecordTransformer, SubjectTypeFactory}
 import org.codefeedr.Model.{ActionType, _}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, FlatSpec, Matchers}
@@ -74,16 +75,16 @@ class JoinQueryComposerSpec
                                                          "testObjectMessages")
     assert(mergedType.properties.length == 4)
     assert(
-      mergedType.properties.filter(o => o.name == "name").head.propertyType == PropertyType.String)
+      mergedType.properties.filter(o => o.name == "name").head.propertyType.canEqual(createTypeInformation[String]))
     assert(
-      mergedType.properties.filter(o => o.name == "id").head.propertyType == PropertyType.Number)
+      mergedType.properties.filter(o => o.name == "id").head.propertyType.canEqual(createTypeInformation[Int]))
     assert(
       mergedType.properties
         .filter(o => o.name == "message")
         .head
-        .propertyType == PropertyType.String)
+        .propertyType == createTypeInformation[String])
     assert(
-      mergedType.properties.filter(o => o.name == "dataBag").head.propertyType == PropertyType.Any)
+      mergedType.properties.filter(o => o.name == "dataBag").head.propertyType.canEqual(createTypeInformation[Array[Byte]]))
   }
 
   "A buildComposedType method" should "throw an exception when a name occurs twice in the select" in {

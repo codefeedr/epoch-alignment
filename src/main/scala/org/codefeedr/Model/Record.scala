@@ -19,6 +19,7 @@
 
 package org.codefeedr.Model
 
+import org.apache.flink.api.common.typeinfo.{TypeInfo, TypeInformation}
 import org.apache.flink.types.Row
 
 /**
@@ -61,7 +62,7 @@ trait Record {
   def data: Iterable[Any] = for (i <- 0 to row.getArity() - 4) yield row.getField(i)
 }
 
-case class RecordProperty(name: String, propertyType: PropertyType.Value, id: Boolean)
+case class RecordProperty[T](name: String, propertyType: TypeInformation[T], id: Boolean)
     extends Serializable
 
 /**
@@ -137,12 +138,4 @@ object TrailedRecord {
   */
 object ActionType extends Enumeration {
   val Add, Update, Remove = Value
-}
-
-/**
-  * Property types that are recognized and supported by the query language
-  * Any is used for types that are unrecognized
-  */
-object PropertyType extends Enumeration {
-  val Number, String, Any = Value
 }

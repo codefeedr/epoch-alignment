@@ -22,7 +22,11 @@ package org.codefeedr.Core.Library.Internal
 import java.util.UUID
 
 import com.typesafe.scalalogging.LazyLogging
-import org.codefeedr.Model.{PropertyType, RecordProperty, SubjectType}
+import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInfo, TypeInformation}
+import org.codefeedr.Model.{RecordProperty, SubjectType}
+import org.apache.flink.streaming.api.scala.createTypeInformation
+
+import scala.reflect.api
 import scala.reflect.runtime.{universe => ru}
 
 /**
@@ -49,15 +53,13 @@ object SubjectTypeFactory extends LazyLogging {
     r
   }
 
-  private def getRecordProperty(idFields: Array[String])(symbol: ru.Symbol): RecordProperty = {
+  private def getRecordProperty(idFields: Array[String])(symbol: ru.Symbol): RecordProperty[_] = {
     val name = symbol.name.toString.trim
     //logger.debug(f"property type of $name: ${symbol.info.toString}")
-    val propertyType = symbol.typeSignature.typeSymbol.name.toString match {
-      case "scala.Int" => PropertyType.Number
-      case "Int" => PropertyType.Number
-      case "String" => PropertyType.String
-      case _ => PropertyType.Any
-    }
+
+    //TODO: Is this valid code?
+    val mirror = ru.runtimeMirror(getClass.getClassLoader)
+    val propertyType = TypeInformation.of(mirror.runtimeClass(symbol.typeSignature))
 
     RecordProperty(name, propertyType, idFields.contains(name))
   }

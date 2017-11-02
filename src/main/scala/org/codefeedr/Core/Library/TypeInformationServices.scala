@@ -17,10 +17,24 @@
  *
  */
 
-package org.codefeedr.Model
+package org.codefeedr.Core.Library
 
-case class SubjectType(uuid: String,
-                       name: String,
-                       persistent: Boolean,
-                       properties: Array[RecordProperty[_]])
-    extends Serializable
+import org.codefeedr.Model.SubjectType
+import org.apache.flink.api.common.typeinfo.TypeInformation
+import org.apache.flink.api.java.typeutils.RowTypeInfo
+import org.apache.flink.types.Row
+import collection.JavaConverters._
+
+object TypeInformationServices {
+
+  /**
+    * Build Flinks typeInformation using a subjectType
+    * @param subjecType
+    * @return
+    */
+  def GetRowTypeInfo(subjecType: SubjectType): TypeInformation[Row] = {
+    val names = subjecType.properties.map(o => o.name)
+    val types = subjecType.properties.map(o => o.propertyType)
+    new RowTypeInfo(types, names)
+  }
+}
