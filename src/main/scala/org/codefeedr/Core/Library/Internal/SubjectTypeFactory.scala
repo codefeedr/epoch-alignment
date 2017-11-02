@@ -115,4 +115,16 @@ object SubjectTypeFactory extends LazyLogging {
   def getSubjectType[T: ru.TypeTag](idFields: Array[String], persistent: Boolean): SubjectType =
     getSubjectTypeInternal(ru.typeOf[T], idFields, persistent)
 
+  /**
+    * Create a subjectType based on a name, fields and types
+    * This method is called when creating a subject from the result of a query on Flink's Table API
+    * @param subjectName name of the subject to create
+    * @param fields its fields
+    * @param propertyTypes and its properties
+    * @return
+    */
+  def getSubjectType(subjectName: String, fields: Array[String], propertyTypes: Array[TypeInformation[_]]): SubjectType = {
+    val properties = fields.zipWithIndex.map {case (v,i)  => RecordProperty(v,propertyTypes(i),id = false)}.map(o => o.asInstanceOf[RecordProperty[_]])
+    SubjectType(newTypeIdentifier().toString,subjectName, persistent = false,properties)
+  }
 }

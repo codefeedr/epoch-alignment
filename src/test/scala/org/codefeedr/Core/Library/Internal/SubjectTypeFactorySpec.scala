@@ -133,4 +133,10 @@ class SubjectTypeFactorySpec extends FlatSpec with Matchers {
   "A SubjectTypeFactory" should " throw an exception when keyfields do not exist" in {
     assertThrows[Exception](SubjectTypeFactory.getSubjectType[D](Array("A")))
   }
+
+  "A SubjectTypeFactory" should " produce the same subjectType if some other subject types fields and properties are passed as parameter" in {
+    val t: SubjectType = SubjectTypeFactory.getSubjectType[F]
+    val fromTable = SubjectTypeFactory.getSubjectType("TestSubject", t.properties.map(o => o.name), t.properties.map(o => o.propertyType))
+    fromTable.properties.shouldEqual(t.properties)
+  }
 }
