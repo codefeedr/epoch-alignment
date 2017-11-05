@@ -45,7 +45,7 @@ class KafkaSourceSpec extends FullIntegrationSpec {
 
   "A KafkaSource" should "Register and remove itself in the SubjectLibrary" in async {
     val subject = await(subjectLibrary.GetOrCreateType[TestKafkaSourceSubject](persistent = true))
-    val source = new KafkaSource(subject)
+    val source = new KafkaTrailedRecordSource(subject)
     assert(!await(subjectLibrary.GetSources(testSubjectName)).contains(source.uuid.toString))
     source.InitRun()
     assert(await(subjectLibrary.GetSources(testSubjectName)).contains(source.uuid.toString))

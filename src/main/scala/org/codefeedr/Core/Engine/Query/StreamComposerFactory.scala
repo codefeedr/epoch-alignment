@@ -46,7 +46,10 @@ trait StreamComposerFactoryFacade { this: LibraryServices =>
                                                   alias))
         } yield
           new JoinQueryComposer(leftComposer, rightComposer, joinedType, query.asInstanceOf[Join])
-      case _ => throw new NotImplementedError("not implemented query subtree")
+      case _ => {
+        val error = new NotImplementedError("not implemented query subtree")
+        throw error
+      }
     }
   }
 }

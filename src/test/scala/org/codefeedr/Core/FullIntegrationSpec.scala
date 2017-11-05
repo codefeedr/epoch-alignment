@@ -22,8 +22,9 @@ package org.codefeedr.Core
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
+import org.apache.flink.table.api.StreamTableEnvironment
 import org.codefeedr.Core.Engine.Query.{QueryTree, StreamComposerFactory}
-import org.codefeedr.Core.Library.Internal.Kafka.{KafkaConsumerFactory, KafkaProducerFactory, KafkaSource}
+import org.codefeedr.Core.Library.Internal.Kafka.{KafkaConsumerFactory, KafkaProducerFactory, KafkaSource, KafkaTrailedRecordSource}
 import org.codefeedr.Core.Library.{LibraryServices, SubjectFactory}
 import org.codefeedr.Core.Plugin.CollectionPlugin
 import org.codefeedr.Model.{SubjectType, TrailedRecord}
@@ -55,7 +56,7 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     */
   def AwaitAllData(subject:SubjectType): Future[Array[TrailedRecord]] = async {
     await(subjectLibrary.AssertExists(subject.name))
-    val source = new KafkaSource(subject)
+    val source = new KafkaTrailedRecordSource(subject)
     val result = new mutable.ArrayBuffer[TrailedRecord]()
     source.runLocal(result.append(_))
     result.toArray
@@ -81,6 +82,17 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     queryEnv.execute()
     logger.debug("queryenv completed")
     resultType
+  }
+
+  /**
+    * Execute an environment
+    * Currently not very complex, but more logic might be added in the future
+    * @param env
+    */
+  def runEnvironment(env: StreamExecutionEnvironment): Unit = {
+    logger.debug("Starting environment")
+    env.execute()
+    logger.debug("environment executed")
   }
 
   /**

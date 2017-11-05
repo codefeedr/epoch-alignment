@@ -19,6 +19,7 @@
 
 package org.codefeedr.Core.Library.Internal
 
+import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.Model.{Record, SubjectType}
 
 import scala.reflect.ClassTag
@@ -27,7 +28,7 @@ import scala.reflect.ClassTag
   * Created by Niels on 28/07/2017.
   * Utility class for some subjectType
   */
-class RecordUtils(subjectType: SubjectType) {
+class RecordUtils(subjectType: SubjectType) extends LazyLogging {
 
   /**
     * Get a property of the given name and type on a record
@@ -53,7 +54,10 @@ class RecordUtils(subjectType: SubjectType) {
     val propertyIndex = subjectType.properties
       .indexWhere(o => o.name == property)
     if (propertyIndex == -1) {
-      throw new Exception(s"Property $propertyIndex was not found on type ${subjectType.name}")
+      val msg = s"Property $propertyIndex was not found on type ${subjectType.name}"
+      val error = new Exception(msg)
+      logger.error(error.getMessage, error)
+      throw error
     }
     record.field(propertyIndex)
   }
@@ -66,9 +70,12 @@ class RecordUtils(subjectType: SubjectType) {
   def getIndices(properties: Array[String]): Array[Int] = {
     val r = properties.map(prop => subjectType.properties.indexWhere(o => o.name == prop))
     if (r.contains(-1)) {
-      throw new Exception(s"Some properties given to getSubjectType did not exist: ${properties
-        .filter(o => !subjectType.properties.exists(p => p.name == o))
-        .mkString(", ")}")
+      val error = new Exception(
+        s"Some properties given to getSubjectType did not exist: ${properties
+          .filter(o => !subjectType.properties.exists(p => p.name == o))
+          .mkString(", ")}")
+      logger.error(error.getMessage, error)
+      throw error
     }
     r
   }

@@ -19,30 +19,32 @@
 
 package org.codefeedr.Core.Library.Internal.Kafka
 
+import java.lang
+import java.util.UUID
+
 import org.apache.flink.api.common.functions.MapFunction
 import org.apache.flink.api.common.typeinfo.TypeInformation
+import org.apache.flink.api.java.tuple
 import org.apache.flink.streaming.api.datastream.DataStream
 import org.apache.flink.streaming.api.functions.sink.SinkFunction
-import org.apache.flink.table.sinks.{AppendStreamTableSink, TableSink}
+import org.apache.flink.table.sinks.{AppendStreamTableSink, RetractStreamTableSink, TableSink}
 import org.apache.flink.types.Row
-import org.codefeedr.Core.Library.{SubjectFactory, TypeInformationServices}
-import org.codefeedr.Model.{SubjectType, TrailedRecord}
+import org.codefeedr.Core.Library.Internal.{KeyFactory, SubjectTypeFactory}
+import org.codefeedr.Core.Library.{LibraryServices, SubjectFactory, TypeInformationServices}
+import org.codefeedr.Model._
+import scala.concurrent.duration._
 
-class KafkaTableSink(subjectType: SubjectType) extends AppendStreamTableSink[Row] {
-  @transient lazy val sink: SinkFunction[TrailedRecord] = SubjectFactory.GetSink(subjectType)
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
-  override def emitDataStream(dataStream: DataStream[Row]): Unit = {
+class KafkaTableSink(subjectName: String, subjectType: SubjectType)
+    extends RetractStreamTableSink[Row] {
+  @transient lazy val sink: SinkFunction[tuple.Tuple2[lang.Boolean, Row]] =
+    SubjectFactory.GetRowSink(subjectType)
+
+  override def emitDataStream(dataStream: DataStream[tuple.Tuple2[lang.Boolean, Row]]): Unit =
     dataStream
-      .map(
-        new MapFunction[Row, TrailedRecord]() {
-          override def map(value: Row): TrailedRecord = TrailedRecord(value)
-        }
-      )
       .addSink(sink)
-  }
-
-  override def getOutputType: TypeInformation[Row] =
-    TypeInformationServices.GetRowTypeInfo(subjectType)
 
   override def getFieldNames: Array[String] = subjectType.properties.map(o => o.name)
 
@@ -50,14 +52,34 @@ class KafkaTableSink(subjectType: SubjectType) extends AppendStreamTableSink[Row
     subjectType.properties.map(o => o.propertyType)
 
   /**
-    * TODO: Check if this can actually be completely ignored
-    * Our own wrapper should ensure this information is already present at the moment the tablesink is created
+    * Constructs a new KafkaTableSink with a newly generated subject with the given fields
     * @param fieldNames
     * @param fieldTypes
     * @return
     */
-  override def configure(fieldNames: Array[String],
-                         fieldTypes: Array[TypeInformation[_]]): TableSink[Row] = {
-    this
+  override def configure(
+      fieldNames: Array[String],
+      fieldTypes: Array[TypeInformation[_]]): TableSink[tuple.Tuple2[lang.Boolean, Row]] = {
+    KafkaTableSink(subjectName, fieldNames, fieldTypes)
   }
+
+  override def getRecordType: TypeInformation[Row] =
+    TypeInformationServices.GetRowTypeInfo(subjectType)
+
+}
+
+object KafkaTableSink extends LibraryServices {
+  def apply(subjectName: String,
+            fieldNames: Array[String],
+            fieldTypes: Array[TypeInformation[_]]): KafkaTableSink = {
+    val subjectFuture = subjectLibrary.GetOrCreateType(
+      subjectName,
+      () => SubjectTypeFactory.getSubjectType(subjectName, fieldNames, fieldTypes))
+    //Have to implement the non-async FLINK api, thus must block here
+    val subjectType =
+      Await.ready[SubjectType](subjectFuture, Duration(5000, MILLISECONDS)).value.get.get
+    new KafkaTableSink(subjectName, subjectType)
+  }
+
+  def apply(subjectName: String): KafkaTableSink = new KafkaTableSink(subjectName, null)
 }

@@ -23,6 +23,7 @@ import java.util.UUID
 
 import org.apache.flink.streaming.api.functions.sink.{RichSinkFunction, SinkFunction}
 import org.apache.flink.streaming.api.functions.source.SourceFunction
+import org.apache.flink.types.Row
 import org.codefeedr.Core.Library.Internal.Kafka._
 import org.codefeedr.Core.Library.Internal.{KeyFactory, RecordTransformer}
 import org.codefeedr.Model.{ActionType, SubjectType, TrailedRecord}
@@ -51,6 +52,13 @@ class SubjectFactoryController { this: LibraryServices =>
     */
   def GetSink(subjectType: SubjectType): SinkFunction[TrailedRecord] =
     new TrailedRecordSink(subjectType)
+
+  /**
+    * Return a sink for the tableApi
+    * @param subjectType
+    * @return
+    */
+  def GetRowSink(subjectType: SubjectType) = new RowSink(subjectType)
 
   /**
     * Construct a serializable and distributable mapper function from any source type to a TrailedRecord
@@ -84,8 +92,12 @@ class SubjectFactoryController { this: LibraryServices =>
     }
   }
 
+  def GetRowSource(subjectType: SubjectType): SourceFunction[Row] = {
+    new KafkaRowSource(subjectType)
+  }
+
   def GetSource(subjectType: SubjectType): SourceFunction[TrailedRecord] = {
-    new KafkaSource(subjectType)
+    new KafkaTrailedRecordSource(subjectType)
   }
 
 }

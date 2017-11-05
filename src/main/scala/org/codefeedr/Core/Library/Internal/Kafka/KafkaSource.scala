@@ -22,9 +22,11 @@ package org.codefeedr.Core.Library.Internal.Kafka
 import java.util.UUID
 
 import com.typesafe.scalalogging.LazyLogging
+import org.apache.flink.api.common.typeinfo.TypeInformation
+import org.apache.flink.api.java.typeutils.ResultTypeQueryable
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
 import org.apache.flink.types.Row
-import org.codefeedr.Core.Library.LibraryServices
+import org.codefeedr.Core.Library.{LibraryServices, TypeInformationServices}
 import org.codefeedr.Model.{Record, RecordSourceTrail, SubjectType, TrailedRecord}
 
 import scala.collection.JavaConverters._
@@ -41,8 +43,9 @@ import scala.util.Try
   * Because this class needs to be serializable and the LibraryServices are not, no dependency injection structure can be used here :(
   * Created by Niels on 18/07/2017.
   */
-class KafkaSource(subjectType: SubjectType)
-    extends RichSourceFunction[TrailedRecord]
+abstract class KafkaSource[T](subjectType: SubjectType)
+    extends RichSourceFunction[T]
+    with ResultTypeQueryable[T]
     with LazyLogging
     with Serializable
     with LibraryServices {
@@ -98,12 +101,14 @@ class KafkaSource(subjectType: SubjectType)
     ClosePromise.success()
   }
 
+  def Map(record: TrailedRecord): T
+
   /**
     * @return A future that resolves when the source has been close
     */
   private[Kafka] def AwaitClose(): Future[Unit] = ClosePromise.future
 
-  def runLocal(collector: TrailedRecord => Unit): Unit = {
+  def runLocal(collector: T => Unit): Unit = {
     started = true
     if (!running) {
       logger.debug(s"$uuid already cancelled. Processing events and terminating")
@@ -136,7 +141,7 @@ class KafkaSource(subjectType: SubjectType)
           .poll(PollTimeout)
           .iterator()
           .asScala
-          .map(o => TrailedRecord(o.value()))
+          .map(o => Map(TrailedRecord(o.value())))
           .foreach(o => {
             foundRecords = true
             collector(o)
@@ -153,5 +158,11 @@ class KafkaSource(subjectType: SubjectType)
     thread.join()
   }
 
-  override def run(ctx: SourceFunction.SourceContext[TrailedRecord]): Unit = runLocal(ctx.collect)
+  override def run(ctx: SourceFunction.SourceContext[T]): Unit = runLocal(ctx.collect)
+
+  /**
+    * Get typeinformation of the returned type
+    * @return
+    */
+  def getProducedType: TypeInformation[T]
 }

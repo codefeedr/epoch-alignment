@@ -374,7 +374,9 @@ class SubjectLibrary(val zk: ZkClient) extends LazyLogging {
     */
   def AssertExists(typeName: String): Future[Unit] = async {
     if (!await(Exists(typeName))) {
-      throw TypeNameNotFoundException(typeName)
+      val error = TypeNameNotFoundException(typeName)
+      logger.error("Typename not found", error)
+      throw error
     }
   }
 

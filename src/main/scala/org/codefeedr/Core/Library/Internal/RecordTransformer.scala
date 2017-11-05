@@ -72,7 +72,7 @@ class RecordTransformer[TData: ru.TypeTag: ClassTag](subjectType: SubjectType) {
     * @return The record that can be pushed into the query engine
     */
   def Bag(data: TData, action: ActionType.Value): Record = {
-    Record(accessors.map(o => o(data)), subjectType.uuid, action)
+    Record(accessors.map(o => o(data)).asInstanceOf[Array[Any]], subjectType.uuid, action)
   }
 
   /**

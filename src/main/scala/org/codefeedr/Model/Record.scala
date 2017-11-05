@@ -91,6 +91,16 @@ case class Source(SourceId: Array[Byte], Key: Array[Byte])
     with Serializable
 
 object Record {
+  def apply(row: Row, typeUuid: String, actionType: ActionType.Value): RecordRow = {
+    val resultRow = new Row(row.getArity + 3)
+    for (i <- 0 until row.getArity) {
+      resultRow.setField(i, row.getField(i))
+    }
+
+    resultRow.setField(row.getArity + 2, typeUuid)
+    resultRow.setField(row.getArity + 1, actionType)
+    RecordRow(resultRow)
+  }
 
   /**
     * Construct a record based on some data, typeDefinition and actionType

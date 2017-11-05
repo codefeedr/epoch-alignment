@@ -46,9 +46,12 @@ object SubjectTypeFactory extends LazyLogging {
                         persistent = persistent,
                         properties = properties.map(getRecordProperty(idFields)).toArray)
     if (r.properties.count(o => o.id) != idFields.length) {
-      throw new Exception(s"Some idfields given to getSubjectType did not exist: ${idFields
+      val msg = s"Some idfields given to getSubjectType did not exist: ${idFields
         .filter(o => !r.properties.map(o => o.name).contains(o))
-        .mkString(", ")}")
+        .mkString(", ")}"
+      val e = new Exception(msg)
+      logger.error(msg, e)
+      throw e
     }
     r
   }
@@ -123,8 +126,12 @@ object SubjectTypeFactory extends LazyLogging {
     * @param propertyTypes and its properties
     * @return
     */
-  def getSubjectType(subjectName: String, fields: Array[String], propertyTypes: Array[TypeInformation[_]]): SubjectType = {
-    val properties = fields.zipWithIndex.map {case (v,i)  => RecordProperty(v,propertyTypes(i),id = false)}.map(o => o.asInstanceOf[RecordProperty[_]])
-    SubjectType(newTypeIdentifier().toString,subjectName, persistent = false,properties)
+  def getSubjectType(subjectName: String,
+                     fields: Array[String],
+                     propertyTypes: Array[TypeInformation[_]]): SubjectType = {
+    val properties = fields.zipWithIndex
+      .map { case (v, i) => RecordProperty(v, propertyTypes(i), id = false) }
+      .map(o => o.asInstanceOf[RecordProperty[_]])
+    SubjectType(newTypeIdentifier().toString, subjectName, persistent = false, properties)
   }
 }

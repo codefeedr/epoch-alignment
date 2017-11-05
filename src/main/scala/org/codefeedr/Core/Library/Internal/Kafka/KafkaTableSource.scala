@@ -28,27 +28,20 @@ import org.codefeedr.Core.Library.{SubjectFactory, TypeInformationServices}
 import org.codefeedr.Model.{SubjectType, TrailedRecord}
 import org.apache.flink.api.common.functions.MapFunction
 import org.apache.flink.api.common.typeinfo.TypeInformation
-import org.apache.flink.streaming.api.scala._
+import org.apache.flink.streaming.api.datastream.DataStream
 
 class KafkaTableSource(subjectType: SubjectType) extends StreamTableSource[Row] {
-  val source: SourceFunction[TrailedRecord] = SubjectFactory.GetSource(subjectType)
+  @transient lazy val source: SourceFunction[Row] = SubjectFactory.GetRowSource(subjectType)
 
   //Map the TrailedRecord provided by the source to a row
-  override def getDataStream(execEnv: StreamExecutionEnvironment) = {
-    //<3 the java API (not)
+  override def getDataStream(execEnv: StreamExecutionEnvironment): DataStream[Row] =
     execEnv
       .addSource(source)
-      .map(
-        new MapFunction[TrailedRecord, Row]() {
-          override def map(value: TrailedRecord): Row = value.row
-        }
-      )
-  }
 
   /**
     * Use subjectType to get row type information
     * @return flinks rowtypeinformation
     */
   override def getReturnType: TypeInformation[Row] =
-    TypeInformationServices.GetRowTypeInfo(subjectType)
+    TypeInformationServices.GetEnrichedRowTypeInfo(subjectType)
 }
