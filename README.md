@@ -67,9 +67,10 @@ Contains data objects used by the integration tests, that also need to be publis
 1. Install docker-compose: https://docs.docker.com/compose/install/ (Docker with virtual box should come with docker-compose installed, so only relevant for linux)
 2. Open the docker console the root folder of the project
 3. `docker-compose -f "containers/kafka/docker-compose.yml" up -d` to start the cluster
-3. Further docker-compose image instructions can be found at https://github.com/wurstmeister/kafka-docker
 4. `docker-compose -f "containers/kafka/docker-compose.yml" stop` to stop the cluster
 5. If needed increase the memory available to the docker vm. See https://forums.docker.com/t/change-vm-specs-storage-base-on-windows-7/16584/2 for windows.
+6. To host kafka/zookeeper on different ips, change the docker-compose.yml and reference.conf files.
+7. Further docker-compose image instructions can be found at https://github.com/wurstmeister/kafka-docker
 
 ## Setup FLINK in docker
 ### Option 1a: Use docker in VirtualBox (Windows 10 Home, OSX)
