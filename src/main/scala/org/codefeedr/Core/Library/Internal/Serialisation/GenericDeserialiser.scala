@@ -20,12 +20,13 @@
 package org.codefeedr.Core.Library.Internal.Serialisation
 
 import java.io.{ByteArrayInputStream, ObjectInputStream, ObjectStreamClass}
+import java.net.URLClassLoader
 
 import scala.reflect.ClassTag
 
 class GenericDeserialiser[T: ClassTag](implicit ct: ClassTag[T]) {
 
-  @transient lazy private val loader: ClassLoader = Thread.currentThread().getContextClassLoader
+  @transient lazy private val loader: ClassLoader = getClass.getClassLoader
 
   private val deserializeInternal =
     /**
