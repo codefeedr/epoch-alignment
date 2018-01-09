@@ -24,7 +24,7 @@ package org.codefeedr.Core.input
 import org.scalatest._
 
 class GitHubConnectorTest extends AsyncFlatSpec with Matchers {
-
+/*
   "The GitHub connector" should "connect to GitHub" in {
     val gh = new GithubConnector
     val conn = gh.connectToGitHub()
@@ -39,5 +39,5 @@ class GitHubConnectorTest extends AsyncFlatSpec with Matchers {
     mongo should not be null
     mongo.count.head.map(r => assert(r >= 0))
   }
-
+*/
 }
