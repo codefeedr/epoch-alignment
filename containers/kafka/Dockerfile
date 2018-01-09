@@ -1,27 +1,27 @@
-# Kafka and Zookeeper
+FROM anapsix/alpine-java
 
-FROM java:openjdk-8-jre
+ARG kafka_version=1.0.0
+ARG scala_version=2.12
 
-ENV DEBIAN_FRONTEND noninteractive
-ENV SCALA_VERSION 2.12
-ENV KAFKA_VERSION 0.10.2.0
-ENV KAFKA_HOME /opt/kafka_"$SCALA_VERSION"-"$KAFKA_VERSION"
+MAINTAINER wurstmeister
 
-# Install Kafka, Zookeeper and other needed things
-RUN apt-get update && \
-    apt-get install -y zookeeper wget supervisor dnsutils && \
-    rm -rf /var/lib/apt/lists/* && \
-    apt-get clean && \
-    wget -q http://apache.mirrors.spacedump.net/kafka/"$KAFKA_VERSION"/kafka_"$SCALA_VERSION"-"$KAFKA_VERSION".tgz -O /tmp/kafka_"$SCALA_VERSION"-"$KAFKA_VERSION".tgz && \
-    tar xfz /tmp/kafka_"$SCALA_VERSION"-"$KAFKA_VERSION".tgz -C /opt && \
-    rm /tmp/kafka_"$SCALA_VERSION"-"$KAFKA_VERSION".tgz
+ENV KAFKA_VERSION=$kafka_version \
+    SCALA_VERSION=$scala_version \
+    KAFKA_HOME=/opt/kafka \
+    PATH=${PATH}:${KAFKA_HOME}/bin
 
-ADD scripts/start-kafka.sh /usr/bin/start-kafka.sh
-RUN chmod +x /usr/bin/start-kafka.sh
-# Supervisor config
-ADD supervisor/kafka.conf supervisor/zookeeper.conf supervisor/ /etc/supervisor/conf.d/
+COPY download-kafka.sh start-kafka.sh broker-list.sh create-topics.sh /tmp/
 
-# 2181 is zookeeper, 9092 is kafka
-EXPOSE 2181 9092
+RUN apk add --update unzip wget curl docker jq coreutils \
+ && chmod a+x /tmp/*.sh \
+ && mv /tmp/start-kafka.sh /tmp/broker-list.sh /tmp/create-topics.sh /usr/bin \
+ && /tmp/download-kafka.sh \
+ && tar xfz /tmp/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz -C /opt \
+ && rm /tmp/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz \
+ && ln -s /opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION} /opt/kafka \
+ && rm /tmp/*
 
-CMD ["supervisord", "-n"]
+VOLUME ["/kafka"]
+
+# Use "exec" form so that it runs as PID 1 (useful for graceful shutdown)
+CMD ["start-kafka.sh"]
