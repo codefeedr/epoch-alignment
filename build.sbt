@@ -36,7 +36,7 @@ val dep_core = Seq(
   "com.typesafe" % "config" % "1.3.1",
   "org.mongodb.scala" %% "mongo-scala-driver" % "2.1.0",
 
-  "org.apache.kafka" % "kafka-clients" % "0.11.0.0",
+  "org.apache.kafka" % "kafka-clients" % "1.0.0",
   "com.jsuereth" %% "scala-arm" % "2.0",
   "org.scala-lang.modules" % "scala-java8-compat_2.11" % "0.8.0",
   "org.scala-lang.modules" %% "scala-async" % "0.9.7",

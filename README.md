@@ -64,14 +64,22 @@ Contains data objects used by the integration tests, that also need to be publis
 
 ## Setup KAFKA & Zookeeper
 
-### Option 1a: Use docker in VirtualBox (Windows 10 Home, OSX)
-1. `docker build -t codefeedr/kafka containers/kafka/` From the root of the project, to build the image
-2. `docker run -p 2181:2181 -p 9092:9092 --name kafka --rm --env ADVERTISED_HOST=192.168.99.100  --env ADVERTISED_PORT=9092 --env DELETE_TOPICS=true -d codefeedr/kafka` to run the kafka container. Replace hostname with the desired hostname. Also place this hostname in resources/reference.conf
-3. `docker stop kafka` to stop and remove the container again
-4. Use `docker-machine ip default` to obtain the IP of the docker machine. Place this IP in resources/reference.config for the kafka server and consumers.
+
+
+
+## Option 1a: Use docker-compose in VirtualBox (Windows 10 Home, OSX)
+1. Open the docker console in the containers/kafka directory
+2. `docker-compose up -d` to start the cluster (Docker with virtual box should come with docker-compose installed)
+3. Further docker-compose image instructions can be found at https://github.com/wurstmeister/kafka-docker
+4. `docker-compose stop` to stop the cluster
 5. If needed increase the memory available to the docker vm. See https://forums.docker.com/t/change-vm-specs-storage-base-on-windows-7/16584/2 for windows.
-### Option 1b: Use docker with Virtualisation (Linux, Windows 10 professional, Windows 10 Ultimate)
-1. `docker build -t codefeedr/kafka containers/kafka/` From the root of the project, to build the image
+
+### Option 1b: Use docker with Virtualisation (Linux, Windows 10 professional, Windows 10 Ultimate). These commands might require sudo.
+1. Install docker-compose: https://docs.docker.com/compose/install/
+2. `docker network create --subnet=192.168.99.0/24 codefeednet`
+3. `docker-compose up -d`
+
+1. Open the docker console in the containers/kafka directory
 2. `docker network create --subnet=192.168.99.0/24 codefeednet` To create a subnet for the container to run in
 3. `docker run --net codefeednet --ip 192.168.99.100 -p 2181:2181 -p 9092:9092 --name kafka --rm --env ADVERTISED_HOST=192.168.99.100 --env ADVERTISED_PORT=9092 --env DELETE_TOPICS=true -d codefeedr/kafka` to run the container with the same IP as it would by default in virtualbox
 4. `docker stop kafka` to stop and remove the container again
