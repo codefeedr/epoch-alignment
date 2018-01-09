@@ -21,8 +21,7 @@ cache:
 
 before_install:
   - docker build -t codefeedr/kafka containers/kafka/
-  - cd containers/kafka
-  - docker-compose up -d
+  - docker-compose -f "containers/kafka/docker-compose.yml" up -d
   # - docker network create --subnet=192.168.99.0/24 kafkanet
   # - docker run --net kafkanet --ip 192.168.99.100 -p 2181:2181 -p 9092:9092 --name kafka --rm --env ADVERTISED_HOST=192.168.99.100 --env ADVERTISED_PORT=9092 --env DELETE_TOPICS=true -d codefeedr/kafka
   - docker ps -a
