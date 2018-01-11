@@ -17,25 +17,22 @@
  *
  */
 
-package org.codefeedr.Core.Library.Internal.Kafka
+package org.codefeedr.Core.Library.Internal.Kafka.Sink
 
 import java.lang
-import java.util.UUID
 
-import org.apache.flink.api.common.functions.MapFunction
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.tuple
 import org.apache.flink.streaming.api.datastream.DataStream
 import org.apache.flink.streaming.api.functions.sink.SinkFunction
-import org.apache.flink.table.sinks.{AppendStreamTableSink, RetractStreamTableSink, TableSink}
+import org.apache.flink.table.sinks.{RetractStreamTableSink, TableSink}
 import org.apache.flink.types.Row
-import org.codefeedr.Core.Library.Internal.{KeyFactory, SubjectTypeFactory}
+import org.codefeedr.Core.Library.Internal.SubjectTypeFactory
 import org.codefeedr.Core.Library.{LibraryServices, SubjectFactory, TypeInformationServices}
 import org.codefeedr.Model._
-import scala.concurrent.duration._
 
 import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, _}
 
 class KafkaTableSink(subjectName: String, subjectType: SubjectType)
     extends RetractStreamTableSink[Row] {

@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.Core.Library.Internal.Kafka
+package org.codefeedr.Core.Library.Internal.Kafka.Source
 
 import java.util.UUID
 
@@ -26,13 +26,13 @@ import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
 import org.apache.flink.types.Row
-import org.codefeedr.Core.Library.{LibraryServices, TypeInformationServices}
-import org.codefeedr.Model.{Record, RecordSourceTrail, SubjectType, TrailedRecord}
+import org.codefeedr.Core.Library.LibraryServices
+import org.codefeedr.Model.{RecordSourceTrail, SubjectType, TrailedRecord}
 
 import scala.collection.JavaConverters._
-import scala.concurrent.{Await, Future, Promise}
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future, Promise}
 import scala.util.Try
 
 /**
@@ -46,6 +46,7 @@ import scala.util.Try
 abstract class KafkaSource[T](subjectType: SubjectType)
     extends RichSourceFunction[T]
     with ResultTypeQueryable[T]
+    //Internal services
     with LazyLogging
     with Serializable
     with LibraryServices {

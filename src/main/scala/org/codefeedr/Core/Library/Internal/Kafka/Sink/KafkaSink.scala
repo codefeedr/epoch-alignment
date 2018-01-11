@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.Core.Library.Internal.Kafka
+package org.codefeedr.Core.Library.Internal.Kafka.Sink
 
 import java.lang
 import java.util.UUID

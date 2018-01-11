@@ -17,19 +17,12 @@
  *
  */
 
-package org.codefeedr.Core.Library.Internal.Kafka
+package org.codefeedr.Core.Library.Internal.Kafka.Sink
 
-import java.util.UUID
-
-import com.typesafe.scalalogging.LazyLogging
-import org.apache.flink.configuration.Configuration
-import org.apache.flink.streaming.api.functions.sink.RichSinkFunction
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.codefeedr.Core.Library.{LibraryServices, SubjectFactory, SubjectLibrary}
-import org.codefeedr.Model.{ActionType, Record, RecordSourceTrail, SubjectType}
+import org.codefeedr.Core.Library.SubjectFactory
+import org.codefeedr.Model.SubjectType
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 

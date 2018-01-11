@@ -20,6 +20,7 @@
 package org.codefeedr.Core.Library.Internal.Kafka
 
 import org.apache.flink.api.common.typeinfo.TypeInformation
+import org.codefeedr.Core.Library.Internal.Kafka.Source.KafkaSource
 import org.codefeedr.Model.{SubjectType, TrailedRecord}
 
 class KafkaTrailedRecordSource(subjectType: SubjectType)

@@ -24,7 +24,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.table.api.StreamTableEnvironment
 import org.codefeedr.Core.Engine.Query.{QueryTree, StreamComposerFactory}
-import org.codefeedr.Core.Library.Internal.Kafka.{KafkaConsumerFactory, KafkaProducerFactory, KafkaSource, KafkaTrailedRecordSource}
+import org.codefeedr.Core.Library.Internal.Kafka.KafkaTrailedRecordSource
 import org.codefeedr.Core.Library.{LibraryServices, SubjectFactory}
 import org.codefeedr.Core.Plugin.CollectionPlugin
 import org.codefeedr.Model.{SubjectType, TrailedRecord}

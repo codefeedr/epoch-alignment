@@ -17,25 +17,19 @@
  *
  */
 
-package org.codefeedr.Core.Library.Internal.Kafka
+package org.codefeedr.Core.Library.Internal.Kafka.Source
 
-import org.apache.kafka.clients.producer.KafkaProducer
+import org.apache.flink.types.Row
+import org.codefeedr.Core.Library.TypeInformationServices
+import org.codefeedr.Model.{SubjectType, TrailedRecord}
 
-import scala.reflect.ClassTag
-
-/**
-  * Created by Niels on 11/07/2017.
-  */
-object KafkaProducerFactory {
+class KafkaRowSource(subjectType: SubjectType) extends KafkaSource[Row](subjectType) {
+  override def Map(record: TrailedRecord) = record.row
 
   /**
-    * Create a kafka producer for a specific data and key type
-    * @tparam TData Type of the data object
-    * @tparam TKey Type of the key identifying the data object
-    * @return A kafka producer capable of pushing the tuple to kafka
+    * Get typeinformation of the returned type
+    *
+    * @return
     */
-  def create[TKey: ClassTag, TData: ClassTag]: KafkaProducer[TKey, TData] =
-    new KafkaProducer[TKey, TData](KafkaConfig.properties,
-                                   new KafkaSerialiser[TKey],
-                                   new KafkaSerialiser[TData])
+  override def getProducedType = TypeInformationServices.GetEnrichedRowTypeInfo(subjectType)
 }

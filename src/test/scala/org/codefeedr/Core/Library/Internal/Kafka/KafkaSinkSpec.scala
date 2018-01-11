@@ -21,6 +21,7 @@
 
 package org.codefeedr.Core.Library.Internal.Kafka
 
+import org.codefeedr.Core.Library.Internal.Kafka.Sink.KafkaGenericSink
 import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
 import org.codefeedr.Core.Library.{LibraryServices, SubjectLibrary}
 import org.codefeedr.Core.LibraryServiceSpec

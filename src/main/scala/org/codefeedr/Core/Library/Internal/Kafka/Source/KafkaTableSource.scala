@@ -17,18 +17,16 @@
  *
  */
 
-package org.codefeedr.Core.Library.Internal.Kafka
+package org.codefeedr.Core.Library.Internal.Kafka.Source
 
+import org.apache.flink.api.common.typeinfo.TypeInformation
+import org.apache.flink.streaming.api.datastream.DataStream
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.table.sources.StreamTableSource
 import org.apache.flink.types.Row
-import org.codefeedr.Core.Engine.Query.SubjectSource
 import org.codefeedr.Core.Library.{SubjectFactory, TypeInformationServices}
-import org.codefeedr.Model.{SubjectType, TrailedRecord}
-import org.apache.flink.api.common.functions.MapFunction
-import org.apache.flink.api.common.typeinfo.TypeInformation
-import org.apache.flink.streaming.api.datastream.DataStream
+import org.codefeedr.Model.SubjectType
 
 class KafkaTableSource(subjectType: SubjectType) extends StreamTableSource[Row] {
   @transient lazy val source: SourceFunction[Row] = SubjectFactory.GetRowSource(subjectType)
