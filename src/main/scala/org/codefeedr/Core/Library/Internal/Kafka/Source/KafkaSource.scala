@@ -62,7 +62,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
 
   //Make this configurable?
   @transient private lazy val RefreshTime = 100
-  @transient private lazy val PollTimeout = 1000
+
   @transient private lazy val kafkaLatency = 1000
   @transient private lazy val ClosePromise: Promise[Unit] = Promise[Unit]()
 
@@ -117,47 +117,33 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     logger.debug(s"Source $uuid started running.")
     InitRun()
 
-    val refreshTask = new Runnable {
-      override def run(): Unit = {
-        //Poll at least once
-        Poll()
-        while (running) {
-          Poll()
-        }
-        //Keep polling until no more data
-        while (Poll()) {}
-        FinalizeRun()
-      }
+    //TODO: This should be done by closing after offsets have been reached, instead of immediately after zookeeper trigger
+    val future = Poll().map(o => o.foreach(o2 => collector(Map(o2))))
+    Await.ready(future,5000 millis)
 
-      //TODO: Use a cleaner delay (for example using akka?)
-      def delay(d: Long): Unit = {
-        Try(Await.ready(Promise().future, Duration(d, MILLISECONDS)))
-      }
-
-      //TODO: Solve this foundRecords variable some cleaner way
-      def Poll(): Boolean = {
-        logger.debug(s"$uuid Polling")
-        var foundRecords = false
-        dataConsumer
-          .poll(PollTimeout)
-          .iterator()
-          .asScala
-          .map(o => Map(TrailedRecord(o.value())))
-          .foreach(o => {
-            foundRecords = true
-            collector(o)
-          })
-        logger.debug(s"$uuid completed poll")
-        foundRecords
-      }
-
+    while(running) {
+      //TODO: Handle exceptions
+      val future = Poll().map(o => o.foreach(o2 => collector(Map(o2))))
+      Await.ready(future,5000 millis)
     }
-    //Maybe refactor this back to just sleeping in the main thread.
-    val thread = new Thread(refreshTask)
-    thread.setDaemon(true)
-    thread.start()
-    thread.join()
+
+    logger.debug(s"Source $uuid stopped running.")
+
+    FinalizeRun()
   }
+
+  /**
+    * Perform a poll on the kafka consumer
+    * @return
+    */
+  def Poll(): Future[List[TrailedRecord]] = {
+      val thread = new KafkaConsumerThread(dataConsumer, s"Consumer $topic $uuid")
+      Future {
+        thread.run()
+        thread.GetData()
+      }
+  }
+
 
   override def run(ctx: SourceFunction.SourceContext[T]): Unit = runLocal(ctx.collect)
 
