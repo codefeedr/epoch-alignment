@@ -28,6 +28,10 @@ import org.apache.flink.types.Row
 import org.codefeedr.Core.Library.{SubjectFactory, TypeInformationServices}
 import org.codefeedr.Model.SubjectType
 
+/**
+  * Kafka source that exposes codefeedr subjects to flink's table api
+  * @param subjectType
+  */
 class KafkaTableSource(subjectType: SubjectType) extends StreamTableSource[Row] {
   @transient lazy val source: SourceFunction[Row] = SubjectFactory.GetRowSource(subjectType)
 

@@ -22,7 +22,7 @@
 package org.codefeedr.Core.Library.Internal.Kafka
 
 import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
-import org.codefeedr.Core.Library.{LibraryServices, SubjectLibrary}
+import org.codefeedr.Core.Library.LibraryServices
 import org.codefeedr.Core.LibraryServiceSpec
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach, Matchers}
 
@@ -49,10 +49,17 @@ class KafkaControllerSpec extends LibraryServiceSpec with Matchers with BeforeAn
       assert(!await(KafkaController.GetTopics()).contains(testTopic))
   }
 
-  "A kafkaController" should "create a new topic if guarantee is called and it does not exist yet" in async {
+  it should "create a new topic if guarantee is called and it does not exist yet" in async {
     await(KafkaController.GuaranteeTopic(testTopic))
     assert(await(KafkaController.GetTopics()).contains(testTopic))
     await(KafkaController.DeleteTopic(testTopic))
     assert(!await(KafkaController.GetTopics()).contains(testTopic))
+  }
+
+  it should "create a topic with the configured amount of partitions" in async {
+      await(KafkaController.GuaranteeTopic(testTopic))
+      val r = assert(await(KafkaController.getPartitions(testTopic)) == 4)
+      await(KafkaController.DeleteTopic(testTopic))
+      r
   }
 }

@@ -24,8 +24,12 @@ import java.util.UUID
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable
+import org.apache.flink.runtime.state.{CheckpointListener, FunctionInitializationContext, FunctionSnapshotContext}
+import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
+import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
 import org.apache.flink.types.Row
+import org.codefeedr.Core.Library.Internal.Kafka.Meta.{PartitionOffset, TopicPartitionOffsets}
 import org.codefeedr.Core.Library.LibraryServices
 import org.codefeedr.Model.{RecordSourceTrail, SubjectType, TrailedRecord}
 
@@ -38,14 +42,18 @@ import scala.util.Try
 /**
   * Use a single thread to perform all polling operations on kafka
   * Note that new objects will still exist per distributed environment
-  */
-/**
+  *
+  * Currently this source is only used as base class for RowSource
+  * This source does not support TimestampAssigners yet
+  *
   * Because this class needs to be serializable and the LibraryServices are not, no dependency injection structure can be used here :(
   * Created by Niels on 18/07/2017.
   */
 abstract class KafkaSource[T](subjectType: SubjectType)
     extends RichSourceFunction[T]
     with ResultTypeQueryable[T]
+    with CheckpointedFunction
+    with CheckpointListener
     //Internal services
     with LazyLogging
     with Serializable
@@ -82,6 +90,19 @@ abstract class KafkaSource[T](subjectType: SubjectType)
       //If the source never started call finalize manually
       FinalizeRun()
     }
+  }
+
+
+
+  override def initializeState(context: FunctionInitializationContext): Unit = {
+
+  }
+
+  override def snapshotState(context: FunctionSnapshotContext): Unit = {
+
+  }
+
+  override def notifyCheckpointComplete(checkpointId: Long): Unit = {
 
   }
 
@@ -123,7 +144,20 @@ abstract class KafkaSource[T](subjectType: SubjectType)
 
     while(running) {
       //TODO: Handle exceptions
-      val future = Poll().map(o => o.foreach(o2 => collector(Map(o2))))
+      //Do not need to lock, because there will be only a single thread (per partition set) performing this operation
+      val future = Poll().map(
+        o => {
+          //Collect data and push along the pipeline
+          o.foreach(o2 => collector(Map(o2)))
+          //Obtain offsets, and update zookeeper state
+          val offsets = currentOffset()
+
+
+
+          //TODO: Implement asynchronous commits
+          dataConsumer.commitSync()
+        }
+      )
       Await.ready(future,5000 millis)
     }
 
@@ -131,6 +165,18 @@ abstract class KafkaSource[T](subjectType: SubjectType)
 
     FinalizeRun()
   }
+
+  /**
+    * Retrieve the current offsets
+    * @return
+    */
+  def currentOffset():TopicPartitionOffsets =
+    TopicPartitionOffsets(
+      topic,
+      dataConsumer.assignment().asScala.map(o => PartitionOffset(o.partition(),dataConsumer.position(o))).toList
+    )
+
+
 
   /**
     * Perform a poll on the kafka consumer

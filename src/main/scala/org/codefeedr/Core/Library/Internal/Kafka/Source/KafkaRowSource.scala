@@ -23,6 +23,11 @@ import org.apache.flink.types.Row
 import org.codefeedr.Core.Library.TypeInformationServices
 import org.codefeedr.Model.{SubjectType, TrailedRecord}
 
+
+/**
+  * KafkaSource that exposes a subject as stream of table API rows
+  * @param subjectType
+  */
 class KafkaRowSource(subjectType: SubjectType) extends KafkaSource[Row](subjectType) {
   override def Map(record: TrailedRecord) = record.row
 

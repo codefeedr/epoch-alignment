@@ -19,6 +19,7 @@
 
 package org.codefeedr.Core.Library.Internal.Kafka
 
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.kafka.clients.admin.{AdminClient, NewTopic}
 import resource.managed
 
@@ -32,7 +33,7 @@ import scala.concurrent.Future
   * low level object to control the connected kafka
   */
 object KafkaController {
-
+  @transient private lazy val conf: Config = ConfigFactory.load
   /**
     * Perform a method on the kafka admin. Using a managed resource to dispose of the admin client after use
     * @param method the method to run on the kafka cluster
@@ -49,12 +50,14 @@ object KafkaController {
 
   /**
     * Create a new topic on kafka
-    * Still need to support numTopics and replication factor. Probably need to integrate this with Flink?
+    * For internal use only, does create corresponding state in Zookeeper
+    * Number of partitions is currently read from configuration
+    * TODO: Still need to support replication factor
     * @param name name of the topic to register
     * @return a future that resolves when the topic has been created
     */
   def CreateTopic(name: String): Future[Unit] = {
-    val topic = new NewTopic(name, 1, 1)
+    val topic = new NewTopic(name,conf.getNumber("codefeedr.kafka.custom.partition.count").intValue(),1)
     val topicSet = Iterable(topic).asJavaCollection
     val result = apply(o => o.createTopics(topicSet))
     Future {
@@ -72,6 +75,17 @@ object KafkaController {
       if (!o.contains(name)) {
         CreateTopic(name)
     })
+  }
+
+  /**
+    * Gets the number of partitions that the passed topic has
+    * @return a future of the number of partitions
+    */
+  def getPartitions(name: String): Future[Int] = {
+    Future {
+      val topic = apply(o => o.describeTopics(List(name))).all().get().head
+      topic._2.partitions().size()
+    }
   }
 
   /**

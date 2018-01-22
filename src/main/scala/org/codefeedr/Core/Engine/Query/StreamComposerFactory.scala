@@ -19,7 +19,7 @@
 
 package org.codefeedr.Core.Engine.Query
 
-import org.codefeedr.Core.Library.{LibraryServices, SubjectLibrary}
+import org.codefeedr.Core.Library.LibraryServices
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

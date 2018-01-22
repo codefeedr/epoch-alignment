@@ -17,11 +17,10 @@
  *
  */
 
-package org.codefeedr.Core.Library
+package org.codefeedr.Core.Library.Metastore
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.zookeeper.KeeperException.NodeExistsException
-import org.codefeedr.Core.Library.Internal.Serialisation.GenericSerialiser
 import org.codefeedr.Core.Library.Internal.SubjectTypeFactory
 import org.codefeedr.Core.Library.Internal.Zookeeper.{ZkClient, ZkNode}
 import org.codefeedr.Exceptions._
@@ -34,7 +33,9 @@ import scala.concurrent.Future
 import scala.reflect.runtime.{universe => ru}
 
 /**
-  * ThreadSafe
+  * ThreadSafe, Async
+  * This class contains services to obtain data about subjects and kafka topics
+  *
   * Created by Niels on 14/07/2017.
   */
 class SubjectLibrary(val zk: ZkClient) extends LazyLogging {

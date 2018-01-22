@@ -24,6 +24,7 @@ import org.apache.flink.types.Row
 
 /**
   * A record for which its source has been trailed
+  * This type is serialized and deserialized to kafka in binary format
   */
 trait TrailedRecord extends Record {
   def trail: RecordSourceTrail = row.getField(row.getArity() - 3).asInstanceOf[RecordSourceTrail]

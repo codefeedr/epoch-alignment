@@ -24,7 +24,7 @@ package org.codefeedr.Core.Library.Internal.Kafka
 import org.apache.flink.streaming.api.functions.source.SourceFunction.SourceContext
 import org.codefeedr.Core.FullIntegrationSpec
 import org.codefeedr.Core.Library.Internal.Zookeeper.{ZkClient, ZkNode}
-import org.codefeedr.Core.Library.{LibraryServices, SubjectLibrary}
+import org.codefeedr.Core.Library.LibraryServices
 import org.codefeedr.Model.TrailedRecord
 import org.scalatest.time.Seconds
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, BeforeAndAfterEach}
