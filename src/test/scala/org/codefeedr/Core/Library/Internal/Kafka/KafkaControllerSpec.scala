@@ -43,21 +43,21 @@ class KafkaControllerSpec extends LibraryServiceSpec with Matchers with BeforeAn
   }
 
   "A kafkaController" should "be able to create and delete new topics" in async {
-      await(KafkaController.CreateTopic(testTopic))
+      await(KafkaController.CreateTopic(testTopic, 4))
       assert(await(KafkaController.GetTopics()).contains(testTopic))
       await(KafkaController.DeleteTopic(testTopic))
       assert(!await(KafkaController.GetTopics()).contains(testTopic))
   }
 
   it should "create a new topic if guarantee is called and it does not exist yet" in async {
-    await(KafkaController.GuaranteeTopic(testTopic))
+    await(KafkaController.GuaranteeTopic(testTopic, 4))
     assert(await(KafkaController.GetTopics()).contains(testTopic))
     await(KafkaController.DeleteTopic(testTopic))
     assert(!await(KafkaController.GetTopics()).contains(testTopic))
   }
 
   it should "create a topic with the configured amount of partitions" in async {
-      await(KafkaController.GuaranteeTopic(testTopic))
+      await(KafkaController.GuaranteeTopic(testTopic, 4))
       val r = assert(await(KafkaController.getPartitions(testTopic)) == 4)
       await(KafkaController.DeleteTopic(testTopic))
       r

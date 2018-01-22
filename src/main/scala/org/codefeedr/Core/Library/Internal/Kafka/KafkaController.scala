@@ -33,7 +33,6 @@ import scala.concurrent.Future
   * low level object to control the connected kafka
   */
 object KafkaController {
-  @transient private lazy val conf: Config = ConfigFactory.load
   /**
     * Perform a method on the kafka admin. Using a managed resource to dispose of the admin client after use
     * @param method the method to run on the kafka cluster
@@ -51,13 +50,12 @@ object KafkaController {
   /**
     * Create a new topic on kafka
     * For internal use only, does create corresponding state in Zookeeper
-    * Number of partitions is currently read from configuration
-    * TODO: Still need to support replication factor
+    * Number of partitions is passed as parameter
     * @param name name of the topic to register
     * @return a future that resolves when the topic has been created
     */
-  def CreateTopic(name: String): Future[Unit] = {
-    val topic = new NewTopic(name,conf.getNumber("codefeedr.kafka.custom.partition.count").intValue(),1)
+  def CreateTopic(name: String, partitions: Int): Future[Unit] = {
+    val topic = new NewTopic(name,partitions,1)
     val topicSet = Iterable(topic).asJavaCollection
     val result = apply(o => o.createTopics(topicSet))
     Future {
@@ -70,10 +68,10 @@ object KafkaController {
     * @param name Topic to guarantee
     * @return
     */
-  def GuaranteeTopic(name: String): Future[Unit] = {
+  def GuaranteeTopic(name: String, partitions: Int): Future[Unit] = {
     GetTopics().map(o =>
       if (!o.contains(name)) {
-        CreateTopic(name)
+        CreateTopic(name, partitions)
     })
   }
 

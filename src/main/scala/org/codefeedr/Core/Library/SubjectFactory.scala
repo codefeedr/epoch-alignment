@@ -48,7 +48,7 @@ class SubjectFactoryController { this: LibraryServices =>
     subjectLibrary
       .GetOrCreateType[TData]()
       .flatMap(o =>
-        KafkaController.GuaranteeTopic(s"${o.name}_${o.uuid}").map(_ => new KafkaGenericSink(o)))
+        KafkaController.GuaranteeTopic(s"${o.name}_${o.uuid}", conf.getInt("codefeedr.kafka.custom.partition.count")).map(_ => new KafkaGenericSink(o)))
   }
 
   /**

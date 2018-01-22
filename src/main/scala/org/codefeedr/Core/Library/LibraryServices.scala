@@ -19,16 +19,18 @@
 
 package org.codefeedr.Core.Library
 
-import resource._
+import com.typesafe.config.{Config, ConfigFactory}
 import org.codefeedr.Core.Library.Internal.Zookeeper.ZkClient
 import org.codefeedr.Core.Library.Metastore.SubjectLibrary
 
 trait LibraryServices {
   @transient lazy val zkClient: ZkClient = LibraryServices.zkClient
   @transient lazy val subjectLibrary: SubjectLibrary = LibraryServices.subjectLibrary
+  @transient lazy val conf: Config = ConfigFactory.load
 }
 
 object LibraryServices {
   @transient lazy val zkClient: ZkClient = new ZkClient()
   @transient lazy val subjectLibrary: SubjectLibrary = new SubjectLibrary(zkClient)
+  @transient lazy val conf: Config = ConfigFactory.load
 }

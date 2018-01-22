@@ -21,6 +21,7 @@ package org.codefeedr.Core.Library.Internal
 
 import java.util.UUID
 
+import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInfo, TypeInformation}
 import org.codefeedr.Model.{RecordProperty, SubjectType}
@@ -34,6 +35,9 @@ import scala.reflect.runtime.{universe => ru}
   * Created by Niels on 14/07/2017.
   */
 object SubjectTypeFactory extends LazyLogging {
+  @transient lazy val conf: Config = ConfigFactory.load
+
+
   private def newTypeIdentifier(): UUID = UUID.randomUUID()
 
   private def getSubjectTypeInternal(t: ru.Type,
