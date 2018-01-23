@@ -45,24 +45,26 @@ class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase) extends ZkNo
     * @param data data to set on the created node
     * @return a future of the saved data
     */
-  def Create(data: TData): Future[TData] =
-    zkClient.CreateWithData(Path(), data).map(_ => data)
+  def Create(data: TData): Future[TData] = async {
+      await(zkClient.CreateWithData(Path(), data))
+      await(PostCreate())
+      data
+  }
 
   /**
     * Gets the data, or creates a node with the data
     *
     * @param factory    method that creates the data that should be stored in this zookeeper node
-    * @param postCreate actions to be performed after the node was created
     * @return
     */
-  def GetOrCreate(factory:() => TData)(postCreate:() => Future[Unit]): Future[TData] = {
+  def GetOrCreate(factory:() => TData): Future[TData] = {
     async {
       if (await(Exists())) {
         await(GetData()).get
       } else {
         val r = await(Create(factory()))
         //Call post-create hooks
-        await(postCreate())
+        await(PostCreate())
         //Return data as result
         r
       }
@@ -87,7 +89,6 @@ class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase) extends ZkNo
     * @return
     */
   def GetChild[TChild: ClassTag](name: String): ZkNode[TChild] = new ZkNode[TChild](s"${Path()}/$name", this)
-
 
   /**
     * Creates a future that watches the node until the data matches the given condition

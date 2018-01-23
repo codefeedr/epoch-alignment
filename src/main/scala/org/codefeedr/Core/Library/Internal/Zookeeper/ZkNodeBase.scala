@@ -2,22 +2,34 @@ package org.codefeedr.Core.Library.Internal.Zookeeper
 
 import org.codefeedr.Core.Library.LibraryServices
 
+import scala.async.Async.{async, await}
 import scala.concurrent.Future
-import scala.reflect.ClassTag
+import scala.concurrent.ExecutionContext.Implicits.global
+
 
 abstract class ZkNodeBase(val name: String) {
   @transient lazy val zkClient: ZkClient = LibraryServices.zkClient
 
-  abstract def Parent(): ZkNodeBase
+  def Parent(): ZkNodeBase
 
   def Path(): String = s"${Parent().Path()}/$name"
+
+  /**
+    * This method can be overridden to perform steps after the creation of the node
+    * @return
+    */
+  def PostCreate(): Future[Unit] = Future.successful(Unit)
 
   /**
     * Creates the node on zookeeper
     *
     * @return a future of the path used
     */
-  def Create(): Future[String] = zkClient.Create(Path).map(_ => Path)
+  def Create(): Future[String] = async {
+    await(zkClient.Create(Path()))
+    await(PostCreate())
+    Path()
+  }
 
   /**
     * Creates a future that awaits the registration of a specific child
@@ -54,11 +66,4 @@ abstract class ZkNodeBase(val name: String) {
     * @return a future that resolves when the node has been deleted
     */
   def DeleteRecursive(): Future[Unit] = zkClient.DeleteRecursive(Path)
-
-  /**
-    * Converts the current instance of zkNode to a typed node
-    * @tparam TData
-    * @return
-    */
-  def As[TData: ClassTag]: ZkNode[TData] = ZkNode[TData](Path)
 }

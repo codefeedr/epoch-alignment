@@ -1,13 +1,13 @@
 package org.codefeedr.Core.Library.Metastore
 
 import org.codefeedr.Core.Library.Internal.Zookeeper.{ZkNode, ZkNodeBase}
-import org.codefeedr.Model.Zookeeper.Producer
+import org.codefeedr.Model.Zookeeper.Consumer
 
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class ProducerNode(name: String, parent: ZkNodeBase) extends ZkNode[Producer](name, parent){
+class ConsumerNode(name: String, parent: ZkNodeBase) extends ZkNode[Consumer](name, parent){
   override def PostCreate(): Future[Unit] = async {
     await(GetState().Create(true))
   }
@@ -17,4 +17,5 @@ class ProducerNode(name: String, parent: ZkNodeBase) extends ZkNode[Producer](na
     * @return
     */
   def GetState(): ZkNode[Boolean] = GetChild[Boolean]("state")
+
 }

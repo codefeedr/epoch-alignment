@@ -22,6 +22,5 @@ package org.codefeedr.Model
 case class SubjectType(uuid: String,
                        name: String,
                        persistent: Boolean,
-                       alive: Boolean,
                        properties: Array[RecordProperty[_]])
     extends Serializable

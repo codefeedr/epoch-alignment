@@ -20,17 +20,8 @@
 package org.codefeedr.Core.Library.Metastore
 
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.zookeeper.KeeperException.NodeExistsException
-import org.codefeedr.Core.Library.Internal.SubjectTypeFactory
-import org.codefeedr.Core.Library.Internal.Zookeeper.{ZkClient, ZkNode, ZkNodeBase}
-import org.codefeedr.Exceptions._
-import org.codefeedr.Model.SubjectType
-
-import scala.async.Async.{async, await}
-import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.reflect.runtime.{universe => ru}
 
 /**
   * ThreadSafe, Async
@@ -38,19 +29,26 @@ import scala.reflect.runtime.{universe => ru}
   *
   * Created by Niels on 14/07/2017.
   */
-class SubjectLibrary(val zk: ZkClient) extends LazyLogging {
-  //Zookeeper path where the subjects are stored
-  @transient private val SubjectPath = "/Codefeedr/Subjects"
-
-  @transient implicit val zkClient: ZkClient = zk
-
+class SubjectLibrary extends LazyLogging {
   /**
     * Initalisation method
     *
     * @return true when initialisation is done
     */
   def Initialize(): Future[Boolean] =
-    ZkNode(SubjectPath).Create().map(_ => true)
+    new RootNode().GetSubjects().Create().map(_ => true)
 
-  def GetSubjects(): SubjectCollectionNode = new SubjectCollectionNode(zk)
+  /**
+    * Retrieves the nodes representing all registered subjects
+    * @return
+    */
+  def GetSubjects(): SubjectCollectionNode = new RootNode().GetSubjects()
+
+  /**
+    * Retrieves a node representing a single subject of the given name
+    * Does not validate if the subject exists
+    * @param subjectName name of the subject
+    * @return
+    */
+  def GetSubject(subjectName: String): SubjectNode = GetSubjects().GetChild(subjectName)
 }

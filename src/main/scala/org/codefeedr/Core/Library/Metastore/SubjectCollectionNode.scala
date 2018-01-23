@@ -1,9 +1,10 @@
 package org.codefeedr.Core.Library.Metastore
 
 import org.codefeedr.Core.Library.Internal.Zookeeper.{ZkClient, ZkCollectionNode, ZkNodeBase}
-import org.codefeedr.Model.SubjectType
 
 import scala.async.Async.{async, await}
+import scala.concurrent.ExecutionContext.Implicits.global
+
 import scala.collection.immutable
 import scala.concurrent.Future
 

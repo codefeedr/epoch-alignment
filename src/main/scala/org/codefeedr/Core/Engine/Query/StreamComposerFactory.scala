@@ -23,6 +23,7 @@ import org.codefeedr.Core.Library.LibraryServices
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.async.Async.{async,await}
 
 /**
   * Created by Niels on 31/07/2017.
@@ -30,14 +31,16 @@ import scala.concurrent.Future
 trait StreamComposerFactoryFacade { this: LibraryServices =>
   def GetComposer(query: QueryTree): Future[StreamComposer] = {
     query match {
-      case SubjectSource(subjectName) =>
-        subjectLibrary.AwaitTypeRegistration(subjectName).map(o => new SourceStreamComposer(o))
+      case SubjectSource(subjectName) => async {
+        val childNode = await(subjectLibrary.GetSubjects().AwaitChild(subjectName))
+        val subject = await(childNode.GetData()).get
+        new SourceStreamComposer(subject)
+      }
       case Join(left, right, keysLeft, keysRight, selectLeft, selectRight, alias) =>
         for {
           leftComposer <- GetComposer(left)
           rightComposer <- GetComposer(right)
-          joinedType <- subjectLibrary.GetOrCreateType(
-            alias,
+          joinedType <- subjectLibrary.GetSubject(alias).GetOrCreate(
             () =>
               JoinQueryComposer.buildComposedType(leftComposer.GetExposedType(),
                                                   rightComposer.GetExposedType(),

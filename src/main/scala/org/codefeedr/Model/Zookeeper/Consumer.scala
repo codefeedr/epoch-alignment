@@ -1,7 +1,5 @@
 package org.codefeedr.Model.Zookeeper
 
-import Partition
-
 /**
   * Case class describing the consumer of a partition of a subject
   * Stored in zookeeper
