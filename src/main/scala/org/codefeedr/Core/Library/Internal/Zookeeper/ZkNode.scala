@@ -22,7 +22,7 @@ package org.codefeedr.Core.Library.Internal.Zookeeper
 import org.apache.zookeeper.KeeperException.NodeExistsException
 
 import scala.async.Async.{async, await}
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -33,9 +33,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * ZkNode, represents a node on zookeeper
   * Note that the node does not necessarily need to exist on zookeeper
   *
-  * @param path Path to the node on zookeeper
+  * @param name name of the current node
+  * @param parent the parent
   */
-class ZkNode[TData: ClassTag](zkClient: ZkClient)(path: String) extends ZkNodeBase(zkClient)(path) {
+class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase) extends ZkNodeBase(name) {
+
+  override def Parent(): ZkNodeBase = parent
   /**
     * Create a node with data
     *
@@ -43,7 +46,7 @@ class ZkNode[TData: ClassTag](zkClient: ZkClient)(path: String) extends ZkNodeBa
     * @return a future of the saved data
     */
   def Create(data: TData): Future[TData] =
-    zkClient.CreateWithData(path, data).map(_ => data)
+    zkClient.CreateWithData(Path(), data).map(_ => data)
 
   /**
     * Gets the data, or creates a node with the data
@@ -74,16 +77,16 @@ class ZkNode[TData: ClassTag](zkClient: ZkClient)(path: String) extends ZkNodeBa
     *
     * @return
     */
-  def GetData(): Future[Option[TData]] = zkClient.GetData[TData](path)
+  def GetData(): Future[Option[TData]] = zkClient.GetData[TData](Path())
 
   /**
     * Create the child of the node with the given name
     *
-    * @param name
-    * @tparam TChild
+    * @param name name of the child to create
+    * @tparam TChild type exposed by the childnode
     * @return
     */
-  def GetChild[TChild: ClassTag](name: String): ZkNode[TChild] = new ZkNode[TChild](zkClient)(s"$path/$name")
+  def GetChild[TChild: ClassTag](name: String): ZkNode[TChild] = new ZkNode[TChild](s"${Path()}/$name", this)
 
 
   /**
@@ -93,7 +96,7 @@ class ZkNode[TData: ClassTag](zkClient: ZkClient)(path: String) extends ZkNodeBa
     * @return a future that resolves when the given condition is true
     */
   def AwaitCondition(condition: TData => Boolean): Future[TData] =
-    zkClient.AwaitCondition(path, condition)
+    zkClient.AwaitCondition(Path(), condition)
 
 
   /**
@@ -102,11 +105,9 @@ class ZkNode[TData: ClassTag](zkClient: ZkClient)(path: String) extends ZkNodeBa
     * @param data data obejct to set
     * @return a future that resolves when the data has been set
     */
-  def SetData(data: TData): Future[Unit] = zkClient.SetData[TData](path, data).map(_ => Unit)
-
-
+  def SetData(data: TData): Future[Unit] = zkClient.SetData[TData](Path(), data).map(_ => Unit)
 }
 
 object ZkNode {
-  def apply[TData: ClassTag](path: String)(implicit zkClient: ZkClient) = new ZkNode[TData](zkClient)(path)
+  def apply[TData: ClassTag](name: String, parent: ZkNodeBase) = new ZkNode[TData](name, parent)
 }

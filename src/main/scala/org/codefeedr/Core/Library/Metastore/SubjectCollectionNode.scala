@@ -1,9 +1,19 @@
 package org.codefeedr.Core.Library.Metastore
 
-import org.codefeedr.Core.Library.Internal.Zookeeper.{ZkClient, ZkCollectionNode}
+import org.codefeedr.Core.Library.Internal.Zookeeper.{ZkClient, ZkCollectionNode, ZkNodeBase}
 import org.codefeedr.Model.SubjectType
 
-class SubjectCollectionNode(val zk: ZkClient) extends ZkCollectionNode[SubjectType](zk)("/Codefeedr/Subjects")
+import scala.async.Async.{async, await}
+import scala.collection.immutable
+import scala.concurrent.Future
+
+class SubjectCollectionNode(parent: ZkNodeBase) extends ZkCollectionNode[SubjectNode]("Subjects",parent,(name, parent) => new SubjectNode(name, parent))
 {
-  override def ChildConstructor(name: String) = SubjectNode(zkClient)(name)
+  /**
+    * Retrieves the current set of registered subject names
+    * @return A future with the set of registered subjects
+    */
+  def GetNames(): Future[immutable.Set[String]] = async {
+    await(GetChildren()).map(o => o.name).toSet
+  }
 }

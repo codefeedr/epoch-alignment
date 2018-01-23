@@ -111,8 +111,8 @@ class ZkClientSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfter
 
 
   "A ZkNode" should "provide a simple api over ZkClient" in  async{
-    val parent = ZkNode("/ZkClientSpec/some")(zkClient)
-    val node = ZkNode("/ZkClientSpec/some/path")(zkClient)
+    val parent = ZkNode("/ZkClientSpec/some")
+    val node = ZkNode("/ZkClientSpec/some/path")
     assert(!await(node.Exists()))
     await(parent.Create())
     assert(!await(node.Exists()))

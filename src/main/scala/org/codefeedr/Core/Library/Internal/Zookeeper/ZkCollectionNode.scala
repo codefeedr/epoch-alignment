@@ -3,10 +3,24 @@ package org.codefeedr.Core.Library.Internal.Zookeeper
 import scala.concurrent.Future
 import scala.async.Async.{async, await}
 
-class ZkCollectionNode[TElement](zkClient: ZkClient)(path: String) extends ZkNodeBase(zkClient)(path) {
-  override def GetChildren(): Future[Iterable[ZkNode[TElement]]] =
-    zkClient.GetChildren(path).map(o => o.map(ChildConstructor))
+class ZkCollectionNode[TNode <: ZkNodeBase](name: String, val parent: ZkNodeBase, childConstructor: (String, ZkNodeBase) => TNode)
+  extends ZkNodeBase(name) {
+
+  override def Parent(): ZkNodeBase = parent
+
+  /**
+    * Gets all childNodes currently located in zookeeper
+    * @return
+    */
+  def GetChildren(): Future[Iterable[TNode]] =
+    zkClient.GetChildren(Path()).map(o => o.map(GetChild))
 
 
-  protected def ChildConstructor(name : String) = ZkNode[TElement](s"$path/$name")
+  /**
+    * Gets the child of the given name.
+    * Does not validate if the name actually exists on zookeeper, just returns the node
+    * @param name name of the child
+    * @return
+    */
+  def GetChild(name : String): TNode = childConstructor(name)(this)
 }

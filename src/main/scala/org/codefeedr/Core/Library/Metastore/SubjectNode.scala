@@ -15,7 +15,9 @@ import scala.concurrent.Future
   * This class contains services to obtain more detailed information about kafka partitions,
   * consumers (kafkasources) consuming these sources and their offsets
   */
-class SubjectNode(val zk: ZkClient)(val subjectName: String) extends ZkNode[SubjectType](zk)(s"/Codefeedr/Subjects/$subjectName") with LazyLogging {
+class SubjectNode(subjectName: String, parent: ZkNodeBase)
+  extends ZkNode[SubjectType](subjectName, parent)
+    with LazyLogging {
 
   /**
     * Retrieves child node representing the state of the subject (active or inactive)
@@ -56,6 +58,7 @@ class SubjectNode(val zk: ZkClient)(val subjectName: String) extends ZkNode[Subj
       await(GetSink().Create())
     })
   }
+
 
   /**
     * Register the given uuid as sink of the given type
