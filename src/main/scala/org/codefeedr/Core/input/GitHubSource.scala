@@ -29,13 +29,13 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConverters._
 
-class GitHubSource(maxRequests : Integer = -1) extends RichSourceFunction[Event] {
+class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] {
 
   //get logger used by Flink
-  val log : Logger = LoggerFactory.getLogger(classOf[GitHubSource])
+  val log: Logger = LoggerFactory.getLogger(classOf[GitHubSource])
 
   //Github API rate limit
-  val rateLimit : Integer = 5000
+  val rateLimit: Integer = 5000
 
   //waiting time between request so there are no conflicts with the rate limit
   val waitingTime = rateLimit / 3600
@@ -77,7 +77,8 @@ class GitHubSource(maxRequests : Integer = -1) extends RichSourceFunction[Event]
         val it = es.pagePublicEvents(eventsPerPoll)
 
         while (it.hasNext) {
-          it.next.asScala.foreach(e => ctx.collectWithTimestamp(e, e.getCreatedAt.getTime)) //output all with timestamp
+          it.next.asScala
+            .foreach(e => ctx.collectWithTimestamp(e, e.getCreatedAt.getTime)) //output all with timestamp
         }
 
         currentRequest += 1
