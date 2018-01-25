@@ -5,6 +5,10 @@ import org.codefeedr.Core.{FullIntegrationSpec, KafkaTest}
 import org.codefeedr.Model.SubjectType
 import org.scalatest.tagobjects.Slow
 import org.apache.flink.api.scala._
+import org.apache.flink.table.api.TableEnvironment
+import org.codefeedr.Core.Library.Internal.Kafka.Sink.{KafkaGenericSink, KafkaTableSink}
+import org.codefeedr.Core.Library.Internal.Kafka.Source.{KafkaRowSource, KafkaSource, KafkaTableSource}
+import org.codefeedr.Core.Library.SubjectFactory
 
 import scala.async.Async.{async, await}
 import scala.concurrent.{Await, Future}
@@ -19,6 +23,9 @@ import scala.concurrent.duration._
   * Date: 23-01-18
   * Project: codefeedr
   */
+
+case class PushCounter(id : String, counter : Integer)
+
 class GitHubPluginSpec extends FullIntegrationSpec {
 
   "A GithubPlugin " should " produce a record for each Github PushEvent " taggedAs (Slow, KafkaTest) in {
@@ -26,7 +33,35 @@ class GitHubPluginSpec extends FullIntegrationSpec {
 
     async {
       val GithubType = await(RunGitHubEnvironment(amountOfRequests))
-      assert(await(AwaitAllData(GithubType)).size > 0)
+
+      val githubResult = await(AwaitAllData(GithubType))
+
+      //add chain of streams
+      val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
+
+      //create new stream from result of old stream
+      val stream = env.addSource(new KafkaRowSource(GithubType)).map(x => PushCounter(x.getField(3).asInstanceOf[String],1))
+        //keyBy(0).
+        //sum(1).
+        //filter(_.counter > 1)
+
+      //create new subjecttype
+      val subjectType = await(subjectLibrary.GetOrCreateType[PushCounter])
+
+      //create and add new sink
+      val sink = await(SubjectFactory.GetSink[PushCounter])
+      stream.addSink(sink)
+
+      //run environment
+      this.runEnvironment(env)
+
+      //await all data
+      val secondResult = await(AwaitAllData(subjectType))
+
+      println(githubResult.map(x => (x.field(3), 1)).groupBy(_._1).mapValues(_.size))
+      println(secondResult.map(x => (x.field(1),x.field(0))).groupBy(_._1).mapValues(_.size))
+
+      assert(githubResult.size == secondResult.size)
 
     }
   }
@@ -42,4 +77,5 @@ class GitHubPluginSpec extends FullIntegrationSpec {
     logger.debug(s"Completed env for ${t.name}")
     t
   }
+
 }
