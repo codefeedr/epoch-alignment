@@ -34,10 +34,10 @@ import org.codefeedr.Model._
 import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, _}
 
-class KafkaTableSink(subjectName: String, subjectType: SubjectType)
+class KafkaTableSink(subjectName: String, subjectType: SubjectType, sinkId: String)
     extends RetractStreamTableSink[Row] {
   @transient lazy val sink: SinkFunction[tuple.Tuple2[lang.Boolean, Row]] =
-    SubjectFactory.GetRowSink(subjectType)
+    SubjectFactory.GetRowSink(subjectType, sinkId)
 
   override def emitDataStream(dataStream: DataStream[tuple.Tuple2[lang.Boolean, Row]]): Unit =
     dataStream
@@ -57,7 +57,7 @@ class KafkaTableSink(subjectName: String, subjectType: SubjectType)
   override def configure(
       fieldNames: Array[String],
       fieldTypes: Array[TypeInformation[_]]): TableSink[tuple.Tuple2[lang.Boolean, Row]] = {
-    KafkaTableSink(subjectName, fieldNames, fieldTypes)
+    KafkaTableSink(subjectName, fieldNames, fieldTypes, sinkId)
   }
 
   override def getRecordType: TypeInformation[Row] =
@@ -68,14 +68,15 @@ class KafkaTableSink(subjectName: String, subjectType: SubjectType)
 object KafkaTableSink extends LibraryServices {
   def apply(subjectName: String,
             fieldNames: Array[String],
-            fieldTypes: Array[TypeInformation[_]]): KafkaTableSink = {
+            fieldTypes: Array[TypeInformation[_]],
+            sinkId: String): KafkaTableSink = {
     val subjectFuture = subjectLibrary.GetSubject(subjectName).GetOrCreate(
       () => SubjectTypeFactory.getSubjectType(subjectName, fieldNames, fieldTypes))
     //Have to implement the non-async FLINK api, thus must block here
     val subjectType =
       Await.ready[SubjectType](subjectFuture, Duration(5000, MILLISECONDS)).value.get.get
-    new KafkaTableSink(subjectName, subjectType)
+    new KafkaTableSink(subjectName, subjectType,sinkId)
   }
 
-  def apply(subjectName: String): KafkaTableSink = new KafkaTableSink(subjectName, null)
+  def apply(subjectName: String, sinkId: String): KafkaTableSink = new KafkaTableSink(subjectName, null,sinkId)
 }

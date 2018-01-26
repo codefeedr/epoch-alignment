@@ -34,5 +34,5 @@ abstract class AbstractPlugin {
     * @return
     */
   def CreateSubjectType(): SubjectType
-  def Compose(env: StreamExecutionEnvironment): Future[Unit]
+  def Compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit]
 }

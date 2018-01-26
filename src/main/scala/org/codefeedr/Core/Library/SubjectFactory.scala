@@ -24,14 +24,10 @@ import java.util.UUID
 import org.apache.flink.streaming.api.functions.sink.{RichSinkFunction, SinkFunction}
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.types.Row
-import org.codefeedr.Core.Library.Internal.Kafka.Sink.{
-  KafkaGenericSink,
-  RowSink,
-  TrailedRecordSink
-}
+import org.codefeedr.Core.Library.Internal.Kafka.Sink.{KafkaGenericSink, RowSink, TrailedRecordSink}
 import org.codefeedr.Core.Library.Internal.Kafka.Source.KafkaRowSource
 import org.codefeedr.Core.Library.Internal.Kafka._
-import org.codefeedr.Core.Library.Internal.{KeyFactory, RecordTransformer}
+import org.codefeedr.Core.Library.Internal.{KeyFactory, RecordTransformer, SubjectTypeFactory}
 import org.codefeedr.Model.{ActionType, SubjectType, TrailedRecord}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -44,11 +40,11 @@ import scala.reflect.runtime.{universe => ru}
   * Created by Niels on 18/07/2017.
   */
 class SubjectFactoryController { this: LibraryServices =>
-  def GetSink[TData: ru.TypeTag: ClassTag]: Future[SinkFunction[TData]] = {
-    subjectLibrary
-      .GetOrCreateType[TData]()
+  def GetSink[TData: ru.TypeTag: ClassTag](sinkId: String): Future[SinkFunction[TData]] = {
+    val subjectType = SubjectTypeFactory.getSubjectType[TData]
+      subjectLibrary.GetSubject(subjectType.name).GetOrCreate(() => subjectType)
       .flatMap(o =>
-        KafkaController.GuaranteeTopic(s"${o.name}_${o.uuid}", conf.getInt("codefeedr.kafka.custom.partition.count")).map(_ => new KafkaGenericSink(o)))
+        KafkaController.GuaranteeTopic(s"${o.name}_${o.uuid}", conf.getInt("codefeedr.kafka.custom.partition.count")).map(_ => new KafkaGenericSink(o, sinkId)))
   }
 
   /**
@@ -56,15 +52,15 @@ class SubjectFactoryController { this: LibraryServices =>
     * @param subjectType
     * @return
     */
-  def GetSink(subjectType: SubjectType): SinkFunction[TrailedRecord] =
-    new TrailedRecordSink(subjectType)
+  def GetSink(subjectType: SubjectType, sinkId: String): SinkFunction[TrailedRecord] =
+    new TrailedRecordSink(subjectType, sinkId)
 
   /**
     * Return a sink for the tableApi
     * @param subjectType
     * @return
     */
-  def GetRowSink(subjectType: SubjectType) = new RowSink(subjectType)
+  def GetRowSink(subjectType: SubjectType, sinkId: String) = new RowSink(subjectType, sinkId)
 
   /**
     * Construct a serializable and distributable mapper function from any source type to a TrailedRecord
@@ -98,12 +94,12 @@ class SubjectFactoryController { this: LibraryServices =>
     }
   }
 
-  def GetRowSource(subjectType: SubjectType): SourceFunction[Row] = {
-    new KafkaRowSource(subjectType)
+  def GetRowSource(subjectType: SubjectType, sourceId: String): SourceFunction[Row] = {
+    new KafkaRowSource(subjectType, sourceId)
   }
 
-  def GetSource(subjectType: SubjectType): SourceFunction[TrailedRecord] = {
-    new KafkaTrailedRecordSource(subjectType)
+  def GetSource(subjectType: SubjectType, sinkId: String): SourceFunction[TrailedRecord] = {
+    new KafkaTrailedRecordSource(subjectType, sinkId)
   }
 
 }

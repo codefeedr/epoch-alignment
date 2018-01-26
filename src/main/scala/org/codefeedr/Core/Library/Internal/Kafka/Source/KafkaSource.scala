@@ -127,8 +127,10 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     val initialConsumer = Consumer(instanceUuid,null,System.currentTimeMillis())
     Await.ready(consumerNode.Create(initialConsumer),Duration(120, SECONDS))
 
+
+
     //Make sure to cancel when the subject closes
-    subjectLibrary.AwaitClose(subjectType.name).onComplete(_ => cancel())
+    subjectNode.GetSources().WatchStateAggregate(o => !o).onComplete(_ => cancel())
   }
 
   private[Kafka] def FinalizeRun(): Unit = {

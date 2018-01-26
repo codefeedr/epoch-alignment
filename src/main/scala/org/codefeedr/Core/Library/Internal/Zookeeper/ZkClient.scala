@@ -38,7 +38,6 @@ import scala.concurrent.duration._
 import scala.async.Async._
 import rx.lang.scala._
 import rx.lang.scala.observables.{AsyncOnSubscribe, SyncOnSubscribe}
-
 import scala.reflect.ClassTag
 
 /**
@@ -275,13 +274,51 @@ class ZkClient {
     * @param cb callback to call
     * @return the watcher
     */
-  def GetRecursiveChildWatcher(p: String, cb: ChildrenCallback, cbDelete: () => Unit): Watcher =
-    (event: WatchedEvent) => {
+  def GetRecursiveChildWatcher(p: String, cb: ChildrenCallback, cbDelete: () => Unit): Watcher = new Watcher {
+    override def process(event: WatchedEvent): Unit = {
       event.getType match {
         case EventType.NodeDeleted => cbDelete()
         case EventType.NodeChildrenChanged => zk.getChildren(p, GetRecursiveChildWatcher(p, cb, cbDelete), cb, None)
+        case _ => throw new Exception(s"Got unimplemented event: ${event.getType}")
       }
+    }
   }
+
+  /**
+    * Gets a recursive data watcher that calls the callback whenever the data of the node modifies
+    * @param p
+    * @param cb
+    * @param cbDelete
+    * @return
+    */
+  def GetRecursiveDataWatcher(p: String, cb: DataCallback, cbDelete: () => Unit): Watcher = new Watcher {
+    override def process(event: WatchedEvent): Unit = {
+      (event: WatchedEvent) => {
+        event.getType match {
+          case EventType.NodeDeleted => cbDelete()
+          case EventType.NodeDataChanged => zk.getData(p, GetRecursiveDataWatcher(p, cb, cbDelete), cb, None)
+          case _ => throw new Exception(s"Got unimplemented event: ${event.getType}")
+        }
+      }
+    }
+  }
+  /**
+    * Creates an observable that fires when something on the data of the given node changes
+    * @param path path to the node which to observe
+    * @tparam TData type of the data to observe
+    * @return
+    */
+  def ObserveData[TData: ClassTag](path: String): Observable[TData] = Observable(subscriber => {
+    val p = PrependPath(path)
+    val cb = new DataCallback {
+      override def processResult(rc: Int, path: String, ctx: scala.Any, data: Array[Byte], stat: Stat): Unit = {
+        subscriber.onNext(GenericDeserialiser[TData](data))
+      }
+    }
+    val onComplete = () => subscriber.onCompleted()
+    zk.getData(p, GetRecursiveDataWatcher(p, cb, onComplete), cb, None)
+  })
+
 
   /**
     * Creepy method name?
@@ -301,6 +338,29 @@ class ZkClient {
     }
     val deleteCb = () => subscriber.onCompleted()
     zk.getChildren(p,GetRecursiveChildWatcher(p,cb, deleteCb),cb, None)
+  })
+
+
+  /**
+    * Places an obserable on the path that only produces events for new children added to the node of the given path
+    * Maintains a mutable internal state
+    * Current implementation does not guarantee an event is fired when a child is removed and added again
+    * (but it should do so in all practical use cases)
+    * @param path the path to observe
+    * @return
+    */
+  def ObserveNewChildren(path: String): Observable[String] = Observable(subscriber => {
+    var previousState = Seq.empty[String]
+    ObserveChildren(path).map(o => {
+      o.foreach(child => {
+        if(!previousState.contains(child)) {
+          subscriber.onNext(child)
+        }
+      })
+      //Assign new list as current state
+      //This way, if a child is removed and then later added an event is still fired
+      previousState = o
+    })
   })
 
   /**

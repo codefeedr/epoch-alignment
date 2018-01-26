@@ -140,8 +140,8 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
   private[codefeedr] def Unregister(): Future[Boolean] = async {
     logger.debug(s"Deleting subject $subjectName")
     if(await(Exists())) {
-      if (await(HasActiveConsumers())) throw ActiveSinkException(subjectName)
-      if (await(HasActiveProducers())) throw ActiveSourceException(subjectName)
+      if(await(GetSources().GetState())) throw ActiveSourceException(subjectName)
+      if(await(GetSinks.GetState())) throw ActiveSinkException(subjectName)
       DeleteRecursive()
       true
     } else {

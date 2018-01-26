@@ -8,14 +8,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class ProducerNode(name: String, parent: ZkNodeBase)
-  extends ZkNode[Producer](name, parent) with StateNode[Producer] {
+  extends ZkNode[Producer](name, parent)
+    with StateNode[Producer] {
   override def PostCreate(): Future[Unit] = async {
     await(GetState().Create(true))
   }
 
-  /**
-    * Retrieves the state of the consumer, checks if the consumer is still open
-    * @return
-    */
-  def GetState(): ZkNode[Boolean] = GetChild[Boolean]("state")
 }

@@ -20,6 +20,7 @@
 package org.codefeedr.Core.Library.Internal.Zookeeper
 
 import org.apache.zookeeper.KeeperException.NodeExistsException
+import rx.lang.scala.Observable
 
 import scala.async.Async.{async, await}
 import scala.concurrent.Future
@@ -107,6 +108,12 @@ class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase) extends ZkNo
     * @return a future that resolves when the data has been set
     */
   def SetData(data: TData): Future[Unit] = zkClient.SetData[TData](Path(), data).map(_ => Unit)
+
+  /**
+    * Get an observable of the data of the node
+    * @return
+    */
+  def ObserveData(): Observable[TData] = zkClient.ObserveData[TData](Path())
 }
 
 object ZkNode {

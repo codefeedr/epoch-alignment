@@ -31,6 +31,6 @@ trait LibraryServices {
 
 object LibraryServices {
   @transient lazy val zkClient: ZkClient = new ZkClient()
-  @transient lazy val subjectLibrary: SubjectLibrary = new SubjectLibrary(zkClient)
+  @transient lazy val subjectLibrary: SubjectLibrary = new SubjectLibrary
   @transient lazy val conf: Config = ConfigFactory.load
 }

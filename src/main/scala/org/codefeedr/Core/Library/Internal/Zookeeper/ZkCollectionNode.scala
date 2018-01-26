@@ -1,5 +1,7 @@
 package org.codefeedr.Core.Library.Internal.Zookeeper
 
+import rx.lang.scala.Observable
+
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -29,5 +31,11 @@ class ZkCollectionNode[TNode <: ZkNodeBase](name: String, val parent: ZkNodeBase
     * @param child name of the child to await
     * @return a future that resolves when the child has been created, with the name of the child
     */
-  override def AwaitChild(child: String): Future[TNode] = super.AwaitChild(name).map(childConstructor(_,this))
+  def AwaitChildNode(child: String): Future[TNode] = super.AwaitChild(name).map(o => childConstructor(o,this))
+
+  /**
+    * Creates an observable of all new children
+    * @return
+    */
+  def ObserveNewChildren(): Observable[TNode] = zkClient.ObserveNewChildren(Path()).map(o => childConstructor(o, this))
 }

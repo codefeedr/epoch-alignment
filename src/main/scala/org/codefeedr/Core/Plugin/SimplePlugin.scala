@@ -54,9 +54,11 @@ abstract class SimplePlugin[TData: ru.TypeTag: ClassTag] extends AbstractPlugin 
     * @param env the environment where the source should be composed on
     * @return
     */
-  override def Compose(env: StreamExecutionEnvironment): Future[Unit] = async {
-    val sink = await(SubjectFactory.GetSink[TData])
+  override def Compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit] = async {
+    val sinkName = s"composedsink_${queryId}"
+    val sink = await(SubjectFactory.GetSink[TData](sinkName))
     val stream = GetStream(env)
     stream.addSink(sink)
   }
+
 }

@@ -32,7 +32,7 @@ trait StreamComposerFactoryFacade { this: LibraryServices =>
   def GetComposer(query: QueryTree): Future[StreamComposer] = {
     query match {
       case SubjectSource(subjectName) => async {
-        val childNode = await(subjectLibrary.GetSubjects().AwaitChild(subjectName))
+        val childNode = await(subjectLibrary.GetSubjects().AwaitChildNode(subjectName))
         val subject = await(childNode.GetData()).get
         new SourceStreamComposer(subject)
       }

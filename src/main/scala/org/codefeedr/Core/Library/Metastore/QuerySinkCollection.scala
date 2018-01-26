@@ -8,7 +8,7 @@ import scala.concurrent.Future
 
 class QuerySinkCollection(parent: ZkNodeBase)
   extends ZkCollectionNode[QuerySinkNode]("sinks", parent, (name, parent) => new QuerySinkNode(name, parent))
-  with ZkCollectionState[QuerySinkNode] {
+  with ZkCollectionState[QuerySinkNode, QuerySink] {
 
 
 

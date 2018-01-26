@@ -70,6 +70,8 @@ abstract class KafkaSink[TSink]
   //A random identifier for this specific sink
   @transient lazy val instanceUuid = UUID.randomUUID().toString
 
+  def GetLabel(): String = s"KafkaSink ${subjectType.name}(${sinkUuid}-${instanceUuid})"
+
   override def close(): Unit = {
     logger.debug(s"Closing producer $instanceUuid for ${subjectType.name}")
     kafkaProducer.close()
@@ -78,23 +80,23 @@ abstract class KafkaSink[TSink]
 
   override def open(parameters: Configuration): Unit = {
     kafkaProducer
-    logger.debug(s"Opening producer $instanceUuid for ${subjectType.name}")
+    logger.debug(s"Opening producer ${GetLabel} for ${subjectType.name}")
     Await.ready(producerNode.SetState(false), Duration.Inf)
   }
 }
 
-class TrailedRecordSink(override val subjectType: SubjectType) extends KafkaSink[TrailedRecord] {
+class TrailedRecordSink(override val subjectType: SubjectType, override val sinkUuid: String) extends KafkaSink[TrailedRecord] {
   override def invoke(trailedRecord: TrailedRecord): Unit = {
-    logger.debug(s"Producer $instanceUuid sending a message to topic $topic")
+    logger.debug(s"Producer ${GetLabel}sending a message to topic $topic")
     kafkaProducer.send(new ProducerRecord(topic, trailedRecord.trail, trailedRecord.row))
   }
 }
-class RowSink(override val subjectType: SubjectType)
+class RowSink(override val subjectType: SubjectType, override val sinkUuid: String)
     extends KafkaSink[tuple.Tuple2[lang.Boolean, Row]] {
   @transient lazy val keyFactory = new KeyFactory(subjectType, UUID.randomUUID())
 
   override def invoke(value: tuple.Tuple2[lang.Boolean, Row]): Unit = {
-    logger.debug(s"Producer $instanceUuid sending a message to topic $topic")
+    logger.debug(s"Producer ${GetLabel} sending a message to topic $topic")
     val actionType = if (value.f0) ActionType.Add else ActionType.Remove
     //TODO: Optimize these steps
     val record = Record(value.f1, subjectType.uuid, actionType)

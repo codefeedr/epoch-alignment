@@ -32,8 +32,8 @@ import org.codefeedr.Model.SubjectType
   * Kafka source that exposes codefeedr subjects to flink's table api
   * @param subjectType
   */
-class KafkaTableSource(subjectType: SubjectType) extends StreamTableSource[Row] {
-  @transient lazy val source: SourceFunction[Row] = SubjectFactory.GetRowSource(subjectType)
+class KafkaTableSource(subjectType: SubjectType, sourceId: String) extends StreamTableSource[Row] {
+  @transient lazy val source: SourceFunction[Row] = SubjectFactory.GetRowSource(subjectType, sourceId)
 
   //Map the TrailedRecord provided by the source to a row
   override def getDataStream(execEnv: StreamExecutionEnvironment): DataStream[Row] =
