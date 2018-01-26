@@ -27,8 +27,8 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
     */
   override def PostCreate(): Future[Unit] = async {
     await(GetState().Create(true))
-    await(GetConsumers().Create())
-    await(GetProducers().Create())
+    await(GetSinks().Create())
+    await(GetSources().Create())
   }
 
   /**
@@ -41,13 +41,13 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
     * Obtains the node maintaining the collection of consumers of the subject type
     * @return
     */
-  def GetConsumers(): ConsumerCollection = new ConsumerCollection("consumers", this)
+  def GetSinks(): QuerySinkCollection = new QuerySinkCollection(this)
 
   /**
     * Obtains the node maintaining the collection of producers for the subjectype
     * @return
     */
-  def GetProducers(): ProducerCollection = new ProducerCollection("producers", this)
+  def GetSources(): QuerySourceCollection = new QuerySourceCollection(this)
 
 
 
@@ -87,7 +87,7 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
     //For non-persistent types automatically close the subject when all sources are removed
     val shouldClose = await(for {
       persistent <- GetData().map(o => o.get.persistent)
-      hasSinks <- HasActiveProducers()
+      hasSinks <- HasActiveSinks()
       isOpen <- IsOpen()
     } yield !persistent && !hasSinks && isOpen)
 
@@ -97,27 +97,16 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
   }
 
   /**
-    * Retrieve value if the subject has an active producer
-    *
+    * Retrieve value if the subject has an active consumer
     * @return
     */
-  def HasActiveProducers(): Future[Boolean] =async {
-    val consumerNodes = await(GetProducers().GetChildren())
-    val states = await(Future.sequence(consumerNodes.map(o => o.GetState().GetData().map(o => o.get)).toList))
-    states.foldLeft(false)(_ || _)
-  }
+  def HasActiveSources(): Future[Boolean] = GetSources().GetState()
 
   /**
-    * Retrieve a value if the given type has any active consumers
-    *
+    * Retrieve a value if the given type has any active producers
     * @return
     */
-  def HasActiveConsumers(): Future[Boolean] = async {
-    val consumerNodes = await(GetConsumers().GetChildren())
-    val states = await(Future.sequence(consumerNodes.map(o => o.GetState().GetData().map(o => o.get)).toList))
-    states.foldLeft(false)(_ || _)
-  }
-
+  def HasActiveSinks(): Future[Boolean] = GetSources().GetState()
   /**
     * Method that asserts the given typeName exists
     * Throws an exception if this is not the case

@@ -36,6 +36,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.async.Async._
+import rx.lang.scala._
+import rx.lang.scala.observables.{AsyncOnSubscribe, SyncOnSubscribe}
+
 import scala.reflect.ClassTag
 
 /**
@@ -267,6 +270,40 @@ class ZkClient {
   }
 
   /**
+    * Gets a recursive childwatcher that calls the callback whenever something changes on the children
+    * @param p path to watch
+    * @param cb callback to call
+    * @return the watcher
+    */
+  def GetRecursiveChildWatcher(p: String, cb: ChildrenCallback, cbDelete: () => Unit): Watcher =
+    (event: WatchedEvent) => {
+      event.getType match {
+        case EventType.NodeDeleted => cbDelete()
+        case EventType.NodeChildrenChanged => zk.getChildren(p, GetRecursiveChildWatcher(p, cb, cbDelete), cb, None)
+      }
+  }
+
+  /**
+    * Creepy method name?
+    * Place a watch on a node that will be called whenever a child is added or removed to the node
+    * Note that the implementation does not guarantee the onNext is called for each single modification on the children.
+    * Some modifications might be aggregated into a single onNext.
+    * TODO: Does not check for any zookeeper errors yet
+    * @param path parent node to watch on
+    * @return observable that fires for notifications on the children
+    */
+  def ObserveChildren(path: String): Observable[Seq[String]] = Observable(subscriber => {
+    val p = PrependPath(path)
+    val cb = new ChildrenCallback {
+      override def processResult(rc: Int, path: String, ctx: scala.Any, children: util.List[String]): Unit = {
+        subscriber.onNext(children.asScala)
+      }
+    }
+    val deleteCb = () => subscriber.onCompleted()
+    zk.getChildren(p,GetRecursiveChildWatcher(p,cb, deleteCb),cb, None)
+  })
+
+  /**
     * Deletes a node and all its children
     * @param path the path to recursively delete
     * @return A future that resolves when the node has been deleted
@@ -409,7 +446,7 @@ class ZkClient {
 
   /**
     * Keeps placing watches on the given path until the given data condition is true
-    * A watch might remain active after the promsie has already been resolved
+    * A watch might remain active after the promise has already been resolved
     * @param p promise to check on
     * @param path path to watch on
     * @param condition function that checks if the condition matches

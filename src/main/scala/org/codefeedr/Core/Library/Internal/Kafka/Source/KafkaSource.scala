@@ -31,6 +31,7 @@ import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, Sour
 import org.apache.flink.types.Row
 import org.codefeedr.Core.Library.Internal.Kafka.Meta.{PartitionOffset, TopicPartitionOffsets}
 import org.codefeedr.Core.Library.LibraryServices
+import org.codefeedr.Model.Zookeeper.Consumer
 import org.codefeedr.Model.{RecordSourceTrail, SubjectType, TrailedRecord}
 
 import scala.collection.JavaConverters._
@@ -60,30 +61,44 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     with LibraryServices {
 
   @transient private lazy val dataConsumer = {
-    val consumer = KafkaConsumerFactory.create[RecordSourceTrail, Row](uuid.toString)
+    val consumer = KafkaConsumerFactory.create[RecordSourceTrail, Row](instanceUuid.toString)
     consumer.subscribe(Iterable(topic).asJavaCollection)
-    logger.debug(s"Source $uuid subscribed on topic $topic as group $uuid")
+    logger.debug(s"Source $instanceUuid of consumer $sourceUuid subscribed on topic $topic as group $instanceUuid")
     consumer
   }
-  @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
-  @transient private[Kafka] lazy val uuid = UUID.randomUUID()
 
+  @transient private lazy val topic = s"${subjectType.name}-${subjectType.uuid}"
+  @transient private[Kafka] lazy val instanceUuid = UUID.randomUUID().toString
   //Make this configurable?
   @transient private lazy val RefreshTime = 100
 
   @transient private lazy val kafkaLatency = 1000
   @transient private lazy val ClosePromise: Promise[Unit] = Promise[Unit]()
 
+  val sourceUuid: String
+
+  //Node in zookeeper representing state of the instance of the consumer
+  @transient protected val consumerNode =
+    subjectLibrary.GetSubject(subjectType.name)
+      .GetSources().GetChild(sourceUuid)
+      .GetConsumers().GetChild(instanceUuid)
+
+  //Node in zookeeper representing state of the subject this consumer is subscribed on
+  @transient protected val subjectNode =
+    subjectLibrary.GetSubject(subjectType.name)
+
   @transient
   @volatile private[Kafka] var running = true
   @transient
   @volatile private var started = false
 
+  def GetLabel(): String = s"KafkaSource ${subjectType.name}(${sourceUuid}-${instanceUuid})"
+
   override def cancel(): Unit = {
-    logger.debug(s"Source $uuid on subject $topic is cancelled")
+    logger.debug(s"Source $GetLabel on subject $topic is cancelled")
     if (!started) {
       logger.debug(
-        s"Source $uuid was cancelled before being started. When started source will still process all events and then terminate.")
+        s"Source $GetLabel was cancelled before being started. When started source will still process all events and then terminate.")
     }
     running = false
     if (!started) {
@@ -106,17 +121,21 @@ abstract class KafkaSource[T](subjectType: SubjectType)
 
   }
 
+
   private[Kafka] def InitRun(): Unit = {
-    Await.ready(subjectLibrary.RegisterSource(subjectType.name, uuid.toString),
-                Duration(120, SECONDS))
+    //Create self on zookeeper
+    val initialConsumer = Consumer(instanceUuid,null,System.currentTimeMillis())
+    Await.ready(consumerNode.Create(initialConsumer),Duration(120, SECONDS))
+
     //Make sure to cancel when the subject closes
     subjectLibrary.AwaitClose(subjectType.name).onComplete(_ => cancel())
   }
 
   private[Kafka] def FinalizeRun(): Unit = {
     //Finally unsubscribe from the library
-    logger.debug(s"Unsubscribing source $uuid on subject $topic.")
-    Await.ready(subjectLibrary.UnRegisterSource(subjectType.name, uuid.toString),
+    logger.debug(s"Unsubscribing ${GetLabel()}on subject $topic.")
+
+    Await.ready(consumerNode.SetState(false),
                 Duration(120, SECONDS))
     dataConsumer.close()
     //Notify of the closing
@@ -133,9 +152,9 @@ abstract class KafkaSource[T](subjectType: SubjectType)
   def runLocal(collector: T => Unit): Unit = {
     started = true
     if (!running) {
-      logger.debug(s"$uuid already cancelled. Processing events and terminating")
+      logger.debug(s"${GetLabel()} already cancelled. Processing events and terminating")
     }
-    logger.debug(s"Source $uuid started running.")
+    logger.debug(s"Source ${GetLabel()} started running.")
     InitRun()
 
     //TODO: This should be done by closing after offsets have been reached, instead of immediately after zookeeper trigger
@@ -161,7 +180,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
       Await.ready(future,5000 millis)
     }
 
-    logger.debug(s"Source $uuid stopped running.")
+    logger.debug(s"Source ${GetLabel()} stopped running.")
 
     FinalizeRun()
   }
@@ -183,7 +202,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     * @return
     */
   def Poll(): Future[List[TrailedRecord]] = {
-      val thread = new KafkaConsumerThread(dataConsumer, s"Consumer $topic $uuid")
+      val thread = new KafkaConsumerThread(dataConsumer, GetLabel())
       Future {
         thread.run()
         thread.GetData()

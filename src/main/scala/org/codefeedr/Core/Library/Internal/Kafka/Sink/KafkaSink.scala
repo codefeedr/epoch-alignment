@@ -50,32 +50,42 @@ abstract class KafkaSink[TSink]
 
   @transient protected lazy val kafkaProducer = {
     val producer = KafkaProducerFactory.create[RecordSourceTrail, Row]
-    logger.debug(s"Producer $uuid created for topic $topic")
+    logger.debug(s"Producer $sinkUuid instance $instanceUuid created for topic $topic")
     producer
   }
 
   val subjectType: SubjectType
+  val sinkUuid: String
+
+  /**
+    * The ZookeeperNode that represent this instance of the producer
+    */
+  @transient lazy val producerNode =
+    subjectLibrary.GetSubject(subjectType.name)
+    .GetSinks().GetChild(sinkUuid)
+    .GetProducers().GetChild(instanceUuid)
+
 
   @transient protected lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
   //A random identifier for this specific sink
-  @transient lazy val uuid = UUID.randomUUID()
+  @transient lazy val instanceUuid = UUID.randomUUID().toString
 
   override def close(): Unit = {
-    logger.debug(s"Closing producer $uuid for ${subjectType.name}")
+    logger.debug(s"Closing producer $instanceUuid for ${subjectType.name}")
     kafkaProducer.close()
-    Await.ready(subjectLibrary.UnRegisterSink(subjectType.name, uuid.toString), Duration.Inf)
+    Await.ready(producerNode.SetState(true), Duration.Inf)
   }
 
   override def open(parameters: Configuration): Unit = {
     kafkaProducer
-    logger.debug(s"Opening producer $uuid for ${subjectType.name}")
-    Await.ready(subjectLibrary.RegisterSink(subjectType.name, uuid.toString), Duration.Inf)
+    logger.debug(s"Opening producer $instanceUuid for ${subjectType.name}")
+    Await.ready(producerNode.SetState(false), Duration.Inf)
   }
 }
 
 class TrailedRecordSink(override val subjectType: SubjectType) extends KafkaSink[TrailedRecord] {
   override def invoke(trailedRecord: TrailedRecord): Unit = {
-    logger.debug(s"Producer $uuid sending a message to topic $topic")
+    logger.debug(s"Producer $instanceUuid sending a message to topic $topic")
     kafkaProducer.send(new ProducerRecord(topic, trailedRecord.trail, trailedRecord.row))
   }
 }
@@ -84,7 +94,7 @@ class RowSink(override val subjectType: SubjectType)
   @transient lazy val keyFactory = new KeyFactory(subjectType, UUID.randomUUID())
 
   override def invoke(value: tuple.Tuple2[lang.Boolean, Row]): Unit = {
-    logger.debug(s"Producer $uuid sending a message to topic $topic")
+    logger.debug(s"Producer $instanceUuid sending a message to topic $topic")
     val actionType = if (value.f0) ActionType.Add else ActionType.Remove
     //TODO: Optimize these steps
     val record = Record(value.f1, subjectType.uuid, actionType)
