@@ -18,6 +18,11 @@ import org.codefeedr.Core.Plugin.PushEvent
 import scala.concurrent._
 import ExecutionContext.Implicits.global
 
+/**
+  * Setups a MongoSink on a PushEvent
+  * @param collectionName the name of the collection to store in
+  * @param indexes the unique index to create
+  */
 class MongoSink(collectionName: String, indexes: String*) extends RichSinkFunction[PushEvent] {
 
   //get the codefeedr configuration files

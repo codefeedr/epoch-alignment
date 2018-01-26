@@ -87,6 +87,7 @@ class GitHubPluginSpec extends FullIntegrationSpec {
       val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
 
       //create new stream from result of old stream
+      //this stream filters out all the unique pushevents
       val stream = env.addSource(new KafkaRowSource(githubType))
         .map(x => PushCounter(x.getField(3).asInstanceOf[String],1)).
         keyBy(0).
@@ -106,11 +107,17 @@ class GitHubPluginSpec extends FullIntegrationSpec {
       //await all data
       val uniqueResult = await(AwaitAllData(subjectType))
 
-      //unique result should be equal to datastore
+      //unique result should be equal to size of mongo collection
       assert(uniqueResult.size == await(coll.count().toFuture()))
     }
   }
 
+  /**
+    * Setups Mongo environment.
+    * @param database the database name.
+    * @param collectionName the collection name.
+    * @return the collection.
+    */
   def PrepareMongoEnvironment(database : String, collectionName : String) : MongoCollection[Document] = {
     val coll = MongoClient().
       getDatabase(database).
