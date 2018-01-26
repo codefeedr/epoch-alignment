@@ -1,6 +1,6 @@
 package org.codefeedr.Core.Plugin
 
-import java.sql.Date
+import java.util.Date
 
 import org.codefeedr.Core.input.GitHubSource
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
@@ -16,10 +16,11 @@ import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 import scala.collection.JavaConversions._
 import org.apache.flink.api.scala._
+import org.codefeedr.Core.Output.MongoSink
 import org.codefeedr.Core.Plugin
 
 //simplistic view of a push event
-case class PushEvent(id: String, repo_name: String, commitSHAs: Array[String], created_at: Date)
+case class PushEvent(id: String, repo_name: String, commitSHAs: List[String], created_at: Date)
 
 class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
     extends AbstractPlugin {
@@ -41,7 +42,7 @@ class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
 
         PushEvent(event.getId,
                   event.getRepo.getName,
-                  commitSHAs.toArray,
+                  commitSHAs,
                   new Date(event.getCreatedAt.getTime))
       }
 
@@ -51,6 +52,7 @@ class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
   override def Compose(env: StreamExecutionEnvironment): Future[Unit] = async {
     val sink = await(SubjectFactory.GetSink[Plugin.PushEvent])
     val stream = GetStream(env)
+    stream.addSink(new MongoSink("push_events", "id", "repo_name"))
     stream.addSink(sink)
   }
 }

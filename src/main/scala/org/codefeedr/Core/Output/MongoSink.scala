@@ -1,5 +1,6 @@
 package org.codefeedr.Core.Output
 
+import org.codefeedr.Core.Plugin
 import com.mongodb.client.model.IndexOptions
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.flink.configuration.Configuration
@@ -12,12 +13,12 @@ import scala.collection.JavaConverters._
 import org.mongodb.scala.model.Indexes._
 import org.mongodb.scala.bson.codecs.Macros._
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
-import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
+import org.bson.codecs.configuration.CodecRegistries.{fromRegistries, fromProviders}
+import org.codefeedr.Core.Plugin.PushEvent
+import scala.concurrent._
+import ExecutionContext.Implicits.global
 
-class MongoSink[A](collectionName: String, indexes: String*) extends RichSinkFunction[A] {
-
-  //register codec for this sink
-  val codecRegistry = fromRegistries(fromProviders(classOf[A]), DEFAULT_CODEC_REGISTRY)
+class MongoSink(collectionName: String, indexes: String*) extends RichSinkFunction[PushEvent] {
 
   //get the codefeedr configuration files
   lazy val conf: Config = ConfigFactory.load()
@@ -42,7 +43,8 @@ class MongoSink[A](collectionName: String, indexes: String*) extends RichSinkFun
   lazy val mongoSettings: MongoClientSettings = MongoClientSettings
     .builder()
     .clusterSettings(ClusterSettings.builder().hosts(List(mongoServer).asJava).build())
-    .credentialList(List(mongoCredential).asJava)
+    .codecRegistry(fromRegistries(fromProviders(classOf[PushEvent]), DEFAULT_CODEC_REGISTRY))
+    //.credentialList(List(mongoCredential).asJava)
     .build()
 
   //setup client
@@ -52,15 +54,15 @@ class MongoSink[A](collectionName: String, indexes: String*) extends RichSinkFun
   //setup correct database and register codec
   @transient
   lazy val mongoDatabase: MongoDatabase =
-    mongoClient.getDatabase(conf.getString("codefeedr.mongo.db")).withCodecRegistry(codecRegistry)
+    mongoClient.getDatabase(conf.getString("codefeedr.mongo.db"))
 
   /**
     * Invoked by Flink and inserts into Mongo.
     * @param value the event to store.
     */
-  override def invoke(value: A): Unit = {
-    async { //stores async
-      mongoDatabase.getCollection[A](collectionName).insertOne(value)
+  override def invoke(value: PushEvent): Unit = {
+    async {
+      await(mongoDatabase.getCollection[PushEvent](collectionName).insertOne(value).toFuture())
     }
   }
 
@@ -69,16 +71,17 @@ class MongoSink[A](collectionName: String, indexes: String*) extends RichSinkFun
     * @param parameters the Flink configuration parameters.
     */
   override def open(parameters: Configuration): Unit = {
-    val collections = await(mongoDatabase.listCollectionNames().toFuture())
+    async {
+      val collections = await(mongoDatabase.listCollectionNames().toFuture())
 
-    if (!collections.contains(collectionName)) {
-      //create collection if it doesn't exist yet
-      await(mongoDatabase.createCollection(collectionName).toFuture())
+      if (!collections.contains(collectionName)) {
+        //create collection if it doesn't exist yet
+        await(mongoDatabase.createCollection(collectionName).toFuture())
+      }
+
+      //set all the indexes
+      setIndexes()
     }
-
-    //set all the indexes
-    setIndexes()
-
   }
 
   /**
@@ -88,6 +91,6 @@ class MongoSink[A](collectionName: String, indexes: String*) extends RichSinkFun
     mongoDatabase
       .getCollection(collectionName)
       .createIndex(ascending(indexes: _*), new IndexOptions().unique(true))
-
+      .toFuture()
   }
 }

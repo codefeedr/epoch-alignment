@@ -20,23 +20,29 @@
 package org.codefeedr.Core.input
 
 import com.typesafe.config.{Config, ConfigFactory}
+import org.apache.flink.api.common.functions.{RuntimeContext, StoppableFunction}
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
 import org.eclipse.egit.github.core.client.GitHubClient
 import org.eclipse.egit.github.core.event.Event
 import org.eclipse.egit.github.core.service.EventService
-import scala.collection.JavaConversions._
 
+import scala.collection.JavaConversions._
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConverters._
 
-class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] {
+class GitHubSource(maxRequests: Integer = -1)
+    extends RichSourceFunction[Event]
+    with StoppableFunction {
 
   //get logger used by Flink
   val log: Logger = LoggerFactory.getLogger(classOf[GitHubSource])
 
   //Github API rate limit
   val rateLimit: Integer = 5000
+
+  //amount of events polled after closing
+  var eventsPolled: Integer = 0
 
   //waiting time between request so there are no conflicts with the rate limit
   val waitingTime = rateLimit / 3600
@@ -63,6 +69,8 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
     isRunning = false
   }
 
+  var pushEvents: List[Event] = List[Event]()
+
   //TODO think about parallel jobs here, modulo id?
   override def run(ctx: SourceFunction.SourceContext[Event]): Unit = {
     log.info("Opening connection with Github API")
@@ -73,27 +81,49 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
 
     while (isRunning) {
 
+      //make sure only 1 parallel process pulls
+      if (getRuntimeContext.getIndexOfThisSubtask % 1 != 0) {
+        isRunning = false
+        return
+      }
+
+      //get the events per poll
+      val it = es.pagePublicEvents()
+
+      while (it.hasNext) {
+        it.next.foreach { e =>
+          if (e.getType == "PushEvent") {
+            eventsPolled += 1
+            pushEvents = pushEvents :+ e
+          }
+          ctx.collectWithTimestamp(e, e.getCreatedAt.getTime) //output all with timestamp
+        }
+      }
+
+      currentRequest += 1
+
+      if (maxRequests != -1 && currentRequest >= maxRequests) {
+        stop()
+
+        val duplicates = pushEvents
+          .map(x => x.getId)
+          .groupBy(x => x)
+          .mapValues(x => x.size)
+          .filter(x => x._2 > 1)
+          .size
+        log.info(s"Found $duplicates duplicates")
+        log.info(s"Going to send $eventsPolled events")
+        return
+      }
+
       synchronized {
-        //get the events per poll
-        val it = es.pagePublicEvents(eventsPerPoll)
-
-        while (it.hasNext) {
-          it.next.foreach(e => ctx.collectWithTimestamp(e, e.getCreatedAt.getTime)) //output all with timestamp
-        }
-
-        currentRequest += 1
-
-        if (maxRequests != -1 && currentRequest >= maxRequests) {
-          log.info("Closing source after " + maxRequests + " requests.")
-          isRunning = false
-
-          return
-        }
-
         //wait to not exceed the rate limit of Github API
         wait(waitingTime * 1000L)
       }
     }
   }
 
+  override def stop(): Unit = {
+    cancel()
+  }
 }
