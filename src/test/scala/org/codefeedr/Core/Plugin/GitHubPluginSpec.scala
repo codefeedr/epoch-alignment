@@ -1,5 +1,6 @@
 package org.codefeedr.Core.Plugin
 
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.codefeedr.Core.{FullIntegrationSpec, KafkaTest}
 import org.codefeedr.Model.SubjectType
@@ -9,13 +10,10 @@ import org.apache.flink.table.api.TableEnvironment
 import org.codefeedr.Core.Library.Internal.Kafka.Sink.{KafkaGenericSink, KafkaTableSink}
 import org.codefeedr.Core.Library.Internal.Kafka.Source.{KafkaRowSource, KafkaSource, KafkaTableSource}
 import org.codefeedr.Core.Library.SubjectFactory
+import org.mongodb.scala.{Document, MongoClient, MongoCollection, MongoDatabase}
 
 import scala.async.Async.{async, await}
 import scala.concurrent.{Await, Future}
-import scala.reflect.ClassTag
-import scala.reflect.runtime.{universe => ru}
-import scala.concurrent._
-import scala.concurrent.duration._
 
 
 /**
@@ -27,6 +25,9 @@ import scala.concurrent.duration._
 case class PushCounter(id : String, counter : Integer)
 
 class GitHubPluginSpec extends FullIntegrationSpec {
+
+  //get the codefeedr configuration files
+  lazy val conf: Config = ConfigFactory.load()
 
   "A GithubPlugin " should " produce a record for each Github PushEvent " taggedAs (Slow, KafkaTest) in {
     val amountOfRequests = 1
@@ -64,6 +65,58 @@ class GitHubPluginSpec extends FullIntegrationSpec {
 
       assert(githubResult.size == secondResult.size)
     }
+  }
+
+  "A GitHub plugin " should " store and produce a record for each GitHub PushEvent " taggedAs (Slow, KafkaTest) in {
+    val amountOfRequests = 1
+    val collectionName = "push_events"
+
+    async {
+
+      //prepare mongoclient
+      val coll = PrepareMongoEnvironment(conf.getString("codefeedr.mongo.db"), collectionName)
+
+      //wait for the drop
+      await(coll.drop().toFuture())
+
+      //run github environment en wait for data
+      val githubType = await(RunGitHubEnvironment(amountOfRequests))
+      val githubResult = await(AwaitAllData(githubType))
+
+      //add chain of streams
+      val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
+
+      //create new stream from result of old stream
+      val stream = env.addSource(new KafkaRowSource(githubType))
+        .map(x => PushCounter(x.getField(3).asInstanceOf[String],1)).
+        keyBy(0).
+        sum(1).
+        filter(x => x.counter == 1) //filter out unique ones
+
+      //create new subjecttype
+      val subjectType = await(subjectLibrary.GetOrCreateType[PushCounter])
+
+      //create and add new sink
+      val sink = await(SubjectFactory.GetSink[PushCounter])
+      stream.addSink(sink)
+
+      //run environment
+      this.runEnvironment(env)
+
+      //await all data
+      val uniqueResult = await(AwaitAllData(subjectType))
+
+      //unique result should be equal to datastore
+      assert(uniqueResult.size == await(coll.count().toFuture()))
+    }
+  }
+
+  def PrepareMongoEnvironment(database : String, collectionName : String) : MongoCollection[Document] = {
+    val coll = MongoClient().
+      getDatabase(database).
+      getCollection(collectionName)
+
+    coll
   }
 
 
