@@ -20,7 +20,12 @@ import org.codefeedr.Core.Output.MongoSink
 import org.codefeedr.Core.Plugin
 
 //simplistic view of a push event
-case class PushEvent(id: String, repo_name: String, commitSHAs: List[String], created_at: Date)
+case class PushEvent(id: String,
+                     repo_name: String,
+                     ref: String,
+                     beforeSHA: String,
+                     afterSHA: String,
+                     created_at: Date)
 
 class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
     extends AbstractPlugin {
@@ -37,12 +42,13 @@ class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
   def GetStream(env: StreamExecutionEnvironment): DataStream[Plugin.PushEvent] = {
     val stream =
       env.addSource(new GitHubSource(maxRequests)).filter(_.getType == "PushEvent").map { event =>
-        val commits = event.getPayload.asInstanceOf[PushPayload].getCommits
-        val commitSHAs = commits.map(x => x.getSha).toList
+        val payload = event.getPayload.asInstanceOf[PushPayload]
 
         PushEvent(event.getId,
                   event.getRepo.getName,
-                  commitSHAs,
+                  payload.getRef,
+                  payload.getBefore,
+                  payload.getHead,
                   new Date(event.getCreatedAt.getTime))
       }
 

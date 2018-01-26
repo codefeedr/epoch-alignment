@@ -83,7 +83,7 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
 
       currentRequest += 1
 
-      //this part is just for debuggin/test purposes
+      //this part is just for debugging/test purposes
       if (maxRequests != -1 && currentRequest >= maxRequests) {
         cancel()
 

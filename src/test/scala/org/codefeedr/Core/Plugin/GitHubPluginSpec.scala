@@ -89,7 +89,7 @@ class GitHubPluginSpec extends FullIntegrationSpec {
       //create new stream from result of old stream
       //this stream filters out all the unique pushevents
       val stream = env.addSource(new KafkaRowSource(githubType))
-        .map(x => PushCounter(x.getField(3).asInstanceOf[String],1)).
+        .map(x => PushCounter(x.getField(5).asInstanceOf[String],1)).
         keyBy(0).
         sum(1).
         filter(x => x.counter == 1) //filter out unique ones
