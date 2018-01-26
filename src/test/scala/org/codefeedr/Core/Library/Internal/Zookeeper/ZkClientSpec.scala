@@ -20,6 +20,7 @@
 package org.codefeedr.Core.Library.Internal.Zookeeper
 
 import org.codefeedr.Core.Library.LibraryServices
+import org.codefeedr.Core.Library.Metastore.RootNode
 import org.codefeedr.Core.LibraryServiceSpec
 import org.scalatest._
 
@@ -111,14 +112,13 @@ class ZkClientSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfter
 
 
   "A ZkNode" should "provide a simple api over ZkClient" in  async{
-    val parent = ZkNode("/ZkClientSpec/some")
-    val node = ZkNode("/ZkClientSpec/some/path")
+    val parent = new RootNode()
+    val node = ZkNode[Boolean]("path", parent)
     assert(!await(node.Exists()))
     await(parent.Create())
     assert(!await(node.Exists()))
     await(node.Create())
     assert(await(node.Exists()))
-    assert(await(parent.GetChildren()).exists(o => o.Name == "path"))
   }
 
 }

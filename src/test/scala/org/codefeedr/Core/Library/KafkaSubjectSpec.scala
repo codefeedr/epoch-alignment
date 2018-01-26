@@ -86,7 +86,9 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
 
 
   "Kafka-Sinks" should "retrieve all messages published by a source" taggedAs(Slow, KafkaTest) in async {
-    assert(!await(subjectLibrary.Exists(testSubjectName)))
+    val subjectNode = subjectLibrary.GetSubject(testSubjectName)
+    assert(!await(subjectNode.Exists()))
+
     //Generate some test input
     await(RunSourceEnvironment[MyOwnIntegerObject](mutable.Set(1, 2, 3).map(o => MyOwnIntegerObject(o)).toArray))
 
@@ -96,13 +98,13 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
 
 
     Console.println("Closing subject type, should close the queries")
-    await(subjectLibrary.Close(testSubjectName))
+    await(subjectNode.Close())
     Console.println("Waiting for completion of queries")
     await(environments)
     println("Completed")
 
     //Clean up subject
-    await(subjectLibrary.UnRegisterSubject(testSubjectName))
+    await(subjectNode.Unregister())
 
     //Assert results
     assert(TestCollector.collectedData.count(o => o._1 == 1) == 3)
@@ -115,7 +117,8 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
 
 
   it should " still receive data if they are created before the sink" taggedAs(Slow, KafkaTest) in async {
-    assert(!await(subjectLibrary.Exists(testSubjectName)))
+    val subjectNode = subjectLibrary.GetSubject(testSubjectName)
+    assert(!await(subjectNode.Exists()))
 
     //Generate some test input
     await(RunSourceEnvironment[MyOwnIntegerObject](mutable.Set(1, 2, 3).map(o => MyOwnIntegerObject(o)).toArray))
@@ -124,7 +127,7 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
     val environments = Future.sequence(Seq(CreateSourceQuery(1), CreateSourceQuery(2), CreateSourceQuery(3)))
 
     Console.println("Closing subject type, should close the queries")
-    await(subjectLibrary.Close(testSubjectName))
+    await(subjectNode.Close())
     Console.println("Waiting for completion of queries")
     await(environments)
     println("Completed")
@@ -138,7 +141,9 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
   }
 
   it should " be able to recieve data from multiple sinks" taggedAs(Slow, KafkaTest) in async {
-    assert(!await(subjectLibrary.Exists(testSubjectName)))
+    val subjectNode = subjectLibrary.GetSubject(testSubjectName)
+    assert(!await(subjectNode.Exists()))
+
 
     await(Future.sequence(for (_ <- 1 to 3) yield {
       RunSourceEnvironment[MyOwnIntegerObject](mutable.Set(1, 2, 3).map(o => MyOwnIntegerObject(o)).toArray)
@@ -149,7 +154,7 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
 
 
     Console.println("Closing subject type, should close the queries")
-    await(subjectLibrary.Close(testSubjectName))
+    await(subjectNode.Close())
     Console.println("Waiting for completion of queries")
     await(environments)
     println("Completed")
@@ -191,9 +196,10 @@ class MyOwnSourceQuery(nr: Int, parallelism: Int) extends Runnable with LazyLogg
     */
 
   def createTopology(env: StreamExecutionEnvironment, nr: Int): Future[Unit] = async {
-    val subjectType = await(Library.subjectLibrary.GetOrCreateType[MyOwnIntegerObject]())
+
+    val subjectType = await(Library.subjectLibrary.GetSubject[MyOwnIntegerObject]().GetOrCreateType[MyOwnIntegerObject]())
     val transformer = SubjectFactory.GetUnTransformer[MyOwnIntegerObject](subjectType)
-    val source = SubjectFactory.GetSource(subjectType)
+    val source = SubjectFactory.GetSource(subjectType, "testSource")
     val r =() => {
       val num = nr
       env

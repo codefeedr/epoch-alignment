@@ -20,6 +20,9 @@
 package org.codefeedr.Core.Library.Metastore
 
 import com.typesafe.scalalogging.LazyLogging
+import org.codefeedr.Core.Library.Internal.SubjectTypeFactory
+
+import scala.reflect.runtime.{universe => ru}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -51,4 +54,12 @@ class SubjectLibrary extends LazyLogging {
     * @return
     */
   def GetSubject(subjectName: String): SubjectNode = GetSubjects().GetChild(subjectName)
+
+  /**
+    * Get the subjectNode based on generic type
+    * Uses reflection to obtain name, and then the node
+    * @tparam T
+    * @return
+    */
+  def GetSubject[T: ru.TypeTag](): SubjectNode = GetSubject(SubjectTypeFactory.getSubjectName[T])
 }

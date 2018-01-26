@@ -125,10 +125,9 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
     * Removes a subject and all its children without perfoming any checks
     * Meant to clean up zookeeper in tests
     *
-    * @param name the subject to delete
     * @return a future that resolves when the delete is done
     */
-  private[codefeedr] def ForceUnRegisterSubject(name: String): Future[Unit] =
+  private[codefeedr] def ForceUnRegisterSubject(): Future[Unit] =
     DeleteRecursive()
 
   /**

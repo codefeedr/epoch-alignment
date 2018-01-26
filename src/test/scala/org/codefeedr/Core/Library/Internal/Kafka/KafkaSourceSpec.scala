@@ -38,25 +38,27 @@ case class TestKafkaSourceSubject(prop1: String)
 class KafkaSourceSpec extends FullIntegrationSpec {
   val testSubjectName = "TestKafkaSourceSubject"
 
-
-
-
-
-
   "A KafkaSource" should "Register and remove itself in the SubjectLibrary" in async {
-    val subject = await(subjectLibrary.GetOrCreateType[TestKafkaSourceSubject](persistent = true))
-    val source = new KafkaTrailedRecordSource(subject)
-    assert(!await(subjectLibrary.GetSources(testSubjectName)).contains(source.uuid.toString))
+    val sourceName = "testSource"
+    val subjectNode = subjectLibrary.GetSubject[TestKafkaSourceSubject]()
+    val subject = await(subjectNode.GetOrCreateType[TestKafkaSourceSubject]())
+
+    val source = new KafkaTrailedRecordSource(subject, sourceName)
+    val sourceNode = subjectNode.GetSources().GetChild(sourceName)
+
+    assert(!await(sourceNode.Exists()))
     source.InitRun()
-    assert(await(subjectLibrary.GetSources(testSubjectName)).contains(source.uuid.toString))
+
+    assert(!await(sourceNode.Exists()))
+    assert(await(subjectNode.GetSources().GetState()))
     assert(source.running)
-
     val sourceClose = source.AwaitClose()
-    val subjectRemove = subjectLibrary.AwaitRemove(testSubjectName)
+    assert(!await(subjectNode.GetSources().GetState()))
 
+    val subjectRemove = subjectNode.AwaitRemoval()
 
     //Close the subject so the sink should close itself
-    await(subjectLibrary.Close(testSubjectName))
+    await(subjectNode.Close())
 
     //Await the close
     Await.ready(sourceClose, Duration(1, SECONDS))

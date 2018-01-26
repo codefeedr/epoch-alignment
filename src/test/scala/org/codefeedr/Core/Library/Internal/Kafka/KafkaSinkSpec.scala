@@ -44,15 +44,20 @@ class KafkaSinkSpec extends LibraryServiceSpec with BeforeAndAfterEach with Befo
   }
 
   "A KafkaSink" should "Register and remove itself in the SubjectLibrary" in async {
-    val subject = await(subjectLibrary.GetOrCreateType[TestKafkaSinkSubject]())
-    await(subjectLibrary.RegisterSource(testSubjectName, "SomeSource"))
-    val sink = new KafkaGenericSink[TestKafkaSinkSubject](subject)
-    assert(!await(subjectLibrary.GetSinks(testSubjectName)).contains(sink.uuid.toString))
+    val sinkId = "testSink"
+    val subjectNode = subjectLibrary.GetSubject[TestKafkaSinkSubject]()
+    val subject = await(subjectNode.GetOrCreateType[TestKafkaSinkSubject]())
+
+    val sink = new KafkaGenericSink[TestKafkaSinkSubject](subject,sinkId)
+    val sinkNode = subjectNode.GetSinks().GetChild(sinkId)
+
+    assert(!await(sinkNode.Exists()))
     sink.open(null)
-    assert(await(subjectLibrary.GetSinks(testSubjectName)).contains(sink.uuid.toString))
+    assert(await(sinkNode.Exists()))
+    assert(await(subjectNode.GetSinks().GetState()))
     sink.close()
-    val r = assert(!await(subjectLibrary.GetSinks(testSubjectName)).contains(sink.uuid.toString))
-    await(subjectLibrary.UnRegisterSource(testSubjectName, "SomeSource"))
+    val r = assert(!await(subjectNode.GetSinks().GetState()))
+    await(subjectNode.ForceUnRegisterSubject())
     r
   }
 }

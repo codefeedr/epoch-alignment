@@ -39,6 +39,7 @@ case class TestTypeA(prop1: String)
 /**
   * Created by Niels on 18/07/2017.
   */
+/*
 class subjectLibrarySpec extends LibraryServiceSpec with BeforeAndAfterAll with BeforeAndAfterEach {
 
   implicit override def executionContext: ExecutionContextExecutor =
@@ -241,3 +242,4 @@ class subjectLibrarySpec extends LibraryServiceSpec with BeforeAndAfterAll with 
   }
 */
 }
+*/

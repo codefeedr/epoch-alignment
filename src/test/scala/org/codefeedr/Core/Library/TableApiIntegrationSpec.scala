@@ -78,18 +78,18 @@ class TableApiIntegrationSpec extends FullIntegrationSpec{
       val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
       val tableEnv = TableEnvironment.getTableEnvironment(env)
       //Register a custom implemented tableSource based on the output from the previous query
-      tableEnv.registerTableSource("my_table", new KafkaTableSource(resultType))
+      tableEnv.registerTableSource("my_table", new KafkaTableSource(resultType, "testSource"))
 
 
       //Perform a Flink SQL Query
       val sqlResult  = tableEnv.sql("SELECT SUM(id), grp FROM my_table GROUP BY grp")
       //Write query results to a new custom kafka table sink
-      sqlResult.writeToSink(KafkaTableSink("my_sum"))
+      sqlResult.writeToSink(KafkaTableSink("my_sum", "testSink"))
       //Run the environment with TABLE API Query
       this.runEnvironment(env)
 
       //Use the zookeeper subject library to obtain the subject created by the table api environment
-      val mySumSubject = await(subjectLibrary.AwaitTypeRegistration("my_sum"))
+      val mySumSubject =  await(subjectLibrary.GetSubjects().AwaitChild("my_sum").flatMap(name => subjectLibrary.GetSubject(name).GetData())).get
 
       //Use the obtained typedefinition to collect all results
       //Validate that the results have properly been added and grouped (thus that the Table API Query has been executed properly)

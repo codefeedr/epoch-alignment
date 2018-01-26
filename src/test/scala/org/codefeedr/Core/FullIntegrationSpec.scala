@@ -55,8 +55,8 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     * @return
     */
   def AwaitAllData(subject:SubjectType): Future[Array[TrailedRecord]] = async {
-    await(subjectLibrary.AssertExists(subject.name))
-    val source = new KafkaTrailedRecordSource(subject)
+    await(subjectLibrary.GetSubject(subject.name).AssertExists())
+    val source = new KafkaTrailedRecordSource(subject, "testsource")
     val result = new mutable.ArrayBuffer[TrailedRecord]()
     source.runLocal(result.append(_))
     result.toArray
@@ -76,7 +76,7 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     val resultStream = composer.Compose(queryEnv)
     val resultType = composer.GetExposedType()
     logger.debug(s"Composing sink for ${resultType.name}.")
-    val sink = SubjectFactory.GetSink(resultType)
+    val sink = SubjectFactory.GetSink(resultType, "testsink")
     resultStream.addSink(sink)
     logger.debug("Starting queryEnv")
     queryEnv.execute()
@@ -102,10 +102,11 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     * @return A future that returns when all data has been pushed to kakfa, with the subjectType that was used
     */
   def RunSourceEnvironment[T: ru.TypeTag: ClassTag: TypeInformation](data: Array[T]): Future[SubjectType] = async {
-    val t = await(subjectLibrary.GetOrCreateType[T]())
+    val t = await(subjectLibrary.GetSubject[T]().GetOrCreateType[T]())
+
     val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
     logger.debug(s"Composing env for ${t.name}")
-    await(new CollectionPlugin(data).Compose(env))
+    await(new CollectionPlugin(data).Compose(env, "testplugin"))
     logger.debug(s"Starting env for ${t.name}")
     env.execute()
     logger.debug(s"Completed env for ${t.name}")
