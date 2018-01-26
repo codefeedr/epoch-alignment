@@ -19,10 +19,8 @@
 
 package org.codefeedr.Core.Input
 
-import com.typesafe.config.{Config, ConfigFactory}
-import org.apache.flink.api.common.functions.{RuntimeContext, StoppableFunction}
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
-import org.eclipse.egit.github.core.client.GitHubClient
+import org.codefeedr.Core.Clients.GitHubAPI
 import org.eclipse.egit.github.core.event.Event
 import org.eclipse.egit.github.core.service.EventService
 
@@ -31,41 +29,19 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConverters._
 
-class GitHubSource(maxRequests: Integer = -1)
-    extends RichSourceFunction[Event]
-    with StoppableFunction {
+class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] {
 
   //get logger used by Flink
   val log: Logger = LoggerFactory.getLogger(classOf[GitHubSource])
 
-  //Github API rate limit
-  val rateLimit: Integer = 5000
+  //loads the github api
+  lazy val GitHubAPI: GitHubAPI = new GitHubAPI()
 
   //amount of events polled after closing
   var eventsPolled: Integer = 0
 
-  //waiting time between request so there are no conflicts with the rate limit
-  val waitingTime = rateLimit / 3600
-
-  //the amount of events requested per poll
-  var eventsPerPoll = 100 //maximum of 300 events per request TODO: Check this
-
-  //get the codefeedr configuration files
-  lazy val conf: Config = ConfigFactory.load()
-
-  //initialize githubclient
-  @transient
-  lazy val client: GitHubClient = new GitHubClient
-
   //keeps track if the event polling is still running
   var isRunning = true
-
-  /**
-    * Set the OAuthToken of the GitHub API.
-    */
-  def SetOAuthToken() = {
-    client.setOAuth2Token(conf.getString("codefeedr.input.github.apikey"))
-  }
 
   /**
     * Cancels the GitHub API retrieval.
@@ -76,20 +52,13 @@ class GitHubSource(maxRequests: Integer = -1)
   }
 
   /**
-    * Stops the input source.
-    */
-  override def stop(): Unit = {
-    cancel()
-  }
-
-  /**
     * Runs the source, retrieving data from GitHub API.
     * @param ctx run context.
     */
   override def run(ctx: SourceFunction.SourceContext[Event]): Unit = {
     log.info("Opening connection with GitHub API")
-    SetOAuthToken() //set token
-    val es = new EventService(client)
+
+    val es = new EventService(GitHubAPI.client)
 
     //keep track of the request
     var currentRequest = 0
@@ -103,7 +72,7 @@ class GitHubSource(maxRequests: Integer = -1)
       }
 
       //get the events per poll
-      val it = es.pagePublicEvents(eventsPerPoll)
+      val it = es.pagePublicEvents(GitHubAPI.eventsPerPoll)
 
       while (it.hasNext) {
         it.next.foreach { e =>
@@ -116,7 +85,7 @@ class GitHubSource(maxRequests: Integer = -1)
 
       //this part is just for debuggin/test purposes
       if (maxRequests != -1 && currentRequest >= maxRequests) {
-        stop()
+        cancel()
 
         log.info(s"Going to send $eventsPolled events")
         return
@@ -124,7 +93,7 @@ class GitHubSource(maxRequests: Integer = -1)
 
       synchronized {
         //wait to not exceed the rate limit of Github API
-        wait(waitingTime * 1000L)
+        wait(GitHubAPI.waitingTime * 1000L)
       }
     }
   }

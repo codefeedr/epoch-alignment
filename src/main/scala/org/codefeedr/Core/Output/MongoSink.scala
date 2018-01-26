@@ -13,8 +13,10 @@ import scala.collection.JavaConverters._
 import org.mongodb.scala.model.Indexes._
 import org.mongodb.scala.bson.codecs.Macros._
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
-import org.bson.codecs.configuration.CodecRegistries.{fromRegistries, fromProviders}
+import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
+import org.codefeedr.Core.Clients.MongoDB
 import org.codefeedr.Core.Plugin.PushEvent
+
 import scala.concurrent._
 import ExecutionContext.Implicits.global
 
@@ -25,41 +27,8 @@ import ExecutionContext.Implicits.global
   */
 class MongoSink(collectionName: String, indexes: String*) extends RichSinkFunction[PushEvent] {
 
-  //get the codefeedr configuration files
-  lazy val conf: Config = ConfigFactory.load()
-
-  //setup credentials from config
-  @transient
-  lazy val mongoCredential: MongoCredential = MongoCredential.createCredential(
-    conf.getString("codefeedr.mongo.username"),
-    conf.getString("codefeedr.mongo.db"),
-    conf.getString("codefeedr.mongo.password").toCharArray
-  )
-
-  //setup server address from config
-  @transient
-  lazy val mongoServer: ServerAddress = new ServerAddress(
-    conf.getString("codefeedr.mongo.host"),
-    conf.getInt("codefeedr.mongo.port")
-  )
-
-  //set all settings
-  @transient
-  lazy val mongoSettings: MongoClientSettings = MongoClientSettings
-    .builder()
-    .clusterSettings(ClusterSettings.builder().hosts(List(mongoServer).asJava).build())
-    .codecRegistry(fromRegistries(fromProviders(classOf[PushEvent]), DEFAULT_CODEC_REGISTRY))
-    //.credentialList(List(mongoCredential).asJava)
-    .build()
-
-  //setup client
-  @transient
-  lazy val mongoClient: MongoClient = MongoClient(mongoSettings)
-
-  //setup correct database and register codec
-  @transient
-  lazy val mongoDatabase: MongoDatabase =
-    mongoClient.getDatabase(conf.getString("codefeedr.mongo.db"))
+  //retrieve a connection to mongodb
+  lazy val db: MongoDB = new MongoDB()
 
   /**
     * Invoked by Flink and inserts into Mongo.
@@ -67,7 +36,7 @@ class MongoSink(collectionName: String, indexes: String*) extends RichSinkFuncti
     */
   override def invoke(value: PushEvent): Unit = {
     async {
-      await(mongoDatabase.getCollection[PushEvent](collectionName).insertOne(value).toFuture())
+      await(db.mongoDatabase.getCollection[PushEvent](collectionName).insertOne(value).toFuture())
     }
   }
 
@@ -77,11 +46,12 @@ class MongoSink(collectionName: String, indexes: String*) extends RichSinkFuncti
     */
   override def open(parameters: Configuration): Unit = {
     async {
-      val collections = await(mongoDatabase.listCollectionNames().toFuture())
+      val collections = await(db.mongoDatabase.listCollectionNames().toFuture())
 
       if (!collections.contains(collectionName)) {
+
         //create collection if it doesn't exist yet
-        await(mongoDatabase.createCollection(collectionName).toFuture())
+        await(db.mongoDatabase.createCollection(collectionName).toFuture())
       }
 
       //set all the indexes
@@ -93,7 +63,7 @@ class MongoSink(collectionName: String, indexes: String*) extends RichSinkFuncti
     * Setup the (unique) indexes for this 'event'.
     */
   def setIndexes(): Unit = {
-    mongoDatabase
+    db.mongoDatabase
       .getCollection(collectionName)
       .createIndex(ascending(indexes: _*), new IndexOptions().unique(true))
       .toFuture()
