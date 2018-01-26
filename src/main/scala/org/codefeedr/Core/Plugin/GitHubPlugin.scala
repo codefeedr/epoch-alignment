@@ -2,7 +2,7 @@ package org.codefeedr.Core.Plugin
 
 import java.util.Date
 
-import org.codefeedr.Core.input.GitHubSource
+import org.codefeedr.Core.Input.GitHubSource
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.codefeedr.Core.Library.Internal.{AbstractPlugin, SubjectTypeFactory}
 import org.codefeedr.Core.Library.SubjectFactory

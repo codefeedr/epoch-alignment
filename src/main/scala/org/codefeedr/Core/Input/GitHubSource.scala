@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.Core.input
+package org.codefeedr.Core.Input
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.flink.api.common.functions.{RuntimeContext, StoppableFunction}

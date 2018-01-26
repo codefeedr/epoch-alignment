@@ -1,4 +1,4 @@
-package org.codefeedr.Core.input
+package org.codefeedr.Core.Input
 
 import org.apache.flink.streaming.api.functions.async.AsyncFunction
 import org.apache.flink.streaming.api.functions.async.collector.AsyncCollector
