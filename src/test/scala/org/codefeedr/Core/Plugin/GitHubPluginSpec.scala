@@ -32,16 +32,15 @@ class GitHubPluginSpec extends FullIntegrationSpec {
     val amountOfRequests = 1
 
     async {
-      val GithubType = await(RunGitHubEnvironment(amountOfRequests))
+      val githubType = await(RunGitHubEnvironment(amountOfRequests))
 
-      val githubResult = await(AwaitAllData(GithubType))
+      val githubResult = await(AwaitAllData(githubType))
 
-      /**
       //add chain of streams
       val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
 
       //create new stream from result of old stream
-      val stream = env.addSource(new KafkaRowSource(GithubType)).map(x => PushCounter(x.getField(3).asInstanceOf[String],1))
+      val stream = env.addSource(new KafkaRowSource(githubType)).map(x => PushCounter(x.getField(3).asInstanceOf[String],1))
         //keyBy(0).
         //sum(1).
         //filter(_.counter > 1)
@@ -59,14 +58,11 @@ class GitHubPluginSpec extends FullIntegrationSpec {
       //await all data
       val secondResult = await(AwaitAllData(subjectType))
 
-        **/
-
       //println(githubResult.map(x => (x.field(3), 1)).groupBy(_._1).mapValues(_.size))
       //println(secondResult.map(x => (x.field(1),x.field(0))).groupBy(_._1).mapValues(_.size))
-      println(githubResult.size)
+      //println(githubResult.size)
 
-      assert(githubResult.size > 0)
-
+      assert(githubResult.size == secondResult.size)
     }
   }
 

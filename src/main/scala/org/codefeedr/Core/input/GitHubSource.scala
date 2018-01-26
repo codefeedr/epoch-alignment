@@ -60,23 +60,38 @@ class GitHubSource(maxRequests: Integer = -1)
   //keeps track if the event polling is still running
   var isRunning = true
 
+  /**
+    * Set the OAuthToken of the GitHub API.
+    */
   def SetOAuthToken() = {
     client.setOAuth2Token(conf.getString("codefeedr.input.github.apikey"))
   }
 
+  /**
+    * Cancels the GitHub API retrieval.
+    */
   override def cancel(): Unit = {
-    log.info("Closing connection with Github API")
+    log.info("Closing connection with GitHub API")
     isRunning = false
   }
 
-  var pushEvents: List[Event] = List[Event]()
+  /**
+    * Stops the input source.
+    */
+  override def stop(): Unit = {
+    cancel()
+  }
 
-  //TODO think about parallel jobs here, modulo id?
+  /**
+    * Runs the source, retrieving data from GitHub API.
+    * @param ctx run context.
+    */
   override def run(ctx: SourceFunction.SourceContext[Event]): Unit = {
-    log.info("Opening connection with Github API")
-    SetOAuthToken()
+    log.info("Opening connection with GitHub API")
+    SetOAuthToken() //set token
     val es = new EventService(client)
 
+    //keep track of the request
     var currentRequest = 0
 
     while (isRunning) {
@@ -88,30 +103,21 @@ class GitHubSource(maxRequests: Integer = -1)
       }
 
       //get the events per poll
-      val it = es.pagePublicEvents()
+      val it = es.pagePublicEvents(eventsPerPoll)
 
       while (it.hasNext) {
         it.next.foreach { e =>
-          if (e.getType == "PushEvent") {
-            eventsPolled += 1
-            pushEvents = pushEvents :+ e
-          }
+          eventsPolled += 1
           ctx.collectWithTimestamp(e, e.getCreatedAt.getTime) //output all with timestamp
         }
       }
 
       currentRequest += 1
 
+      //this part is just for debuggin/test purposes
       if (maxRequests != -1 && currentRequest >= maxRequests) {
         stop()
 
-        val duplicates = pushEvents
-          .map(x => x.getId)
-          .groupBy(x => x)
-          .mapValues(x => x.size)
-          .filter(x => x._2 > 1)
-          .size
-        log.info(s"Found $duplicates duplicates")
         log.info(s"Going to send $eventsPolled events")
         return
       }
@@ -121,9 +127,5 @@ class GitHubSource(maxRequests: Integer = -1)
         wait(waitingTime * 1000L)
       }
     }
-  }
-
-  override def stop(): Unit = {
-    cancel()
   }
 }
