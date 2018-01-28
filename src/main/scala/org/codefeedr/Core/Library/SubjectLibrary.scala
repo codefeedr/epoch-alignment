@@ -20,7 +20,7 @@
 package org.codefeedr.Core.Library
 
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.zookeeper.KeeperException.NodeExistsException
+import org.apache.flink.shaded.zookeeper.org.apache.zookeeper.KeeperException.NodeExistsException
 import org.codefeedr.Core.Library.Internal.Serialisation.GenericSerialiser
 import org.codefeedr.Core.Library.Internal.SubjectTypeFactory
 import org.codefeedr.Core.Library.Internal.Zookeeper.{ZkClient, ZkNode}
