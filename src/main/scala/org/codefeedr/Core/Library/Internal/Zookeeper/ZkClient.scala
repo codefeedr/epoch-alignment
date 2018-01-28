@@ -23,13 +23,19 @@ import java.util
 
 import scala.collection.JavaConverters._
 import com.typesafe.config.{Config, ConfigFactory}
-import org.apache.zookeeper.AsyncCallback._
-import org.apache.zookeeper.KeeperException.Code
-import org.apache.zookeeper.Watcher.Event
-import org.apache.zookeeper.Watcher.Event._
-import org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE
-import org.apache.zookeeper._
-import org.apache.zookeeper.data.Stat
+import org.apache.flink.shaded.zookeeper.org.apache.zookeeper.AsyncCallback._
+import org.apache.flink.shaded.zookeeper.org.apache.zookeeper.KeeperException.Code
+import org.apache.flink.shaded.zookeeper.org.apache.zookeeper.Watcher.Event
+import org.apache.flink.shaded.zookeeper.org.apache.zookeeper.Watcher.Event.KeeperState
+import org.apache.flink.shaded.zookeeper.org.apache.zookeeper.data.Stat
+import org.apache.flink.shaded.zookeeper.org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE
+import org.apache.flink.shaded.zookeeper.org.apache.zookeeper.{
+  CreateMode,
+  KeeperException,
+  WatchedEvent,
+  Watcher,
+  ZooKeeper
+}
 import org.codefeedr.Core.Library.Internal.Serialisation.{GenericDeserialiser, GenericSerialiser}
 
 import scala.concurrent.ExecutionContext.Implicits.global
