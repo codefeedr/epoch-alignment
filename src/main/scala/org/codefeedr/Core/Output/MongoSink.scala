@@ -14,8 +14,8 @@ import org.mongodb.scala.model.Indexes._
 import org.mongodb.scala.bson.codecs.Macros._
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
+import org.codefeedr.Core.Clients.GitHubProtocol.Commit
 import org.codefeedr.Core.Clients.MongoDB
-import org.codefeedr.Core.Plugin.PushEvent
 
 import scala.concurrent._
 import ExecutionContext.Implicits.global
@@ -25,7 +25,7 @@ import ExecutionContext.Implicits.global
   * @param collectionName the name of the collection to store in
   * @param indexes the unique index to create
   */
-class MongoSink(collectionName: String, indexes: String*) extends RichSinkFunction[PushEvent] {
+class MongoSink(collectionName: String, indexes: String*) extends RichSinkFunction[Commit] {
 
   //retrieve a connection to mongodb
   lazy val db: MongoDB = new MongoDB()
@@ -34,9 +34,9 @@ class MongoSink(collectionName: String, indexes: String*) extends RichSinkFuncti
     * Invoked by Flink and inserts into Mongo.
     * @param value the event to store.
     */
-  override def invoke(value: PushEvent): Unit = {
+  override def invoke(value: Commit): Unit = {
     async {
-      await(db.mongoDatabase.getCollection[PushEvent](collectionName).insertOne(value).toFuture())
+      await(db.mongoDatabase.getCollection[Commit](collectionName).insertOne(value).toFuture())
     }
   }
 

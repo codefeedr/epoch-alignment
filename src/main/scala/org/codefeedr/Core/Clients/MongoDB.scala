@@ -2,7 +2,7 @@ package org.codefeedr.Core.Clients
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
-import org.codefeedr.Core.Plugin.PushEvent
+import org.codefeedr.Core.Clients.GitHubProtocol.{Commit}
 import org.mongodb.scala.{
   MongoClient,
   MongoClientSettings,
@@ -18,7 +18,7 @@ import scala.collection.JavaConverters._
 
 /**
   * Wrapper class for setting up MongoDB connection.
-  * Currently it only supports a PushEvent
+  * Currently it only supports a Commit
   * TODO: Fix this ^^
   */
 class MongoDB {
@@ -46,7 +46,7 @@ class MongoDB {
   private lazy val mongoSettings: MongoClientSettings = MongoClientSettings
     .builder()
     .clusterSettings(ClusterSettings.builder().hosts(List(mongoServer).asJava).build())
-    .codecRegistry(fromRegistries(fromProviders(classOf[PushEvent]), DEFAULT_CODEC_REGISTRY))
+    .codecRegistry(fromRegistries(fromProviders(classOf[Commit]), DEFAULT_CODEC_REGISTRY))
     //.credentialList(List(mongoCredential).asJava)
     .build()
 
