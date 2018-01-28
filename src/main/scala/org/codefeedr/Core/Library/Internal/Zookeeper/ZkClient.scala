@@ -312,13 +312,30 @@ class ZkClient {
     val p = PrependPath(path)
     val cb = new DataCallback {
       override def processResult(rc: Int, path: String, ctx: scala.Any, data: Array[Byte], stat: Stat): Unit = {
-        subscriber.onNext(GenericDeserialiser[TData](data))
+        Code.get(rc) match {
+          case Code.OK => subscriber.onNext(GenericDeserialiser[TData](data))
+          case error => subscriber.onError(GetError(error, path, stat, ctx))
+        }
       }
     }
     val onComplete = () => subscriber.onCompleted()
     zk.getData(p, GetRecursiveDataWatcher(p, cb, onComplete), cb, None)
   })
 
+  /**
+    * Get a zookeeper error
+    * @param code zk error code
+    * @param path path of the node
+    * @param stat
+    * @param ctx
+    * @return
+    */
+    def GetError(code: KeeperException.Code, path: String, stat:Stat,ctx: Any): ZkClientException =
+      if(path == null) {
+        ZkClientException(KeeperException.create(code), Option(path), Option(stat), Some(ctx))
+      } else {
+        ZkClientException(KeeperException.create(code, path), Option(path), Option(stat), Some(ctx))
+      }
 
   /**
     * Creepy method name?
@@ -429,8 +446,15 @@ class ZkClient {
       new StatCallback {
         override def processResult(rc: Int, path: String, c: scala.Any, stat: Stat): Unit = {
           //If the code gets here, the node has been removed in between the firing and placing of the watch
-          if (!p.isCompleted && stat == null) {
-            HandleResponse[Unit](p, rc, path, Some(c), Unit, stat)
+          Code.get(rc) match {
+            case Code.OK => p.success(Unit)
+            case Code.NONODE => p.success(Unit)
+            case error if path == null =>
+              p.failure(
+                ZkClientException(KeeperException.create(error), Option(path), Option(stat), Some(c)))
+            case error =>
+              p.failure(
+                ZkClientException(KeeperException.create(error, path), Option(path), Option(stat), Some(c)))
           }
         }
       },
@@ -531,9 +555,17 @@ class ZkClient {
                                    stat: Stat): Unit = {
           //The promise could already be completed at this point by the previous trigger
           if (!p.isCompleted) {
-            val serialised = GenericDeserialiser[T](data)
-            if (condition(serialised)) {
-              HandleResponse[T](p, rc, path, Some(ctx), serialised)
+            Code.get(rc) match {
+              case Code.OK => {
+                val serialised = GenericDeserialiser[T](data)
+                if (condition(serialised)) {
+                  p.success(serialised)
+                }
+              }
+              case error if path == null =>
+                p.failure(ZkClientException(KeeperException.create(error), Option(path), Option(stat),  Some(ctx)))
+              case error =>
+                p.failure(ZkClientException(KeeperException.create(error, path), Option(path), Option(stat),  Some(ctx)))
             }
           }
         }

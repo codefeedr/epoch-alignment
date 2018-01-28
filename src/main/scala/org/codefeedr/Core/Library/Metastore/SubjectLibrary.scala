@@ -39,13 +39,13 @@ class SubjectLibrary extends LazyLogging {
     * @return true when initialisation is done
     */
   def Initialize(): Future[Boolean] =
-    new RootNode().GetSubjects().Create().map(_ => true)
+    new MetaRootNode().GetSubjects().Create().map(_ => true)
 
   /**
     * Retrieves the nodes representing all registered subjects
     * @return
     */
-  def GetSubjects(): SubjectCollectionNode = new RootNode().GetSubjects()
+  def GetSubjects(): SubjectCollectionNode = new MetaRootNode().GetSubjects()
 
   /**
     * Retrieves a node representing a single subject of the given name

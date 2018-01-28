@@ -83,13 +83,21 @@ class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase) extends ZkNo
   def GetData(): Future[Option[TData]] = zkClient.GetData[TData](Path())
 
   /**
+    * Set data of the node
+    *
+    * @param data data obejct to set
+    * @return a future that resolves when the data has been set
+    */
+  def SetData(data: TData): Future[Unit] = zkClient.SetData[TData](Path(), data).map(_ => Unit)
+
+  /**
     * Create the child of the node with the given name
     *
     * @param name name of the child to create
     * @tparam TChild type exposed by the childnode
     * @return
     */
-  def GetChild[TChild: ClassTag](name: String): ZkNode[TChild] = new ZkNode[TChild](s"${Path()}/$name", this)
+  def GetChild[TChild: ClassTag](name: String): ZkNode[TChild] = new ZkNode[TChild](name, this)
 
   /**
     * Creates a future that watches the node until the data matches the given condition
@@ -102,15 +110,10 @@ class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase) extends ZkNo
 
 
   /**
-    * Set data of the node
-    *
-    * @param data data obejct to set
-    * @return a future that resolves when the data has been set
-    */
-  def SetData(data: TData): Future[Unit] = zkClient.SetData[TData](Path(), data).map(_ => Unit)
-
-  /**
     * Get an observable of the data of the node
+    * Note that it is not guaranteed this observable contains all events (or all modifications on zookeeper)
+    * Just use this observable to keep track of the state, not to pass messages
+    * For messages use Kafka
     * @return
     */
   def ObserveData(): Observable[TData] = zkClient.ObserveData[TData](Path())

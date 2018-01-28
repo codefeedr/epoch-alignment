@@ -31,6 +31,29 @@ abstract class ZkNodeBase(val name: String) {
     Path()
   }
 
+
+
+  /**
+    * Checks if the node exists
+    *
+    * @return a future with the result
+    */
+  def Exists(): Future[Boolean] = zkClient.Exists(Path)
+
+  /**
+    * Delete the current node
+    *
+    * @return a future that resolves when the node has been deleted
+    */
+  def Delete(): Future[Unit] = Exists().flatMap(b => if(b) {zkClient.Delete(Path) } else {Future.successful()})
+
+  /**
+    * Delete the current node and all its children
+    *
+    * @return a future that resolves when the node has been deleted
+    */
+  def DeleteRecursive(): Future[Unit] = Exists().flatMap(b => if(b) {zkClient.DeleteRecursive(Path) } else {Future.successful()})
+
   /**
     * Creates a future that awaits the registration of a specific child
     *
@@ -45,25 +68,4 @@ abstract class ZkNodeBase(val name: String) {
     * @return the future
     */
   def AwaitRemoval(): Future[Unit] = zkClient.AwaitRemoval(Path)
-
-  /**
-    * Checks if the node exists
-    *
-    * @return a future with the result
-    */
-  def Exists(): Future[Boolean] = zkClient.Exists(Path)
-
-  /**
-    * Delete the current node
-    *
-    * @return a future that resolves when the node has been deleted
-    */
-  def Delete(): Future[Unit] = zkClient.Delete(Path)
-
-  /**
-    * Delete the current node and all its children
-    *
-    * @return a future that resolves when the node has been deleted
-    */
-  def DeleteRecursive(): Future[Unit] = zkClient.DeleteRecursive(Path)
 }
