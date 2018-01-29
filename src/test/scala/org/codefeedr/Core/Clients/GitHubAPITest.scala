@@ -1,5 +1,6 @@
 package org.codefeedr.Core.Clients
 
+import org.codefeedr.Core.Clients.GitHub.GitHubAPI
 import org.scalatest.{AsyncFlatSpec, Matchers}
 
 class GitHubAPITest extends AsyncFlatSpec with Matchers {

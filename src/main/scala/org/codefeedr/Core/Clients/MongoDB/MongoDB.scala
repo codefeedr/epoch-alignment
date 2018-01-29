@@ -1,8 +1,11 @@
-package org.codefeedr.Core.Clients
+package org.codefeedr.Core.Clients.MongoDB
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
-import org.codefeedr.Core.Clients.GitHubProtocol._
+import org.codefeedr.Core.Clients.GitHub.GitHubProtocol._
+import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
+import org.mongodb.scala.bson.codecs.Macros._
+import org.mongodb.scala.connection.ClusterSettings
 import org.mongodb.scala.{
   MongoClient,
   MongoClientSettings,
@@ -11,9 +14,6 @@ import org.mongodb.scala.{
   MongoDatabase,
   ServerAddress
 }
-import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
-import org.mongodb.scala.bson.codecs.Macros._
-import org.mongodb.scala.connection.ClusterSettings
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
@@ -55,6 +55,8 @@ class MongoDB {
     .codecRegistry(fromRegistries(
       fromProviders(
         classOf[PushEvent],
+        classOf[Organization],
+        classOf[Payload],
         classOf[Repo],
         classOf[Actor],
         classOf[CommitSimple],

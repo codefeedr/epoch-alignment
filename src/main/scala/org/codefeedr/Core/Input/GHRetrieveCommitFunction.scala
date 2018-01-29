@@ -4,8 +4,9 @@ import org.apache.flink.runtime.concurrent.Executors
 import org.apache.flink.streaming.api.functions.async.RichAsyncFunction
 import org.apache.flink.streaming.api.scala.async.{AsyncFunction, ResultFuture}
 import org.apache.flink.util.Collector
-import org.codefeedr.Core.Clients.GitHubProtocol._
-import org.codefeedr.Core.Clients.{GitHubAPI, MongoDB}
+import org.codefeedr.Core.Clients.GitHub.GitHubAPI
+import org.codefeedr.Core.Clients.GitHub.GitHubProtocol._
+import org.codefeedr.Core.Clients.MongoDB.MongoDB
 import org.eclipse.egit.github.core.{IRepositoryIdProvider, RepositoryCommit}
 import org.eclipse.egit.github.core.service.CommitService
 import org.mongodb.scala.{Completed, Observer}

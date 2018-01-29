@@ -3,6 +3,7 @@ package org.codefeedr.Core.Plugin
 import java.util.Date
 import java.util.concurrent.TimeUnit
 
+import com.google.gson.{Gson, GsonBuilder, JsonObject}
 import org.codefeedr.Core.Input.{GHRetrieveCommitFunction, GitHubSource}
 import org.apache.flink.streaming.api.scala.{
   AsyncDataStream,
@@ -20,11 +21,12 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 import org.apache.flink.api.scala._
-import org.codefeedr.Core.Clients.{COMMIT, GitHubProtocol, PUSH_EVENT}
-import org.codefeedr.Core.Clients.GitHubProtocol._
+import org.codefeedr.Core.Clients.GitHub.GitHubProtocol
+import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.{Actor, Payload, PushEvent, Repo}
+import org.codefeedr.Core.Clients.MongoDB.PUSH_EVENT
 import org.codefeedr.Core.Output.MongoSink
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
     extends AbstractPlugin {
@@ -40,32 +42,11 @@ class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
 
   def GetStream(env: StreamExecutionEnvironment): DataStream[GitHubProtocol.PushEvent] = {
     val stream =
-      env.addSource(new GitHubSource(maxRequests)).filter(_.getType == "PushEvent").map { event =>
-        val payload = event.getPayload.asInstanceOf[PushPayload]
-
-        val repo = Repo(event.getRepo.getId, event.getRepo.getName, event.getRepo.getUrl)
-        val actor = Actor(event.getActor.getId, event.getActor.getLogin, event.getActor.getUrl)
-        val commits = payload.getCommits
-          .map(
-            x =>
-              CommitSimple(x.getSha,
-                           UserSimple(x.getAuthor.getEmail, x.getAuthor.getName),
-                           x.getMessage))
-          .toList
-
-        PushEvent(
-          event.getId,
-          repo,
-          actor,
-          payload.getRef,
-          payload.getSize,
-          payload.getHead,
-          payload.getBefore,
-          commits,
-          event.getCreatedAt
-        )
+      env.addSource(new GitHubSource(maxRequests)).filter(_.`type` == "PushEvent").map { x =>
+        val gson = new Gson()
+        val payload = gson.fromJson(x.payload, classOf[GitHubProtocol.Payload])
+        PushEvent(x.id, x.repo, x.actor, payload, x.public, x.created_at)
       }
-
     stream
   }
 

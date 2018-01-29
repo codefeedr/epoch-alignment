@@ -21,10 +21,10 @@ package org.codefeedr.Core.Input
 
 import java.util.Date
 
+import com.google.gson.JsonObject
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
-import org.codefeedr.Core.Clients.GitHubAPI
-import org.eclipse.egit.github.core.event.{Event, EventRepository, PushPayload}
-import org.eclipse.egit.github.core.service.EventService
+import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.Event
+import org.codefeedr.Core.Clients.GitHub.{GitHubAPI, GitHubRequestService}
 
 import scala.collection.JavaConversions._
 import org.slf4j.{Logger, LoggerFactory}
@@ -60,7 +60,8 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
   override def run(ctx: SourceFunction.SourceContext[Event]): Unit = {
     log.info("Opening connection with GitHub API")
 
-    val es: EventService = new EventService(GitHubAPI.client)
+    //get github service
+    val service: GitHubRequestService = new GitHubRequestService(GitHubAPI.client)
 
     //keep track of the request
     var currentRequest = 0
@@ -74,12 +75,12 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
       }
 
       //get the events per poll
-      val it = es.pagePublicEvents(GitHubAPI.eventsPerPoll)
+      val it = service.getEvents()
 
       while (it.hasNext) {
-        it.next.foreach { e =>
+        it.next.asScala.foreach { x =>
           eventsPolled += 1
-          ctx.collectWithTimestamp(e, e.getCreatedAt.getTime) //output all with timestamp
+          ctx.collect(x)
         }
       }
 

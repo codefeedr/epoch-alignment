@@ -11,11 +11,7 @@ import org.mongodb.scala.connection.ClusterSettings
 import scala.async.Async.{async, await}
 import scala.collection.JavaConversions._
 import org.mongodb.scala.model.Indexes._
-import org.mongodb.scala.bson.codecs.Macros._
-import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
-import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
-import org.codefeedr.Core.Clients.GitHubProtocol.Commit
-import org.codefeedr.Core.Clients.{CollectionType, MongoDB}
+import org.codefeedr.Core.Clients.MongoDB.{CollectionType, MongoDB}
 
 import scala.concurrent._
 import ExecutionContext.Implicits.global

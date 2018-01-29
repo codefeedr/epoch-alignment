@@ -1,24 +1,42 @@
-package org.codefeedr.Core.Clients
+package org.codefeedr.Core.Clients.GitHub
 
 import java.util.Date
+
+import com.google.gson.JsonElement
 
 /**
   * Case classes related to the GitHubAPI.
   */
 object GitHubProtocol {
 
-  //Represents a PushEvent (including payload) simplified.
+  //Represents a default event.
+  case class Event(id: String,
+                   repo: Repo,
+                   `type`: String,
+                   actor: Actor,
+                   payload: JsonElement,
+                   public: Boolean,
+                   created_at: Date)
+
+  //Represents a PushEvent.
   case class PushEvent(id: String,
-                       //pushId : String, MIGHT WANT TO ADD THIS LATER, CURRENTLY NOT SUPPORTED BY LIBRARY
                        repo: Repo,
                        actor: Actor,
-                       ref: String,
-                       size: Int,
-                       head: String,
-                       before: String,
-                       commits: List[CommitSimple],
+                       payload: Payload,
+                       public: Boolean,
                        created_at: Date)
 
+  //Represents the Payload of a PushEvent
+  case class Payload(push_id: Long,
+                     size: Int,
+                     distinct_size: Int,
+                     ref: String,
+                     head: String,
+                     before: String,
+                     commits: java.util.List[CommitSimple])
+
+  //Represent the organization
+  case class Organization(id: Long, login: String, url: String)
   //Represents a repository
   case class Repo(id: Long, name: String, url: String)
 
@@ -26,7 +44,7 @@ object GitHubProtocol {
   case class Actor(id: Long, login: String, url: String)
 
   //Represents a Commit embedded in a PushEvent
-  case class CommitSimple(sha: String, author: UserSimple, message: String)
+  case class CommitSimple(sha: String, author: UserSimple, message: String, distinct: Boolean)
 
   //Represent the author of a Commit
   case class UserSimple(email: String, name: String)
@@ -51,14 +69,14 @@ object GitHubProtocol {
   case class Verification(verified: Boolean, reason: String, signature: String, payload: String)
 
   //Represent the stats of a commit
-  case class Stats(total: Integer, additions: Integer, deletions: Integer)
+  case class Stats(total: Int, additions: Int, deletions: Int)
 
   //Represents the changed file of a commit
   case class File(sha: String,
                   fileName: String,
-                  additions: Integer,
-                  deletions: Integer,
-                  changes: Integer,
+                  additions: Int,
+                  deletions: Int,
+                  changes: Int,
                   blob_url: String,
                   raw_url: String,
                   contents_ur: String,
