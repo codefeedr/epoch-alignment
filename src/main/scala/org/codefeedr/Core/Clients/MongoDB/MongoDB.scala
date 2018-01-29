@@ -1,3 +1,22 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package org.codefeedr.Core.Clients.MongoDB
 
 import com.typesafe.config.{Config, ConfigFactory}
@@ -18,14 +37,14 @@ import org.mongodb.scala.{
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 
+//enum value for both pushevents and commits
 sealed abstract class CollectionType()
 case object PUSH_EVENT extends CollectionType
 case object COMMIT extends CollectionType
 
 /**
   * Wrapper class for setting up MongoDB connection.
-  * Currently it only supports a Commit
-  * TODO: Fix this ^^
+  * Currently supports Commit and PushEvent (try to make it generic)
   */
 class MongoDB {
 
@@ -87,6 +106,13 @@ class MongoDB {
   def mongoClient = _mongoClient
   def mongoDatabase = _mongoDatabase
 
+  /**
+    * TODO: Improve this method
+    * Get the correct collection based on the type.
+    * @param collectionType the type of collection you want.
+    * @tparam T the type of the collection that you want
+    * @return the correct collection, based on type.
+    */
   def getCollection[T: ClassTag](collectionType: CollectionType): MongoCollection[T] =
     collectionType match {
       case PUSH_EVENT =>

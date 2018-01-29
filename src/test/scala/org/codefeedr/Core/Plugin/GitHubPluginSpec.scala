@@ -11,13 +11,6 @@ import org.scalatest.tagobjects.Slow
 import scala.async.Async.{async, await}
 import scala.concurrent.Future
 
-
-/**
-  * Created by Wouter Zorgdrager.
-  * Date: 23-01-18
-  * Project: codefeedr
-  */
-
 case class PushCounter(id : String, counter : Integer)
 
 class GitHubPluginSpec extends FullIntegrationSpec {

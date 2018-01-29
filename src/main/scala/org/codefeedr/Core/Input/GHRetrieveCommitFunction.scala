@@ -1,65 +1,57 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package org.codefeedr.Core.Input
-import org.apache.flink.api.common.functions.{RichFlatMapFunction, RichFunction, RichMapFunction}
+
 import org.apache.flink.runtime.concurrent.Executors
-import org.apache.flink.streaming.api.functions.async.RichAsyncFunction
 import org.apache.flink.streaming.api.scala.async.{AsyncFunction, ResultFuture}
-import org.apache.flink.util.Collector
-import org.codefeedr.Core.Clients.GitHub.GitHubAPI
+import org.codefeedr.Core.Clients.GitHub.{GitHubAPI, GitHubRequestService}
 import org.codefeedr.Core.Clients.GitHub.GitHubProtocol._
-import org.codefeedr.Core.Clients.MongoDB.MongoDB
-import org.eclipse.egit.github.core.{IRepositoryIdProvider, RepositoryCommit}
-import org.eclipse.egit.github.core.service.CommitService
-import org.mongodb.scala.{Completed, Observer}
-import org.mongodb.scala.model.Filters._
+import scala.async.Async.async
+import scala.concurrent.ExecutionContext
 
-import scala.async.Async.{async, await}
-import scala.concurrent.{Await, ExecutionContext, Future}
-import collection.JavaConverters._
-
-class GHRetrieveCommitFunction extends AsyncFunction[(String, CommitSimple), Commit] {
+/**
+  * Retrieves commits asynchronously.
+  */
+class GHRetrieveCommitFunction extends AsyncFunction[(String, String), Commit] {
 
   //loads the github api
   lazy val gitHubAPI: GitHubAPI = new GitHubAPI()
 
   //loads commit service
-  lazy val commitService = new CommitService(gitHubAPI.client)
+  lazy val commitService = new GitHubRequestService(gitHubAPI.client)
 
   /** The context used for the future callbacks */
   implicit lazy val executor: ExecutionContext =
     ExecutionContext.fromExecutor(Executors.directExecutor())
 
-  override def asyncInvoke(input: (String, CommitSimple), future: ResultFuture[Commit]): Unit = {
-    val repoName = input._1
-    val commit = input._2
-
-    val repoCommit = commitService.getCommit(new IRepositoryIdProvider {
-      override def generateId(): String = repoName
-    }, commit.sha)
-
-    future.complete(Iterable())
-  }
-
   /**
-  def parseCommit(commit: RepositoryCommit, repoName: String): Commit = {
-    Commit(
-      commit.getUrl,
-      commit.getSha,
-      repoName,
-      commit.getCommit.getAuthor.getName,
-      commit.getCommit.getAuthor.getEmail,
-      commit.getCommit.getCommitter.getName,
-      commit.getCommit.getCommitter.getEmail,
-      commit.getCommit.getMessage,
-      commit.getCommit.getCommentCount,
-      Tree(commit.getCommit.getTree.getSha, commit.getCommit.getTree.getSha),
-      parseParents(commit.getParents.asScala.toList)
-    )
-  }
+    * This method dispatches the commit retrieval request.
+    * @param input (String, String) tuple, first element is repoName, second element is sha.
+    * @param future the future to return the result to.
+    */
+  override def asyncInvoke(input: (String, String), future: ResultFuture[Commit]): Unit = async {
+    val repoName = input._1
+    val sha = input._2
 
-  def parseParents(parents: List[org.eclipse.egit.github.core.Commit]): List[Parent] = {
-    parents.map(parent => Parent(parent.getUrl, parent.getSha))
+    //complete future with the commit
+    future.complete(Iterable(commitService.getCommit(repoName, sha)))
   }
-
-    **/
 
 }

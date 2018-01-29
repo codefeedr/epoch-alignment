@@ -19,14 +19,9 @@
 
 package org.codefeedr.Core.Input
 
-import java.util.Date
-
-import com.google.gson.JsonObject
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
 import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.Event
 import org.codefeedr.Core.Clients.GitHub.{GitHubAPI, GitHubRequestService}
-
-import scala.collection.JavaConversions._
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConverters._
@@ -68,6 +63,7 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
 
     while (isRunning) {
 
+      //TODO Improve this: parallel retrieval based on key
       //make sure only 1 parallel process pulls
       if (getRuntimeContext.getIndexOfThisSubtask % 1 != 0) {
         isRunning = false
@@ -77,6 +73,7 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
       //get the events per poll
       val it = service.getEvents()
 
+      //collect all the events
       while (it.hasNext) {
         it.next.asScala.foreach { x =>
           eventsPolled += 1
@@ -84,6 +81,7 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
         }
       }
 
+      //update the amount of requests done
       currentRequest += 1
 
       //this part is just for debugging/test purposes
@@ -92,11 +90,6 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
 
         log.info(s"Going to send $eventsPolled events")
         return
-      }
-
-      synchronized {
-        //wait to not exceed the rate limit of Github API
-        wait(GitHubAPI.waitingTime * 1000L)
       }
     }
   }
