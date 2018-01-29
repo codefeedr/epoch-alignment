@@ -7,6 +7,7 @@ import org.codefeedr.Model.SubjectType
 import org.scalatest.tagobjects.Slow
 import org.apache.flink.api.scala._
 import org.apache.flink.table.api.TableEnvironment
+import org.codefeedr.Core.Clients.GitHubProtocol.{Commit, PushEvent}
 import org.codefeedr.Core.Library.Internal.Kafka.Sink.{KafkaGenericSink, KafkaTableSink}
 import org.codefeedr.Core.Library.Internal.Kafka.Source.{KafkaRowSource, KafkaSource, KafkaTableSource}
 import org.codefeedr.Core.Library.SubjectFactory
@@ -42,9 +43,6 @@ class GitHubPluginSpec extends FullIntegrationSpec {
 
       //create new stream from result of old stream
       val stream = env.addSource(new KafkaRowSource(githubType)).map(x => PushCounter(x.getField(3).asInstanceOf[String],1))
-        //keyBy(0).
-        //sum(1).
-        //filter(_.counter > 1)
 
       //create new subjecttype
       val subjectType = await(subjectLibrary.GetOrCreateType[PushCounter])
@@ -59,20 +57,15 @@ class GitHubPluginSpec extends FullIntegrationSpec {
       //await all data
       val secondResult = await(AwaitAllData(subjectType))
 
-      //println(githubResult.map(x => (x.field(3), 1)).groupBy(_._1).mapValues(_.size))
-      //println(secondResult.map(x => (x.field(1),x.field(0))).groupBy(_._1).mapValues(_.size))
-      //println(githubResult.size)
-
+      //assert both data is the same
       assert(githubResult.size == secondResult.size)
     }
   }
 
   "A GitHub plugin " should " store and produce a record for each GitHub PushEvent " taggedAs (Slow, KafkaTest) in {
     val amountOfRequests = 1
-    val collectionName = "push_events"
-
+    val collectionName = "github_events"
     async {
-
       //prepare mongoclient
       val coll = PrepareMongoEnvironment(conf.getString("codefeedr.mongo.db"), collectionName)
 
@@ -89,7 +82,7 @@ class GitHubPluginSpec extends FullIntegrationSpec {
       //create new stream from result of old stream
       //this stream filters out all the unique pushevents
       val stream = env.addSource(new KafkaRowSource(githubType))
-        .map(x => PushCounter(x.getField(5).asInstanceOf[String],1)).
+        .map(x => PushCounter(x.getField(8).asInstanceOf[String],1)).
         keyBy(0).
         sum(1).
         filter(x => x.counter == 1) //filter out unique ones

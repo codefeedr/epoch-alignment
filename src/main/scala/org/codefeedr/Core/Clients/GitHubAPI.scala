@@ -1,7 +1,9 @@
 package org.codefeedr.Core.Clients
 
 import com.typesafe.config.{Config, ConfigFactory}
+import org.codefeedr.Core.Input.GitHubSource
 import org.eclipse.egit.github.core.client.GitHubClient
+import org.slf4j.{Logger, LoggerFactory}
 
 /**
   * Wrapper class for setting up GitHubAPI connection.

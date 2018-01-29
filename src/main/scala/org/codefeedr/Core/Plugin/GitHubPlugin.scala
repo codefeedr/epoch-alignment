@@ -19,13 +19,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
-import scala.collection.JavaConversions._
 import org.apache.flink.api.scala._
-import org.codefeedr.Core.Clients.GitHubProtocol
-import org.codefeedr.Core.Clients.GitHubProtocol.{Commit, PushEvent}
+import org.codefeedr.Core.Clients.{COMMIT, GitHubProtocol, PUSH_EVENT}
+import org.codefeedr.Core.Clients.GitHubProtocol._
 import org.codefeedr.Core.Output.MongoSink
 
-class GitHubPlugin[Commit: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
+import scala.collection.JavaConversions._
+
+class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
     extends AbstractPlugin {
 
   /**
@@ -33,36 +34,46 @@ class GitHubPlugin[Commit: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
     * @return
     */
   override def CreateSubjectType(): SubjectType = {
-    return SubjectTypeFactory.getSubjectType[Commit]
+    return SubjectTypeFactory.getSubjectType[PushEvent]
 
   }
 
-  def GetStream(env: StreamExecutionEnvironment): DataStream[GitHubProtocol.Commit] = {
+  def GetStream(env: StreamExecutionEnvironment): DataStream[GitHubProtocol.PushEvent] = {
     val stream =
       env.addSource(new GitHubSource(maxRequests)).filter(_.getType == "PushEvent").map { event =>
         val payload = event.getPayload.asInstanceOf[PushPayload]
 
-        PushEvent(event.getId,
-                  event.getRepo.getName,
-                  payload.getRef,
-                  payload.getBefore,
-                  payload.getHead,
-                  new Date(event.getCreatedAt.getTime))
+        val repo = Repo(event.getRepo.getId, event.getRepo.getName, event.getRepo.getUrl)
+        val actor = Actor(event.getActor.getId, event.getActor.getLogin, event.getActor.getUrl)
+        val commits = payload.getCommits
+          .map(
+            x =>
+              CommitSimple(x.getSha,
+                           UserSimple(x.getAuthor.getEmail, x.getAuthor.getName),
+                           x.getMessage))
+          .toList
+
+        PushEvent(
+          event.getId,
+          repo,
+          actor,
+          payload.getRef,
+          payload.getSize,
+          payload.getHead,
+          payload.getBefore,
+          commits,
+          event.getCreatedAt
+        )
       }
 
-    val finalStream = AsyncDataStream.unorderedWait(stream,
-                                                    new GHRetrieveCommitFunction,
-                                                    1000,
-                                                    TimeUnit.MILLISECONDS,
-                                                    100)
-
-    finalStream
+    stream
   }
 
   override def Compose(env: StreamExecutionEnvironment): Future[Unit] = async {
-    val sink = await(SubjectFactory.GetSink[GitHubProtocol.Commit])
+    val sink = await(SubjectFactory.GetSink[GitHubProtocol.PushEvent])
     val stream = GetStream(env)
-    stream.addSink(new MongoSink("commits", "id", "repo_name"))
     stream.addSink(sink)
+    stream.addSink(new MongoSink[GitHubProtocol.PushEvent](PUSH_EVENT, "id"))
   }
+
 }

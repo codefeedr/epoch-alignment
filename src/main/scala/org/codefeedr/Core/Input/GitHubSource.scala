@@ -19,9 +19,11 @@
 
 package org.codefeedr.Core.Input
 
+import java.util.Date
+
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
 import org.codefeedr.Core.Clients.GitHubAPI
-import org.eclipse.egit.github.core.event.Event
+import org.eclipse.egit.github.core.event.{Event, EventRepository, PushPayload}
 import org.eclipse.egit.github.core.service.EventService
 
 import scala.collection.JavaConversions._
@@ -58,7 +60,7 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
   override def run(ctx: SourceFunction.SourceContext[Event]): Unit = {
     log.info("Opening connection with GitHub API")
 
-    val es = new EventService(GitHubAPI.client)
+    val es: EventService = new EventService(GitHubAPI.client)
 
     //keep track of the request
     var currentRequest = 0

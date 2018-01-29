@@ -9,23 +9,25 @@ import org.mongodb.scala._
 import org.mongodb.scala.connection.ClusterSettings
 
 import scala.async.Async.{async, await}
-import scala.collection.JavaConverters._
+import scala.collection.JavaConversions._
 import org.mongodb.scala.model.Indexes._
 import org.mongodb.scala.bson.codecs.Macros._
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.codefeedr.Core.Clients.GitHubProtocol.Commit
-import org.codefeedr.Core.Clients.MongoDB
+import org.codefeedr.Core.Clients.{CollectionType, MongoDB}
 
 import scala.concurrent._
 import ExecutionContext.Implicits.global
+import scala.reflect.ClassTag
 
 /**
   * Setups a MongoSink on a PushEvent
   * @param collectionName the name of the collection to store in
   * @param indexes the unique index to create
   */
-class MongoSink(collectionName: String, indexes: String*) extends RichSinkFunction[Commit] {
+class MongoSink[T: ClassTag](collectionType: CollectionType, indexes: String*)
+    extends RichSinkFunction[T] {
 
   //retrieve a connection to mongodb
   lazy val db: MongoDB = new MongoDB()
@@ -34,10 +36,8 @@ class MongoSink(collectionName: String, indexes: String*) extends RichSinkFuncti
     * Invoked by Flink and inserts into Mongo.
     * @param value the event to store.
     */
-  override def invoke(value: Commit): Unit = {
-    async {
-      await(db.mongoDatabase.getCollection[Commit](collectionName).insertOne(value).toFuture())
-    }
+  override def invoke(value: T): Unit = {
+    db.getCollection[T](collectionType).insertOne(value).toFuture()
   }
 
   /**
@@ -46,14 +46,6 @@ class MongoSink(collectionName: String, indexes: String*) extends RichSinkFuncti
     */
   override def open(parameters: Configuration): Unit = {
     async {
-      val collections = await(db.mongoDatabase.listCollectionNames().toFuture())
-
-      if (!collections.contains(collectionName)) {
-
-        //create collection if it doesn't exist yet
-        await(db.mongoDatabase.createCollection(collectionName).toFuture())
-      }
-
       //set all the indexes
       setIndexes()
     }
@@ -63,8 +55,7 @@ class MongoSink(collectionName: String, indexes: String*) extends RichSinkFuncti
     * Setup the (unique) indexes for this 'event'.
     */
   def setIndexes(): Unit = {
-    db.mongoDatabase
-      .getCollection(collectionName)
+    db.getCollection(collectionType)
       .createIndex(ascending(indexes: _*), new IndexOptions().unique(true))
       .toFuture()
   }

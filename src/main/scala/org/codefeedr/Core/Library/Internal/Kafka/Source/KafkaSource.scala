@@ -138,6 +138,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
       def Poll(): Boolean = {
         logger.debug(s"$uuid Polling")
         var foundRecords = false
+        var records = 0
         dataConsumer
           .poll(PollTimeout)
           .iterator()
@@ -145,9 +146,11 @@ abstract class KafkaSource[T](subjectType: SubjectType)
           .map(o => Map(TrailedRecord(o.value())))
           .foreach(o => {
             foundRecords = true
+            records += 1
             collector(o)
           })
         logger.debug(s"$uuid completed poll")
+        logger.debug(s"Found $records records")
         foundRecords
       }
 
