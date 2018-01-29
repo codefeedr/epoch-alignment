@@ -77,9 +77,9 @@ object GitHubProtocol {
                     comment_count: Int,
                     tree: Tree,
                     verification: Verification,
-                    parents: List[Parent],
+                    parents: java.util.List[Parent],
                     stats: Stats,
-                    files: List[File])
+                    files: java.util.List[File])
 
   // Represent the committer/author of a commit
   case class User(id: Long, name: String, emai: String, login: String, `type`: String, date: Date)
