@@ -25,7 +25,7 @@ import org.eclipse.egit.github.core.client.{GitHubClient, GitHubRequest, PageIte
 import org.eclipse.egit.github.core.client.PagedRequest.PAGE_FIRST
 import org.eclipse.egit.github.core.client.PagedRequest.PAGE_SIZE
 import org.eclipse.egit.github.core.service.GitHubService
-import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.{Commit, Event, PushEvent}
+import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.{Commit, Event, PushEvent, SimpleCommit}
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
@@ -74,7 +74,31 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     return parse(gson.toJson(commit)).extract[Commit]
   }
 
+  /**
+    * Gets all the commits of a repository.
+    * @param repoName the name of the repo.
+    * @return a list of all (simple) commit information.
+    */
+  def getAllCommits(repoName: String) : PageIterator[SimpleCommit] = {
+    if (repoName == null) {
+      throw new IllegalArgumentException("Reponame cannot be null")
+    }
 
+    if (repoName.length == 0) {
+      throw new IllegalArgumentException("Reponame cannot be empty")
+    }
+
+    val uri: StringBuilder = new StringBuilder("/repos")
+    uri.append("/").append(repoName)
+    uri.append("/commits")
+
+    val request = createPagedRequest[SimpleCommit](PAGE_FIRST, PAGE_SIZE)
+    request.setUri(uri.toString())
+    request.setType(new TypeToken[java.util.List[SimpleCommit]]() {}.getType)
+
+    //return page iterator for all commits
+    return createPageIterator(request)
+  }
 
   /**
     * Gets all events.

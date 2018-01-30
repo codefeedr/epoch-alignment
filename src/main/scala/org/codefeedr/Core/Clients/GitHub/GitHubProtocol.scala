@@ -214,6 +214,7 @@ object GitHubProtocol {
     */
   case class File(sha: String,
                   filename: String,
+                  status : String,
                   additions: Int,
                   deletions: Int,
                   changes: Int,
