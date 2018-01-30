@@ -71,14 +71,12 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
       }
 
       //get the events per poll
-      val it = service.getEvents()
+      val events = service.getEvents()
 
       //collect all the events
-      while (it.hasNext) {
-        it.next.asScala.foreach { x =>
-          eventsPolled += 1
-          ctx.collect(x)
-        }
+      events.foreach { x =>
+        eventsPolled += 1
+        ctx.collect(x)
       }
 
       //update the amount of requests done

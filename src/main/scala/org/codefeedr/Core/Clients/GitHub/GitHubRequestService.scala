@@ -19,14 +19,17 @@
 
 package org.codefeedr.Core.Clients.GitHub
 
+import com.google.gson.{Gson, JsonElement, JsonObject}
 import com.google.gson.reflect.TypeToken
 import org.eclipse.egit.github.core.client.{GitHubClient, GitHubRequest, PageIterator}
 import org.eclipse.egit.github.core.client.PagedRequest.PAGE_FIRST
 import org.eclipse.egit.github.core.client.PagedRequest.PAGE_SIZE
 import org.eclipse.egit.github.core.service.GitHubService
 import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.{Commit, Event, PushEvent}
+import org.json4s._
+import org.json4s.jackson.JsonMethods._
 
-import collection.JavaConversions._
+import collection.JavaConverters._
 
 /**
   * Requests commit and events into correct case classes.
@@ -34,6 +37,11 @@ import collection.JavaConversions._
   * @param client GitHubClient
   */
 class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
+
+  implicit val formats = DefaultFormats // Brings in default date formats etc
+
+  //use gson to convert back to string TODO: pretty inefficient to first parse and then 'unparse'?
+  lazy val gson: Gson = new Gson()
 
   /**
     * Gets a commit by SHA.
@@ -57,20 +65,28 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
 
     val request: GitHubRequest = createRequest()
     request.setUri(uri.toString())
-    request.setType(new TypeToken[Commit]() {}.getType)
+    request.setType(new TypeToken[JsonElement]() {}.getType)
 
-    return client.get(request).getBody.asInstanceOf[Commit]
+    val commit = client.get(request).getBody.asInstanceOf[JsonElement]
+
+    //return extracted as Commit
+    return parse(gson.toJson(commit)).extract[Commit]
   }
 
   /**
     * Gets all events.
     * @return list of all events.
     */
-  def getEvents(): PageIterator[Event] = {
-    val request = createPagedRequest[Event](PAGE_FIRST, PAGE_SIZE)
+  def getEvents(): List[Event] = {
+    val request = createPagedRequest[JsonElement](PAGE_FIRST, PAGE_SIZE)
     request.setUri("/events")
-    request.setType(new TypeToken[java.util.List[Event]]() {}.getType)
-    return createPageIterator(request)
+    request.setType(new TypeToken[java.util.List[JsonElement]]() {}.getType)
+
+    //get all events
+    val events = getAll((createPageIterator(request))).asScala.map(gson.toJson(_))
+
+    //return extracted into Event class
+    return events.map(parse(_).extract[Event]).toList
   }
 
 }

@@ -1,17 +1,20 @@
 package org.codefeedr.Core.Plugin
 
+import com.google.gson.Gson
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
-import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.PushEvent
+import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.{Commit, PushEvent}
+import org.codefeedr.Core.Clients.GitHub.GitHubRequestService
 import org.codefeedr.Core.{FullIntegrationSpec, KafkaTest}
 import org.codefeedr.Model.SubjectType
+import org.eclipse.egit.github.core.client.GitHubClient
 import org.mongodb.scala.{Document, MongoClient, MongoCollection}
 import org.scalatest.tagobjects.Slow
 
 import scala.async.Async.{async, await}
 import scala.concurrent.Future
-
 case class PushCounter(id : String, counter : Integer)
+
 
 class GitHubPluginSpec extends FullIntegrationSpec {
 

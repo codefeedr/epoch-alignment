@@ -20,53 +20,107 @@
 package org.codefeedr.Core.Clients.GitHub
 
 import java.util.Date
-
-import com.google.gson.JsonElement
+import org.json4s.JObject
 
 /**
   * Case classes related to the GitHubAPI.
   */
 object GitHubProtocol {
 
-  //Represents a default event.
+  /**
+    * Represents a 'generic' GitHub event.
+    * @param id unique identifier of the event.
+    * @param repo the repository of the event.
+    * @param `type` the type of event.
+    * @param actor the actor of the event.
+    * @param org organization of the event (optional).
+    * @param payload the payload of the event (different per type).
+    * @param public if event is public.
+    * @param created_at date at which event is published.
+    */
   case class Event(id: String,
                    repo: Repo,
                    `type`: String,
                    actor: Actor,
-                   payload: JsonElement,
+                   org: Option[Organization],
+                   payload: JObject,
                    public: Boolean,
                    created_at: Date)
 
-  //Represents a PushEvent.
+  /**
+    * Represents a 'generic' GitHub event.
+    * @param id unique identifier of the event.
+    * @param repo the repository of the event.
+    * @param actor the actor of the event.
+    * @param org organization of the event (optional).
+    * @param payload the payload of the event.
+    * @param public if event is public.
+    * @param created_at date at which event is published.
+    */
   case class PushEvent(id: String,
                        repo: Repo,
                        actor: Actor,
+                       org: Option[Organization],
                        payload: Payload,
                        public: Boolean,
                        created_at: Date)
 
-  //Represents the Payload of a PushEvent
+  /**
+    * Payload of the PushEvent.
+    * @param push_id id of the push.
+    * @param size size of push.
+    * @param distinct_size distinct size of the push.
+    * @param ref ref of the push.
+    * @param head head SHA after the push.
+    * @param before before SHA.
+    * @param commits commits of the push.
+    */
   case class Payload(push_id: Long,
                      size: Int,
                      distinct_size: Int,
                      ref: String,
                      head: String,
                      before: String,
-                     commits: java.util.List[CommitSimple])
+                     commits: List[PushCommit])
 
-  //Represent the organization
-  case class Organization(id: Long, login: String, url: String)
-  //Represents a repository
-  case class Repo(id: Long, name: String, url: String)
+  /**
+    * Represents the organization of an event.
+    * @param id the id of the organization.
+    * @param login the login of the organization.
+    */
+  case class Organization(id: Long, login: String)
 
-  //Represents an actor
-  case class Actor(id: Long, login: String, url: String)
+  /**
+    * Represents the repository of an event.
+    * @param id the id of the repository.
+    * @param name the name of the repository.
+    */
+  case class Repo(id: Long, name: String)
 
-  //Represents a Commit embedded in a PushEvent
-  case class CommitSimple(sha: String, author: UserSimple, message: String, distinct: Boolean)
+  /**
+    * Represents the actor of an event.
+    * @param id the id of the actor.
+    * @param login the login of the actor.
+    * @param display_login the display login of the actor.
+    * @param avatar_url url of the avatar of the actor.
+    */
+  case class Actor(id: Long, login: String, display_login: String, avatar_url: String)
 
-  //Represent the author of a Commit
-  case class UserSimple(email: String, name: String)
+  /**
+    * Represents a commit embedded in a PushEvent
+    * @param sha the sha of the commit.
+    * @param author the author of the commit.
+    * @param message the message of the commit.
+    * @param distinct true if the commit is distinct.
+    */
+  case class PushCommit(sha: String, author: PushAuthor, message: String, distinct: Boolean)
+
+  /**
+    * Represent the author of a PushCommit.
+    * @param email the email of the author.
+    * @param name the name of the author.
+    */
+  case class PushAuthor(email: String, name: String)
 
   //Represents a commit
   case class Commit(sha: String,

@@ -51,7 +51,7 @@ class GHRetrieveCommitFunction extends AsyncFunction[(String, String), Commit] {
     val sha = input._2
 
     //complete future with the commit
-    future.complete(Iterable(commitService.getCommit(repoName, sha)))
+    future.complete(Iterable())
   }
 
 }

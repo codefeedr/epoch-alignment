@@ -33,6 +33,8 @@ val dep_core = Seq(
   "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
 
   "org.eclipse.mylyn.github" % "org.eclipse.egit.github.core" % "2.1.5" % "provided",
+  "org.json4s" % "json4s-scalap_2.11" % "3.6.0-M2",
+  "org.json4s" % "json4s-jackson_2.11" % "3.6.0-M2",
   "com.typesafe" % "config" % "1.3.1",
   "org.mongodb.scala" %% "mongo-scala-driver" % "2.1.0",
 

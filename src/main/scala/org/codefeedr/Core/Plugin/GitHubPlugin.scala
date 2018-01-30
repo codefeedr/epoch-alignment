@@ -37,7 +37,8 @@ import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.{Actor, Payload, PushEve
 import org.codefeedr.Core.Clients.MongoDB.PUSH_EVENT
 import org.codefeedr.Core.Output.MongoSink
 
-import scala.collection.JavaConverters._
+import org.json4s._
+import org.json4s.jackson.JsonMethods._
 
 class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
     extends AbstractPlugin {
@@ -59,9 +60,8 @@ class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
   def GetStream(env: StreamExecutionEnvironment): DataStream[GitHubProtocol.PushEvent] = {
     val stream =
       env.addSource(new GitHubSource(maxRequests)).filter(_.`type` == "PushEvent").map { x =>
-        val gson = new Gson()
-        val payload = gson.fromJson(x.payload, classOf[GitHubProtocol.Payload])
-        PushEvent(x.id, x.repo, x.actor, payload, x.public, x.created_at)
+        implicit val formats = DefaultFormats
+        PushEvent(x.id, x.repo, x.actor, x.org, x.payload.extract[Payload], x.public, x.created_at)
       }
     stream
   }
