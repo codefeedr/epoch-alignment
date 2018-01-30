@@ -81,6 +81,8 @@ class MongoDB {
         classOf[PushAuthor],
         classOf[PushCommit],
         classOf[Commit],
+        classOf[CommitData],
+        classOf[CommitUser],
         classOf[User],
         classOf[Verification],
         classOf[Stats],

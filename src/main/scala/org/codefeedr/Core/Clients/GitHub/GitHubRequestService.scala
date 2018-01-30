@@ -38,7 +38,8 @@ import collection.JavaConverters._
   */
 class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
 
-  implicit val formats = DefaultFormats // Brings in default date formats etc
+  // Brings in default date formats etc
+  implicit val formats = DefaultFormats
 
   //use gson to convert back to string TODO: pretty inefficient to first parse and then 'unparse'?
   lazy val gson: Gson = new Gson()
@@ -72,6 +73,8 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     //return extracted as Commit
     return parse(gson.toJson(commit)).extract[Commit]
   }
+
+
 
   /**
     * Gets all events.

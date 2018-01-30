@@ -28,6 +28,9 @@ import org.json4s.JObject
 object GitHubProtocol {
 
   /**
+    * START '/events'
+    */
+  /**
     * Represents a 'generic' GitHub event.
     * @param id unique identifier of the event.
     * @param repo the repository of the event.
@@ -122,29 +125,93 @@ object GitHubProtocol {
     */
   case class PushAuthor(email: String, name: String)
 
-  //Represents a commit
+  /**
+    * END '/events'
+    */
+  /**
+    * START '/repos/:repo/:name/commits/:sha'
+    */
+  /**
+    * Represents all the information of a commit.
+    * @param sha the sha of the commit.
+    * @param commit the commit data.
+    * @param author the author of the commit.
+    * @param committer the commiter.
+    * @param parents the parents of the commit.
+    * @param stats the stats of the commit.
+    * @param files the (diff) files of the commit.
+    */
   case class Commit(sha: String,
-                    repo: Repo,
+                    commit: CommitData,
                     author: User,
                     committer: User,
-                    message: String,
-                    comment_count: Int,
-                    tree: Tree,
-                    verification: Verification,
-                    parents: java.util.List[Parent],
+                    parents: List[Parent],
                     stats: Stats,
-                    files: java.util.List[File])
+                    files: List[File])
 
-  // Represent the committer/author of a commit
-  case class User(id: Long, name: String, emai: String, login: String, `type`: String, date: Date)
+  /**
+    * Represents the commit data specified in the commit.
+    * @param author the author of the commmit.
+    * @param committer the committer.
+    * @param message the message of the commit.
+    * @param tree the commit tree.
+    * @param comment_count the comment count.
+    * @param verification the verification object.
+    */
+  case class CommitData(author: CommitUser,
+                        committer: CommitUser,
+                        message: String,
+                        tree: Tree,
+                        comment_count: Int,
+                        verification: Verification)
 
-  // Represents the verification of a commit
+  /**
+    * Represents the author/committer of the commit (data).
+    * @param name name of the user.
+    * @param email email of the user.
+    * @param date date of the commit.
+    */
+  case class CommitUser(name: String, email: String, date: Date)
+
+  /**
+    * Represent the author/committer of the commit.
+    * @param id the id of the user.
+    * @param login the login of the user.
+    * @param avatar_url the avatar url of the user.
+    * @param `type` the user type.
+    * @param site_admin if it is a site_admin or not.
+    */
+  case class User(id: Long, login: String, avatar_url: String, `type`: String, site_admin: Boolean)
+
+  /**
+    * Represents the verification of a commit.
+    * @param verified if the commit was verified.
+    * @param reason the verification reason.
+    * @param signature the verification signature.
+    * @param payload the verification payload.
+    */
   case class Verification(verified: Boolean, reason: String, signature: String, payload: String)
 
-  //Represent the stats of a commit
+  /**
+    * Represents the stats of a commit
+    * @param total total files edited.
+    * @param additions total additions.
+    * @param deletions total deletions.
+    */
   case class Stats(total: Int, additions: Int, deletions: Int)
 
-  //Represents the changed file of a commit
+  /**
+    * Represents the (diff) file in a commit.
+    * @param sha sha of the diff.
+    * @param fileName the name of the file.
+    * @param additions the amount of additions.
+    * @param deletions the amount of the deletions.
+    * @param changes the amount of changes.
+    * @param blob_url the url to the blob content.
+    * @param raw_url the raw url.
+    * @param contents_url the url of the contents.
+    * @param patch the patch information.
+    */
   case class File(sha: String,
                   fileName: String,
                   additions: Int,
@@ -152,13 +219,35 @@ object GitHubProtocol {
                   changes: Int,
                   blob_url: String,
                   raw_url: String,
-                  contents_ur: String,
+                  contents_url: String,
                   patch: String)
 
-  //Represents the parent of a commit
-  case class Parent(sha: String, url: String, html_url: String)
+  /**
+    * The parents of this commit.
+    * @param sha the commit sha.
+    */
+  case class Parent(sha: String)
 
-  //Represent the tree of a commit
-  case class Tree(url: String, sha: String)
+  /**
+    * The tree of the commit.
+    * @param sha the tree sha.
+    */
+  case class Tree(sha: String)
+
+  /**
+    * END '/repos/:repo/:name/commits/:sha'
+    */
+  /**
+    * START '/repos/:repo/:name/commits'
+    */
+  /**
+    * Represents a simplistic view of a commit.
+    * @param sha the sha of a commit.
+    */
+  case class SimpleCommit(sha: String)
+
+  /**
+  * END '/repos/:repo/:name/commits'
+  */
 
 }
