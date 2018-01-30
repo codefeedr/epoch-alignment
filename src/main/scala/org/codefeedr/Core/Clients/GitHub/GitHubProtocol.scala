@@ -190,7 +190,7 @@ object GitHubProtocol {
     * @param signature the verification signature.
     * @param payload the verification payload.
     */
-  case class Verification(verified: Boolean, reason: String, signature: String, payload: String)
+  case class Verification(verified: Boolean, reason: String, signature: Option[String], payload: Option[String])
 
   /**
     * Represents the stats of a commit
@@ -213,7 +213,7 @@ object GitHubProtocol {
     * @param patch the patch information.
     */
   case class File(sha: String,
-                  fileName: String,
+                  filename: String,
                   additions: Int,
                   deletions: Int,
                   changes: Int,
