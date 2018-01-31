@@ -22,7 +22,7 @@ class GitHubRequestServiceTest extends AsyncFlatSpec with Matchers with LazyLogg
 
   "getAllCommits " should " should parse and return the correct commit" taggedAs (Slow) in async {
     val client = new GitHubClient()
-    client.setOAuth2Token("94579dc2e0ce13325d08ec62aa0e1a2cadace65e")
+    client.setOAuth2Token("")
     val requestService = new GitHubRequestService(client)
 
     val time = System.currentTimeMillis()
