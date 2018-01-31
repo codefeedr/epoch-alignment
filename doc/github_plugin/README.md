@@ -2,13 +2,24 @@
 ## Table of contents
 1. [Architecture](#architecture)
     - [Overview](#overview)
-2. [GitHub requests](#github-requests)
-3. [Dependencies](#dependencies)
+2. [Data storage](#data-storage)
+    - [Data structure](#data-structure)
+3. [GitHub requests](#github-requests)
+    - [Commit retrieval](#commit-retrieval)
+4. [Dependencies](#dependencies)
 
 # Architecture
 ## Overview
 ![architecture](architecture.png)
-# GitHub Requests
+# Data storage
+## Data structure
+Currently the `PushEvent`s and `Commit`s are stored. See the [GitHubProtocol](https://github.com/codefeedr/codefeedr/blob/github_flink_plugin/src/main/scala/org/codefeedr/Core/Clients/GitHub/GitHubProtocol.scala)
+class to see the exact fields. The following (unique) indexes are used:
+
+- PushEvent: `id` - The id uniquely identifies an (Push)Event.
+- Commit: `url` - The url contains both the `sha` and the `repo_name` of a commit. 
+
+# GitHub requests
 ## Commit retrieval
 1. Retrieve from MongoDB the latest SHA (commit with latest date from committer/author)
 2. If this SHA corresponds with `before` field from PushEvent (and it has less than 20 commits),
