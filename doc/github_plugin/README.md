@@ -4,10 +4,10 @@
     - [Overview](#overview)
 2. [Dependencies](#dependencies)
 
-#Architecture
-##Overview
+# Architecture
+## Overview
 ![architecture](architecture.png)
-#Dependencies
+# Dependencies
 
 Currently this plugin depends on the following (external) dependencies:
 - [Eclipse Egit](https://github.com/eclipse/egit-github) - Provides connection with the GitHub API
