@@ -22,7 +22,7 @@ package org.codefeedr.Core.Plugin
 import java.util.concurrent.TimeUnit
 
 import com.google.gson.{Gson, GsonBuilder, JsonObject}
-import org.codefeedr.Core.Input.{GHRetrieveCommitFunction, GitHubSource}
+import org.codefeedr.Core.Input.GitHubSource
 import org.apache.flink.streaming.api.scala.{
   AsyncDataStream,
   DataStream,
@@ -40,9 +40,7 @@ import scala.reflect.runtime.{universe => ru}
 import org.apache.flink.api.scala._
 import org.codefeedr.Core.Clients.GitHub.GitHubProtocol
 import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.{Actor, Payload, PushEvent, Repo}
-import org.codefeedr.Core.Clients.MongoDB.PUSH_EVENT
 import org.codefeedr.Core.Operators.GetOrAddPushEvent
-import org.codefeedr.Core.Output.MongoSink
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
