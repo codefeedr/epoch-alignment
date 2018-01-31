@@ -79,7 +79,7 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     * @param repoName the name of the repo.
     * @return a list of all (simple) commit information.
     */
-  def getAllCommits(repoName: String) : PageIterator[SimpleCommit] = {
+  def getAllCommits(repoName: String): PageIterator[SimpleCommit] = {
     if (repoName == null) {
       throw new IllegalArgumentException("Reponame cannot be null")
     }

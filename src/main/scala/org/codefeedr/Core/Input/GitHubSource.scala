@@ -19,6 +19,7 @@
 
 package org.codefeedr.Core.Input
 
+import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
 import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.Event
 import org.codefeedr.Core.Clients.GitHub.{GitHubAPI, GitHubRequestService}
@@ -32,13 +33,25 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
   val log: Logger = LoggerFactory.getLogger(classOf[GitHubSource])
 
   //loads the github api
-  lazy val GitHubAPI: GitHubAPI = new GitHubAPI()
+  var GitHubAPI: GitHubAPI = _
 
   //amount of events polled after closing
   var eventsPolled: Integer = 0
 
   //keeps track if the event polling is still running
   var isRunning = true
+
+  /**
+    * Called when runtime context is started.
+    * @param parameters of this job.
+    */
+  override def open(parameters: Configuration): Unit = {
+    //numbering starts from 0 so we want to increment
+    val taskId = getRuntimeContext.getIndexOfThisSubtask + 1
+
+    //initiate GitHubAPI
+    GitHubAPI = new GitHubAPI(taskId)
+  }
 
   /**
     * Cancels the GitHub API retrieval.
@@ -62,13 +75,6 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
     var currentRequest = 0
 
     while (isRunning) {
-
-      //TODO Improve this: parallel retrieval based on key
-      //make sure only 1 parallel process pulls
-      if (getRuntimeContext.getIndexOfThisSubtask % 1 != 0) {
-        isRunning = false
-        return
-      }
 
       //get the events per poll
       val events = service.getEvents()

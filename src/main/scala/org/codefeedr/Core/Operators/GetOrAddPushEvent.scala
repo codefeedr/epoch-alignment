@@ -16,40 +16,45 @@
  * limitations under the License.
  *
  */
-package org.codefeedr.Core.Clients.GitHub
+
+package org.codefeedr.Core.Operators
 
 import com.typesafe.config.{Config, ConfigFactory}
-import org.eclipse.egit.github.core.client.GitHubClient
+import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.PushEvent
 
-/**
-  * Wrapper class for setting up GitHubAPI connection.
-  */
-class GitHubAPI(workerNumber: Integer) {
+class GetOrAddPushEvent extends GetOrAddGeneric[PushEvent, PushEvent]() {
 
   //get the codefeedr configuration files
   private lazy val conf: Config = ConfigFactory.load()
 
-  //Github API rate limit
-  private val _rateLimit: Integer = 5000
-
-  //initialize githubclient
-  @transient
-  private lazy val _client: GitHubClient = new GitHubClient
-
-  //some getters
-  def client = _client
-  def rateLimit = _rateLimit
+  //collection name
+  val collectionName = conf.getString("codefeedr.input.github.events_collection")
 
   /**
-    * Set the OAuthToken of the GitHub API using the number of the process.
+    * Get the name of the collection.
+    * @return the name of the collection.
     */
-  def SetOAuthToken() = {
-    val apiKeys = conf.getList("codefeedr.input.github.apikey")
-    val index = workerNumber % apiKeys.size() //get index of api key we should get
-
-    client.setOAuth2Token(conf.getString("codefeedr.input.github.apikey." + index.toString))
+  override def GetCollectionName: String = {
+    collectionName
   }
 
-  //set the auth token
-  SetOAuthToken()
+  /**
+    * Get the name of the index.
+    * @return the name of the index.
+    */
+  override def GetIndexName: String = "id"
+
+  /**
+    * Get the value of the index.
+    * @param input to retrieve value from.
+    * @return the value of the index.
+    */
+  override def GetIndexValue(input: PushEvent): String = input.id
+
+  /**
+    * Transforms a PushEvent to the same event.
+    * @param input the input variable A.
+    * @return the output variable B.
+    */
+  override def GetFunction(input: PushEvent): PushEvent = input
 }

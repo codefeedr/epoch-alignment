@@ -19,9 +19,15 @@
 
 package org.codefeedr.Core.Plugin
 
+import java.util.concurrent.TimeUnit
+
 import com.google.gson.{Gson, GsonBuilder, JsonObject}
 import org.codefeedr.Core.Input.{GHRetrieveCommitFunction, GitHubSource}
-import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
+import org.apache.flink.streaming.api.scala.{
+  AsyncDataStream,
+  DataStream,
+  StreamExecutionEnvironment
+}
 import org.codefeedr.Core.Library.Internal.{AbstractPlugin, SubjectTypeFactory}
 import org.codefeedr.Core.Library.SubjectFactory
 import org.codefeedr.Model.SubjectType
@@ -35,8 +41,8 @@ import org.apache.flink.api.scala._
 import org.codefeedr.Core.Clients.GitHub.GitHubProtocol
 import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.{Actor, Payload, PushEvent, Repo}
 import org.codefeedr.Core.Clients.MongoDB.PUSH_EVENT
+import org.codefeedr.Core.Operators.GetOrAddPushEvent
 import org.codefeedr.Core.Output.MongoSink
-
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
@@ -63,7 +69,10 @@ class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
         implicit val formats = DefaultFormats
         PushEvent(x.id, x.repo, x.actor, x.org, x.payload.extract[Payload], x.public, x.created_at)
       }
-    stream
+
+    val finalStream =
+      AsyncDataStream.unorderedWait(stream, new GetOrAddPushEvent, 5, TimeUnit.SECONDS, 50)
+    finalStream
   }
 
   /**
@@ -75,7 +84,7 @@ class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
     val sink = await(SubjectFactory.GetSink[GitHubProtocol.PushEvent])
     val stream = GetStream(env)
     stream.addSink(sink)
-    stream.addSink(new MongoSink[GitHubProtocol.PushEvent](PUSH_EVENT, "id"))
+    //stream.addSink(new MongoSink[GitHubProtocol.PushEvent](PUSH_EVENT, "id"))
   }
 
 }

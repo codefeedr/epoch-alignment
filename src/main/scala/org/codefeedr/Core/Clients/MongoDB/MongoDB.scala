@@ -37,11 +37,6 @@ import org.mongodb.scala.{
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 
-//enum value for both pushevents and commits
-sealed abstract class CollectionType()
-case object PUSH_EVENT extends CollectionType
-case object COMMIT extends CollectionType
-
 /**
   * Wrapper class for setting up MongoDB connection.
   * Currently supports Commit and PushEvent (try to make it generic)
@@ -109,17 +104,12 @@ class MongoDB {
   def mongoDatabase = _mongoDatabase
 
   /**
-    * TODO: Improve this method
     * Get the correct collection based on the type.
-    * @param collectionType the type of collection you want.
+    * @param collectionName the name of the collection.
     * @tparam T the type of the collection that you want
     * @return the correct collection, based on type.
     */
-  def getCollection[T: ClassTag](collectionType: CollectionType): MongoCollection[T] =
-    collectionType match {
-      case PUSH_EVENT =>
-        mongoDatabase.getCollection[T](conf.getString("codefeedr.input.github.events_collection"))
-      case COMMIT =>
-        mongoDatabase.getCollection[T](conf.getString("codefeedr.input.github.commits_collection"))
-    }
+  def getCollection[T: ClassTag](collectionName: String): MongoCollection[T] = {
+    mongoDatabase.getCollection[T](collectionName)
+  }
 }

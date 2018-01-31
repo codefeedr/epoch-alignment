@@ -4,7 +4,8 @@ import com.google.gson.Gson
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.{Commit, PushEvent}
-import org.codefeedr.Core.Clients.GitHub.GitHubRequestService
+import org.codefeedr.Core.Clients.GitHub.{GitHubProtocol, GitHubRequestService}
+import org.codefeedr.Core.Library.SubjectFactory
 import org.codefeedr.Core.{FullIntegrationSpec, KafkaTest}
 import org.codefeedr.Model.SubjectType
 import org.eclipse.egit.github.core.client.GitHubClient
@@ -28,7 +29,6 @@ class GitHubPluginSpec extends FullIntegrationSpec {
       val githubType = await(RunGitHubEnvironment(amountOfRequests))
 
       val githubResult = await(AwaitAllData(githubType))
-
       /**
       //add chain of streams
       val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
