@@ -101,6 +101,34 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
   }
 
   /**
+    * Gets all the commits of a repository.
+    * @param repoName the name of the repo.
+    * @param sha to start from.
+    * @return a list of all (simple) commit information.
+    */
+  def getAllCommits(repoName: String, sha: String): PageIterator[SimpleCommit] = {
+    if (repoName == null) {
+      throw new IllegalArgumentException("Reponame cannot be null")
+    }
+
+    if (repoName.length == 0) {
+      throw new IllegalArgumentException("Reponame cannot be empty")
+    }
+
+    val uri: StringBuilder = new StringBuilder("/repos")
+    uri.append("/").append(repoName)
+    uri.append("/commits")
+
+    val request = createPagedRequest[SimpleCommit](PAGE_FIRST, PAGE_SIZE)
+    request.setUri(uri.toString())
+    request.setParams(Map("sha" -> sha).asJava)
+    request.setType(new TypeToken[java.util.List[SimpleCommit]]() {}.getType)
+
+    //return page iterator for all commits
+    return createPageIterator(request)
+  }
+
+  /**
     * Gets all events.
     * @return list of all events.
     */

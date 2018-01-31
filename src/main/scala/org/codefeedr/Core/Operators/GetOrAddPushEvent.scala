@@ -22,7 +22,10 @@ package org.codefeedr.Core.Operators
 import com.typesafe.config.{Config, ConfigFactory}
 import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.PushEvent
 
-class GetOrAddPushEvent extends GetOrAddGeneric[PushEvent, PushEvent]() {
+/**
+  * Gets or adds a PushEvent from MongoDB.
+  */
+class GetOrAddPushEvent extends GetOrAddGeneric[PushEvent, PushEvent] {
 
   //get the codefeedr configuration files
   private lazy val conf: Config = ConfigFactory.load()
@@ -34,22 +37,20 @@ class GetOrAddPushEvent extends GetOrAddGeneric[PushEvent, PushEvent]() {
     * Get the name of the collection.
     * @return the name of the collection.
     */
-  override def GetCollectionName: String = {
-    collectionName
-  }
+  override def GetCollectionName: String = collectionName
 
   /**
     * Get the name of the index.
     * @return the name of the index.
     */
-  override def GetIndexName: String = "id"
+  override def GetIndexNames: Seq[String] = Seq("id")
 
   /**
     * Get the value of the index.
     * @param input to retrieve value from.
     * @return the value of the index.
     */
-  override def GetIndexValue(input: PushEvent): String = input.id
+  override def GetIndexValues(input: PushEvent): Seq[String] = Seq(input.id)
 
   /**
     * Transforms a PushEvent to the same event.

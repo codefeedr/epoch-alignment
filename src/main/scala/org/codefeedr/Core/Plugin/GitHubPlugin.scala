@@ -23,11 +23,9 @@ import java.util.concurrent.TimeUnit
 
 import com.google.gson.{Gson, GsonBuilder, JsonObject}
 import org.codefeedr.Core.Input.GitHubSource
-import org.apache.flink.streaming.api.scala.{
-  AsyncDataStream,
-  DataStream,
-  StreamExecutionEnvironment
-}
+import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
+import org.apache.flink.streaming.api.datastream.{AsyncDataStream => JavaAsyncDataStream}
+import org.apache.flink.streaming.api.functions.async.{AsyncFunction => JavaAsyncFunction}
 import org.codefeedr.Core.Library.Internal.{AbstractPlugin, SubjectTypeFactory}
 import org.codefeedr.Core.Library.SubjectFactory
 import org.codefeedr.Model.SubjectType
@@ -38,11 +36,19 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 import org.apache.flink.api.scala._
+import org.apache.flink.streaming.api.functions.async
+import org.apache.flink.streaming.api.scala.async.{
+  AsyncFunction,
+  JavaResultFutureWrapper,
+  ResultFuture
+}
 import org.codefeedr.Core.Clients.GitHub.GitHubProtocol
 import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.{Actor, Payload, PushEvent, Repo}
 import org.codefeedr.Core.Operators.GetOrAddPushEvent
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
+
+import scala.async.Async
 
 class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
     extends AbstractPlugin {
@@ -68,9 +74,12 @@ class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
         PushEvent(x.id, x.repo, x.actor, x.org, x.payload.extract[Payload], x.public, x.created_at)
       }
 
+    //work around for not existing RichAsyncFunction in Scala
+    val asyncFunction = new GetOrAddPushEvent
     val finalStream =
-      AsyncDataStream.unorderedWait(stream, new GetOrAddPushEvent, 5, TimeUnit.SECONDS, 50)
-    finalStream
+      JavaAsyncDataStream.unorderedWait(stream.javaStream, asyncFunction, 10, TimeUnit.SECONDS, 50)
+
+    new org.apache.flink.streaming.api.scala.DataStream(finalStream)
   }
 
   /**
@@ -78,7 +87,7 @@ class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
     * @param env the environment to compose.
     * @return a future of the method.
     */
-  override def Compose(env: StreamExecutionEnvironment): Future[Unit] = async {
+  override def Compose(env: StreamExecutionEnvironment): Future[Unit] = Async.async {
     val sink = await(SubjectFactory.GetSink[GitHubProtocol.PushEvent])
     val stream = GetStream(env)
     stream.addSink(sink)

@@ -48,6 +48,7 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
   override def open(parameters: Configuration): Unit = {
     //numbering starts from 0 so we want to increment
     val taskId = getRuntimeContext.getIndexOfThisSubtask + 1
+    println("MY TASK ID IS " + taskId)
 
     //initiate GitHubAPI
     GitHubAPI = new GitHubAPI(taskId)

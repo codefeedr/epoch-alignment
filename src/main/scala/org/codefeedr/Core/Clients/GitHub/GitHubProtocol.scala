@@ -134,6 +134,7 @@ object GitHubProtocol {
   /**
     * Represents all the information of a commit.
     * @param sha the sha of the commit.
+    * @param url uniquely identifies a commit.
     * @param commit the commit data.
     * @param author the author of the commit.
     * @param committer the commiter.
@@ -142,6 +143,7 @@ object GitHubProtocol {
     * @param files the (diff) files of the commit.
     */
   case class Commit(sha: String,
+                    url: String,
                     commit: CommitData,
                     author: User,
                     committer: User,
