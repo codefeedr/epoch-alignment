@@ -8,8 +8,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.immutable
 import scala.concurrent.Future
 
-class SubjectCollectionNode(parent: ZkNodeBase) extends ZkCollectionNode[SubjectNode]("Subjects",parent,(name, parent) => new SubjectNode(name, parent))
-{
+class SubjectCollectionNode(parent: ZkNodeBase)
+    extends ZkCollectionNode[SubjectNode]("Subjects",
+                                          parent,
+                                          (name, parent) => new SubjectNode(name, parent)) {
+
   /**
     * Retrieves the current set of registered subject names
     * @return A future with the set of registered subjects

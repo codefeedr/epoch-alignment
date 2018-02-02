@@ -11,15 +11,13 @@ import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-
 /**
   * This class contains services to obtain more detailed information about kafka partitions,
   * consumers (kafkasources) consuming these sources and their offsets
   */
 class SubjectNode(subjectName: String, parent: ZkNodeBase)
-  extends ZkNode[SubjectType](subjectName, parent)
+    extends ZkNode[SubjectType](subjectName, parent)
     with LazyLogging {
-
 
   /**
     * Override to create child nodes
@@ -48,8 +46,6 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
     * @return
     */
   def GetSources(): QuerySourceCollection = new QuerySourceCollection(this)
-
-
 
   /**
     * Retrieve a subjectType for an arbitrary scala type
@@ -107,6 +103,7 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
     * @return
     */
   def HasActiveSinks(): Future[Boolean] = GetSources().GetState()
+
   /**
     * Method that asserts the given typeName exists
     * Throws an exception if this is not the case
@@ -138,9 +135,9 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
     */
   private[codefeedr] def Unregister(): Future[Boolean] = async {
     logger.debug(s"Deleting subject $subjectName")
-    if(await(Exists())) {
-      if(await(GetSources().GetState())) throw ActiveSourceException(subjectName)
-      if(await(GetSinks.GetState())) throw ActiveSinkException(subjectName)
+    if (await(Exists())) {
+      if (await(GetSources().GetState())) throw ActiveSourceException(subjectName)
+      if (await(GetSinks.GetState())) throw ActiveSinkException(subjectName)
       DeleteRecursive()
       true
     } else {

@@ -9,13 +9,13 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 
 class ConsumerNode(name: String, parent: ZkNodeBase)
-  extends ZkNode[Consumer](name, parent)
-  with ZkStateNode[Consumer, Boolean] {
+    extends ZkNode[Consumer](name, parent)
+    with ZkStateNode[Consumer, Boolean] {
   override def PostCreate(): Future[Unit] = async {
     await(GetStateNode().Create(true))
   }
 
-  override def TypeT() : ClassTag[Boolean] = ClassTag(classOf[Boolean])
+  override def TypeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
 
   /**
     * The initial state of the node. State is not allowed to be empty

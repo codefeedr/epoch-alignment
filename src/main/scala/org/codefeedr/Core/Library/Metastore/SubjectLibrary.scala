@@ -33,6 +33,7 @@ import scala.concurrent.Future
   * Created by Niels on 14/07/2017.
   */
 class SubjectLibrary extends LazyLogging {
+
   /**
     * Initalisation method
     *

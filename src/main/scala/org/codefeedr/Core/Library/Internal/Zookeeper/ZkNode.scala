@@ -27,9 +27,6 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.concurrent.ExecutionContext.Implicits.global
 
-
-
-
 /**
   * ZkNode, represents a node on zookeeper
   * Note that the node does not necessarily need to exist on zookeeper
@@ -40,6 +37,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase) extends ZkNodeBase(name) {
 
   override def Parent(): ZkNodeBase = parent
+
   /**
     * Create a node with data
     *
@@ -47,9 +45,9 @@ class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase) extends ZkNo
     * @return a future of the saved data
     */
   def Create(data: TData): Future[TData] = async {
-      await(zkClient.CreateWithData(Path(), data))
-      await(PostCreate())
-      data
+    await(zkClient.CreateWithData(Path(), data))
+    await(PostCreate())
+    data
   }
 
   /**
@@ -58,7 +56,7 @@ class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase) extends ZkNo
     * @param factory    method that creates the data that should be stored in this zookeeper node
     * @return
     */
-  def GetOrCreate(factory:() => TData): Future[TData] = {
+  def GetOrCreate(factory: () => TData): Future[TData] = {
     async {
       if (await(Exists())) {
         await(GetData()).get
@@ -73,7 +71,6 @@ class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase) extends ZkNo
       case _: NodeExistsException => GetData().map(o => o.get)
     }
   }
-
 
   /**
     * Get the data of the current node
@@ -107,7 +104,6 @@ class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase) extends ZkNo
     */
   def AwaitCondition(condition: TData => Boolean): Future[TData] =
     zkClient.AwaitCondition(Path(), condition)
-
 
   /**
     * Get an observable of the data of the node

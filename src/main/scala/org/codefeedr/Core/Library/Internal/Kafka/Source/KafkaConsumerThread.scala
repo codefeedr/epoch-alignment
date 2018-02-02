@@ -11,7 +11,7 @@ import scala.collection.JavaConverters._
   * Thread that handles polling of data from kafka partitions
   * Not serializable, so create this thread inside the job
   */
-class KafkaConsumerThread(kafkaConsumer: KafkaConsumer[RecordSourceTrail, Row],name:String)
+class KafkaConsumerThread(kafkaConsumer: KafkaConsumer[RecordSourceTrail, Row], name: String)
     extends Runnable
     with LazyLogging {
 
@@ -19,7 +19,7 @@ class KafkaConsumerThread(kafkaConsumer: KafkaConsumer[RecordSourceTrail, Row],n
   @transient private lazy val PollTimeout = 1000
 
   //Variable that will contain the data once poll has completed
-  private var data : List[TrailedRecord] = null
+  private var data: List[TrailedRecord] = null
 
   def GetData(): List[TrailedRecord] = data
 

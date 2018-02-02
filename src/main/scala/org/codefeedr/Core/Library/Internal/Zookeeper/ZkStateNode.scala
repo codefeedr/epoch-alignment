@@ -2,10 +2,10 @@ package org.codefeedr.Core.Library.Internal.Zookeeper
 
 import scala.concurrent.Future
 import scala.reflect.ClassTag
-import scala.async.Async.{async,await}
+import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
 
-trait ZkStateNode[TNode, TState] extends ZkNode[TNode]{
+trait ZkStateNode[TNode, TState] extends ZkNode[TNode] {
 
   /**
     * Override postcreate to create initial state
@@ -28,15 +28,13 @@ trait ZkStateNode[TNode, TState] extends ZkNode[TNode]{
     * The base class needs to expose the typeTag, no typeTag constraints can be put on traits
     * @return
     */
-  def TypeT():ClassTag[TState]
+  def TypeT(): ClassTag[TState]
 
   /**
     * The initial state of the node. State is not allowed to be empty
     * @return
     */
   def InitialState(): TState
-
-
 
   /**
     * Retrieves the state node
@@ -63,5 +61,6 @@ trait ZkStateNode[TNode, TState] extends ZkNode[TNode]{
     * @param f Watching condition
     * @return
     */
-  def WatchState(f: TState => Boolean) : Future[TState] = GetChild[TState]("state")(TypeT()).AwaitCondition(f)
+  def WatchState(f: TState => Boolean): Future[TState] =
+    GetChild[TState]("state")(TypeT()).AwaitCondition(f)
 }

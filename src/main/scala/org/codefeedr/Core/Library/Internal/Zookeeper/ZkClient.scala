@@ -90,14 +90,19 @@ class ZkClient extends LazyLogging {
     connectPromise.future
   }
 
-  private def GetDataCallback[T:ClassTag](subscriber: Subscriber[T]): DataCallback = new DataCallback {
-    override def processResult(rc: Int, path: String, ctx: scala.Any, data: Array[Byte], stat: Stat): Unit = {
-      Code.get(rc) match {
-        case Code.OK => subscriber.onNext(GenericDeserialiser[T](data))
-        case error => subscriber.onError(GetError(error, path, stat, ctx))
+  private def GetDataCallback[T: ClassTag](subscriber: Subscriber[T]): DataCallback =
+    new DataCallback {
+      override def processResult(rc: Int,
+                                 path: String,
+                                 ctx: scala.Any,
+                                 data: Array[Byte],
+                                 stat: Stat): Unit = {
+        Code.get(rc) match {
+          case Code.OK => subscriber.onNext(GenericDeserialiser[T](data))
+          case error => subscriber.onError(GetError(error, path, stat, ctx))
+        }
       }
     }
-  }
 
   /**
     * Prepends codefeedr to the zookeeper path so that no actual data outside the codefeedr path can be mutated (for example to destroy kafka)
@@ -285,15 +290,17 @@ class ZkClient extends LazyLogging {
     * @param cb callback to call
     * @return the watcher
     */
-  def GetRecursiveChildWatcher(p: String, cb: ChildrenCallback, cbDelete: () => Unit): Watcher = new Watcher {
-    override def process(event: WatchedEvent): Unit = {
-      event.getType match {
-        case EventType.NodeDeleted => cbDelete()
-        case EventType.NodeChildrenChanged => zk.getChildren(p, GetRecursiveChildWatcher(p, cb, cbDelete), cb, None)
-        case _ => throw new Exception(s"Got unimplemented event: ${event.getType}")
+  def GetRecursiveChildWatcher(p: String, cb: ChildrenCallback, cbDelete: () => Unit): Watcher =
+    new Watcher {
+      override def process(event: WatchedEvent): Unit = {
+        event.getType match {
+          case EventType.NodeDeleted => cbDelete()
+          case EventType.NodeChildrenChanged =>
+            zk.getChildren(p, GetRecursiveChildWatcher(p, cb, cbDelete), cb, None)
+          case _ => throw new Exception(s"Got unimplemented event: ${event.getType}")
+        }
       }
     }
-  }
 
   /**
     * Gets a recursive data watcher that calls the callback whenever the data of the node modifies
@@ -301,31 +308,37 @@ class ZkClient extends LazyLogging {
     * @param subscriber the subscriber interested in the data
     * @return
     */
-  def GetRecursiveDataWatcher[T:ClassTag](p: String, subscriber: Subscriber[T]): Watcher = {
+  def GetRecursiveDataWatcher[T: ClassTag](p: String, subscriber: Subscriber[T]): Watcher = {
     new Watcher {
       override def process(event: WatchedEvent): Unit = {
         //Only process event if the subscriber is still interested
-        if(!subscriber.isUnsubscribed) {
+        if (!subscriber.isUnsubscribed) {
           event.getType match {
             case EventType.NodeDeleted => subscriber.onCompleted()
-            case EventType.NodeDataChanged => zk.getData(p, GetRecursiveDataWatcher(p, subscriber),GetDataCallback(subscriber), None)
+            case EventType.NodeDataChanged =>
+              zk.getData(p,
+                         GetRecursiveDataWatcher(p, subscriber),
+                         GetDataCallback(subscriber),
+                         None)
             case _ => throw new Exception(s"Got unimplemented event: ${event.getType}")
           }
         }
       }
     }
   }
+
   /**
     * Creates an observable that fires when something on the data of the given node changes
     * @param path path to the node which to observe
     * @tparam TData type of the data to observe
     * @return
     */
-  def ObserveData[TData: ClassTag](path: String): Observable[TData] = Observable(subscriber => {
-    val p = PrependPath(path)
-    val onComplete = () => subscriber.onCompleted()
-    zk.getData(p, GetRecursiveDataWatcher(p, subscriber), GetDataCallback(subscriber), None)
-  })
+  def ObserveData[TData: ClassTag](path: String): Observable[TData] =
+    Observable(subscriber => {
+      val p = PrependPath(path)
+      val onComplete = () => subscriber.onCompleted()
+      zk.getData(p, GetRecursiveDataWatcher(p, subscriber), GetDataCallback(subscriber), None)
+    })
 
   /**
     * Get a zookeeper error
@@ -335,12 +348,12 @@ class ZkClient extends LazyLogging {
     * @param ctx
     * @return
     */
-    def GetError(code: KeeperException.Code, path: String, stat:Stat,ctx: Any): ZkClientException =
-      if(path == null) {
-        ZkClientException(KeeperException.create(code), Option(path), Option(stat), Some(ctx))
-      } else {
-        ZkClientException(KeeperException.create(code, path), Option(path), Option(stat), Some(ctx))
-      }
+  def GetError(code: KeeperException.Code, path: String, stat: Stat, ctx: Any): ZkClientException =
+    if (path == null) {
+      ZkClientException(KeeperException.create(code), Option(path), Option(stat), Some(ctx))
+    } else {
+      ZkClientException(KeeperException.create(code, path), Option(path), Option(stat), Some(ctx))
+    }
 
   /**
     * Creepy method name?
@@ -351,17 +364,20 @@ class ZkClient extends LazyLogging {
     * @param path parent node to watch on
     * @return observable that fires for notifications on the children
     */
-  def ObserveChildren(path: String): Observable[Seq[String]] = Observable(subscriber => {
-    val p = PrependPath(path)
-    val cb = new ChildrenCallback {
-      override def processResult(rc: Int, path: String, ctx: scala.Any, children: util.List[String]): Unit = {
-        subscriber.onNext(children.asScala)
+  def ObserveChildren(path: String): Observable[Seq[String]] =
+    Observable(subscriber => {
+      val p = PrependPath(path)
+      val cb = new ChildrenCallback {
+        override def processResult(rc: Int,
+                                   path: String,
+                                   ctx: scala.Any,
+                                   children: util.List[String]): Unit = {
+          subscriber.onNext(children.asScala)
+        }
       }
-    }
-    val deleteCb = () => subscriber.onCompleted()
-    zk.getChildren(p,GetRecursiveChildWatcher(p,cb, deleteCb),cb, None)
-  })
-
+      val deleteCb = () => subscriber.onCompleted()
+      zk.getChildren(p, GetRecursiveChildWatcher(p, cb, deleteCb), cb, None)
+    })
 
   /**
     * Places an obserable on the path that only produces events for new children added to the node of the given path
@@ -372,21 +388,24 @@ class ZkClient extends LazyLogging {
     * @param path the path to observe
     * @return
     */
-  def ObserveNewChildren(path: String): Observable[String] = Observable(subscriber => {
-    var previousState = Seq.empty[String]
-    ObserveChildren(path).subscribe(o => {
-      o.foreach(child => {
-        if(!previousState.contains(child)) {
-          subscriber.onNext(child)
-        }
-      })
-      //Assign new list as current state
-      //This way, if a child is removed and then later added an event is still fired
-      previousState = o
-    },
-      error => subscriber.onError(error),
-      () => subscriber.onCompleted())
-  })
+  def ObserveNewChildren(path: String): Observable[String] =
+    Observable(subscriber => {
+      var previousState = Seq.empty[String]
+      ObserveChildren(path).subscribe(
+        o => {
+          o.foreach(child => {
+            if (!previousState.contains(child)) {
+              subscriber.onNext(child)
+            }
+          })
+          //Assign new list as current state
+          //This way, if a child is removed and then later added an event is still fired
+          previousState = o
+        },
+        error => subscriber.onError(error),
+        () => subscriber.onCompleted()
+      )
+    })
 
   /**
     * Deletes a node and all its children
@@ -459,10 +478,16 @@ class ZkClient extends LazyLogging {
             case Code.NONODE => p.success(Unit)
             case error if path == null =>
               p.failure(
-                ZkClientException(KeeperException.create(error), Option(path), Option(stat), Some(c)))
+                ZkClientException(KeeperException.create(error),
+                                  Option(path),
+                                  Option(stat),
+                                  Some(c)))
             case error =>
               p.failure(
-                ZkClientException(KeeperException.create(error, path), Option(path), Option(stat), Some(c)))
+                ZkClientException(KeeperException.create(error, path),
+                                  Option(path),
+                                  Option(stat),
+                                  Some(c)))
           }
         }
       },
@@ -571,9 +596,17 @@ class ZkClient extends LazyLogging {
                 }
               }
               case error if path == null =>
-                p.failure(ZkClientException(KeeperException.create(error), Option(path), Option(stat),  Some(ctx)))
+                p.failure(
+                  ZkClientException(KeeperException.create(error),
+                                    Option(path),
+                                    Option(stat),
+                                    Some(ctx)))
               case error =>
-                p.failure(ZkClientException(KeeperException.create(error, path), Option(path), Option(stat),  Some(ctx)))
+                p.failure(
+                  ZkClientException(KeeperException.create(error, path),
+                                    Option(path),
+                                    Option(stat),
+                                    Some(ctx)))
             }
           }
         }

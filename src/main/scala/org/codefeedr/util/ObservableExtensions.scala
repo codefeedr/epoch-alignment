@@ -7,8 +7,9 @@ import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
-object ObservableExtension extends LazyLogging{
+object ObservableExtension extends LazyLogging {
   implicit class FutureObservable[T](o: Observable[T]) {
+
     /**
       * Returns a future that resolves to true when an event is recieved that matches the passed condition
       * If the observable completes, the future is succeeded with the value "None"
@@ -17,7 +18,7 @@ object ObservableExtension extends LazyLogging{
       * @param condition condition to watch for
       * @return
       */
-    def SubscribeUntil(condition: T => Boolean) : Future[Option[T]] = {
+    def SubscribeUntil(condition: T => Boolean): Future[Option[T]] = {
       val p = Promise[Option[T]]
       val subscription: Subscription = o.subscribe(
         (data: T) => {
@@ -34,7 +35,6 @@ object ObservableExtension extends LazyLogging{
       p.future
     }
 
-
     /**
       * Subscribes on the observable, and returns a future that resolves when an error occurs in the observable
       * @return the future that resolves on the error
@@ -42,8 +42,8 @@ object ObservableExtension extends LazyLogging{
     def AwaitError(): Future[Option[Throwable]] = {
       val p = Promise[Option[Throwable]]
       val subscription: Subscription = o.subscribe(
-        (_:T) => Unit,
-        (e:Throwable) => p.success(Some(e)),
+        (_: T) => Unit,
+        (e: Throwable) => p.success(Some(e)),
         () => p.success(None)
       )
       //Make sure to unsubscribe when the future completes
@@ -61,13 +61,10 @@ object ObservableExtension extends LazyLogging{
     def Collect(): Future[List[T]] = {
       val p = Promise[List[T]]
       val collection = new mutable.ListBuffer[T]
-      val subscription = o.subscribe(
-        element => {
-          logger.debug("Got element")
-          collection.append(element)
-        },
-        e=>p.failure(e),
-        () => p.success(collection.toList))
+      val subscription = o.subscribe(element => {
+        logger.debug("Got element")
+        collection.append(element)
+      }, e => p.failure(e), () => p.success(collection.toList))
       p.future
     }
   }

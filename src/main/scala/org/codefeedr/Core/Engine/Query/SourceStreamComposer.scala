@@ -27,8 +27,6 @@ import org.codefeedr.Model.{SubjectType, TrailedRecord}
 /**
   * Created by Niels on 31/07/2017.
   */
-
-
 class SourceStreamComposer(subjectType: SubjectType) extends StreamComposer {
 
   //HACK: hard coded id

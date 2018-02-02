@@ -29,7 +29,8 @@ import scala.reflect.runtime.{universe => ru}
 /**
   * Created by Niels on 31/07/2017.
   */
-class KafkaGenericSink[TData: ru.TypeTag: ClassTag](val subjectType: SubjectType, override val sinkUuid: String)
+class KafkaGenericSink[TData: ru.TypeTag: ClassTag](val subjectType: SubjectType,
+                                                    override val sinkUuid: String)
     extends KafkaSink[TData] {
 
   @transient private lazy val Transformer = SubjectFactory.GetTransformer[TData](subjectType)

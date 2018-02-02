@@ -10,9 +10,9 @@ import org.apache.flink.streaming.api.watermark.Watermark
   *
   * @tparam T
   */
-class KafkaTopicTimestampAssigner[T] extends AssignerWithPunctuatedWatermarks[T]{
+class KafkaTopicTimestampAssigner[T] extends AssignerWithPunctuatedWatermarks[T] {
   override def checkAndGetNextWatermark(lastElement: T, extractedTimestamp: Long): Watermark = {
-    new Watermark(extractedTimestamp-5)
+    new Watermark(extractedTimestamp - 5)
   }
 
   override def extractTimestamp(element: T, previousElementTimestamp: Long): Long = ???

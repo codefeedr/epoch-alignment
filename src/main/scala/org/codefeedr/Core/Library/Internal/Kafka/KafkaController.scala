@@ -33,6 +33,7 @@ import scala.concurrent.Future
   * low level object to control the connected kafka
   */
 object KafkaController {
+
   /**
     * Perform a method on the kafka admin. Using a managed resource to dispose of the admin client after use
     * @param method the method to run on the kafka cluster
@@ -55,7 +56,7 @@ object KafkaController {
     * @return a future that resolves when the topic has been created
     */
   def CreateTopic(name: String, partitions: Int): Future[Unit] = {
-    val topic = new NewTopic(name,partitions,1)
+    val topic = new NewTopic(name, partitions, 1)
     val topicSet = Iterable(topic).asJavaCollection
     val result = apply(o => o.createTopics(topicSet))
     Future {

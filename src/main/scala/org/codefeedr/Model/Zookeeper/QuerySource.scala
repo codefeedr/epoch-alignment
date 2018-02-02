@@ -7,4 +7,3 @@ package org.codefeedr.Model.Zookeeper
   * @param uuid
   */
 case class QuerySource(uuid: String)
-

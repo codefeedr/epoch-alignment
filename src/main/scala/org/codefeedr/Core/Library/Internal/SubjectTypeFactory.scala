@@ -37,7 +37,6 @@ import scala.reflect.runtime.{universe => ru}
 object SubjectTypeFactory extends LazyLogging {
   @transient lazy val conf: Config = ConfigFactory.load
 
-
   private def newTypeIdentifier(): UUID = UUID.randomUUID()
 
   private def getSubjectTypeInternal(t: ru.Type,

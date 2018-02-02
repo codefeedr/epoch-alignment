@@ -24,7 +24,11 @@ import java.util.UUID
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable
-import org.apache.flink.runtime.state.{CheckpointListener, FunctionInitializationContext, FunctionSnapshotContext}
+import org.apache.flink.runtime.state.{
+  CheckpointListener,
+  FunctionInitializationContext,
+  FunctionSnapshotContext
+}
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
@@ -63,7 +67,8 @@ abstract class KafkaSource[T](subjectType: SubjectType)
   @transient private lazy val dataConsumer = {
     val consumer = KafkaConsumerFactory.create[RecordSourceTrail, Row](instanceUuid.toString)
     consumer.subscribe(Iterable(topic).asJavaCollection)
-    logger.debug(s"Source $instanceUuid of consumer $sourceUuid subscribed on topic $topic as group $instanceUuid")
+    logger.debug(
+      s"Source $instanceUuid of consumer $sourceUuid subscribed on topic $topic as group $instanceUuid")
     consumer
   }
 
@@ -79,9 +84,12 @@ abstract class KafkaSource[T](subjectType: SubjectType)
 
   //Node in zookeeper representing state of the instance of the consumer
   @transient protected val consumerNode =
-    subjectLibrary.GetSubject(subjectType.name)
-      .GetSources().GetChild(sourceUuid)
-      .GetConsumers().GetChild(instanceUuid)
+    subjectLibrary
+      .GetSubject(subjectType.name)
+      .GetSources()
+      .GetChild(sourceUuid)
+      .GetConsumers()
+      .GetChild(instanceUuid)
 
   //Node in zookeeper representing state of the subject this consumer is subscribed on
   @transient protected val subjectNode =
@@ -107,27 +115,16 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     }
   }
 
+  override def initializeState(context: FunctionInitializationContext): Unit = {}
 
+  override def snapshotState(context: FunctionSnapshotContext): Unit = {}
 
-  override def initializeState(context: FunctionInitializationContext): Unit = {
-
-  }
-
-  override def snapshotState(context: FunctionSnapshotContext): Unit = {
-
-  }
-
-  override def notifyCheckpointComplete(checkpointId: Long): Unit = {
-
-  }
-
+  override def notifyCheckpointComplete(checkpointId: Long): Unit = {}
 
   private[Kafka] def InitRun(): Unit = {
     //Create self on zookeeper
-    val initialConsumer = Consumer(instanceUuid,null,System.currentTimeMillis())
-    Await.ready(consumerNode.Create(initialConsumer),Duration(120, SECONDS))
-
-
+    val initialConsumer = Consumer(instanceUuid, null, System.currentTimeMillis())
+    Await.ready(consumerNode.Create(initialConsumer), Duration(120, SECONDS))
 
     //Make sure to cancel when the subject closes
     subjectNode.GetSources().WatchStateAggregate(o => !o).onComplete(_ => cancel())
@@ -137,8 +134,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     //Finally unsubscribe from the library
     logger.debug(s"Unsubscribing ${GetLabel()}on subject $topic.")
 
-    Await.ready(consumerNode.SetState(false),
-                Duration(120, SECONDS))
+    Await.ready(consumerNode.SetState(false), Duration(120, SECONDS))
     dataConsumer.close()
     //Notify of the closing
     ClosePromise.success()
@@ -161,9 +157,9 @@ abstract class KafkaSource[T](subjectType: SubjectType)
 
     //TODO: This should be done by closing after offsets have been reached, instead of immediately after zookeeper trigger
     val future = Poll().map(o => o.foreach(o2 => collector(Map(o2))))
-    Await.ready(future,5000 millis)
+    Await.ready(future, 5000 millis)
 
-    while(running) {
+    while (running) {
       //TODO: Handle exceptions
       //Do not need to lock, because there will be only a single thread (per partition set) performing this operation
       val future = Poll().map(
@@ -173,13 +169,11 @@ abstract class KafkaSource[T](subjectType: SubjectType)
           //Obtain offsets, and update zookeeper state
           val offsets = currentOffset()
 
-
-
           //TODO: Implement asynchronous commits
           dataConsumer.commitSync()
         }
       )
-      Await.ready(future,5000 millis)
+      Await.ready(future, 5000 millis)
     }
 
     logger.debug(s"Source ${GetLabel()} stopped running.")
@@ -191,26 +185,27 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     * Retrieve the current offsets
     * @return
     */
-  def currentOffset():TopicPartitionOffsets =
+  def currentOffset(): TopicPartitionOffsets =
     TopicPartitionOffsets(
       topic,
-      dataConsumer.assignment().asScala.map(o => PartitionOffset(o.partition(),dataConsumer.position(o))).toList
+      dataConsumer
+        .assignment()
+        .asScala
+        .map(o => PartitionOffset(o.partition(), dataConsumer.position(o)))
+        .toList
     )
-
-
 
   /**
     * Perform a poll on the kafka consumer
     * @return
     */
   def Poll(): Future[List[TrailedRecord]] = {
-      val thread = new KafkaConsumerThread(dataConsumer, GetLabel())
-      Future {
-        thread.run()
-        thread.GetData()
-      }
+    val thread = new KafkaConsumerThread(dataConsumer, GetLabel())
+    Future {
+      thread.run()
+      thread.GetData()
+    }
   }
-
 
   override def run(ctx: SourceFunction.SourceContext[T]): Unit = runLocal(ctx.collect)
 

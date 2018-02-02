@@ -61,10 +61,12 @@ abstract class KafkaSink[TSink]
     * The ZookeeperNode that represent this instance of the producer
     */
   @transient lazy val producerNode =
-    subjectLibrary.GetSubject(subjectType.name)
-    .GetSinks().GetChild(sinkUuid)
-    .GetProducers().GetChild(instanceUuid)
-
+    subjectLibrary
+      .GetSubject(subjectType.name)
+      .GetSinks()
+      .GetChild(sinkUuid)
+      .GetProducers()
+      .GetChild(instanceUuid)
 
   @transient protected lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
   //A random identifier for this specific sink
@@ -85,7 +87,8 @@ abstract class KafkaSink[TSink]
   }
 }
 
-class TrailedRecordSink(override val subjectType: SubjectType, override val sinkUuid: String) extends KafkaSink[TrailedRecord] {
+class TrailedRecordSink(override val subjectType: SubjectType, override val sinkUuid: String)
+    extends KafkaSink[TrailedRecord] {
   override def invoke(trailedRecord: TrailedRecord): Unit = {
     logger.debug(s"Producer ${GetLabel}sending a message to topic $topic")
     kafkaProducer.send(new ProducerRecord(topic, trailedRecord.trail, trailedRecord.row))

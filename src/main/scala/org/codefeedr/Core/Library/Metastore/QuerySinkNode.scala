@@ -9,15 +9,14 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 
 class QuerySinkNode(name: String, parent: ZkNodeBase)
-  extends ZkNode[QuerySink](name, parent)
-  with ZkStateNode[QuerySink, Boolean] {
+    extends ZkNode[QuerySink](name, parent)
+    with ZkStateNode[QuerySink, Boolean] {
   override def PostCreate(): Future[Unit] = async {
     await(GetStateNode().Create(true))
   }
 
+  def GetProducers(): ProducerCollection = new ProducerCollection("producers", this)
 
-  def GetProducers(): ProducerCollection = new ProducerCollection("producers",this)
-
-  override def TypeT() : ClassTag[Boolean] = ClassTag(classOf[Boolean])
+  override def TypeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
   override def InitialState(): Boolean = true
 }

@@ -33,7 +33,8 @@ import org.codefeedr.Model.SubjectType
   * @param subjectType
   */
 class KafkaTableSource(subjectType: SubjectType, sourceId: String) extends StreamTableSource[Row] {
-  @transient lazy val source: SourceFunction[Row] = SubjectFactory.GetRowSource(subjectType, sourceId)
+  @transient lazy val source: SourceFunction[Row] =
+    SubjectFactory.GetRowSource(subjectType, sourceId)
 
   //Map the TrailedRecord provided by the source to a row
   override def getDataStream(execEnv: StreamExecutionEnvironment): DataStream[Row] =

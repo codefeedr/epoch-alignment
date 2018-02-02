@@ -6,7 +6,6 @@ import scala.async.Async.{async, await}
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-
 abstract class ZkNodeBase(val name: String) {
   @transient lazy val zkClient: ZkClient = LibraryServices.zkClient
 
@@ -31,8 +30,6 @@ abstract class ZkNodeBase(val name: String) {
     Path()
   }
 
-
-
   /**
     * Checks if the node exists
     *
@@ -45,14 +42,16 @@ abstract class ZkNodeBase(val name: String) {
     *
     * @return a future that resolves when the node has been deleted
     */
-  def Delete(): Future[Unit] = Exists().flatMap(b => if(b) {zkClient.Delete(Path) } else {Future.successful()})
+  def Delete(): Future[Unit] =
+    Exists().flatMap(b => if (b) { zkClient.Delete(Path) } else { Future.successful() })
 
   /**
     * Delete the current node and all its children
     *
     * @return a future that resolves when the node has been deleted
     */
-  def DeleteRecursive(): Future[Unit] = Exists().flatMap(b => if(b) {zkClient.DeleteRecursive(Path) } else {Future.successful()})
+  def DeleteRecursive(): Future[Unit] =
+    Exists().flatMap(b => if (b) { zkClient.DeleteRecursive(Path) } else { Future.successful() })
 
   /**
     * Creates a future that awaits the registration of a specific child

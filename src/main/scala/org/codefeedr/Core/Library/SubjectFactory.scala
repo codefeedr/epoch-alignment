@@ -24,7 +24,11 @@ import java.util.UUID
 import org.apache.flink.streaming.api.functions.sink.{RichSinkFunction, SinkFunction}
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.types.Row
-import org.codefeedr.Core.Library.Internal.Kafka.Sink.{KafkaGenericSink, RowSink, TrailedRecordSink}
+import org.codefeedr.Core.Library.Internal.Kafka.Sink.{
+  KafkaGenericSink,
+  RowSink,
+  TrailedRecordSink
+}
 import org.codefeedr.Core.Library.Internal.Kafka.Source.KafkaRowSource
 import org.codefeedr.Core.Library.Internal.Kafka._
 import org.codefeedr.Core.Library.Internal.{KeyFactory, RecordTransformer, SubjectTypeFactory}
@@ -42,9 +46,15 @@ import scala.reflect.runtime.{universe => ru}
 class SubjectFactoryController { this: LibraryServices =>
   def GetSink[TData: ru.TypeTag: ClassTag](sinkId: String): Future[SinkFunction[TData]] = {
     val subjectType = SubjectTypeFactory.getSubjectType[TData]
-      subjectLibrary.GetSubject(subjectType.name).GetOrCreate(() => subjectType)
-      .flatMap(o =>
-        KafkaController.GuaranteeTopic(s"${o.name}_${o.uuid}", conf.getInt("codefeedr.kafka.custom.partition.count")).map(_ => new KafkaGenericSink(o, sinkId)))
+    subjectLibrary
+      .GetSubject(subjectType.name)
+      .GetOrCreate(() => subjectType)
+      .flatMap(
+        o =>
+          KafkaController
+            .GuaranteeTopic(s"${o.name}_${o.uuid}",
+                            conf.getInt("codefeedr.kafka.custom.partition.count"))
+            .map(_ => new KafkaGenericSink(o, sinkId)))
   }
 
   /**

@@ -70,13 +70,15 @@ object KafkaTableSink extends LibraryServices {
             fieldNames: Array[String],
             fieldTypes: Array[TypeInformation[_]],
             sinkId: String): KafkaTableSink = {
-    val subjectFuture = subjectLibrary.GetSubject(subjectName).GetOrCreate(
-      () => SubjectTypeFactory.getSubjectType(subjectName, fieldNames, fieldTypes))
+    val subjectFuture = subjectLibrary
+      .GetSubject(subjectName)
+      .GetOrCreate(() => SubjectTypeFactory.getSubjectType(subjectName, fieldNames, fieldTypes))
     //Have to implement the non-async FLINK api, thus must block here
     val subjectType =
       Await.ready[SubjectType](subjectFuture, Duration(5000, MILLISECONDS)).value.get.get
-    new KafkaTableSink(subjectName, subjectType,sinkId)
+    new KafkaTableSink(subjectName, subjectType, sinkId)
   }
 
-  def apply(subjectName: String, sinkId: String): KafkaTableSink = new KafkaTableSink(subjectName, null,sinkId)
+  def apply(subjectName: String, sinkId: String): KafkaTableSink =
+    new KafkaTableSink(subjectName, null, sinkId)
 }
