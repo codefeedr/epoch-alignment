@@ -2,12 +2,13 @@ package org.codefeedr.Core.Library.Internal.Zookeeper
 
 import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.Core.LibraryServiceSpec
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
-import org.codefeedr.util.ObservableExtension._
-import scala.async.Async.{async, await}
-import scala.concurrent.duration.{Duration, MILLISECONDS, SECONDS}
-import scala.concurrent.{Await, Future, Promise, TimeoutException}
 import org.codefeedr.Util.FutureExtensions._
+import org.codefeedr.util.ObservableExtension._
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
+
+import scala.async.Async.{async, await}
+import scala.concurrent.Await
+import scala.concurrent.duration.{Duration, SECONDS}
 
 
 /**
