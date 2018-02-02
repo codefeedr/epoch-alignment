@@ -39,7 +39,7 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
   var eventsPolled: Integer = 0
 
   //keeps track if the event polling is still running
-  var isRunning = true
+  var isRunning = false
 
   /**
     * Called when runtime context is started.
@@ -51,6 +51,7 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
 
     //initiate GitHubAPI
     GitHubAPI = new GitHubAPI(taskId)
+    isRunning = true
   }
 
   /**
