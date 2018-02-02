@@ -23,6 +23,7 @@ import java.util
 
 import scala.collection.JavaConverters._
 import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.zookeeper.AsyncCallback._
 import org.apache.zookeeper.KeeperException.Code
 import org.apache.zookeeper.Watcher.Event
@@ -38,13 +39,14 @@ import scala.concurrent.duration._
 import scala.async.Async._
 import rx.lang.scala._
 import rx.lang.scala.observables.{AsyncOnSubscribe, SyncOnSubscribe}
+
 import scala.reflect.ClassTag
 
 /**
   * ZkClient class
   * Took inspiration from https://github.com/bigtoast/async-zookeeper-client
   */
-class ZkClient {
+class ZkClient extends LazyLogging {
   @transient private lazy val conf: Config = ConfigFactory.load
   @transient private lazy val connectionString: String =
     conf.getString("codefeedr.zookeeper.connectionstring")
@@ -86,6 +88,15 @@ class ZkClient {
       }
     )
     connectPromise.future
+  }
+
+  private def GetDataCallback[T:ClassTag](subscriber: Subscriber[T]): DataCallback = new DataCallback {
+    override def processResult(rc: Int, path: String, ctx: scala.Any, data: Array[Byte], stat: Stat): Unit = {
+      Code.get(rc) match {
+        case Code.OK => subscriber.onNext(GenericDeserialiser[T](data))
+        case error => subscriber.onError(GetError(error, path, stat, ctx))
+      }
+    }
   }
 
   /**
@@ -286,18 +297,20 @@ class ZkClient {
 
   /**
     * Gets a recursive data watcher that calls the callback whenever the data of the node modifies
-    * @param p
-    * @param cb
-    * @param cbDelete
+    * @param p path to the node
+    * @param subscriber the subscriber interested in the data
     * @return
     */
-  def GetRecursiveDataWatcher(p: String, cb: DataCallback, cbDelete: () => Unit): Watcher = new Watcher {
-    override def process(event: WatchedEvent): Unit = {
-      (event: WatchedEvent) => {
-        event.getType match {
-          case EventType.NodeDeleted => cbDelete()
-          case EventType.NodeDataChanged => zk.getData(p, GetRecursiveDataWatcher(p, cb, cbDelete), cb, None)
-          case _ => throw new Exception(s"Got unimplemented event: ${event.getType}")
+  def GetRecursiveDataWatcher[T:ClassTag](p: String, subscriber: Subscriber[T]): Watcher = {
+    new Watcher {
+      override def process(event: WatchedEvent): Unit = {
+        //Only process event if the subscriber is still interested
+        if(!subscriber.isUnsubscribed) {
+          event.getType match {
+            case EventType.NodeDeleted => subscriber.onCompleted()
+            case EventType.NodeDataChanged => zk.getData(p, GetRecursiveDataWatcher(p, subscriber),GetDataCallback(subscriber), None)
+            case _ => throw new Exception(s"Got unimplemented event: ${event.getType}")
+          }
         }
       }
     }
@@ -310,16 +323,8 @@ class ZkClient {
     */
   def ObserveData[TData: ClassTag](path: String): Observable[TData] = Observable(subscriber => {
     val p = PrependPath(path)
-    val cb = new DataCallback {
-      override def processResult(rc: Int, path: String, ctx: scala.Any, data: Array[Byte], stat: Stat): Unit = {
-        Code.get(rc) match {
-          case Code.OK => subscriber.onNext(GenericDeserialiser[TData](data))
-          case error => subscriber.onError(GetError(error, path, stat, ctx))
-        }
-      }
-    }
     val onComplete = () => subscriber.onCompleted()
-    zk.getData(p, GetRecursiveDataWatcher(p, cb, onComplete), cb, None)
+    zk.getData(p, GetRecursiveDataWatcher(p, subscriber), GetDataCallback(subscriber), None)
   })
 
   /**

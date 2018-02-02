@@ -1,9 +1,11 @@
 package org.codefeedr.Core.Library.Internal.Zookeeper
 
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.zookeeper.KeeperException.NoNodeException
 import org.codefeedr.Core.LibraryServiceSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
 import org.codefeedr.util.ObservableExtension._
+
 import scala.async.Async.{async, await}
 import scala.concurrent.{Await, Future, TimeoutException}
 import scala.concurrent.duration.{Duration, MILLISECONDS, SECONDS}
@@ -12,7 +14,7 @@ import scala.concurrent.duration.{Duration, MILLISECONDS, SECONDS}
 /**
   * Testclass for  [[ZkNode]]
   */
-class ZkNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll {
+class ZkNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with LazyLogging{
 
   "ZkNode.Create(data)" should "Create the node with data" in async {
     val root = new TestRoot()
@@ -127,6 +129,7 @@ class ZkNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEa
     val root = new TestRoot()
     val config = new TestConfigNode("testc", root)
     await(config.Create(MyConfig("initialString")))
+
     val f = config.ObserveData().SubscribeUntil(o => o.s == "awaitedstring").map(_ => true)
     assertThrows[TimeoutException](Await.ready(f, Duration(100, MILLISECONDS)))
     config.SetData(MyConfig("someotherstring"))
@@ -142,7 +145,13 @@ class ZkNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEa
   }
 
   it should "call oncompleted when the node is removed" in async {
-    ???
+    val root = new TestRoot()
+    val config = new TestConfigNode("testc", root)
+    await(config.Create(MyConfig("initialString")))
+    val f = config.ObserveData().SubscribeUntil(_=>false).map(_ => true)
+    assertThrows[TimeoutException](Await.ready(f, Duration(100, MILLISECONDS)))
+    await(config.Delete())
+    assert(await(f))
   }
 
   /**
@@ -152,8 +161,6 @@ class ZkNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEa
     Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
   }
 }
-
-
 
 case class MyConfig(s: String)
 
