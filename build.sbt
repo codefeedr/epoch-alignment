@@ -28,6 +28,7 @@ val dep_core = Seq(
 
   "org.scalactic" %% "scalactic" % "3.0.1",
   "org.scalatest" %% "scalatest" % "3.0.1" % "test",
+  "org.scalamock" %% "scalamock" % "4.0.0" % "test",
 
   "ch.qos.logback" % "logback-classic" % "1.1.7",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
@@ -41,10 +42,8 @@ val dep_core = Seq(
   "org.apache.kafka" % "kafka-clients" % "1.0.0",
   "com.jsuereth" %% "scala-arm" % "2.0",
   "org.scala-lang.modules" % "scala-java8-compat_2.11" % "0.8.0",
-  "org.scala-lang.modules" %% "scala-async" % "0.9.7",
+  "org.scala-lang.modules" %% "scala-async" % "0.9.7"
 )
-
-
 
 lazy val root = (project in file("."))
   .settings(
