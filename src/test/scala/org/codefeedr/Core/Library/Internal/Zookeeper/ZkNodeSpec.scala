@@ -162,16 +162,9 @@ class ZkNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEa
   }
 }
 
-case class MyConfig(s: String)
-
-class TestRoot extends ZkNodeBase("TestRoot") {
-  override def Parent(): ZkNodeBase = null
-  override def Path(): String = s"/$name"
-}
 
 class TestConfigNode(name: String, parent: ZkNodeBase) extends ZkNode[MyConfig](name, parent)
 
 class TestConfigNodeWithPostCreate(name: String, parent: ZkNodeBase, postCreate: () => Future[Unit]) extends ZkNode[MyConfig](name, parent) {
   override def PostCreate(): Future[Unit] = postCreate()
 }
-

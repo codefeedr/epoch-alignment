@@ -5,7 +5,11 @@ import org.codefeedr.Model.Zookeeper.Consumer
 
 class ConsumerCollection(subjectName: String, parent: ZkNodeBase)
   extends ZkCollectionNode[ConsumerNode]("consumers", parent, (name, parent) => new ConsumerNode(name, parent))
-    with ZkCollectionState[ConsumerNode, Consumer]{
+    with ZkCollectionState[ConsumerNode, Consumer, Boolean, Boolean]{
+
+  override def Initial(): Boolean = false
+  override def MapChild(child: Boolean): Boolean = child
+  override def ReduceAggregate(left: Boolean, right: Boolean): Boolean = left || right
 }
 
 

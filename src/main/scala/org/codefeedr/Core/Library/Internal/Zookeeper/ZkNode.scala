@@ -85,7 +85,7 @@ class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase) extends ZkNo
   /**
     * Set data of the node
     *
-    * @param data data obejct to set
+    * @param data data object to set
     * @return a future that resolves when the data has been set
     */
   def SetData(data: TData): Future[Unit] = zkClient.SetData[TData](Path(), data).map(_ => Unit)

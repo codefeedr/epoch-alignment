@@ -9,13 +9,36 @@ import scala.concurrent.{Future, Promise}
 /**
   * Class managing scala collection state
   */
-trait ZkCollectionState[TChildNode <: StateNode[TChild],TChild] extends ZkCollectionNode[TChildNode] {
+trait ZkCollectionState[TChildNode <: ZkStateNode[TChild, TChildState],TChild,TChildState, TAggregateState]
+  extends ZkCollectionNode[TChildNode] {
   def GetChildren(): Future[Iterable[TChildNode]]
 
-  def GetState(): Future[Boolean] = async {
+  /**
+    * Initial value of the aggreagate state before the fold
+    * @return
+    */
+  def Initial(): TAggregateState
+
+  /**
+    * Mapping from the child to the aggregate state
+    * @param child
+    * @return
+    */
+  def MapChild(child: TChildState): TAggregateState
+
+  /**
+    * Reduce operator of the aggregation
+    * @param left
+    * @param right
+    * @return
+    */
+  def ReduceAggregate(left: TAggregateState, right: TAggregateState): TAggregateState
+
+
+  def GetState(): Future[TAggregateState] = async {
     val consumerNodes = await(GetChildren())
-    val states = await(Future.sequence(consumerNodes.map(o => o.GetState().GetData().map(o => o.get)).toList))
-    states.foldLeft(false)(_ || _)
+    val states = await(Future.sequence(consumerNodes.map(o => o.GetStateNode().GetData().map(o => MapChild(o.get))).toList))
+    states.foldLeft(Initial())(ReduceAggregate)
   }
 
 
@@ -25,7 +48,7 @@ trait ZkCollectionState[TChildNode <: StateNode[TChild],TChild] extends ZkCollec
     * @param f condition to evaluate for each child
     * @return
     */
-  def WatchStateAggregate(f: Boolean => Boolean): Future[Unit] = {
+  def WatchStateAggregate(f: TChildState => Boolean): Future[Unit] = {
     val p = Promise[Unit]
     var i: Int = 0
     val s = ObserveNewChildren().map(o => o.WatchState(f))
