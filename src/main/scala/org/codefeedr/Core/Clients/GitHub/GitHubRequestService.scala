@@ -51,14 +51,6 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     * @return the commit case class.
     */
   def getCommit(repoName: String, sha: String): Commit = {
-    if (sha == null || repoName == null) {
-      throw new IllegalArgumentException("Sha or Reponame cannot be null")
-    }
-
-    if (sha.length == 0 || repoName.length == 0) {
-      throw new IllegalArgumentException("Sha or Reponame cannot be empty")
-    }
-
     val uri: StringBuilder = new StringBuilder("/repos")
     uri.append("/").append(repoName)
     uri.append("/commits")
@@ -80,14 +72,6 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     * @return a list of all (simple) commit information.
     */
   def getAllCommits(repoName: String): PageIterator[SimpleCommit] = {
-    if (repoName == null) {
-      throw new IllegalArgumentException("Reponame cannot be null")
-    }
-
-    if (repoName.length == 0) {
-      throw new IllegalArgumentException("Reponame cannot be empty")
-    }
-
     val uri: StringBuilder = new StringBuilder("/repos")
     uri.append("/").append(repoName)
     uri.append("/commits")
@@ -107,14 +91,6 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     * @return a list of all (simple) commit information.
     */
   def getAllCommits(repoName: String, sha: String): PageIterator[SimpleCommit] = {
-    if (repoName == null) {
-      throw new IllegalArgumentException("Reponame cannot be null")
-    }
-
-    if (repoName.length == 0) {
-      throw new IllegalArgumentException("Reponame cannot be empty")
-    }
-
     val uri: StringBuilder = new StringBuilder("/repos")
     uri.append("/").append(repoName)
     uri.append("/commits")
