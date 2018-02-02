@@ -28,10 +28,9 @@ import org.codefeedr.Core.Clients.MongoDB.MongoDB
 import org.mongodb.scala._
 import org.mongodb.scala.model.Indexes._
 import com.mongodb.client.model.IndexOptions
+import org.mongodb.scala.model.Filters._
 
 import scala.concurrent.ExecutionContext
-import scala.async.Async.{async, await}
-import org.mongodb.scala.model.Filters._
 
 import scala.reflect.ClassTag
 import collection.JavaConverters._
@@ -56,14 +55,14 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
     * @param parameters of this job.
     */
   override def open(parameters: Configuration): Unit = {
-    setIndexes(GetIndexNames)
+    SetIndexes(GetIndexNames)
   }
 
   /**
     * Sets the indexes.
     * @param indexes the indexes to set.
     */
-  def setIndexes(indexes: Seq[String]) = {
+  def SetIndexes(indexes: Seq[String]) = {
     mongoDB
       .getCollection[B](GetCollectionName)
       .createIndex(ascending(indexes: _*), new IndexOptions().unique(true))

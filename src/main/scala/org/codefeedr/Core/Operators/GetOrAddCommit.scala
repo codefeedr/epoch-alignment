@@ -28,7 +28,6 @@ class GetOrAddCommit extends GetOrAddGeneric[(String, SimpleCommit), Commit] {
 
     //numbering starts from 0 so we want to increment
     val taskId = getRuntimeContext.getIndexOfThisSubtask + 1
-    println(s"MY TASK ID IS $taskId")
 
     //initiate GitHubAPI
     GitHubAPI = new GitHubAPI(taskId)
