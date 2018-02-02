@@ -3,6 +3,7 @@ package org.codefeedr.util
 import com.typesafe.scalalogging.LazyLogging
 import rx.lang.scala.{Observable, Subscription}
 
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
@@ -48,6 +49,25 @@ object ObservableExtension extends LazyLogging{
       //Make sure to unsubscribe when the future completes
       //In case of failure there is no need for this
       p.future.onComplete(_ => subscription.unsubscribe())
+      p.future
+    }
+
+    /**
+      * Collects all data until the stream ends
+      * Note this future will never complete if the stream never ends, and keeps increasing in size
+      * Meant for testing purposes
+      * @return
+      */
+    def Collect(): Future[List[T]] = {
+      val p = Promise[List[T]]
+      val collection = new mutable.ListBuffer[T]
+      val subscription = o.subscribe(
+        element => {
+          logger.debug("Got element")
+          collection.append(element)
+        },
+        e=>p.failure(e),
+        () => p.success(collection.toList))
       p.future
     }
   }

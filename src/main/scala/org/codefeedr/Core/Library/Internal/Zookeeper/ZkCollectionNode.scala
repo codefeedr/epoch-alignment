@@ -10,13 +10,6 @@ class ZkCollectionNode[TNode <: ZkNodeBase](name: String, val parent: ZkNodeBase
 
   override def Parent(): ZkNodeBase = parent
 
-  /**
-    * Gets all childNodes currently located in zookeeper
-    * @return
-    */
-  def GetChildren(): Future[Iterable[TNode]] =
-    zkClient.GetChildren(Path()).map(o => o.map(GetChild))
-
 
   /**
     * Gets the child of the given name.
@@ -25,6 +18,15 @@ class ZkCollectionNode[TNode <: ZkNodeBase](name: String, val parent: ZkNodeBase
     * @return
     */
   def GetChild(name : String): TNode = childConstructor(name,this)
+
+
+  /**
+    * Gets all childNodes currently located in zookeeper
+    * @return
+    */
+  def GetChildren(): Future[Iterable[TNode]] =
+    zkClient.GetChildren(Path()).map(o => o.map(GetChild))
+
 
   /**
     * Awaits child registration, and returns the node when the child has been created

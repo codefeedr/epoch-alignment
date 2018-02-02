@@ -7,7 +7,9 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
 import org.codefeedr.util.ObservableExtension._
 
 import scala.async.Async.{async, await}
-import scala.concurrent.{Await, Future, TimeoutException}
+import scala.concurrent.{Await, Future}
+import org.codefeedr.Util.FutureExtensions._
+
 import scala.concurrent.duration.{Duration, MILLISECONDS, SECONDS}
 
 
@@ -102,9 +104,9 @@ class ZkNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEa
     val config = new TestConfigNode("testc", root)
     await(config.Create(MyConfig("initialString")))
     val f = config.AwaitCondition(o => o.s == "expectedString").map(_ => true)
-    assertThrows[TimeoutException](Await.ready(f, Duration(100, MILLISECONDS)))
+    await(f.AssertTimeout())
     config.SetData(MyConfig("someOtherString"))
-    assertThrows[TimeoutException](Await.ready(f, Duration(100, MILLISECONDS)))
+    await(f.AssertTimeout())
     config.SetData(MyConfig("expectedString"))
     assert(await(f))
   }
@@ -131,9 +133,9 @@ class ZkNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEa
     await(config.Create(MyConfig("initialString")))
 
     val f = config.ObserveData().SubscribeUntil(o => o.s == "awaitedstring").map(_ => true)
-    assertThrows[TimeoutException](Await.ready(f, Duration(100, MILLISECONDS)))
+    await(f.AssertTimeout())
     config.SetData(MyConfig("someotherstring"))
-    assertThrows[TimeoutException](Await.ready(f, Duration(100, MILLISECONDS)))
+    await(f.AssertTimeout())
     config.SetData(MyConfig("awaitedstring"))
     assert(await(f))
   }
@@ -149,7 +151,7 @@ class ZkNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEa
     val config = new TestConfigNode("testc", root)
     await(config.Create(MyConfig("initialString")))
     val f = config.ObserveData().SubscribeUntil(_=>false).map(_ => true)
-    assertThrows[TimeoutException](Await.ready(f, Duration(100, MILLISECONDS)))
+    await(f.AssertTimeout())
     await(config.Delete())
     assert(await(f))
   }

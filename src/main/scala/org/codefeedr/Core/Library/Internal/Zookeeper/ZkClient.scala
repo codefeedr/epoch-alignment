@@ -368,12 +368,13 @@ class ZkClient extends LazyLogging {
     * Maintains a mutable internal state
     * Current implementation does not guarantee an event is fired when a child is removed and added again
     * (but it should do so in all practical use cases)
+    * Current implementation has the side effect of placing an subscription on a new instance of ObserveChildren
     * @param path the path to observe
     * @return
     */
   def ObserveNewChildren(path: String): Observable[String] = Observable(subscriber => {
     var previousState = Seq.empty[String]
-    ObserveChildren(path).map(o => {
+    ObserveChildren(path).subscribe(o => {
       o.foreach(child => {
         if(!previousState.contains(child)) {
           subscriber.onNext(child)
@@ -382,7 +383,9 @@ class ZkClient extends LazyLogging {
       //Assign new list as current state
       //This way, if a child is removed and then later added an event is still fired
       previousState = o
-    })
+    },
+      error => subscriber.onError(error),
+      () => subscriber.onCompleted())
   })
 
   /**

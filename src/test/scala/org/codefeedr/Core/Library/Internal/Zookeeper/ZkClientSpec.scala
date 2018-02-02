@@ -29,6 +29,7 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import scala.async.Async._
 import org.scalatest.tagobjects.Slow
+import org.codefeedr.Util.FutureExtensions._
 
 class ZkClientSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll {
 
@@ -85,7 +86,7 @@ class ZkClientSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfter
   "A ZkClient" should "Be able to await construction of a child" taggedAs Slow in async {
     await(zkClient.Create("/ZkClientSpec"))
     val future = zkClient.AwaitChild("/ZkClientSpec","child").map(_ => assert(true))
-    assertThrows[TimeoutException](Await.ready(future, Duration(100, MILLISECONDS)))
+    await(future.AssertTimeout())
     await(zkClient.Create("/ZkClientSpec/child"))
     Await.ready(future, Duration(1, SECONDS))
     assert(true)
@@ -94,7 +95,7 @@ class ZkClientSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfter
   "A ZkClient" should "Be able to await removal of a node" taggedAs Slow in async {
     await(zkClient.Create("/ZkClientSpec/somenode"))
     val future = zkClient.AwaitRemoval("/ZkClientSpec/somenode").map(_ => assert(true))
-    assertThrows[TimeoutException](Await.ready(future, Duration(100, MILLISECONDS)))
+    await(future.AssertTimeout())
     await(zkClient.Delete("/ZkClientSpec/somenode"))
     Await.ready(future, Duration(1, SECONDS))
     assert(true)
@@ -104,7 +105,7 @@ class ZkClientSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfter
   "A ZkClient" should "Be able to await a condition based on a given method" taggedAs Slow in async {
     await(zkClient.CreateWithData("/ZkClientSpec/somenode", "nothello"))
     val future = zkClient.AwaitCondition("/ZkClientSpec/somenode", (o:String) => o == "hello").map(_ => assert(true))
-    assertThrows[TimeoutException](Await.ready(future, Duration(100, MILLISECONDS)))
+    await(future.AssertTimeout())
     await(zkClient.SetData("/ZkClientSpec/somenode", "hello"))
     Await.ready(future, Duration(1, SECONDS))
     assert(true)

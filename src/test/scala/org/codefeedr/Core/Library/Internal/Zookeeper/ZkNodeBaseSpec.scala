@@ -6,7 +6,7 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
 import scala.async.Async.{async, await}
 import scala.concurrent.duration.{Duration, MILLISECONDS, SECONDS}
 import scala.concurrent.{Await, Future, TimeoutException}
-
+import org.codefeedr.Util.FutureExtensions._
 
 
 
@@ -14,7 +14,7 @@ import scala.concurrent.{Await, Future, TimeoutException}
 /**
   * Testing [[ZkNodeBase]]
   */
-class ZkNodeBaseSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll {
+class ZkNodeBaseSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll {
   "ZkNode.Create()" should "create the node without data" in async {
     val root = new TestRootBase()
     assert(!await(root.Exists()))
@@ -94,7 +94,7 @@ class ZkNodeBaseSpec  extends LibraryServiceSpec with Matchers with BeforeAndAft
   "ZkNode.AwaitChild(name)" should "return a future that does not resolve if no child is created" in async {
     val root = new TestRootBase()
     await(root.Create())
-    assertThrows[TimeoutException](Await.ready(root.AwaitChild("child"), Duration(100, MILLISECONDS)))
+    await(root.AwaitChild("child").AssertTimeout())
   }
 
   it should "resolve when the child already exists" in async {
@@ -109,7 +109,7 @@ class ZkNodeBaseSpec  extends LibraryServiceSpec with Matchers with BeforeAndAft
     await(root.Create())
     val child = new TestConfigNodeBase("child", root)
     val f = root.AwaitChild("child").map(_ => true)
-    assertThrows[TimeoutException](Await.ready(f, Duration(100, MILLISECONDS)))
+    await(f.AssertTimeout())
     await(child.Create())
     assert(await(f))
   }
@@ -118,7 +118,7 @@ class ZkNodeBaseSpec  extends LibraryServiceSpec with Matchers with BeforeAndAft
     val root = new TestRootBase()
     await(root.Create())
     val f = root.AwaitRemoval().map(_ => true)
-    assertThrows[TimeoutException](Await.ready(f, Duration(100, MILLISECONDS)))
+    await(f.AssertTimeout())
     await(root.Delete())
     assert(await(f))
   }
