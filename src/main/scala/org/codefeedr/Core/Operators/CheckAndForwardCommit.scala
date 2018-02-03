@@ -86,42 +86,44 @@ class CheckAndForwardCommit extends RichAsyncFunction[PushEvent, SimpleCommit] {
   override def asyncInvoke(input: PushEvent, resultFuture: ResultFuture[SimpleCommit]): Unit =
     async {
       val latestCommit = await(GetLatestCommit(input.repo.name))
-      var returned: Boolean = false
 
       //if <= than 20 commits & before == latestCommit, then forward only PushEvent commits
       if (input.payload.size <= 20 && latestCommit.sha == input.payload.before) {
         resultFuture.complete(input.payload.commits.map(x => SimpleCommit(x.sha)).asJava)
-        returned = true //we found what we had to forward
       } else {
-        //get all commits starting from the head
-        val allCommits = gitHubRequestService.getAllCommits(input.repo.name, input.payload.head)
-        var commitsToForward: List[SimpleCommit] = List()
+        val commitsToForward =
+          RetrieveUntilLatest(input.repo.name, latestCommit.sha, input.payload.head)
+        resultFuture.complete(commitsToForward.asJava)
+      }
+    }
 
-        //keep iterating through the commit pages if we haven't found the before SHA
-        while (allCommits.hasNext && !returned) {
+  def RetrieveUntilLatest(repoName: String,
+                          beforeSHA: String,
+                          headSHA: String): List[SimpleCommit] = {
+    //get all commits starting from the head
+    val allCommits = gitHubRequestService.getAllCommits(repoName, headSHA)
+    var commitsToForward: List[SimpleCommit] = List()
 
-          //get full page
-          val commitPage = allCommits.next()
+    //keep iterating through the commit pages if we haven't found the before SHA
+    while (allCommits.hasNext) {
 
-          // foreach commit in the page
-          commitPage.asScala.foreach { commit =>
-            //if we found the commit that is already stored, then forward everything we found
-            if (commit.sha == latestCommit.sha) {
-              resultFuture.complete(commitsToForward.asJava)
-              returned = true //we found what we had to forward
-            } else { //if not the commit that is latest in store, then we should forward
-              commitsToForward = commitsToForward :+ commit
-            }
+      //get full page
+      val commitPage = allCommits.next()
 
-          }
-        }
-
-        //if we have iterated through all commits and not found the before, then we need to retrieve all commits
-        if (!returned) {
-          resultFuture.complete(commitsToForward.asJava)
+      // foreach commit in the page
+      commitPage.asScala.foreach { commit =>
+        //if we found the commit that is already stored, then forward everything we found
+        if (commit.sha == beforeSHA) {
+          return commitsToForward
+        } else { //if not the commit that is latest in store, then we should forward
+          commitsToForward = commitsToForward :+ commit
         }
       }
     }
+
+    //return all commits, if beforeSHA not found
+    commitsToForward
+  }
 
   def GetLatestCommit(repoName: String): Future[SimpleCommit] = {
     //TODO can this be more efficient
