@@ -69,7 +69,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     consumer
   }
 
-  @transient private lazy val topic = s"${subjectType.name}-${subjectType.uuid}"
+  @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
   @transient private[Kafka] lazy val instanceUuid = UUID.randomUUID().toString
   //Make this configurable?
   @transient private lazy val RefreshTime = 100
@@ -142,7 +142,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
 
     Await.ready(consumerNode.SetState(false), Duration(5, SECONDS))
     dataConsumer.close()
-    //Notify of the closing
+    //Notify of the closing, to whoever is interested
     ClosePromise.success()
   }
 
@@ -161,31 +161,40 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     logger.debug(s"Source ${GetLabel()} started running.")
     InitRun()
 
-    //TODO: This should be done by closing after offsets have been reached, instead of immediately after zookeeper trigger
-    val future = Poll().map(o => o.foreach(o2 => collector(Map(o2))))
-    Await.ready(future, 5000 millis)
 
     while (running) {
       //TODO: Handle exceptions
       //Do not need to lock, because there will be only a single thread (per partition set) performing this operation
       val future = Poll().map(
         o => {
+
           //Collect data and push along the pipeline
-          o.foreach(o2 => collector(Map(o2)))
+          o.foreach(o2 => {
+            val mapped = Map(o2)
+            logger.debug(s"Got data: $mapped")
+            collector(mapped)
+          })
           //Obtain offsets, and update zookeeper state
           val offsets = currentOffset()
 
           //TODO: Implement asynchronous commits
-          dataConsumer.commitSync()
+        //  dataConsumer.commitSync()
         }
       )
       Await.ready(future, 5000 millis)
     }
 
+
+    //TODO: This should be done by closing after offsets have been reached, instead of immediately after zookeeper trigger
+    Thread.sleep(1000)
+    val future2 = Poll().map(o => o.foreach(o2 => collector(Map(o2))))
+    Await.ready(future2, 5000 millis)
+
     logger.debug(s"Source ${GetLabel()} stopped running.")
 
     FinalizeRun()
   }
+
 
   /**
     * Retrieve the current offsets
@@ -205,6 +214,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     * Perform a poll on the kafka consumer
     * @return
     */
+
   def Poll(): Future[List[TrailedRecord]] = {
     val thread = new KafkaConsumerThread(dataConsumer, GetLabel())
     Future {
@@ -212,6 +222,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
       thread.GetData()
     }
   }
+
 
   override def run(ctx: SourceFunction.SourceContext[T]): Unit = runLocal(ctx.collect)
 

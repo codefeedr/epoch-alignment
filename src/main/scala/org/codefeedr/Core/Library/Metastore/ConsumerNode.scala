@@ -23,4 +23,10 @@ class ConsumerNode(name: String, parent: ZkNodeBase)
     * @return
     */
   override def InitialState(): Boolean = true
+
+  override def SetState(state: Boolean): Future[Unit] = async {
+    await(super.SetState(state))
+    //Call update on query source state, because this consumer state change might impact it
+    await(parent.Parent().asInstanceOf[QuerySourceNode].UpdateState())
+  }
 }

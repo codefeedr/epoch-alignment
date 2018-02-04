@@ -64,6 +64,7 @@ object KafkaController {
     }
   }
 
+
   /**
     * Creates a topic if it does not exist yet. Otherwise does nothing
     * @param name Topic to guarantee

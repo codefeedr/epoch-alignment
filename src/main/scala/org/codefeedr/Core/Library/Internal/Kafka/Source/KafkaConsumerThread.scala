@@ -30,7 +30,11 @@ class KafkaConsumerThread(kafkaConsumer: KafkaConsumer[RecordSourceTrail, Row], 
       .poll(PollTimeout)
       .iterator()
       .asScala
-      .map(o => TrailedRecord(o.value()))
+      .map(o => {
+        val r = TrailedRecord(o.value())
+        logger.debug(s"Consumer got data: $r")
+        r
+      })
       .toList
 
     logger.debug(s"$name completed poll")

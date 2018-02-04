@@ -42,7 +42,7 @@ object KafkaConsumerFactory {
     //Kafka consumer constructor is not thread safe!
     val properties = KafkaConfig.consumerPropertes.clone().asInstanceOf[Properties]
     properties.setProperty("group.id", group)
-    properties.setProperty("enable.auto.commit", "false") //Disable auto commit because we use manual commit
+    //properties.setProperty("enable.auto.commit", "false") //Disable auto commit because we use manual commit
     new KafkaConsumer[TKey, TData](properties,
                                    new KafkaDeserialiser[TKey],
                                    new KafkaDeserialiser[TData])

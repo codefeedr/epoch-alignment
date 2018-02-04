@@ -85,7 +85,7 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
   }
 
 
-  "Kafka-Sinks" should "retrieve all messages published by a source" taggedAs(Slow, KafkaTest) in async {
+  "Kafka-Sources" should "retrieve all messages published by a source" taggedAs(Slow, KafkaTest) in async {
     val subjectNode = subjectLibrary.GetSubject(testSubjectName)
     assert(!await(subjectNode.Exists()))
 
