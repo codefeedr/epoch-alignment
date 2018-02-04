@@ -59,7 +59,6 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     val request: GitHubRequest = createRequest()
     request.setUri(uri.toString())
     request.setType(new TypeToken[JsonElement]() {}.getType)
-
     val commit = client.get(request).getBody.asInstanceOf[JsonElement]
 
     //return extracted as Commit

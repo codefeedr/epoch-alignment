@@ -5,6 +5,9 @@ import org.apache.flink.configuration.Configuration
 import org.codefeedr.Core.Clients.GitHub.{GitHubAPI, GitHubRequestService}
 import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.{Commit, SimpleCommit}
 
+import scala.async.Async._
+import scala.concurrent.Future
+
 class GetOrAddCommit extends GetOrAddGeneric[(String, SimpleCommit), Commit] {
 
   //get the codefeedr configuration files
@@ -52,14 +55,14 @@ class GetOrAddCommit extends GetOrAddGeneric[(String, SimpleCommit), Commit] {
     * @return the value of the index.
     */
   override def GetIndexValues(input: (String, SimpleCommit)): Seq[String] =
-    Seq(s"https://api.github.com/repos/${input._1}/git/commits/${input._2.sha}")
+    Seq(s"https://api.github.com/repos/${input._1}/commits/${input._2.sha}")
 
   /**
     * Factory method to retrieve B using A
     * @param input the input variable A.
     * @return the output variable B.
     */
-  override def GetFunction(input: (String, SimpleCommit)): Commit = {
-    return gitHubRequestService.getCommit(input._1, input._2.sha)
+  override def GetFunction(input: (String, SimpleCommit)): Future[Commit] = {
+    Future(gitHubRequestService.getCommit(input._1, input._2.sha))
   }
 }

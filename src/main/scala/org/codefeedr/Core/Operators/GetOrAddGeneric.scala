@@ -30,8 +30,7 @@ import org.mongodb.scala.model.Indexes._
 import com.mongodb.client.model.IndexOptions
 import org.mongodb.scala.model.Filters._
 
-import scala.concurrent.ExecutionContext
-
+import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 import collection.JavaConverters._
 import scala.async.Async
@@ -74,7 +73,7 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
     * @param input the input of type A.
     * @param resultFuture future of output type B.
     */
-  override def asyncInvoke(input: A, resultFuture: ResultFuture[B]): Unit = Async.async {
+  override def asyncInvoke(input: A, resultFuture: ResultFuture[B]): Unit = {
     val col = mongoDB.getCollection[B](GetCollectionName)
 
     //keep track if result is already send
@@ -94,12 +93,14 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
             return
           }
 
-          //retrieve output
-          val output: B = GetFunction(input)
+          Async.async {
+            //retrieve output
+            val output: B = Async.await(GetFunction(input))
 
-          //insert and complete future
-          col.insertOne(output).toFuture()
-          resultFuture.complete(Iterable(output).asJavaCollection)
+            //insert and complete future
+            col.insertOne(output).toFuture()
+            resultFuture.complete(Iterable(output).asJavaCollection)
+          }
         }
 
         override def onNext(result: B): Unit = {
@@ -108,7 +109,6 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
           resultFuture.complete(Iterable(result).asJavaCollection)
         }
       })
-
   }
 
   /**
@@ -145,5 +145,5 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
     * @param input the input variable A.
     * @return the output variable B.
     */
-  def GetFunction(input: A): B
+  def GetFunction(input: A): Future[B]
 }

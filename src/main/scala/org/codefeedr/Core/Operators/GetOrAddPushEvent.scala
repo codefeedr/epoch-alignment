@@ -22,6 +22,8 @@ package org.codefeedr.Core.Operators
 import com.typesafe.config.{Config, ConfigFactory}
 import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.PushEvent
 
+import scala.concurrent.Future
+
 /**
   * Gets or adds a PushEvent from MongoDB.
   */
@@ -57,5 +59,5 @@ class GetOrAddPushEvent extends GetOrAddGeneric[PushEvent, PushEvent] {
     * @param input the input variable A.
     * @return the output variable B.
     */
-  override def GetFunction(input: PushEvent): PushEvent = input
+  override def GetFunction(input: PushEvent): Future[PushEvent] = Future(input)
 }

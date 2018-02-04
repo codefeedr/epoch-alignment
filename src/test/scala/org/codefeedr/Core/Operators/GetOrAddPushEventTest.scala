@@ -52,10 +52,13 @@ class GetOrAddPushEventTest extends MongoDBSpec {
 
   "A PushEvent" should "be forwarded if already in the DB" taggedAs (Slow) in async {
     val operator = new GetOrAddPushEvent()
-    operator.open(new Configuration()) //open operator
 
     //await the clearing of the collection
     await(ClearCollection(collectionName))
+
+    operator.open(new Configuration()) //open operator
+
+    //insert document
     await(InsertDocument(collectionName, fakePush))
 
     //setup mocking environment
@@ -72,10 +75,11 @@ class GetOrAddPushEventTest extends MongoDBSpec {
 
   "A PushEvent" should "be stored and forwarded if not in the DB" taggedAs (Slow) in async {
     val operator = new GetOrAddPushEvent()
-    operator.open(new Configuration()) //open operator
 
     //await the clearing of the collection
     await(ClearCollection(collectionName))
+
+    operator.open(new Configuration()) //open operator
 
     //setup mocking environment
     val mockFuture = mock[ResultFuture[PushEvent]]
