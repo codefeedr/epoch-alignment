@@ -19,8 +19,8 @@
 
 package org.codefeedr.Core.Library.Internal.Zookeeper
 
-import org.apache.flink.shaded.zookeeper.org.apache.zookeeper.KeeperException
-import org.apache.flink.shaded.zookeeper.org.apache.zookeeper.data.Stat
+import org.apache.zookeeper.KeeperException
+import org.apache.zookeeper.data.Stat
 
 case class ZkClientException(exception: KeeperException,
                              path: Option[String],

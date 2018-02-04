@@ -25,6 +25,8 @@ val dep_flink = Seq(
 
 val dep_core = Seq(
   "codes.reactive" %% "scala-time" % "0.4.1",
+  "org.apache.zookeeper" % "zookeeper" % "3.4.9",
+
 
   "org.scalactic" %% "scalactic" % "3.0.1",
   "org.scalatest" %% "scalatest" % "3.0.1" % "test",
