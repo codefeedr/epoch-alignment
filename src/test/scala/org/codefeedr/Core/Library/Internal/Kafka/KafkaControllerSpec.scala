@@ -38,8 +38,12 @@ class KafkaControllerSpec extends LibraryServiceSpec with Matchers with BeforeAn
   val testTopic = "TestTopic"
 
   override def beforeEach(): Unit = {
-    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
     Await.ready(subjectLibrary.Initialize(),Duration(1, SECONDS))
+  }
+
+  override def afterEach(): Unit = {
+    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
+
   }
 
   "A kafkaController" should "be able to create and delete new topics" in async {
