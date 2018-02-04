@@ -23,6 +23,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.datastream.DataStream
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment
 import org.apache.flink.streaming.api.functions.source.SourceFunction
+import org.apache.flink.table.api.TableSchema
 import org.apache.flink.table.sources.StreamTableSource
 import org.apache.flink.types.Row
 import org.codefeedr.Core.Library.{SubjectFactory, TypeInformationServices}
@@ -47,4 +48,8 @@ class KafkaTableSource(subjectType: SubjectType, sourceId: String) extends Strea
     */
   override def getReturnType: TypeInformation[Row] =
     TypeInformationServices.GetEnrichedRowTypeInfo(subjectType)
+
+  override def getTableSchema: TableSchema = {
+    TableSchema.fromTypeInfo(getReturnType)
+  }
 }
