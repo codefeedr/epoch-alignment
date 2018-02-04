@@ -22,9 +22,8 @@ import ExecutionContext.Implicits.global
 import collection.JavaConverters._
 import scala.reflect.ClassTag
 
-class GetOrAddPushEventTest extends LibraryServiceSpec with Matchers with MockitoSugar with LazyLogging {
+class GetOrAddPushEventTest extends MongoDBSpec {
 
-  val mongo = new MongoDB()
   val collectionName = "github_events"
 
   val fakePush = PushEvent("123",
@@ -98,20 +97,6 @@ class GetOrAddPushEventTest extends LibraryServiceSpec with Matchers with Mockit
 
     //should be in db now
     assert(inDB.size == 1)
-  }
-
-  def ClearCollection(collectionName: String): Future[Completed] = {
-    mongo.
-      getCollection(collectionName).
-      drop().
-      toFuture()
-  }
-
-  def InsertDocument[T : ClassTag](collectionName: String, doc: T) = {
-    mongo.
-      getCollection[T](collectionName).
-      insertOne(doc).
-      toFuture()
   }
 
 }
