@@ -28,7 +28,7 @@ val dep_core = Seq(
 
   "org.scalactic" %% "scalactic" % "3.0.1",
   "org.scalatest" %% "scalatest" % "3.0.1" % "test",
-  "org.scalamock" %% "scalamock" % "4.0.0" % "test",
+  "org.mockito" % "mockito-core" % "2.13.0" % "test",
 
   "ch.qos.logback" % "logback-classic" % "1.1.7",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
