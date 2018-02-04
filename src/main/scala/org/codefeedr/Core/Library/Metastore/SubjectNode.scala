@@ -2,7 +2,7 @@ package org.codefeedr.Core.Library.Metastore
 
 import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.Core.Library.Internal.SubjectTypeFactory
-import org.codefeedr.Core.Library.Internal.Zookeeper.{ZkClient, ZkNodeBase, ZkNode}
+import org.codefeedr.Core.Library.Internal.Zookeeper.{ZkClient, ZkNode, ZkNodeBase, ZkStateNode}
 import org.codefeedr.Exceptions._
 import org.codefeedr.Model.SubjectType
 
@@ -10,6 +10,7 @@ import scala.reflect.runtime.{universe => ru}
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.reflect.ClassTag
 
 /**
   * This class contains services to obtain more detailed information about kafka partitions,
@@ -17,6 +18,7 @@ import scala.concurrent.Future
   */
 class SubjectNode(subjectName: String, parent: ZkNodeBase)
     extends ZkNode[SubjectType](subjectName, parent)
+    with ZkStateNode[SubjectType, Boolean]
     with LazyLogging {
 
   /**
@@ -24,16 +26,10 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
     * @return
     */
   override def PostCreate(): Future[Unit] = async {
-    await(GetState().Create(true))
     await(GetSinks().Create())
     await(GetSources().Create())
+    await(super.PostCreate())
   }
-
-  /**
-    * Retrieves child node representing the state of the subject (active or inactive)
-    * @return
-    */
-  def GetState(): ZkNode[Boolean] = GetChild[Boolean]("state")
 
   /**
     * Obtains the node maintaining the collection of consumers of the subject type
@@ -74,25 +70,6 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
   }
 
   /**
-    * Checks if the type is not persistent and there are no sinks.
-    * If so it closes the subject
-    *
-    * @return A future that resolves when the operation is done
-    */
-  private def CloseIfNoSinks(typeName: String): Future[Unit] = async {
-    //For non-persistent types automatically close the subject when all sources are removed
-    val shouldClose = await(for {
-      persistent <- GetData().map(o => o.get.persistent)
-      hasSinks <- HasActiveSinks()
-      isOpen <- IsOpen()
-    } yield !persistent && !hasSinks && isOpen)
-
-    if (shouldClose) {
-      await(Close())
-    }
-  }
-
-  /**
     * Retrieve value if the subject has an active consumer
     * @return
     */
@@ -102,7 +79,7 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
     * Retrieve a value if the given type has any active producers
     * @return
     */
-  def HasActiveSinks(): Future[Boolean] = GetSources().GetState()
+  def HasActiveSinks(): Future[Boolean] = GetSinks().GetState()
 
   /**
     * Method that asserts the given typeName exists
@@ -147,13 +124,24 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
   }
 
   /**
-    * Closes the subject
-    *
-    * @return a future that resolves when the write was succesful
+    * Updates the state of the subjectnode
+    * Reads the sinks. If all sinks are closed the subject will also be closed
+    * @return
     */
-  def Close(): Future[Unit] = {
-    logger.debug(s"closing subject $name")
-    GetState().SetData(false)
+  def UpdateState(): Future[Unit] = async {
+
+    val shouldClose = await(for {
+      isOpen <- GetState().map(o => o.get)
+      persistent <- GetData().map(o => o.get.persistent)
+      hasSinks <-  GetSinks().GetState()
+    } yield (persistent, hasSinks, isOpen))
+
+    if(!shouldClose._1 && !shouldClose._2 && shouldClose._3) {
+      logger.info(s"Closing subject $name because no more sinks are active and subject is not persistent.")
+      await(SetState(false))
+    } else {
+      logger.debug(s"Not closing subject $name. persistent: ${shouldClose._1},  hasSinks: ${shouldClose._2},  isOpen: ${shouldClose._3}")
+    }
   }
 
   /**
@@ -162,7 +150,7 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
     * @return a future with boolean if the type was still open
     */
   def IsOpen(): Future[Boolean] =
-    GetState().GetData().map(o => o.get)
+    GetState().map(o => o.get)
 
   /**
     * Constructs a future that resolves whenever the subject is closed
@@ -170,5 +158,19 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
     * @return A future that resolves when the type is closed
     */
   def AwaitClose(): Future[Unit] =
-    GetState().AwaitCondition(o => !o).map(_ => Unit)
+    GetStateNode().AwaitCondition(o => !o).map(_ => ())
+
+  /**
+    * The base class needs to expose the typeTag, no typeTag constraints can be put on traits
+    *
+    * @return
+    */
+  override def TypeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
+
+  /**
+    * The initial state of the node. State is not allowed to be empty
+    *
+    * @return
+    */
+  override def InitialState(): Boolean = true
 }

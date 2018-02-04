@@ -33,15 +33,15 @@ import scala.concurrent.{Await, ExecutionContextExecutor, Future, TimeoutExcepti
 
 case class TestKafkaSinkSubject(prop1: String)
 
+/**
+  * Test for [[KafkaGenericSink]]
+  */
 class KafkaSinkSpec extends LibraryServiceSpec with BeforeAndAfterEach with BeforeAndAfterAll {
 
 
   val testSubjectName = "TestKafkaSinkSubject"
 
-  override def beforeEach(): Unit = {
-    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
-    Await.ready(subjectLibrary.Initialize(),Duration(1, SECONDS))
-  }
+
 
   "A KafkaSink" should "Register and remove itself in the SubjectLibrary" in async {
     val sinkId = "testSink"
@@ -56,8 +56,11 @@ class KafkaSinkSpec extends LibraryServiceSpec with BeforeAndAfterEach with Befo
     assert(await(sinkNode.Exists()))
     assert(await(subjectNode.GetSinks().GetState()))
     sink.close()
-    val r = assert(!await(subjectNode.GetSinks().GetState()))
-    await(subjectNode.ForceUnRegisterSubject())
-    r
+    assert(!await(subjectNode.GetSinks().GetState()))
+  }
+
+  override def afterEach(): Unit = {
+    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(subjectLibrary.Initialize(),Duration(1, SECONDS))
   }
 }

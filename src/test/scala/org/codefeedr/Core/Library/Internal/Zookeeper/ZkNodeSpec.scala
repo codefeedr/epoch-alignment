@@ -38,6 +38,28 @@ class ZkNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEa
     assert(postCreateCalled)
   }
 
+  it should "be possible to call create twice with equal data" in async {
+    val root = new TestRoot()
+    val config = new TestConfigNode("testc", root)
+    val data = MyConfig("teststring")
+    await(config.Create(data))
+    await(config.Create(data))
+    assert(await(config.GetData()).get.s == "teststring")
+  }
+
+  /*
+  it should "fail if create is called twice with different data" in async {
+    val root = new TestRoot()
+    val config = new TestConfigNode("testc", root)
+    val data1 = MyConfig("teststring")
+    val data2 = MyConfig("testotherstring")
+    await(config.Create(data1))
+   // await(config.Create(data2))
+    assert(await(config.Create(data2).failed.map(_ => true)))
+    //assert(await(config.GetData()).get.s == "teststring")
+  }
+  */
+
   "ZkNode.GetOrCreate" should "use the factory to construct a node that does not exist" in async {
     val root = new TestRoot()
     val child = new TestConfigNode("child", root)

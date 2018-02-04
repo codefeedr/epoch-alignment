@@ -98,7 +98,7 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
 
 
     Console.println("Closing subject type, should close the queries")
-    await(subjectNode.Close())
+    await(subjectNode.SetState(false))
     Console.println("Waiting for completion of queries")
     await(environments)
     println("Completed")
@@ -127,7 +127,7 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
     val environments = Future.sequence(Seq(CreateSourceQuery(1), CreateSourceQuery(2), CreateSourceQuery(3)))
 
     Console.println("Closing subject type, should close the queries")
-    await(subjectNode.Close())
+    await(subjectNode.SetState(false))
     Console.println("Waiting for completion of queries")
     await(environments)
     println("Completed")
@@ -144,17 +144,14 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
     val subjectNode = subjectLibrary.GetSubject(testSubjectName)
     assert(!await(subjectNode.Exists()))
 
-
     await(Future.sequence(for (_ <- 1 to 3) yield {
       RunSourceEnvironment[MyOwnIntegerObject](mutable.Set(1, 2, 3).map(o => MyOwnIntegerObject(o)).toArray)
     }))
 
     val environments = Future.sequence(Seq(CreateSourceQuery(1), CreateSourceQuery(2), CreateSourceQuery(3)))
 
-
-
     Console.println("Closing subject type, should close the queries")
-    await(subjectNode.Close())
+    await(subjectNode.SetState(false))
     Console.println("Waiting for completion of queries")
     await(environments)
     println("Completed")

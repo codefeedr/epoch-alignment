@@ -23,6 +23,7 @@ package org.codefeedr.Core.Library.Internal.Kafka
 
 import org.apache.flink.streaming.api.functions.source.SourceFunction.SourceContext
 import org.codefeedr.Core.FullIntegrationSpec
+import org.codefeedr.Core.Library.Internal.SubjectTypeFactory
 import org.codefeedr.Core.Library.Internal.Zookeeper.{ZkClient, ZkNodeBase}
 import org.codefeedr.Core.Library.LibraryServices
 import org.codefeedr.Model.TrailedRecord
@@ -35,12 +36,20 @@ import scala.concurrent.duration._
 
 case class TestKafkaSourceSubject(prop1: String)
 
-class KafkaSourceSpec extends FullIntegrationSpec {
+/**
+  * Test for [[KafkaTrailedRecordSource]]
+  */
+class KafkaSourceSpec extends FullIntegrationSpec  {
   val testSubjectName = "TestKafkaSourceSubject"
 
   "A KafkaSource" should "Register and remove itself in the SubjectLibrary" in async {
     val sourceName = "testSource"
-    val subjectNode = subjectLibrary.GetSubject[TestKafkaSourceSubject]()
+    val subjectType = SubjectTypeFactory.getSubjectType[TestKafkaSourceSubject]
+    val subjectNode = subjectLibrary.GetSubject(subjectType.name)
+    //Create the node, normally the sinks are responsible for the creation of the subject node
+    await(subjectNode.Create(subjectType))
+    assert(await(subjectNode.GetState()).get)
+
     val subject = await(subjectNode.GetOrCreateType[TestKafkaSourceSubject]())
 
     val source = new KafkaTrailedRecordSource(subject, sourceName)
@@ -49,23 +58,18 @@ class KafkaSourceSpec extends FullIntegrationSpec {
     assert(!await(sourceNode.Exists()))
     source.InitRun()
 
-    assert(!await(sourceNode.Exists()))
+
+    assert(await(sourceNode.Exists()))
+    assert(await(sourceNode.GetConsumers().GetState()))
     assert(await(subjectNode.GetSources().GetState()))
     assert(source.running)
-    val sourceClose = source.AwaitClose()
-    assert(!await(subjectNode.GetSources().GetState()))
 
-    val subjectRemove = subjectNode.AwaitRemoval()
 
-    //Close the subject so the sink should close itself
-    await(subjectNode.Close())
 
-    //Await the close
-    Await.ready(sourceClose, Duration(1, SECONDS))
+    //Since the subject has no sources, just calling update should close it
+    await(subjectNode.UpdateState())
+
+    await(subjectNode.AwaitClose())
     assert(!source.running)
-    //It should remove itself from the library when it has stopped running, causing the type to be removed
-    //This is temporary disabled
-    //Await.ready(subjectRemove, Duration(1, SECONDS))
-    assert(true)
   }
 }

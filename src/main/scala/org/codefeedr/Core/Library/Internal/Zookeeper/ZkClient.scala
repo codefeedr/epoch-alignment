@@ -474,7 +474,7 @@ class ZkClient extends LazyLogging {
         override def processResult(rc: Int, path: String, c: scala.Any, stat: Stat): Unit = {
           //If the code gets here, the node has been removed in between the firing and placing of the watch
           Code.get(rc) match {
-            case Code.OK => p.success(Unit)
+            case Code.OK => ()
             case Code.NONODE => p.success(Unit)
             case error if path == null =>
               p.failure(

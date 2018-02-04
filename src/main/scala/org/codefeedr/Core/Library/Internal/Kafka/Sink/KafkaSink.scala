@@ -30,8 +30,11 @@ import org.apache.flink.types.Row
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.codefeedr.Core.Library.Internal.KeyFactory
 import org.codefeedr.Core.Library.LibraryServices
+import org.codefeedr.Core.Library.Metastore.{ProducerNode, QuerySinkNode, SubjectNode}
+import org.codefeedr.Model.Zookeeper.{Producer, QuerySink}
 import org.codefeedr.Model._
 
+import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
@@ -50,6 +53,12 @@ abstract class KafkaSink[TSink]
 
   @transient protected lazy val kafkaProducer = {
     val producer = KafkaProducerFactory.create[RecordSourceTrail, Row]
+    //Create the producer node alongside
+    //Need to block here because the producer cannot start before the zookeeper state has been configured
+    Await.ready(subjectNode.Create(subjectType),Duration(5, SECONDS))
+    Await.ready(sinkNode.Create(QuerySink(sinkUuid)), Duration(5, SECONDS))
+    Await.ready(producerNode.Create(Producer(instanceUuid,null,System.currentTimeMillis())), Duration(5, SECONDS))
+
     logger.debug(s"Producer $sinkUuid instance $instanceUuid created for topic $topic")
     producer
   }
@@ -57,16 +66,15 @@ abstract class KafkaSink[TSink]
   val subjectType: SubjectType
   val sinkUuid: String
 
+
+  @transient lazy val subjectNode: SubjectNode = subjectLibrary.GetSubject(subjectType.name)
+
+  @transient lazy val sinkNode: QuerySinkNode = subjectNode.GetSinks().GetChild(sinkUuid)
+
   /**
     * The ZookeeperNode that represent this instance of the producer
     */
-  @transient lazy val producerNode =
-    subjectLibrary
-      .GetSubject(subjectType.name)
-      .GetSinks()
-      .GetChild(sinkUuid)
-      .GetProducers()
-      .GetChild(instanceUuid)
+  @transient lazy val producerNode: ProducerNode = sinkNode.GetProducers().GetChild(instanceUuid)
 
   @transient protected lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
   //A random identifier for this specific sink

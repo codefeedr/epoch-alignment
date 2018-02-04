@@ -24,18 +24,15 @@ import java.util.UUID
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable
-import org.apache.flink.runtime.state.{
-  CheckpointListener,
-  FunctionInitializationContext,
-  FunctionSnapshotContext
-}
+import org.apache.flink.runtime.state.{CheckpointListener, FunctionInitializationContext, FunctionSnapshotContext}
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
 import org.apache.flink.types.Row
 import org.codefeedr.Core.Library.Internal.Kafka.Meta.{PartitionOffset, TopicPartitionOffsets}
 import org.codefeedr.Core.Library.LibraryServices
-import org.codefeedr.Model.Zookeeper.Consumer
+import org.codefeedr.Core.Library.Metastore.{ConsumerNode, QuerySourceNode, SubjectNode}
+import org.codefeedr.Model.Zookeeper.{Consumer, QuerySource}
 import org.codefeedr.Model.{RecordSourceTrail, SubjectType, TrailedRecord}
 
 import scala.collection.JavaConverters._
@@ -82,18 +79,22 @@ abstract class KafkaSource[T](subjectType: SubjectType)
 
   val sourceUuid: String
 
-  //Node in zookeeper representing state of the instance of the consumer
-  @transient protected val consumerNode =
-    subjectLibrary
-      .GetSubject(subjectType.name)
+
+  @transient protected lazy val subjectNode: SubjectNode =
+    subjectLibrary.GetSubject(subjectType.name)
+
+  @transient protected lazy  val sourceNode: QuerySourceNode =
+    subjectNode
       .GetSources()
       .GetChild(sourceUuid)
+
+  //Node in zookeeper representing state of the instance of the consumer
+  @transient protected lazy val consumerNode: ConsumerNode =
+    sourceNode
       .GetConsumers()
       .GetChild(instanceUuid)
 
   //Node in zookeeper representing state of the subject this consumer is subscribed on
-  @transient protected val subjectNode =
-    subjectLibrary.GetSubject(subjectType.name)
 
   @transient
   @volatile private[Kafka] var running = true
@@ -124,17 +125,22 @@ abstract class KafkaSource[T](subjectType: SubjectType)
   private[Kafka] def InitRun(): Unit = {
     //Create self on zookeeper
     val initialConsumer = Consumer(instanceUuid, null, System.currentTimeMillis())
-    Await.ready(consumerNode.Create(initialConsumer), Duration(120, SECONDS))
 
-    //Make sure to cancel when the subject closes
-    subjectNode.GetSources().WatchStateAggregate(o => !o).onComplete(_ => cancel())
+    //Update zookeeper state blocking, because the source cannot start until the proper zookeeper state has been configured
+    Await.ready(sourceNode.Create(QuerySource(sourceUuid)), Duration(5, SECONDS))
+    Await.ready(consumerNode.Create(initialConsumer), Duration(5, SECONDS))
+
+    started = true
+
+    //Call cancel when the subject has closed
+    subjectNode.AwaitClose().map(_ => cancel())
   }
 
   private[Kafka] def FinalizeRun(): Unit = {
     //Finally unsubscribe from the library
     logger.debug(s"Unsubscribing ${GetLabel()}on subject $topic.")
 
-    Await.ready(consumerNode.SetState(false), Duration(120, SECONDS))
+    Await.ready(consumerNode.SetState(false), Duration(5, SECONDS))
     dataConsumer.close()
     //Notify of the closing
     ClosePromise.success()

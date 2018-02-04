@@ -11,11 +11,14 @@ import scala.reflect.ClassTag
 class ProducerNode(name: String, parent: ZkNodeBase)
     extends ZkNode[Producer](name, parent)
     with ZkStateNode[Producer, Boolean] {
-  override def PostCreate(): Future[Unit] = async {
-    await(GetStateNode().Create(true))
-  }
+
 
   override def TypeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
   override def InitialState(): Boolean = true
+
+  override def SetState(state: Boolean): Future[Unit] = async {
+    await(super.SetState(state))
+    parent.Parent().asInstanceOf[QuerySinkNode].UpdateState()
+  }
 
 }
