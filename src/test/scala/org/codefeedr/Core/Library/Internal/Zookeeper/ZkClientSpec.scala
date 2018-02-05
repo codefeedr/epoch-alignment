@@ -33,6 +33,13 @@ import org.codefeedr.Util.FutureExtensions._
 
 class ZkClientSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll {
 
+  /**
+    * After each test, make sure to clean the zookeeper store
+    */
+  override def beforeEach(): Unit = {
+    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
+  }
+
   override def afterEach(): Unit = {
     Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
   }

@@ -70,6 +70,10 @@ class KafkaSourceSpec extends FullIntegrationSpec  {
     await(subjectNode.UpdateState())
 
     await(subjectNode.AwaitClose())
+
+    //HACK: Somehow need to wait until the callback on the source has fired
+    Thread.sleep(100)
+
     assert(!source.running)
   }
 }

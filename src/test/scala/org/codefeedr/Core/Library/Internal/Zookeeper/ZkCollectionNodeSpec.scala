@@ -87,6 +87,12 @@ class ZkCollectionNodeSpec  extends LibraryServiceSpec with Matchers with Before
     assert(d.exists(o => o.name == "child2"))
   }
 
+  /**
+    * After each test, make sure to clean the zookeeper store
+    */
+  override def beforeEach(): Unit = {
+    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
+  }
 
   /**
     * After each test, make sure to clean the zookeeper store
