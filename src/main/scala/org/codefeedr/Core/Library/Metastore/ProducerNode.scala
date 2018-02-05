@@ -18,7 +18,7 @@ class ProducerNode(name: String, parent: ZkNodeBase)
 
   override def SetState(state: Boolean): Future[Unit] = async {
     await(super.SetState(state))
-    parent.Parent().asInstanceOf[QuerySinkNode].UpdateState()
+    await(parent.Parent().asInstanceOf[QuerySinkNode].UpdateState())
   }
 
 }

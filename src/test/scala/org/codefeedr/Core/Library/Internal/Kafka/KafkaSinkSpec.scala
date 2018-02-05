@@ -56,6 +56,7 @@ class KafkaSinkSpec extends LibraryServiceSpec with BeforeAndAfterEach with Befo
     assert(await(sinkNode.Exists()))
     assert(await(subjectNode.GetSinks().GetState()))
     sink.close()
+
     assert(!await(subjectNode.GetSinks().GetState()))
   }
 
