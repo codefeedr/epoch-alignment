@@ -39,6 +39,9 @@ import org.mongodb.scala.model.Indexes
 import scala.concurrent.{ExecutionContext, Future}
 import collection.JavaConverters._
 
+/**
+  * Checks the commit data we already have of a repository and forward the missing ones.
+  */
 class CheckAndForwardCommit extends RichAsyncFunction[PushEvent, SimpleCommit] {
 
   //get the codefeedr configuration files
@@ -63,6 +66,10 @@ class CheckAndForwardCommit extends RichAsyncFunction[PushEvent, SimpleCommit] {
   //loads the github request service
   var gitHubRequestService: GitHubRequestService = _
 
+  /**
+    * Setups the async function.
+    * @param parameters of this job.
+    */
   override def open(parameters: Configuration): Unit = {
     //numbering starts from 0 so we want to increment
     val taskId = getRuntimeContext.getIndexOfThisSubtask + 1
@@ -77,6 +84,9 @@ class CheckAndForwardCommit extends RichAsyncFunction[PushEvent, SimpleCommit] {
     SetIndexes()
   }
 
+  /**
+    * Set indexes both on the commit date and the url.
+    */
   def SetIndexes(): Future[String] = {
     collection
       .createIndex(ascending("commit.author.date"))
@@ -106,6 +116,13 @@ class CheckAndForwardCommit extends RichAsyncFunction[PushEvent, SimpleCommit] {
       }
     }
 
+  /**
+    * Retrieve commits from GitHubAPI from (beforeSHA, headSHA] (excluding beforeSHA)
+    * @param repoName full name of the repository.
+    * @param beforeSHA the before sha, commits are retrieved until this one is found
+    * @param headSHA the head sha, commits are retrieved from this point
+    * @return a list of commit sha's
+    */
   def RetrieveUntilLatest(repoName: String,
                           beforeSHA: String,
                           headSHA: String): List[SimpleCommit] = {
@@ -134,6 +151,11 @@ class CheckAndForwardCommit extends RichAsyncFunction[PushEvent, SimpleCommit] {
     commitsToForward
   }
 
+  /**
+    * Get the latest commit from a repository.
+    * @param repoName the repositoy name.
+    * @return the optional commit sha.
+    */
   def GetLatestCommit(repoName: String): Future[Option[String]] = async {
     //TODO can this be more efficient
     val commit = await {
@@ -144,9 +166,10 @@ class CheckAndForwardCommit extends RichAsyncFunction[PushEvent, SimpleCommit] {
         .toFuture()
     }
 
+    //if not found
     if (commit == null) {
       None
-    } else {
+    } else { //else return sha
       Some(commit.sha)
     }
   }
