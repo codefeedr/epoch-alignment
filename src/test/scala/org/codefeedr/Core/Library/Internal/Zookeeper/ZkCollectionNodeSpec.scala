@@ -47,7 +47,7 @@ class ZkCollectionNodeSpec  extends LibraryServiceSpec with Matchers with Before
     val root = new TestRoot()
     val collection = new TestCollectionNode("testCollection", root)
     await(collection.Create())
-    val f = collection.AwaitChild("expectedchild")
+    val f = collection.AwaitChildNode("expectedchild")
     await(f.AssertTimeout())
     collection.GetChild("bastardchild").Create("IAmNotRecogNized")
     await(f.AssertTimeout())
@@ -59,11 +59,19 @@ class ZkCollectionNodeSpec  extends LibraryServiceSpec with Matchers with Before
     val root = new TestRoot()
     val collection = new TestCollectionNode("testCollection", root)
     await(collection.Create())
-    val f = collection.AwaitChild("expectedchild").failed.map(_ => true)
+    val f = collection.AwaitChildNode("expectedchild").failed.map(_ => true)
     collection.Delete()
     assert(await(f))
   }
 
+  it should "also resolve if the child already exists" in async {
+    val root = new TestRoot()
+    val collection = new TestCollectionNode("testCollection", root)
+    await(collection.Create())
+    await(collection.GetChild("expectedchild").Create("IGetAllHeritage"))
+    val f = collection.AwaitChildNode("expectedchild")
+    assert(await(f.map(_ => true)))
+  }
 
   "ZkCollectionNode.ObserveNewChildren" should "Create an observalbe that contains all newly created nodes and complete if node is removed" in async {
     val root = new TestRoot()

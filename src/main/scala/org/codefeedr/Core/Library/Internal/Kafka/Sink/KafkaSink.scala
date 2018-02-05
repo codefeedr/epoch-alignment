@@ -59,7 +59,7 @@ abstract class KafkaSink[TSink]
     Await.ready(sinkNode.Create(QuerySink(sinkUuid)), Duration(5, SECONDS))
     Await.ready(producerNode.Create(Producer(instanceUuid,null,System.currentTimeMillis())), Duration(5, SECONDS))
 
-    logger.debug(s"Producer $sinkUuid instance $instanceUuid created for topic $topic")
+    logger.debug(s"Producer ${GetLabel()} created for topic $topic")
     producer
   }
 
@@ -83,15 +83,15 @@ abstract class KafkaSink[TSink]
   def GetLabel(): String = s"KafkaSink ${subjectType.name}(${sinkUuid}-${instanceUuid})"
 
   override def close(): Unit = {
-    logger.debug(s"Closing producer $instanceUuid for ${subjectType.name}")
+    logger.debug(s"Closing producer ${GetLabel()}for ${subjectType.name}")
     kafkaProducer.close()
-    Await.ready(producerNode.SetState(true), Duration.Inf)
+    Await.ready(producerNode.SetState(false), Duration.Inf)
   }
 
   override def open(parameters: Configuration): Unit = {
     kafkaProducer
-    logger.debug(s"Opening producer ${GetLabel} for ${subjectType.name}")
-    Await.ready(producerNode.SetState(false), Duration.Inf)
+    logger.debug(s"Opening producer ${GetLabel()} for ${subjectType.name}")
+    Await.ready(producerNode.SetState(true), Duration.Inf)
   }
 }
 

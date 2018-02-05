@@ -42,6 +42,7 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
 
   override def beforeEach(): Unit = {
     Await.ready(subjectLibrary.Initialize(), Duration(1, SECONDS))
+    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
   }
 
   override def afterEach(): Unit = {

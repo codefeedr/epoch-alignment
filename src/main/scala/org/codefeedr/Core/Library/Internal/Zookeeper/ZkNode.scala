@@ -19,6 +19,7 @@
 
 package org.codefeedr.Core.Library.Internal.Zookeeper
 
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.zookeeper.KeeperException.NodeExistsException
 import rx.lang.scala.Observable
 
@@ -34,7 +35,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * @param name name of the current node
   * @param parent the parent
   */
-class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase) extends ZkNodeBase(name) {
+class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase)
+  extends ZkNodeBase(name)
+  with LazyLogging {
 
   override def Parent(): ZkNodeBase = parent
 
@@ -77,7 +80,9 @@ class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase) extends ZkNo
     *
     * @return
     */
-  def GetData(): Future[Option[TData]] = zkClient.GetData[TData](Path())
+  def GetData(): Future[Option[TData]] =
+    zkClient.GetData[TData](Path())
+
 
   /**
     * Set data of the node

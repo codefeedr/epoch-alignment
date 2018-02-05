@@ -1,5 +1,6 @@
 package org.codefeedr.Core.Library.Internal.Zookeeper
 
+import com.typesafe.scalalogging.LazyLogging
 import rx.lang.scala.Observable
 
 import scala.concurrent.Future
@@ -8,7 +9,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class ZkCollectionNode[TNode <: ZkNodeBase](name: String,
                                             val parent: ZkNodeBase,
                                             childConstructor: (String, ZkNodeBase) => TNode)
-    extends ZkNodeBase(name) {
+    extends ZkNodeBase(name)
+    with LazyLogging {
 
   override def Parent(): ZkNodeBase = parent
 
@@ -33,7 +35,8 @@ class ZkCollectionNode[TNode <: ZkNodeBase](name: String,
     * @return a future that resolves when the child has been created, with the name of the child
     */
   def AwaitChildNode(child: String): Future[TNode] =
-    super.AwaitChild(name).map(o => childConstructor(o, this))
+    AwaitChild(child).map(childConstructor(_, this))
+
 
   /**
     * Creates an observable of all new children

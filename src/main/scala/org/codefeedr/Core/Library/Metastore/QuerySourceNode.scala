@@ -20,6 +20,7 @@ class QuerySourceNode(name: String, parent: ZkNodeBase)
   override def TypeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
   override def InitialState(): Boolean = true
 
+
   /**
     * Computes the aggregate state of the subject
     * If the state changed, the change is propagated to the parent.

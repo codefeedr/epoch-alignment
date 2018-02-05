@@ -19,6 +19,7 @@
 
 package org.codefeedr.Core.Engine.Query
 
+import com.typesafe.scalalogging.Logger
 import org.codefeedr.Core.Library.LibraryServices
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -28,16 +29,28 @@ import scala.async.Async.{async, await}
 /**
   * Created by Niels on 31/07/2017.
   */
-trait StreamComposerFactoryFacade { this: LibraryServices =>
+trait StreamComposerFactoryFacade {
+  this: LibraryServices =>
+
+  @transient private lazy val logger = Logger(classOf[StreamComposerFactoryFacade])
+
+
   def GetComposer(query: QueryTree): Future[StreamComposer] = {
+
+
+
     query match {
       case SubjectSource(subjectName) =>
+        logger.debug(s"Creating composer for subjectsource $subjectName")
         async {
+          logger.debug(s"Waiting registration of subject $subjectName")
           val childNode = await(subjectLibrary.GetSubjects().AwaitChildNode(subjectName))
+          logger.debug(s"Got subject $subjectName. Retrieving data")
           val subject = await(childNode.GetData()).get
           new SourceStreamComposer(subject)
         }
       case Join(left, right, keysLeft, keysRight, selectLeft, selectRight, alias) =>
+        logger.debug(s"Creating composer for join $alias")
         for {
           leftComposer <- GetComposer(left)
           rightComposer <- GetComposer(right)

@@ -31,6 +31,12 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
     await(super.PostCreate())
   }
 
+  override def Create(data: SubjectType): Future[SubjectType] = async {
+    val r =await(super.Create(data))
+    logger.debug(s"Created subject node with name $name")
+    r
+  }
+
   /**
     * Obtains the node maintaining the collection of consumers of the subject type
     * @return
