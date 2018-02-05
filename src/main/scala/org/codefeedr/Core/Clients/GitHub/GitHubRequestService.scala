@@ -19,6 +19,8 @@
 
 package org.codefeedr.Core.Clients.GitHub
 
+import java.io.IOException
+
 import com.google.gson.{Gson, JsonElement, JsonObject}
 import com.google.gson.reflect.TypeToken
 import org.eclipse.egit.github.core.client.{GitHubClient, GitHubRequest, PageIterator}
@@ -36,6 +38,7 @@ import collection.JavaConverters._
   * This service is hooked on the GitHubService (dependency).
   * @param client GitHubClient
   */
+//TODO ADD EXCEPTIONS!
 class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
 
   // Brings in default date formats etc
@@ -50,6 +53,7 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     * @param sha the SHA of the commit.
     * @return the commit case class.
     */
+  @throws(classOf[IOException])
   def getCommit(repoName: String, sha: String): Commit = {
     val uri: StringBuilder = new StringBuilder("/repos")
     uri.append("/").append(repoName)
@@ -70,6 +74,7 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     * @param repoName the name of the repo.
     * @return a list of all (simple) commit information.
     */
+  @throws(classOf[IOException])
   def getAllCommits(repoName: String): PageIterator[SimpleCommit] = {
     val uri: StringBuilder = new StringBuilder("/repos")
     uri.append("/").append(repoName)
@@ -89,6 +94,7 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     * @param sha to start from.
     * @return a list of all (simple) commit information.
     */
+  @throws(classOf[IOException])
   def getAllCommits(repoName: String, sha: String): PageIterator[SimpleCommit] = {
     val uri: StringBuilder = new StringBuilder("/repos")
     uri.append("/").append(repoName)
@@ -107,6 +113,7 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     * Gets all events.
     * @return list of all events.
     */
+  @throws(classOf[IOException])
   def getEvents(): List[Event] = {
     val request = createPagedRequest[JsonElement](PAGE_FIRST, PAGE_SIZE)
     request.setUri("/events")

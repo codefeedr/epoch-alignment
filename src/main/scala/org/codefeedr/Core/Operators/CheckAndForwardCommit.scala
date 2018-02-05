@@ -29,11 +29,12 @@ import org.codefeedr.Core.Clients.MongoDB.MongoDB
 import scala.async.Async.{async, await}
 import org.mongodb.scala.model.Sorts._
 import org.mongodb.scala._
-import org.mongodb.scala.model.Indexes.{descending, _}
+import org.mongodb.scala.model.Indexes.{ascending, _}
 import com.mongodb.client.model.IndexOptions
 import org.apache.flink.runtime.concurrent.Executors
-import org.mongodb.scala.model.Filters._
+import org.mongodb.scala.model.Filters.text
 import org.bson.conversions.Bson
+import org.mongodb.scala.model.Indexes
 
 import scala.concurrent.{ExecutionContext, Future}
 import collection.JavaConverters._
@@ -76,10 +77,14 @@ class CheckAndForwardCommit extends RichAsyncFunction[PushEvent, SimpleCommit] {
     SetIndexes()
   }
 
-  def SetIndexes(): Unit = {
+  def SetIndexes(): Future[String] = {
     collection
-      .createIndex(descending("commit.author.date"), new IndexOptions().unique(true))
+      .createIndex(ascending("commit.author.date"))
       .toFuture()
+
+    collection.
+      createIndex(Indexes.text("url")).
+      toFuture()
   }
 
   //TODO refactor this method in multiple readable method
@@ -87,12 +92,16 @@ class CheckAndForwardCommit extends RichAsyncFunction[PushEvent, SimpleCommit] {
     async {
       val latestCommit = await(GetLatestCommit(input.repo.name))
 
+      //no latest found, then set sha to ""
+      val latestSha = latestCommit.getOrElse("")
+
       //if <= than 20 commits & before == latestCommit, then forward only PushEvent commits
-      if (input.payload.size <= 20 && latestCommit.sha == input.payload.before) {
+      if (input.payload.size <= 20 && latestSha == input.payload.before) {
         resultFuture.complete(input.payload.commits.map(x => SimpleCommit(x.sha)).asJava)
       } else {
         val commitsToForward =
-          RetrieveUntilLatest(input.repo.name, latestCommit.sha, input.payload.head)
+          RetrieveUntilLatest(input.repo.name, latestSha, input.payload.head)
+
         resultFuture.complete(commitsToForward.asJava)
       }
     }
@@ -125,15 +134,20 @@ class CheckAndForwardCommit extends RichAsyncFunction[PushEvent, SimpleCommit] {
     commitsToForward
   }
 
-  def GetLatestCommit(repoName: String): Future[SimpleCommit] = {
+  def GetLatestCommit(repoName: String): Future[Option[String]] = async {
     //TODO can this be more efficient
-    val commit =
+    val commit = await {
       collection
-        .find(regex("url", repoName.replace("/", "/\\")))
-        .sort(descending("commit.author.date"))
+        .find(text(repoName))
+        .sort(ascending("commit.author.date"))
         .first()
         .toFuture()
+    }
 
-    commit.map(x => SimpleCommit(x.sha))
+    if (commit == null) {
+      None
+    } else {
+      Some(commit.sha)
+    }
   }
 }
