@@ -36,8 +36,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * @param parent the parent
   */
 class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase)
-  extends ZkNodeBase(name)
-  with LazyLogging {
+    extends ZkNodeBase(name)
+    with LazyLogging {
 
   override def Parent(): ZkNodeBase = parent
 
@@ -82,7 +82,6 @@ class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase)
     */
   def GetData(): Future[Option[TData]] =
     zkClient.GetData[TData](Path())
-
 
   /**
     * Set data of the node

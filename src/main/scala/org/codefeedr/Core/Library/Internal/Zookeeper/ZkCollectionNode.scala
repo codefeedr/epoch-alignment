@@ -37,7 +37,6 @@ class ZkCollectionNode[TNode <: ZkNodeBase](name: String,
   def AwaitChildNode(child: String): Future[TNode] =
     AwaitChild(child).map(childConstructor(_, this))
 
-
   /**
     * Creates an observable of all new children
     * @return

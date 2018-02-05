@@ -55,9 +55,10 @@ abstract class KafkaSink[TSink]
     val producer = KafkaProducerFactory.create[RecordSourceTrail, Row]
     //Create the producer node alongside
     //Need to block here because the producer cannot start before the zookeeper state has been configured
-    Await.ready(subjectNode.Create(subjectType),Duration(5, SECONDS))
+    Await.ready(subjectNode.Create(subjectType), Duration(5, SECONDS))
     Await.ready(sinkNode.Create(QuerySink(sinkUuid)), Duration(5, SECONDS))
-    Await.ready(producerNode.Create(Producer(instanceUuid,null,System.currentTimeMillis())), Duration(5, SECONDS))
+    Await.ready(producerNode.Create(Producer(instanceUuid, null, System.currentTimeMillis())),
+                Duration(5, SECONDS))
 
     logger.debug(s"Producer ${GetLabel()} created for topic $topic")
     producer
@@ -65,7 +66,6 @@ abstract class KafkaSink[TSink]
 
   val subjectType: SubjectType
   val sinkUuid: String
-
 
   @transient lazy val subjectNode: SubjectNode = subjectLibrary.GetSubject(subjectType.name)
 

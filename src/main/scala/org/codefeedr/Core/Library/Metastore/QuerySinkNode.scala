@@ -14,16 +14,15 @@ class QuerySinkNode(name: String, parent: ZkNodeBase)
     with ZkStateNode[QuerySink, Boolean]
     with LazyLogging {
 
-
   def GetProducers(): ProducerCollection = new ProducerCollection("producers", this)
 
   override def TypeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
   override def InitialState(): Boolean = true
 
   override def SetState(state: Boolean): Future[Unit] = async {
-      await(super.SetState(state))
-      //Call subjectNode to update, because the state of the sink might influence the subjects node
-      await(parent.Parent().asInstanceOf[SubjectNode].UpdateState())
+    await(super.SetState(state))
+    //Call subjectNode to update, because the state of the sink might influence the subjects node
+    await(parent.Parent().asInstanceOf[SubjectNode].UpdateState())
   }
 
   /**
@@ -34,7 +33,7 @@ class QuerySinkNode(name: String, parent: ZkNodeBase)
   def UpdateState(): Future[Unit] = async {
     val currentState = await(GetState()).get
     //Only perform update if the source nod was not active.
-    if(currentState) {
+    if (currentState) {
       val childState = await(GetProducers().GetState())
       await(SetState(childState))
     }

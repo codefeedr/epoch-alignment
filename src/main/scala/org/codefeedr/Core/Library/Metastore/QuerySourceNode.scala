@@ -14,12 +14,10 @@ class QuerySourceNode(name: String, parent: ZkNodeBase)
     with ZkStateNode[QuerySource, Boolean]
     with LazyLogging {
 
-
   def GetConsumers(): ConsumerCollection = new ConsumerCollection("consumers", this)
 
   override def TypeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
   override def InitialState(): Boolean = true
-
 
   /**
     * Computes the aggregate state of the subject
@@ -29,10 +27,11 @@ class QuerySourceNode(name: String, parent: ZkNodeBase)
   def UpdateState(): Future[Unit] = async {
     val currentState = await(GetState()).get
     //Only perform update if the source nod was not active.
-    if(currentState) {
+    if (currentState) {
       val childState = await(GetConsumers().GetState())
-      if(!childState) {
-        logger.info(s"Closing source $name of subject ${parent.Parent().name} because all consumers closed.")
+      if (!childState) {
+        logger.info(
+          s"Closing source $name of subject ${parent.Parent().name} because all consumers closed.")
         await(SetState(childState))
       }
     }

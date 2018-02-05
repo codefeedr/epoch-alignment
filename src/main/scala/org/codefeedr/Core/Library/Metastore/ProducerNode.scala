@@ -12,7 +12,6 @@ class ProducerNode(name: String, parent: ZkNodeBase)
     extends ZkNode[Producer](name, parent)
     with ZkStateNode[Producer, Boolean] {
 
-
   override def TypeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
   override def InitialState(): Boolean = true
 

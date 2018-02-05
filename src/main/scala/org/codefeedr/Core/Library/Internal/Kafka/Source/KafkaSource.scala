@@ -24,7 +24,11 @@ import java.util.UUID
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable
-import org.apache.flink.runtime.state.{CheckpointListener, FunctionInitializationContext, FunctionSnapshotContext}
+import org.apache.flink.runtime.state.{
+  CheckpointListener,
+  FunctionInitializationContext,
+  FunctionSnapshotContext
+}
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
@@ -79,11 +83,10 @@ abstract class KafkaSource[T](subjectType: SubjectType)
 
   val sourceUuid: String
 
-
   @transient protected lazy val subjectNode: SubjectNode =
     subjectLibrary.GetSubject(subjectType.name)
 
-  @transient protected lazy  val sourceNode: QuerySourceNode =
+  @transient protected lazy val sourceNode: QuerySourceNode =
     subjectNode
       .GetSources()
       .GetChild(sourceUuid)
@@ -161,7 +164,6 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     logger.debug(s"Source ${GetLabel()} started running.")
     InitRun()
 
-
     while (running) {
       //TODO: Handle exceptions
       //Do not need to lock, because there will be only a single thread (per partition set) performing this operation
@@ -178,12 +180,11 @@ abstract class KafkaSource[T](subjectType: SubjectType)
           val offsets = currentOffset()
 
           //TODO: Implement asynchronous commits
-        //  dataConsumer.commitSync()
+          //  dataConsumer.commitSync()
         }
       )
       Await.ready(future, 5000 millis)
     }
-
 
     //TODO: This should be done by closing after offsets have been reached, instead of immediately after zookeeper trigger
     Thread.sleep(1000)
@@ -194,7 +195,6 @@ abstract class KafkaSource[T](subjectType: SubjectType)
 
     FinalizeRun()
   }
-
 
   /**
     * Retrieve the current offsets
@@ -214,7 +214,6 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     * Perform a poll on the kafka consumer
     * @return
     */
-
   def Poll(): Future[List[TrailedRecord]] = {
     val thread = new KafkaConsumerThread(dataConsumer, GetLabel())
     Future {
@@ -222,7 +221,6 @@ abstract class KafkaSource[T](subjectType: SubjectType)
       thread.GetData()
     }
   }
-
 
   override def run(ctx: SourceFunction.SourceContext[T]): Unit = runLocal(ctx.collect)
 

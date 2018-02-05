@@ -29,15 +29,11 @@ import scala.async.Async.{async, await}
 /**
   * Created by Niels on 31/07/2017.
   */
-trait StreamComposerFactoryFacade {
-  this: LibraryServices =>
+trait StreamComposerFactoryFacade { this: LibraryServices =>
 
   @transient private lazy val logger = Logger(classOf[StreamComposerFactoryFacade])
 
-
   def GetComposer(query: QueryTree): Future[StreamComposer] = {
-
-
 
     query match {
       case SubjectSource(subjectName) =>

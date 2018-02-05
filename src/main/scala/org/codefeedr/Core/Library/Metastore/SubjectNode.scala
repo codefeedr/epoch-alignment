@@ -32,7 +32,7 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
   }
 
   override def Create(data: SubjectType): Future[SubjectType] = async {
-    val r =await(super.Create(data))
+    val r = await(super.Create(data))
     logger.debug(s"Created subject node with name $name")
     r
   }
@@ -139,14 +139,16 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
     val shouldClose = await(for {
       isOpen <- GetState().map(o => o.get)
       persistent <- GetData().map(o => o.get.persistent)
-      hasSinks <-  GetSinks().GetState()
+      hasSinks <- GetSinks().GetState()
     } yield (persistent, hasSinks, isOpen))
 
-    if(!shouldClose._1 && !shouldClose._2 && shouldClose._3) {
-      logger.info(s"Closing subject $name because no more sinks are active and subject is not persistent.")
+    if (!shouldClose._1 && !shouldClose._2 && shouldClose._3) {
+      logger.info(
+        s"Closing subject $name because no more sinks are active and subject is not persistent.")
       await(SetState(false))
     } else {
-      logger.debug(s"Not closing subject $name. persistent: ${shouldClose._1},  hasSinks: ${shouldClose._2},  isOpen: ${shouldClose._3}")
+      logger.debug(
+        s"Not closing subject $name. persistent: ${shouldClose._1},  hasSinks: ${shouldClose._2},  isOpen: ${shouldClose._3}")
     }
   }
 
