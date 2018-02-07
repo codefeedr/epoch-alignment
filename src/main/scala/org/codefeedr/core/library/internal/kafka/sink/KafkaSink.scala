@@ -97,13 +97,11 @@ abstract class KafkaSink[TSink]
 
 class TrailedRecordSink(override val subjectType: SubjectType, override val sinkUuid: String)
     extends KafkaSink[TrailedRecord] {
-    override def invoke(trailedRecord: TrailedRecord): Unit = {
+  override def invoke(trailedRecord: TrailedRecord): Unit = {
     logger.debug(s"Producer ${GetLabel}sending a message to topic $topic")
     kafkaProducer.send(new ProducerRecord(topic, trailedRecord.trail, trailedRecord.row))
   }
 }
-
-
 
 class RowSink(override val subjectType: SubjectType, override val sinkUuid: String)
     extends KafkaSink[tuple.Tuple2[lang.Boolean, Row]] {
