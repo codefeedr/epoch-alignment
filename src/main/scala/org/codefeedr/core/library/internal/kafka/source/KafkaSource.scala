@@ -19,20 +19,19 @@
 
 package org.codefeedr.core.library.internal.kafka.source
 
+import java.util
 import java.util.UUID
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable
-import org.apache.flink.runtime.state.{
-  CheckpointListener,
-  FunctionInitializationContext,
-  FunctionSnapshotContext
-}
+import org.apache.flink.runtime.state.{CheckpointListener, FunctionInitializationContext, FunctionSnapshotContext}
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
 import org.apache.flink.types.Row
+import org.apache.kafka.clients.consumer.{OffsetAndMetadata, OffsetCommitCallback}
+import org.apache.kafka.common.TopicPartition
 import org.codefeedr.core.library.internal.kafka.meta.{PartitionOffset, TopicPartitionOffsets}
 import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.library.metastore.{ConsumerNode, QuerySourceNode, SubjectNode}
@@ -40,6 +39,7 @@ import org.codefeedr.model.zookeeper.{Consumer, QuerySource}
 import org.codefeedr.model.{RecordSourceTrail, SubjectType, TrailedRecord}
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future, Promise}
@@ -75,8 +75,10 @@ abstract class KafkaSource[T](subjectType: SubjectType)
 
   @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
   @transient private[kafka] lazy val instanceUuid = UUID.randomUUID().toString
-
   @transient private lazy val closePromise: Promise[Unit] = Promise[Unit]()
+
+  //Timeout when polling kafka
+  @transient private lazy val pollTimeout = 1000
 
   val sourceUuid: String
 
@@ -101,7 +103,21 @@ abstract class KafkaSource[T](subjectType: SubjectType)
   @transient
   @volatile private var started = false
 
-  def getLabel(): String = s"KafkaSource ${subjectType.name}(${sourceUuid}-${instanceUuid})"
+  //State of the source
+  @transient private var currentOffsets:Map[TopicPartition,Long] = _
+
+  //Contains for each checkpoint in progress the collection of topicPartitions that should be committed
+  @transient private val shouldCommit:mutable.Map[Long, Map[TopicPartition, Long]] =
+  mutable.Map.empty[Long, Map[TopicPartition, Long]]
+
+  //Get a display label of the current source
+  def getLabel(): String = s"KafkaSource ${subjectType.name}($sourceUuid-$instanceUuid)"
+
+  //Get a readable print of the partitions and offset.
+  def getReadablePartitions(partitionOffsets: Map[TopicPartition,Long]): String =
+    partitionOffsets.map(tp => s"p: ${tp._1.topic()}_${tp._1.partition()}, o: ${tp._2}")
+      .mkString(", ")
+
 
   override def cancel(): Unit = {
     logger.debug(s"Source $getLabel on subject $topic is cancelled")
@@ -118,9 +134,22 @@ abstract class KafkaSource[T](subjectType: SubjectType)
 
   override def initializeState(context: FunctionInitializationContext): Unit = {}
 
-  override def snapshotState(context: FunctionSnapshotContext): Unit = {}
+  override def snapshotState(context: FunctionSnapshotContext): Unit = {
+    shouldCommit += context.getCheckpointId -> currentOffsets
+  }
 
-  override def notifyCheckpointComplete(checkpointId: Long): Unit = {}
+  override def notifyCheckpointComplete(checkpointId: Long): Unit = {
+    val offsets = shouldCommit.get(checkpointId)
+    if(offsets.isEmpty) {
+      throw new RuntimeException(s"Got a checkpoint completed for unknown checkpoint id ${checkpointId}")
+    }
+    dataConsumer.commitAsync(offsets.get.map(o => (o._1, new OffsetAndMetadata(o._2))).asJava, new OffsetCommitCallback {
+      override def onComplete(offsets: util.Map[TopicPartition, OffsetAndMetadata], exception: Exception): Unit = {
+        val parsedOffset = offsets.asScala.map(o => (o._1, o._2.offset()))
+        logger.debug(s"Offsetts ${getReadablePartitions(parsedOffset.toMap)} successfully committed to kafka")
+      }
+    })
+  }
 
   private[kafka] def initRun(): Unit = {
     //Create self on zookeeper
@@ -138,7 +167,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
 
   private[kafka] def finalizeRun(): Unit = {
     //Finally unsubscribe from the library
-    logger.debug(s"Unsubscribing ${getLabel()}on subject $topic.")
+    logger.debug(s"Unsubscribing ${getLabel}on subject $topic.")
 
     Await.ready(consumerNode.setState(false), Duration(5, SECONDS))
     dataConsumer.close()
@@ -146,80 +175,60 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     closePromise.success()
   }
 
-  def map(record: TrailedRecord): T
+  def mapToT(record: TrailedRecord): T
 
   /**
     * @return A future that resolves when the source has been close
     */
   private[kafka] def awaitClose(): Future[Unit] = closePromise.future
 
-  def runLocal(collector: T => Unit): Unit = {
+
+  /**
+    * Retrieves the current offsets that have been pushed along, but have not been committed yet
+    * @return
+    */
+  def getUncommittedOffset(): Map[TopicPartition, Long] =
+    dataConsumer
+      .assignment().asScala
+        .map(o => o -> dataConsumer.position(o))
+          .toMap
+
+
+  /**
+    * Perform a poll on the kafka consumer and collect data on the given method
+    */
+  def poll(ctx: SourceFunction.SourceContext[T]): Unit = {
+    logger.debug(s"${getLabel} started polling")
+    val data = dataConsumer.poll(pollTimeout).iterator().asScala
+    logger.debug(s"${getLabel} completed polling")
+    ctx.getCheckpointLock.synchronized {
+      data.foreach(o => ctx.collect(mapToT(TrailedRecord(o.value()))))
+      currentOffsets = getUncommittedOffset()
+      logger.debug(s"Completed ${getLabel()} poll, ${getReadablePartitions(currentOffsets)}")
+    }
+  }
+
+
+
+
+  override def run(ctx: SourceFunction.SourceContext[T]): Unit = {
     started = true
     if (!running) {
       logger.debug(s"${getLabel()} already cancelled. Processing events and terminating")
     }
     logger.debug(s"Source ${getLabel()} started running.")
     initRun()
-
     while (running) {
-      //TODO: Handle exceptions
-      //Do not need to lock, because there will be only a single thread (per partition set) performing this operation
-      val future = poll().map(
-        o => {
-
-          //Collect data and push along the pipeline
-          o.foreach(o2 => {
-            val mapped = map(o2)
-            logger.debug(s"Got data: $mapped")
-            collector(mapped)
-          })
-          //Obtain offsets, and update zookeeper state
-          val offsets = currentOffset()
-
-          //TODO: Implement asynchronous commits
-          //  dataConsumer.commitSync()
-        }
-      )
-      Await.ready(future, 5000 millis)
+      poll(ctx)
     }
 
     //TODO: This should be done by closing after offsets have been reached, instead of immediately after zookeeper trigger
     Thread.sleep(1000)
-    val future2 = poll().map(o => o.foreach(o2 => collector(map(o2))))
-    Await.ready(future2, 5000 millis)
+    poll(ctx)
 
     logger.debug(s"Source ${getLabel()} stopped running.")
-
     finalizeRun()
   }
-
-  /**
-    * Retrieve the current offsets
-    * @return
-    */
-  def currentOffset(): TopicPartitionOffsets =
-    TopicPartitionOffsets(
-      topic,
-      dataConsumer
-        .assignment()
-        .asScala
-        .map(o => PartitionOffset(o.partition(), dataConsumer.position(o)))
-        .toList
-    )
-
-  /**
-    * Perform a poll on the kafka consumer
-    * @return
-    */
-  def poll(): Future[List[TrailedRecord]] = {
-    val thread = new KafkaConsumerThread(dataConsumer, getLabel())
-    Future {
-      thread.run()
-      thread.GetData()
-    }
-  }
-
-  override def run(ctx: SourceFunction.SourceContext[T]): Unit = runLocal(ctx.collect)
 
   /**
     * Get typeinformation of the returned type

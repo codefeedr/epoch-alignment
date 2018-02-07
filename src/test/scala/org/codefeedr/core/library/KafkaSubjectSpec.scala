@@ -172,6 +172,7 @@ class MyOwnSourceQuery(nr: Int, parallelism: Int) extends Runnable with LazyLogg
 
   override def run(): Unit = {
     val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
+    env.enableCheckpointing()
     val topology = createTopology(env, nr)
     Await.ready(topology, Duration(120, SECONDS))
     topology.value match {
