@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.Core.Engine.Query
+package org.codefeedr.core.engine.query
 
 /**
   * Classes that represent a query execution tree

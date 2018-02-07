@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal.Kafka.Sink
+package org.codefeedr.core.library.internal.kafka.sink
 
 import java.lang
 
@@ -27,8 +27,8 @@ import org.apache.flink.streaming.api.datastream.DataStream
 import org.apache.flink.streaming.api.functions.sink.SinkFunction
 import org.apache.flink.table.sinks.{RetractStreamTableSink, TableSink}
 import org.apache.flink.types.Row
-import org.codefeedr.core.Library.Internal.SubjectTypeFactory
-import org.codefeedr.core.Library.{LibraryServices, SubjectFactory, TypeInformationServices}
+import org.codefeedr.core.library.internal.SubjectTypeFactory
+import org.codefeedr.core.library.{LibraryServices, SubjectFactory, TypeInformationServices}
 import org.codefeedr.Model._
 
 import scala.concurrent.Await

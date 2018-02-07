@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal
+package org.codefeedr.core.library.internal
 
 import java.util.UUID
 

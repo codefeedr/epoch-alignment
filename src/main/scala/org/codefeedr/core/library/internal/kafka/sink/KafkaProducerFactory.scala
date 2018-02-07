@@ -17,10 +17,10 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal.Kafka.Sink
+package org.codefeedr.core.library.internal.kafka.sink
 
 import org.apache.kafka.clients.producer.KafkaProducer
-import org.codefeedr.core.Library.Internal.Kafka.{KafkaConfig, KafkaSerialiser}
+import org.codefeedr.core.library.internal.kafka.{KafkaConfig, KafkaSerialiser}
 
 import scala.reflect.ClassTag
 

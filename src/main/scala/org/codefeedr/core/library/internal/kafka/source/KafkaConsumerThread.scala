@@ -1,4 +1,4 @@
-package org.codefeedr.core.Library.Internal.Kafka.Source
+package org.codefeedr.core.library.internal.kafka.source
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.types.Row

@@ -1,8 +1,8 @@
-package org.codefeedr.core.Library.Internal.Zookeeper
+package org.codefeedr.core.library.internal.zookeeper
 
 import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.core.LibraryServiceSpec
-import org.codefeedr.Util.FutureExtensions._
+import org.codefeedr.util.FutureExtensions._
 import org.codefeedr.util.ObservableExtension._
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
 

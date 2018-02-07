@@ -1,4 +1,4 @@
-package org.codefeedr.Core.input
+package org.codefeedr.core.input
 
 
 

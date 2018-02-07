@@ -1,4 +1,4 @@
-package org.codefeedr.Util
+package org.codefeedr.util
 
 import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{Assertion, Matchers}

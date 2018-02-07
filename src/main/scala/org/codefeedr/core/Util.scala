@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.Core
+package org.codefeedr.core
 
 import java.io.{ByteArrayOutputStream, ObjectOutputStream}
 import java.util.UUID

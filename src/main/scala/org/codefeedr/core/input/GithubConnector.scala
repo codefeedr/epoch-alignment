@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.Core.input
+package org.codefeedr.core.input
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.flink.configuration.Configuration

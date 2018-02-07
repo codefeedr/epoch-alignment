@@ -19,7 +19,7 @@
  *
  */
 
-package org.codefeedr.core.Library
+package org.codefeedr.core.library
 
 import java.util.concurrent.Executors
 
@@ -27,7 +27,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.scalatest._
 import org.apache.flink.streaming.api.scala._
 import org.codefeedr.core.{FullIntegrationSpec, KafkaTest}
-import org.codefeedr.core.Library.Internal.Zookeeper.ZkClient
+import org.codefeedr.core.library.internal.zookeeper.ZkClient
 import org.codefeedr.Model.TrailedRecord
 import org.scalatest.tagobjects.Slow
 

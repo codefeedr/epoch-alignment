@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal.Kafka
+package org.codefeedr.core.library.internal.kafka
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.kafka.clients.admin.{AdminClient, NewTopic}

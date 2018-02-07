@@ -19,13 +19,13 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal.Kafka
+package org.codefeedr.core.library.internal.kafka
 
 import org.apache.flink.streaming.api.functions.source.SourceFunction.SourceContext
 import org.codefeedr.core.FullIntegrationSpec
-import org.codefeedr.core.Library.Internal.SubjectTypeFactory
-import org.codefeedr.core.Library.Internal.Zookeeper.{ZkClient, ZkNodeBase}
-import org.codefeedr.core.Library.LibraryServices
+import org.codefeedr.core.library.internal.SubjectTypeFactory
+import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkNodeBase}
+import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.Model.TrailedRecord
 import org.scalatest.time.Seconds
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, BeforeAndAfterEach}

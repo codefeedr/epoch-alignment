@@ -1,4 +1,4 @@
-package org.codefeedr.Model.Zookeeper
+package org.codefeedr.Model.zookeeper
 
 /**
   * Case class describing a producers state

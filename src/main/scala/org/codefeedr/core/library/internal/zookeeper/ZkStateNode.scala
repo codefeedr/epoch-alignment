@@ -1,4 +1,4 @@
-package org.codefeedr.core.Library.Internal.Zookeeper
+package org.codefeedr.core.library.internal.zookeeper
 
 import scala.concurrent.Future
 import scala.reflect.ClassTag

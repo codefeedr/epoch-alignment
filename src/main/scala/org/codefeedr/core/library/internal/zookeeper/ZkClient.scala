@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal.Zookeeper
+package org.codefeedr.core.library.internal.zookeeper
 
 import java.util
 
@@ -31,7 +31,7 @@ import org.apache.zookeeper.Watcher.Event._
 import org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE
 import org.apache.zookeeper._
 import org.apache.zookeeper.data.Stat
-import org.codefeedr.core.Library.Internal.Serialisation.{GenericDeserialiser, GenericSerialiser}
+import org.codefeedr.core.library.internal.serialisation.{GenericDeserialiser, GenericSerialiser}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._

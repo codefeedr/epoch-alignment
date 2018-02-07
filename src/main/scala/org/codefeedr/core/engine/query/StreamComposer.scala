@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.Core.Engine.Query
+package org.codefeedr.core.engine.query
 
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.codefeedr.Model.{SubjectType, TrailedRecord}
@@ -32,11 +32,11 @@ abstract class StreamComposer {
     * @param env Environment to compose the stream on
     * @return Datastream result of the composiiton
     */
-  def Compose(env: StreamExecutionEnvironment): DataStream[TrailedRecord]
+  def compose(env: StreamExecutionEnvironment): DataStream[TrailedRecord]
 
   /**
     * Retrieve typeinformation of the type that is exposed by the Streamcomposer (Note that these types are not necessarily registered on kafka, as it might be an intermediate type)
     * @return Typeinformation of the type exposed by the stream
     */
-  def GetExposedType(): SubjectType
+  def getExposedType(): SubjectType
 }

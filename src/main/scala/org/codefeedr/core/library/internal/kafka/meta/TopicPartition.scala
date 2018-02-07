@@ -1,4 +1,4 @@
-package org.codefeedr.core.Library.Internal.Kafka.Meta
+package org.codefeedr.core.library.internal.kafka.meta
 
 /**
   * Describes the offset of a partition of a topic in Kafka

@@ -17,10 +17,10 @@
  *
  */
 
-package org.codefeedr.core.Library.Metastore
+package org.codefeedr.core.library.metastore
 
 import com.typesafe.scalalogging.LazyLogging
-import org.codefeedr.core.Library.Internal.SubjectTypeFactory
+import org.codefeedr.core.library.internal.SubjectTypeFactory
 
 import scala.reflect.runtime.{universe => ru}
 import scala.concurrent.ExecutionContext.Implicits.global

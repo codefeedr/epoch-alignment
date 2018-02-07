@@ -17,21 +17,21 @@
  *
  */
 
-package org.codefeedr.core.Library
+package org.codefeedr.core.library
 
 import java.util.UUID
 
 import org.apache.flink.streaming.api.functions.sink.{RichSinkFunction, SinkFunction}
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.types.Row
-import org.codefeedr.core.Library.Internal.Kafka.Sink.{
+import org.codefeedr.core.library.internal.kafka.sink.{
   KafkaGenericSink,
   RowSink,
   TrailedRecordSink
 }
-import org.codefeedr.core.Library.Internal.Kafka.Source.KafkaRowSource
-import org.codefeedr.core.Library.Internal.Kafka._
-import org.codefeedr.core.Library.Internal.{KeyFactory, RecordTransformer, SubjectTypeFactory}
+import org.codefeedr.core.library.internal.kafka.source.KafkaRowSource
+import org.codefeedr.core.library.internal.kafka._
+import org.codefeedr.core.library.internal.{KeyFactory, RecordTransformer, SubjectTypeFactory}
 import org.codefeedr.Model.{ActionType, SubjectType, TrailedRecord}
 
 import scala.concurrent.ExecutionContext.Implicits.global

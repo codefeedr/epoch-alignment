@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.Core
+package org.codefeedr.core
 
 import org.scalatest.Tag
 

@@ -19,8 +19,7 @@
  *
  */
 
-package org.codefeedr.core.engine.query.query
-
+package org.codefeedr.core.engine.query
 
 import org.apache.flink.api.scala._
 import org.codefeedr.core.{FullIntegrationSpec, KafkaTest}

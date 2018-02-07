@@ -112,11 +112,11 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal.Kafka
+package org.codefeedr.core.library.internal.kafka
 
 import java.util
 
-import org.codefeedr.core.Library.Internal.Serialisation.GenericDeserialiser
+import org.codefeedr.core.library.internal.serialisation.GenericDeserialiser
 
 import scala.reflect._
 

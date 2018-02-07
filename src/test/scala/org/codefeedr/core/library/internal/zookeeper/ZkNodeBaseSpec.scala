@@ -1,4 +1,4 @@
-package org.codefeedr.core.Library.Internal.Zookeeper
+package org.codefeedr.core.library.internal.zookeeper
 
 import org.codefeedr.core.LibraryServiceSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
@@ -6,7 +6,7 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
 import scala.async.Async.{async, await}
 import scala.concurrent.duration.{Duration, MILLISECONDS, SECONDS}
 import scala.concurrent.{Await, Future, TimeoutException}
-import org.codefeedr.Util.FutureExtensions._
+import org.codefeedr.util.FutureExtensions._
 
 
 

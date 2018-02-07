@@ -1,6 +1,6 @@
-package org.codefeedr.core.Library.Internal.Zookeeper
+package org.codefeedr.core.library.internal.zookeeper
 
-import org.codefeedr.core.Library.LibraryServices
+import org.codefeedr.core.library.LibraryServices
 
 import scala.async.Async.{async, await}
 import scala.concurrent.Future

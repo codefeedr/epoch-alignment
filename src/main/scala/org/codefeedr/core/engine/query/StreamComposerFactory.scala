@@ -17,10 +17,10 @@
  *
  */
 
-package org.codefeedr.Core.Engine.Query
+package org.codefeedr.core.engine.query
 
 import com.typesafe.scalalogging.Logger
-import org.codefeedr.Core.Library.LibraryServices
+import org.codefeedr.core.library.LibraryServices
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -54,8 +54,8 @@ trait StreamComposerFactoryFacade { this: LibraryServices =>
             .GetSubject(alias)
             .GetOrCreate(
               () =>
-                JoinQueryComposer.buildComposedType(leftComposer.GetExposedType(),
-                                                    rightComposer.GetExposedType(),
+                JoinQueryComposer.buildComposedType(leftComposer.getExposedType(),
+                                                    rightComposer.getExposedType(),
                                                     selectLeft,
                                                     selectRight,
                                                     alias))

@@ -1,8 +1,8 @@
-package org.codefeedr.core.Library.Metastore
+package org.codefeedr.core.library.metastore
 
 import com.typesafe.scalalogging.LazyLogging
-import org.codefeedr.core.Library.Internal.Zookeeper.{ZkNode, ZkNodeBase, ZkStateNode}
-import org.codefeedr.Model.Zookeeper.{QuerySink, QuerySource}
+import org.codefeedr.core.library.internal.zookeeper.{ZkNode, ZkNodeBase, ZkStateNode}
+import org.codefeedr.Model.zookeeper.{QuerySink, QuerySource}
 
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global

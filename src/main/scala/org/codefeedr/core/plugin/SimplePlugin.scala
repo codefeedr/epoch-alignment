@@ -17,11 +17,11 @@
  *
  */
 
-package org.codefeedr.core.Plugin
+package org.codefeedr.core.plugin
 
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
-import org.codefeedr.core.Library.Internal.{AbstractPlugin, SubjectTypeFactory}
-import org.codefeedr.core.Library.SubjectFactory
+import org.codefeedr.core.library.internal.{AbstractPlugin, SubjectTypeFactory}
+import org.codefeedr.core.library.SubjectFactory
 import org.codefeedr.Model.SubjectType
 
 import scala.async.Async.{async, await}

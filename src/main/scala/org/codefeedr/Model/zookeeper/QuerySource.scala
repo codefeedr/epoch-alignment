@@ -1,4 +1,4 @@
-package org.codefeedr.Model.Zookeeper
+package org.codefeedr.Model.zookeeper
 
 /**
   * Node in zookeeper describing a single query source.

@@ -1,4 +1,4 @@
-package org.codefeedr.core.Library.Internal.Kafka.Source
+package org.codefeedr.core.library.internal.kafka.source
 
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks
 import org.apache.flink.streaming.api.watermark.Watermark

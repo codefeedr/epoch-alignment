@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal.Kafka.Sink
+package org.codefeedr.core.library.internal.kafka.sink
 
 import java.lang
 import java.util.UUID
@@ -28,10 +28,10 @@ import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction
 import org.apache.flink.types.Row
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.codefeedr.core.Library.Internal.KeyFactory
-import org.codefeedr.core.Library.LibraryServices
-import org.codefeedr.core.Library.Metastore.{ProducerNode, QuerySinkNode, SubjectNode}
-import org.codefeedr.Model.Zookeeper.{Producer, QuerySink}
+import org.codefeedr.core.library.internal.KeyFactory
+import org.codefeedr.core.library.LibraryServices
+import org.codefeedr.core.library.metastore.{ProducerNode, QuerySinkNode, SubjectNode}
+import org.codefeedr.Model.zookeeper.{Producer, QuerySink}
 import org.codefeedr.Model._
 
 import scala.concurrent.duration._

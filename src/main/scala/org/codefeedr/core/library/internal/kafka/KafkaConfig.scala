@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal.Kafka
+package org.codefeedr.core.library.internal.kafka
 
 import java.util.Properties
 

@@ -17,11 +17,11 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal.Kafka
+package org.codefeedr.core.library.internal.kafka
 
 import java.util
 
-import org.codefeedr.core.Library.Internal.Serialisation.GenericSerialiser
+import org.codefeedr.core.library.internal.serialisation.GenericSerialiser
 
 import scala.reflect.ClassTag
 

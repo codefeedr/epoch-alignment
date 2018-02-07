@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.core.Plugin
+package org.codefeedr.core.plugin
 
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}

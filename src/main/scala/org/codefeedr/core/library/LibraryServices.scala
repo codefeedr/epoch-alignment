@@ -17,11 +17,11 @@
  *
  */
 
-package org.codefeedr.core.Library
+package org.codefeedr.core.library
 
 import com.typesafe.config.{Config, ConfigFactory}
-import org.codefeedr.core.Library.Internal.Zookeeper.ZkClient
-import org.codefeedr.core.Library.Metastore.SubjectLibrary
+import org.codefeedr.core.library.internal.zookeeper.ZkClient
+import org.codefeedr.core.library.metastore.SubjectLibrary
 
 trait LibraryServices {
   @transient lazy val zkClient: ZkClient = LibraryServices.zkClient

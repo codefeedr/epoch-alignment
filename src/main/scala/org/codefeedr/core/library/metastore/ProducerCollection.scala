@@ -1,12 +1,12 @@
-package org.codefeedr.core.Library.Metastore
+package org.codefeedr.core.library.metastore
 
-import org.codefeedr.core.Library.Internal.Zookeeper.{
+import org.codefeedr.core.library.internal.zookeeper.{
   ZkClient,
   ZkCollectionNode,
   ZkCollectionStateNode,
   ZkNodeBase
 }
-import org.codefeedr.Model.Zookeeper.Producer
+import org.codefeedr.Model.zookeeper.Producer
 
 import scala.concurrent.Future
 

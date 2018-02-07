@@ -19,7 +19,7 @@
  *
  */
 
-package org.codefeedr.core.engine.query.query
+package org.codefeedr.core.engine.query
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.streaming.api.scala._

@@ -1,4 +1,4 @@
-package org.codefeedr.core.Library.Internal.Zookeeper
+package org.codefeedr.core.library.internal.zookeeper
 
 import com.typesafe.scalalogging.LazyLogging
 import rx.lang.scala.Observable

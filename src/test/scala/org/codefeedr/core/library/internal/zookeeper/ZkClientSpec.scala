@@ -17,10 +17,10 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal.Zookeeper
+package org.codefeedr.core.library.internal.zookeeper
 
-import org.codefeedr.core.Library.LibraryServices
-import org.codefeedr.core.Library.Metastore.MetaRootNode
+import org.codefeedr.core.library.LibraryServices
+import org.codefeedr.core.library.metastore.MetaRootNode
 import org.codefeedr.core.LibraryServiceSpec
 import org.scalatest._
 
@@ -29,7 +29,7 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import scala.async.Async._
 import org.scalatest.tagobjects.Slow
-import org.codefeedr.Util.FutureExtensions._
+import org.codefeedr.util.FutureExtensions._
 
 class ZkClientSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll {
 

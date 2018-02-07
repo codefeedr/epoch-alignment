@@ -1,6 +1,6 @@
-package org.codefeedr.core.Library.Metastore
+package org.codefeedr.core.library.metastore
 
-import org.codefeedr.core.Library.Internal.Zookeeper.{ZkClient, ZkCollectionNode, ZkNodeBase}
+import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkCollectionNode, ZkNodeBase}
 
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global

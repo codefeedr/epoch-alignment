@@ -17,10 +17,10 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal.Kafka.Source
+package org.codefeedr.core.library.internal.kafka.source
 
 import org.apache.flink.types.Row
-import org.codefeedr.core.Library.TypeInformationServices
+import org.codefeedr.core.library.TypeInformationServices
 import org.codefeedr.Model.{SubjectType, TrailedRecord}
 
 /**

@@ -19,7 +19,7 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal
+package org.codefeedr.core.library.internal
 
 import org.apache.flink.streaming.api.scala.createTypeInformation
 import org.codefeedr.Model.SubjectType

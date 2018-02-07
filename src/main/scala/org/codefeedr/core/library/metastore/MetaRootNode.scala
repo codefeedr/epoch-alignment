@@ -1,6 +1,6 @@
-package org.codefeedr.core.Library.Metastore
+package org.codefeedr.core.library.metastore
 
-import org.codefeedr.core.Library.Internal.Zookeeper.ZkNodeBase
+import org.codefeedr.core.library.internal.zookeeper.ZkNodeBase
 
 /**
   * Root node used for zookeeper configuration

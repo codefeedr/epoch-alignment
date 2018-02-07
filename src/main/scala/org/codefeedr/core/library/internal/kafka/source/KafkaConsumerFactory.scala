@@ -17,12 +17,12 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal.Kafka.Source
+package org.codefeedr.core.library.internal.kafka.source
 
 import java.util.Properties
 
 import org.apache.kafka.clients.consumer._
-import org.codefeedr.core.Library.Internal.Kafka.{KafkaConfig, KafkaDeserialiser}
+import org.codefeedr.core.library.internal.kafka.{KafkaConfig, KafkaDeserialiser}
 
 import scala.reflect.ClassTag
 

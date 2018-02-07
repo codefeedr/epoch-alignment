@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal.Kafka.Source
+package org.codefeedr.core.library.internal.kafka.source
 
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.datastream.DataStream
@@ -26,7 +26,7 @@ import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.table.api.TableSchema
 import org.apache.flink.table.sources.StreamTableSource
 import org.apache.flink.types.Row
-import org.codefeedr.core.Library.{SubjectFactory, TypeInformationServices}
+import org.codefeedr.core.library.{SubjectFactory, TypeInformationServices}
 import org.codefeedr.Model.SubjectType
 
 /**

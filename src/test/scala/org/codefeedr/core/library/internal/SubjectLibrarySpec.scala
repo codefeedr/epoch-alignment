@@ -19,12 +19,12 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal
+package org.codefeedr.core.library.internal
 
-import org.codefeedr.core.Library.Internal.Zookeeper.ZkClient
+import org.codefeedr.core.library.internal.zookeeper.ZkClient
 import org.codefeedr.core.{LibraryServiceSpec, ZkTest}
-import org.codefeedr.core.Library.LibraryServices
-import org.codefeedr.Exceptions._
+import org.codefeedr.core.library.LibraryServices
+import org.codefeedr.exceptions._
 import org.scalatest._
 import org.scalatest.tagobjects.Slow
 import org.scalatest.time.Milliseconds

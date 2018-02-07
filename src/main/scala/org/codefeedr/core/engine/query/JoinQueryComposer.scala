@@ -17,15 +17,15 @@
  *
  */
 
-package org.codefeedr.Core.Engine.Query
+package org.codefeedr.core.engine.query
 
 import java.util.UUID
 
 import org.apache.flink.api.scala._
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
-import org.codefeedr.Core.Library.Internal.RecordUtils
-import org.codefeedr.Core.Util
 import org.codefeedr.Model._
+import org.codefeedr.core.library.internal.RecordUtils
+import org.codefeedr.core.Util
 
 import scala.collection.immutable.HashMap
 import scala.collection.{TraversableOnce, immutable}
@@ -84,7 +84,7 @@ object JoinQueryComposer {
     * @param subjectType Type of the subject to join
     * @return
     */
-  private[Query] def buildPartialKeyFunction(
+  private[query] def buildPartialKeyFunction(
       properties: Array[String],
       subjectType: SubjectType): (TrailedRecord) => String = {
     val indices = new RecordUtils(subjectType).getIndices(properties)
@@ -201,19 +201,19 @@ class JoinQueryComposer(leftComposer: StreamComposer,
                         subjectType: SubjectType,
                         join: Join)
     extends StreamComposer {
-  override def Compose(env: StreamExecutionEnvironment): DataStream[TrailedRecord] = {
-    val leftStream = leftComposer.Compose(env).map(o => Left(o).asInstanceOf[JoinRecord])
-    val rightStream = rightComposer.Compose(env).map(o => Right(o).asInstanceOf[JoinRecord])
+  override def compose(env: StreamExecutionEnvironment): DataStream[TrailedRecord] = {
+    val leftStream = leftComposer.compose(env).map(o => Left(o).asInstanceOf[JoinRecord])
+    val rightStream = rightComposer.compose(env).map(o => Right(o).asInstanceOf[JoinRecord])
     val union = leftStream.union(rightStream)
 
     //Build function to obtain the key
-    val keyFunction = JoinQueryComposer.buildKeyFunction(leftComposer.GetExposedType(),
-                                                         rightComposer.GetExposedType(),
+    val keyFunction = JoinQueryComposer.buildKeyFunction(leftComposer.getExposedType(),
+                                                         rightComposer.getExposedType(),
                                                          join)
     //Build function to merge both types
     val mergeFunction = JoinQueryComposer.buildMergeFunction(
-      leftComposer.GetExposedType(),
-      rightComposer.GetExposedType(),
+      leftComposer.getExposedType(),
+      rightComposer.getExposedType(),
       subjectType,
       join.SelectLeft,
       join.SelectRight,
@@ -229,5 +229,5 @@ class JoinQueryComposer(leftComposer: StreamComposer,
     *
     * @return Typeinformation of the type exposed by the stream
     */
-  override def GetExposedType(): SubjectType = subjectType
+  override def getExposedType(): SubjectType = subjectType
 }

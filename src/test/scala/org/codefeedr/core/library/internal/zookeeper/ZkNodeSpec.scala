@@ -1,4 +1,4 @@
-package org.codefeedr.core.Library.Internal.Zookeeper
+package org.codefeedr.core.library.internal.zookeeper
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.zookeeper.KeeperException.NoNodeException
@@ -8,7 +8,7 @@ import org.codefeedr.util.ObservableExtension._
 
 import scala.async.Async.{async, await}
 import scala.concurrent.{Await, Future}
-import org.codefeedr.Util.FutureExtensions._
+import org.codefeedr.util.FutureExtensions._
 
 import scala.concurrent.duration.{Duration, MILLISECONDS, SECONDS}
 

@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal.Zookeeper
+package org.codefeedr.core.library.internal.zookeeper
 
 import org.apache.zookeeper.KeeperException
 import org.apache.zookeeper.data.Stat

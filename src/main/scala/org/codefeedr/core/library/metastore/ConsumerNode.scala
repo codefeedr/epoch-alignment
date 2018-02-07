@@ -1,7 +1,7 @@
-package org.codefeedr.core.Library.Metastore
+package org.codefeedr.core.library.metastore
 
-import org.codefeedr.core.Library.Internal.Zookeeper.{ZkStateNode, ZkNode, ZkNodeBase}
-import org.codefeedr.Model.Zookeeper.Consumer
+import org.codefeedr.core.library.internal.zookeeper.{ZkStateNode, ZkNode, ZkNodeBase}
+import org.codefeedr.Model.zookeeper.Consumer
 
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global

@@ -1,3 +1,3 @@
-package org.codefeedr.Model.Zookeeper
+package org.codefeedr.Model.zookeeper
 
 case class Partition(nr: Int, offset: Long)

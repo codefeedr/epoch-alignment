@@ -1,6 +1,6 @@
-package org.codefeedr.core.Library.Metastore
+package org.codefeedr.core.library.metastore
 
-import org.codefeedr.core.Library.Internal.Zookeeper.{ZkCollectionNode, ZkNodeBase}
+import org.codefeedr.core.library.internal.zookeeper.{ZkCollectionNode, ZkNodeBase}
 
 class ConsumerPartitionCollection(parent: ZkNodeBase)
     extends ZkCollectionNode[ConsumerPartitionNode]("partitions",

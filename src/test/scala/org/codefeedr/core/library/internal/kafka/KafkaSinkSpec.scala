@@ -19,11 +19,11 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal.Kafka
+package org.codefeedr.core.library.internal.kafka
 
-import org.codefeedr.core.Library.Internal.Kafka.Sink.KafkaGenericSink
-import org.codefeedr.core.Library.Internal.Zookeeper.ZkClient
-import org.codefeedr.core.Library.LibraryServices
+import org.codefeedr.core.library.internal.kafka.sink.KafkaGenericSink
+import org.codefeedr.core.library.internal.zookeeper.ZkClient
+import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.LibraryServiceSpec
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, BeforeAndAfterEach}
 

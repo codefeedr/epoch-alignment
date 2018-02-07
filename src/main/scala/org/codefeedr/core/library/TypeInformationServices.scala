@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.core.Library
+package org.codefeedr.core.library
 
 import org.codefeedr.Model.{ActionType, RecordSourceTrail, SubjectType}
 import org.apache.flink.api.common.typeinfo.TypeInformation

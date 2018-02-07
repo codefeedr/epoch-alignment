@@ -17,16 +17,16 @@
  *
  */
 
-package org.codefeedr.Core
+package org.codefeedr.core
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.table.api.StreamTableEnvironment
-import org.codefeedr.Core.Engine.Query.{QueryTree, StreamComposerFactory}
-import org.codefeedr.Core.Library.Internal.Kafka.KafkaTrailedRecordSource
-import org.codefeedr.Core.Library.{LibraryServices, SubjectFactory}
-import org.codefeedr.Core.Plugin.CollectionPlugin
+import org.codefeedr.core.engine.query.query.{QueryTree, StreamComposerFactory}
+import org.codefeedr.core.library.internal.kafka.KafkaTrailedRecordSource
+import org.codefeedr.core.library.{LibraryServices, SubjectFactory}
+import org.codefeedr.core.plugin.CollectionPlugin
 import org.codefeedr.Model.{SubjectType, TrailedRecord}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach, FutureOutcome, Matchers}
 
@@ -74,8 +74,8 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     logger.debug("Creating query Composer")
     val composer = await(StreamComposerFactory.GetComposer(query))
     logger.debug("Composing queryEnv")
-    val resultStream = composer.Compose(queryEnv)
-    val resultType = composer.GetExposedType()
+    val resultStream = composer.compose(queryEnv)
+    val resultType = composer.getExposedType()
     logger.debug(s"Composing sink for ${resultType.name}.")
     val sink = SubjectFactory.GetSink(resultType, "testsink")
     resultStream.addSink(sink)

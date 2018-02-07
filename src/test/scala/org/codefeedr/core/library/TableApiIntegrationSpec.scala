@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.core.Library
+package org.codefeedr.core.library
 
 import org.codefeedr.core.engine.query.query.{Join, SubjectSource}
 import org.codefeedr.core.{FullIntegrationSpec, KafkaTest}
@@ -27,8 +27,8 @@ import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironm
 import org.apache.flink.table.api.TableEnvironment
 import org.apache.flink.table.api.scala._
 import org.apache.flink.types.Row
-import org.codefeedr.core.Library.Internal.Kafka.Sink.KafkaTableSink
-import org.codefeedr.core.Library.Internal.Kafka.Source.KafkaTableSource
+import org.codefeedr.core.library.internal.kafka.sink.KafkaTableSink
+import org.codefeedr.core.library.internal.kafka.source.KafkaTableSource
 
 import scala.async.Async.{async, await}
 

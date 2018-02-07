@@ -17,10 +17,10 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal.Kafka.Sink
+package org.codefeedr.core.library.internal.kafka.sink
 
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.codefeedr.core.Library.SubjectFactory
+import org.codefeedr.core.library.SubjectFactory
 import org.codefeedr.Model.SubjectType
 
 import scala.reflect.ClassTag

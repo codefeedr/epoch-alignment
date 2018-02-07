@@ -1,9 +1,9 @@
-package org.codefeedr.core.Library.Metastore
+package org.codefeedr.core.library.metastore
 
 import com.typesafe.scalalogging.LazyLogging
-import org.codefeedr.core.Library.Internal.SubjectTypeFactory
-import org.codefeedr.core.Library.Internal.Zookeeper.{ZkClient, ZkNode, ZkNodeBase, ZkStateNode}
-import org.codefeedr.Exceptions._
+import org.codefeedr.core.library.internal.SubjectTypeFactory
+import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkNode, ZkNodeBase, ZkStateNode}
+import org.codefeedr.exceptions._
 import org.codefeedr.Model.SubjectType
 
 import scala.reflect.runtime.{universe => ru}

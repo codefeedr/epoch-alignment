@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal.Serialisation
+package org.codefeedr.core.library.internal.serialisation
 
 import java.io.{ByteArrayOutputStream, ObjectOutputStream}
 

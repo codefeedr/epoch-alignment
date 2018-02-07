@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.core.Library.Internal.Kafka.Source
+package org.codefeedr.core.library.internal.kafka.source
 
 import java.util.UUID
 
@@ -33,10 +33,10 @@ import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
 import org.apache.flink.types.Row
-import org.codefeedr.core.Library.Internal.Kafka.Meta.{PartitionOffset, TopicPartitionOffsets}
-import org.codefeedr.core.Library.LibraryServices
-import org.codefeedr.core.Library.Metastore.{ConsumerNode, QuerySourceNode, SubjectNode}
-import org.codefeedr.Model.Zookeeper.{Consumer, QuerySource}
+import org.codefeedr.core.library.internal.kafka.meta.{PartitionOffset, TopicPartitionOffsets}
+import org.codefeedr.core.library.LibraryServices
+import org.codefeedr.core.library.metastore.{ConsumerNode, QuerySourceNode, SubjectNode}
+import org.codefeedr.Model.zookeeper.{Consumer, QuerySource}
 import org.codefeedr.Model.{RecordSourceTrail, SubjectType, TrailedRecord}
 
 import scala.collection.JavaConverters._
@@ -74,7 +74,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
   }
 
   @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
-  @transient private[Kafka] lazy val instanceUuid = UUID.randomUUID().toString
+  @transient private[kafka] lazy val instanceUuid = UUID.randomUUID().toString
   //Make this configurable?
   @transient private lazy val RefreshTime = 100
 
@@ -100,7 +100,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
   //Node in zookeeper representing state of the subject this consumer is subscribed on
 
   @transient
-  @volatile private[Kafka] var running = true
+  @volatile private[kafka] var running = true
   @transient
   @volatile private var started = false
 
@@ -125,7 +125,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
 
   override def notifyCheckpointComplete(checkpointId: Long): Unit = {}
 
-  private[Kafka] def InitRun(): Unit = {
+  private[kafka] def InitRun(): Unit = {
     //Create self on zookeeper
     val initialConsumer = Consumer(instanceUuid, null, System.currentTimeMillis())
 
@@ -139,7 +139,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     subjectNode.AwaitClose().map(_ => cancel())
   }
 
-  private[Kafka] def FinalizeRun(): Unit = {
+  private[kafka] def FinalizeRun(): Unit = {
     //Finally unsubscribe from the library
     logger.debug(s"Unsubscribing ${GetLabel()}on subject $topic.")
 
@@ -154,7 +154,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
   /**
     * @return A future that resolves when the source has been close
     */
-  private[Kafka] def AwaitClose(): Future[Unit] = ClosePromise.future
+  private[kafka] def AwaitClose(): Future[Unit] = ClosePromise.future
 
   def runLocal(collector: T => Unit): Unit = {
     started = true

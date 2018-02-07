@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.Exceptions
+package org.codefeedr.exceptions
 
 case class ActiveSinkException(message: String) extends Exception(message)
 case class ActiveSourceException(message: String) extends Exception(message)

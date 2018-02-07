@@ -19,10 +19,10 @@
  *
  */
 
-package org.codefeedr.core.Library
+package org.codefeedr.core.library
 
 import com.typesafe.scalalogging.LazyLogging
-import org.codefeedr.core.Library.Internal.{RecordTransformer, RecordUtils, SubjectTypeFactory}
+import org.codefeedr.core.library.internal.{RecordTransformer, RecordUtils, SubjectTypeFactory}
 import org.codefeedr.Model.ActionType
 import org.scalatest.{AsyncFlatSpec, Matchers}
 
