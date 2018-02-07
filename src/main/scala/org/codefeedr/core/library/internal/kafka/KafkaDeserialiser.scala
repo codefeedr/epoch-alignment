@@ -129,8 +129,8 @@ class KafkaDeserialiser[T: ClassTag]()
 
   override def close(): Unit = {}
 
-  private lazy val GenericDeserialiser = new GenericDeserialiser[T]
+  private lazy val genericDeserialiser = new GenericDeserialiser[T]
 
   override def deserialize(topic: String, data: Array[Byte]): T =
-    GenericDeserialiser.Deserialize(data)
+    genericDeserialiser.deserialize(data)
 }

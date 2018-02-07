@@ -24,7 +24,7 @@ package org.codefeedr.core.engine.query
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.streaming.api.scala._
 import org.codefeedr.core.library.internal.{RecordTransformer, SubjectTypeFactory}
-import org.codefeedr.Model.{ActionType, _}
+import org.codefeedr.model.{ActionType, _}
 import org.codefeedr.core.engine.query
 import org.codefeedr.core.engine.query.{JoinQueryComposer, JoinState}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, FlatSpec, Matchers}
@@ -102,11 +102,11 @@ class JoinQueryComposerSpec
     val keyFunction =
       JoinQueryComposer.buildPartialKeyFunction(Array("objectId", "message"), messageType)
     val m1 =
-      TrailedRecord(messageTransformer.Bag(SomeJoinTestMessage(1, 1, "a message", Array[Byte]()),
+      TrailedRecord(messageTransformer.bag(SomeJoinTestMessage(1, 1, "a message", Array[Byte]()),
                                            ActionType.Add),
                     Source(Array[Byte](), Array[Byte]()))
     val m2 =
-      TrailedRecord(messageTransformer.Bag(SomeJoinTestMessage(2, 1, "a message", Array[Byte]()),
+      TrailedRecord(messageTransformer.bag(SomeJoinTestMessage(2, 1, "a message", Array[Byte]()),
                                            ActionType.Add),
                     Source(Array[Byte](), Array[Byte]()))
     assert(keyFunction(m1).equals(keyFunction(m2)))
@@ -115,12 +115,12 @@ class JoinQueryComposerSpec
     val keyFunction =
       JoinQueryComposer.buildPartialKeyFunction(Array("objectId", "message"), messageType)
     val m1 =
-      TrailedRecord(messageTransformer.Bag(SomeJoinTestMessage(1, 1, "a message", Array[Byte]()),
+      TrailedRecord(messageTransformer.bag(SomeJoinTestMessage(1, 1, "a message", Array[Byte]()),
                                            ActionType.Add),
                     Source(Array[Byte](), Array[Byte]()))
     val m2 =
       TrailedRecord(
-        messageTransformer.Bag(SomeJoinTestMessage(2, 1, "another message", Array[Byte]()),
+        messageTransformer.bag(SomeJoinTestMessage(2, 1, "another message", Array[Byte]()),
                                ActionType.Add),
         Source(Array[Byte](), Array[Byte]()))
     assert(!keyFunction(m1).equals(keyFunction(m2)))
@@ -143,11 +143,11 @@ class JoinQueryComposerSpec
                                            Array("id", "message", "dataBag"),
                                            Array[Byte](12.toByte))
 
-    val o = TrailedRecord(objectTransformer.Bag(SomeJoinTestObject(1, "object 1"), ActionType.Add),
+    val o = TrailedRecord(objectTransformer.bag(SomeJoinTestObject(1, "object 1"), ActionType.Add),
                           Source(Array[Byte](), Array[Byte](10.toByte)))
     val m =
       TrailedRecord(
-        messageTransformer.Bag(SomeJoinTestMessage(2, 3, "a message", Array[Byte](4.toByte)),
+        messageTransformer.bag(SomeJoinTestMessage(2, 3, "a message", Array[Byte](4.toByte)),
                                ActionType.Add),
         Source(Array[Byte](), Array[Byte](11.toByte)))
 
@@ -191,12 +191,12 @@ class JoinQueryComposerSpec
   "A InnerJoinFunction" should "not emit values until a join partner has been found" in {
     val state = None: Option[JoinState]
     val joinFunction = JoinQueryComposer.mapSideInnerJoin(mergeFn) _
-    val o = TrailedRecord(objectTransformer.Bag(SomeJoinTestObject(1, "object 1"), ActionType.Add),
+    val o = TrailedRecord(objectTransformer.bag(SomeJoinTestObject(1, "object 1"), ActionType.Add),
                           Source(Array[Byte](), Array[Byte](10.toByte)))
 
     val m =
       TrailedRecord(
-        messageTransformer.Bag(SomeJoinTestMessage(2, 3, "a message", Array[Byte](4.toByte)),
+        messageTransformer.bag(SomeJoinTestMessage(2, 3, "a message", Array[Byte](4.toByte)),
                                ActionType.Add),
         Source(Array[Byte](), Array[Byte](11.toByte)))
 
@@ -212,12 +212,12 @@ class JoinQueryComposerSpec
   "A InnerJoinFunction" should "emit a value when a join partner has been found" in {
     val state = None: Option[JoinState]
     val joinFunction = JoinQueryComposer.mapSideInnerJoin(mergeFn) _
-    val o = TrailedRecord(objectTransformer.Bag(SomeJoinTestObject(1, "object 1"), ActionType.Add),
+    val o = TrailedRecord(objectTransformer.bag(SomeJoinTestObject(1, "object 1"), ActionType.Add),
                           Source(Array[Byte](), Array[Byte](10.toByte)))
 
     val m =
       TrailedRecord(
-        messageTransformer.Bag(SomeJoinTestMessage(2, 3, "a message", Array[Byte](4.toByte)),
+        messageTransformer.bag(SomeJoinTestMessage(2, 3, "a message", Array[Byte](4.toByte)),
                                ActionType.Add),
         Source(Array[Byte](), Array[Byte](11.toByte)))
 
@@ -234,21 +234,21 @@ class JoinQueryComposerSpec
   "A InnerJoinFunction" should "emit a cross join when multiple join partners are found in" in {
     val state = None: Option[JoinState]
     val joinFunction = JoinQueryComposer.mapSideInnerJoin(mergeFn) _
-    val o = TrailedRecord(objectTransformer.Bag(SomeJoinTestObject(1, "object 1"), ActionType.Add),
+    val o = TrailedRecord(objectTransformer.bag(SomeJoinTestObject(1, "object 1"), ActionType.Add),
                           Source(Array[Byte](), Array[Byte](10.toByte)))
 
     val o2 =
-      TrailedRecord(objectTransformer.Bag(SomeJoinTestObject(1, "Another object"), ActionType.Add),
+      TrailedRecord(objectTransformer.bag(SomeJoinTestObject(1, "Another object"), ActionType.Add),
                     Source(Array[Byte](), Array[Byte](10.toByte)))
 
     val m =
       TrailedRecord(
-        messageTransformer.Bag(SomeJoinTestMessage(2, 3, "a message", Array[Byte](4.toByte)),
+        messageTransformer.bag(SomeJoinTestMessage(2, 3, "a message", Array[Byte](4.toByte)),
                                ActionType.Add),
         Source(Array[Byte](), Array[Byte](11.toByte)))
     val m2 =
       TrailedRecord(
-        messageTransformer.Bag(SomeJoinTestMessage(2, 3, "another message", Array[Byte](4.toByte)),
+        messageTransformer.bag(SomeJoinTestMessage(2, 3, "another message", Array[Byte](4.toByte)),
                                ActionType.Add),
         Source(Array[Byte](), Array[Byte](11.toByte)))
 
@@ -269,21 +269,21 @@ class JoinQueryComposerSpec
   "A InnerJoinFunction" should "not add an element to its state twice if it occurs twice" in {
     val state = None: Option[JoinState]
     val joinFunction = JoinQueryComposer.mapSideInnerJoin(mergeFn) _
-    val o = TrailedRecord(objectTransformer.Bag(SomeJoinTestObject(1, "object 1"), ActionType.Add),
+    val o = TrailedRecord(objectTransformer.bag(SomeJoinTestObject(1, "object 1"), ActionType.Add),
                           Source(Array[Byte](), Array[Byte](10.toByte)))
 
     val o2 =
-      TrailedRecord(objectTransformer.Bag(SomeJoinTestObject(1, "Another object"), ActionType.Add),
+      TrailedRecord(objectTransformer.bag(SomeJoinTestObject(1, "Another object"), ActionType.Add),
                     Source(Array[Byte](), Array[Byte](10.toByte)))
 
     val m =
       TrailedRecord(
-        messageTransformer.Bag(SomeJoinTestMessage(2, 3, "a message", Array[Byte](4.toByte)),
+        messageTransformer.bag(SomeJoinTestMessage(2, 3, "a message", Array[Byte](4.toByte)),
                                ActionType.Add),
         Source(Array[Byte](), Array[Byte](11.toByte)))
     val m2 =
       TrailedRecord(
-        messageTransformer.Bag(SomeJoinTestMessage(2, 3, "another message", Array[Byte](4.toByte)),
+        messageTransformer.bag(SomeJoinTestMessage(2, 3, "another message", Array[Byte](4.toByte)),
                                ActionType.Add),
         Source(Array[Byte](), Array[Byte](11.toByte)))
 

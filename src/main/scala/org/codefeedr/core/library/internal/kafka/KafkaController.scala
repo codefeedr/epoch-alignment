@@ -55,7 +55,7 @@ object KafkaController {
     * @param name name of the topic to register
     * @return a future that resolves when the topic has been created
     */
-  def CreateTopic(name: String, partitions: Int): Future[Unit] = {
+  def createTopic(name: String, partitions: Int): Future[Unit] = {
     val topic = new NewTopic(name, partitions, 1)
     val topicSet = Iterable(topic).asJavaCollection
     val result = apply(o => o.createTopics(topicSet))
@@ -69,10 +69,10 @@ object KafkaController {
     * @param name Topic to guarantee
     * @return
     */
-  def GuaranteeTopic(name: String, partitions: Int): Future[Unit] = {
-    GetTopics().map(o =>
+  def guaranteeTopic(name: String, partitions: Int): Future[Unit] = {
+    getTopics().map(o =>
       if (!o.contains(name)) {
-        CreateTopic(name, partitions)
+        createTopic(name, partitions)
     })
   }
 
@@ -91,7 +91,7 @@ object KafkaController {
     * Get the list of topics registered on the kafka cluster
     * @return a future of a set of topic names
     */
-  def GetTopics(): Future[Set[String]] = {
+  def getTopics(): Future[Set[String]] = {
     Future {
       apply(o => o.listTopics()).names().get()
     }.map(o => o.toSet)
@@ -102,7 +102,7 @@ object KafkaController {
     * @param topic the name of the topic to remove
     * @return future that resolves when the topic no longer exists on the cluster
     */
-  def DeleteTopic(topic: String): Future[Unit] = {
+  def deleteTopic(topic: String): Future[Unit] = {
     Future {
       apply(o => o.deleteTopics(Iterable(topic).asJavaCollection)).all().get()
     }
@@ -112,5 +112,5 @@ object KafkaController {
     * Destroy all topics on the kafka cluster.
     * @return a set of unit for the destroyed topics
     */
-  def Destroy(): Future[Set[Unit]] = GetTopics().flatMap(o => Future.sequence(o.map(DeleteTopic)))
+  def destroy(): Future[Set[Unit]] = getTopics().flatMap(o => Future.sequence(o.map(deleteTopic)))
 }

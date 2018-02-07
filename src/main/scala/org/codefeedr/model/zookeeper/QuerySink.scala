@@ -1,4 +1,4 @@
-package org.codefeedr.Model.zookeeper
+package org.codefeedr.model.zookeeper
 
 /**
   * Case class describing a sink of a query.

@@ -6,7 +6,7 @@ import org.codefeedr.core.library.internal.zookeeper.{
   ZkCollectionStateNode,
   ZkNodeBase
 }
-import org.codefeedr.Model.zookeeper.Producer
+import org.codefeedr.model.zookeeper.Producer
 
 import scala.concurrent.Future
 
@@ -16,8 +16,8 @@ class ProducerCollection(subjectName: String, parent: ZkNodeBase)
                                            (name, parent) => new ProducerNode(name, parent))
     with ZkCollectionStateNode[ProducerNode, Producer, Boolean, Boolean] {
 
-  override def Initial(): Boolean = false
-  override def MapChild(child: Boolean): Boolean = child
-  override def ReduceAggregate(left: Boolean, right: Boolean): Boolean = left || right
+  override def initial(): Boolean = false
+  override def mapChild(child: Boolean): Boolean = child
+  override def reduceAggregate(left: Boolean, right: Boolean): Boolean = left || right
 
 }

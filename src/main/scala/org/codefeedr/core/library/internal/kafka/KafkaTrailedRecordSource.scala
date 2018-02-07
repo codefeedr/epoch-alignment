@@ -21,11 +21,11 @@ package org.codefeedr.core.library.internal.kafka
 
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.codefeedr.core.library.internal.kafka.source.KafkaSource
-import org.codefeedr.Model.{SubjectType, TrailedRecord}
+import org.codefeedr.model.{SubjectType, TrailedRecord}
 
 class KafkaTrailedRecordSource(subjectType: SubjectType, override val sourceUuid: String)
     extends KafkaSource[TrailedRecord](subjectType) {
-  override def Map(record: TrailedRecord) = record
+  override def map(record: TrailedRecord) = record
 
   /**
     * Get typeinformation of the returned type

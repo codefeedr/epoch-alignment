@@ -19,7 +19,7 @@
 
 package org.codefeedr.core.library.internal
 
-import org.codefeedr.Model._
+import org.codefeedr.model._
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
@@ -71,7 +71,7 @@ class RecordTransformer[TData: ru.TypeTag: ClassTag](subjectType: SubjectType) {
     * @param action Type of the action (Add, Update, Delete)
     * @return The record that can be pushed into the query engine
     */
-  def Bag(data: TData, action: ActionType.Value): Record = {
+  def bag(data: TData, action: ActionType.Value): Record = {
     Record(accessors.map(o => o(data)).asInstanceOf[Array[Any]], subjectType.uuid, action)
   }
 
@@ -80,7 +80,7 @@ class RecordTransformer[TData: ru.TypeTag: ClassTag](subjectType: SubjectType) {
     * @param record the record to unbag
     * @return hopefully the constructed type
     */
-  def Unbag(record: Record): TData = {
+  def unbag(record: Record): TData = {
     val args = record.data.map(o => o.asInstanceOf[AnyRef]).toArray
     val instance = constructor.newInstance(args: _*).asInstanceOf[TData]
     instance

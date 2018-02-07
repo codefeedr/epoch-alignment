@@ -1,4 +1,4 @@
-package org.codefeedr.Model.zookeeper
+package org.codefeedr.model.zookeeper
 
 /**
   * Case class describing the consumer of a partition of a subject

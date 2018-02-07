@@ -23,7 +23,7 @@ package org.codefeedr.core.library
 
 import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.core.library.internal.{RecordTransformer, RecordUtils, SubjectTypeFactory}
-import org.codefeedr.Model.ActionType
+import org.codefeedr.model.ActionType
 import org.scalatest.{AsyncFlatSpec, Matchers}
 
 case class BagTestInt(intValue: Int)
@@ -40,7 +40,7 @@ class RecordTransformerSpec extends AsyncFlatSpec with Matchers with LazyLogging
     val t = SubjectTypeFactory.getSubjectType[BagTestInt]
     val bagger = new RecordTransformer[BagTestInt](t)
     val obj = BagTestInt(5)
-    implicit val record = bagger.Bag(obj, ActionType.Add)
+    implicit val record = bagger.bag(obj, ActionType.Add)
     assert(new RecordUtils(t).getValueT[Int]("intValue") == 5)
   }
 
@@ -48,7 +48,7 @@ class RecordTransformerSpec extends AsyncFlatSpec with Matchers with LazyLogging
     val t = SubjectTypeFactory.getSubjectType[BagTestString]
     val bagger = new RecordTransformer[BagTestString](t)
     val obj = BagTestString("someString")
-    implicit val record = bagger.Bag(obj, ActionType.Add)
+    implicit val record = bagger.bag(obj, ActionType.Add)
     assert(new RecordUtils(t).getValueT[String]("stringValue") == "someString")
   }
 
@@ -56,14 +56,14 @@ class RecordTransformerSpec extends AsyncFlatSpec with Matchers with LazyLogging
     val t = SubjectTypeFactory.getSubjectType[BagTestObject]
     val bagger = new RecordTransformer[BagTestObject](t)
     val obj = BagTestObject(Seq(2, 3, 4))
-    implicit val record = bagger.Bag(obj, ActionType.Add)
+    implicit val record = bagger.bag(obj, ActionType.Add)
     assert(new RecordUtils(t).getValueT[Seq[Int]]("objectValue").size == 3)
   }
   "A RecordTransformer" should "be able to map pojo" in {
     val t = SubjectTypeFactory.getSubjectType[BagTestPojo]
     val bagger = new RecordTransformer[BagTestPojo](t)
     val obj = new BagTestPojo(2)
-    implicit val record = bagger.Bag(obj, ActionType.Add)
+    implicit val record = bagger.bag(obj, ActionType.Add)
     assert(new RecordUtils(t).getValueT[Int]("intValue") == 2)
   }
 
@@ -71,16 +71,16 @@ class RecordTransformerSpec extends AsyncFlatSpec with Matchers with LazyLogging
     val t = SubjectTypeFactory.getSubjectType[BagTestInt]
     val bagger = new RecordTransformer[BagTestInt](t)
     val obj = BagTestInt(5)
-    implicit val record = bagger.Bag(obj, ActionType.Add)
-    val r = bagger.Unbag(record)
+    implicit val record = bagger.bag(obj, ActionType.Add)
+    val r = bagger.unbag(record)
     assert(r.intValue == 5)
   }
   "A RecordTransformer" should "be able to map strings from a bag to object" in {
     val t = SubjectTypeFactory.getSubjectType[BagTestString]
     val bagger = new RecordTransformer[BagTestString](t)
     val obj = BagTestString("someString")
-    implicit val record = bagger.Bag(obj, ActionType.Add)
-    val r = bagger.Unbag(record)
+    implicit val record = bagger.bag(obj, ActionType.Add)
+    val r = bagger.unbag(record)
     assert(r.stringValue == "someString")
   }
 
@@ -88,16 +88,16 @@ class RecordTransformerSpec extends AsyncFlatSpec with Matchers with LazyLogging
     val t = SubjectTypeFactory.getSubjectType[BagTestObject]
     val bagger = new RecordTransformer[BagTestObject](t)
     val obj = BagTestObject(Seq(2, 3, 4))
-    implicit val record = bagger.Bag(obj, ActionType.Add)
-    val r = bagger.Unbag(record)
+    implicit val record = bagger.bag(obj, ActionType.Add)
+    val r = bagger.unbag(record)
     assert(r.objectValue.asInstanceOf[Seq[Int]].size == 3)
   }
   "A RecordTransformer" should "be able to map a bag back to pojo" in {
     val t = SubjectTypeFactory.getSubjectType[BagTestPojo]
     val bagger = new RecordTransformer[BagTestPojo](t)
     val obj = new BagTestPojo(2)
-    implicit val record = bagger.Bag(obj, ActionType.Add)
-    val r = bagger.Unbag(record)
+    implicit val record = bagger.bag(obj, ActionType.Add)
+    val r = bagger.unbag(record)
     assert(r.intValue == 2)
   }
 

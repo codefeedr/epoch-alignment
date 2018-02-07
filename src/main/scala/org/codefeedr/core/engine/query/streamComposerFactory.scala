@@ -33,26 +33,26 @@ trait StreamComposerFactoryFacade { this: LibraryServices =>
 
   @transient private lazy val logger = Logger(classOf[StreamComposerFactoryFacade])
 
-  def GetComposer(query: QueryTree): Future[StreamComposer] = {
+  def getComposer(query: QueryTree): Future[StreamComposer] = {
 
     query match {
       case SubjectSource(subjectName) =>
         logger.debug(s"Creating composer for subjectsource $subjectName")
         async {
           logger.debug(s"Waiting registration of subject $subjectName")
-          val childNode = await(subjectLibrary.GetSubjects().AwaitChildNode(subjectName))
+          val childNode = await(subjectLibrary.getSubjects().awaitChildNode(subjectName))
           logger.debug(s"Got subject $subjectName. Retrieving data")
-          val subject = await(childNode.GetData()).get
+          val subject = await(childNode.getData()).get
           new SourceStreamComposer(subject)
         }
       case Join(left, right, keysLeft, keysRight, selectLeft, selectRight, alias) =>
         logger.debug(s"Creating composer for join $alias")
         for {
-          leftComposer <- GetComposer(left)
-          rightComposer <- GetComposer(right)
+          leftComposer <- getComposer(left)
+          rightComposer <- getComposer(right)
           joinedType <- subjectLibrary
-            .GetSubject(alias)
-            .GetOrCreate(
+            .getSubject(alias)
+            .getOrCreate(
               () =>
                 JoinQueryComposer.buildComposedType(leftComposer.getExposedType(),
                                                     rightComposer.getExposedType(),
@@ -69,4 +69,4 @@ trait StreamComposerFactoryFacade { this: LibraryServices =>
   }
 }
 
-object StreamComposerFactory extends StreamComposerFactoryFacade with LibraryServices
+object streamComposerFactory extends StreamComposerFactoryFacade with LibraryServices

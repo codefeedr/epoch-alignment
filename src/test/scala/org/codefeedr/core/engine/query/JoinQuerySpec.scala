@@ -56,14 +56,14 @@ class JoinQuerySpec extends FullIntegrationSpec {
         "groupedMessage")
 
     async {
-      val objectType = await(RunSourceEnvironment(objects))
-      val groupType = await(RunSourceEnvironment(groups))
+      val objectType = await(runSourceEnvironment(objects))
+      val groupType = await(runSourceEnvironment(groups))
       //Validate that the data is actually sent
-      assert(await(AwaitAllData(objectType)).size == 3)
-      assert(await(AwaitAllData(groupType)).size == 1)
+      assert(await(awaitAllData(objectType)).size == 3)
+      assert(await(awaitAllData(groupType)).size == 1)
       //Perform the query and assert
-      val resultType = await(RunQueryEnvironment(query))
-      val result = await(AwaitAllData(resultType))
+      val resultType = await(runQueryEnvironment(query))
+      val result = await(awaitAllData(resultType))
       assert(result.size == 3)
     }
   }
@@ -88,14 +88,14 @@ class JoinQuerySpec extends FullIntegrationSpec {
 
     async {
       //Add sources and wait for them to finish
-      val objectType = await(RunSourceEnvironment(objects))
-      val groupType = await(RunSourceEnvironment(groups))
+      val objectType = await(runSourceEnvironment(objects))
+      val groupType = await(runSourceEnvironment(groups))
       //Validate that the data is actually sent
-      assert(await(AwaitAllData(objectType)).size == 3)
-      assert(await(AwaitAllData(groupType)).size == 2)
+      assert(await(awaitAllData(objectType)).size == 3)
+      assert(await(awaitAllData(groupType)).size == 2)
       //Perform the query and assert
-      val resultType = await(RunQueryEnvironment(query))
-      val result = await(AwaitAllData(resultType))
+      val resultType = await(runQueryEnvironment(query))
+      val result = await(awaitAllData(resultType))
       assert(result.isEmpty)
     }
   }
@@ -125,15 +125,15 @@ class JoinQuerySpec extends FullIntegrationSpec {
       //Run all environments
 
       //Add sources and wait for them to finish
-      val objectType = await(RunSourceEnvironment(objects))
-      val groupType = await(RunSourceEnvironment(groups))
+      val objectType = await(runSourceEnvironment(objects))
+      val groupType = await(runSourceEnvironment(groups))
 
       //Validate that the data is actually sent
-      assert(await(AwaitAllData(objectType)).size == 3)
-      assert(await(AwaitAllData(groupType)).size == 3)
+      assert(await(awaitAllData(objectType)).size == 3)
+      assert(await(awaitAllData(groupType)).size == 3)
       //Perform the query and assert
-      val queryResultType = await(RunQueryEnvironment(query))
-      val result = await(AwaitAllData(queryResultType))
+      val queryResultType = await(runQueryEnvironment(query))
+      val result = await(awaitAllData(queryResultType))
       assert(result.size == 9)
 
   }

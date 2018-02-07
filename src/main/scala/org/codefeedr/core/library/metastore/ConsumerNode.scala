@@ -1,7 +1,7 @@
 package org.codefeedr.core.library.metastore
 
 import org.codefeedr.core.library.internal.zookeeper.{ZkStateNode, ZkNode, ZkNodeBase}
-import org.codefeedr.Model.zookeeper.Consumer
+import org.codefeedr.model.zookeeper.Consumer
 
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -11,22 +11,22 @@ import scala.reflect.ClassTag
 class ConsumerNode(name: String, parent: ZkNodeBase)
     extends ZkNode[Consumer](name, parent)
     with ZkStateNode[Consumer, Boolean] {
-  override def PostCreate(): Future[Unit] = async {
-    await(GetStateNode().Create(true))
+  override def postCreate(): Future[Unit] = async {
+    await(getStateNode().create(true))
   }
 
-  override def TypeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
+  override def typeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
 
   /**
     * The initial state of the node. State is not allowed to be empty
     *
     * @return
     */
-  override def InitialState(): Boolean = true
+  override def initialState(): Boolean = true
 
-  override def SetState(state: Boolean): Future[Unit] = async {
-    await(super.SetState(state))
+  override def setState(state: Boolean): Future[Unit] = async {
+    await(super.setState(state))
     //Call update on query source state, because this consumer state change might impact it
-    await(parent.Parent().asInstanceOf[QuerySourceNode].UpdateState())
+    await(parent.parent().asInstanceOf[QuerySourceNode].updateState())
   }
 }

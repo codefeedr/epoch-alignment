@@ -31,8 +31,8 @@ import org.apache.kafka.clients.producer.ProducerRecord
 import org.codefeedr.core.library.internal.KeyFactory
 import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.library.metastore.{ProducerNode, QuerySinkNode, SubjectNode}
-import org.codefeedr.Model.zookeeper.{Producer, QuerySink}
-import org.codefeedr.Model._
+import org.codefeedr.model.zookeeper.{Producer, QuerySink}
+import org.codefeedr.model._
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -55,9 +55,9 @@ abstract class KafkaSink[TSink]
     val producer = KafkaProducerFactory.create[RecordSourceTrail, Row]
     //Create the producer node alongside
     //Need to block here because the producer cannot start before the zookeeper state has been configured
-    Await.ready(subjectNode.Create(subjectType), Duration(5, SECONDS))
-    Await.ready(sinkNode.Create(QuerySink(sinkUuid)), Duration(5, SECONDS))
-    Await.ready(producerNode.Create(Producer(instanceUuid, null, System.currentTimeMillis())),
+    Await.ready(subjectNode.create(subjectType), Duration(5, SECONDS))
+    Await.ready(sinkNode.create(QuerySink(sinkUuid)), Duration(5, SECONDS))
+    Await.ready(producerNode.create(Producer(instanceUuid, null, System.currentTimeMillis())),
                 Duration(5, SECONDS))
 
     logger.debug(s"Producer ${GetLabel()} created for topic $topic")
@@ -67,14 +67,14 @@ abstract class KafkaSink[TSink]
   val subjectType: SubjectType
   val sinkUuid: String
 
-  @transient lazy val subjectNode: SubjectNode = subjectLibrary.GetSubject(subjectType.name)
+  @transient lazy val subjectNode: SubjectNode = subjectLibrary.getSubject(subjectType.name)
 
-  @transient lazy val sinkNode: QuerySinkNode = subjectNode.GetSinks().GetChild(sinkUuid)
+  @transient lazy val sinkNode: QuerySinkNode = subjectNode.getSinks().getChild(sinkUuid)
 
   /**
     * The ZookeeperNode that represent this instance of the producer
     */
-  @transient lazy val producerNode: ProducerNode = sinkNode.GetProducers().GetChild(instanceUuid)
+  @transient lazy val producerNode: ProducerNode = sinkNode.getProducers().getChild(instanceUuid)
 
   @transient protected lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
   //A random identifier for this specific sink
@@ -85,13 +85,13 @@ abstract class KafkaSink[TSink]
   override def close(): Unit = {
     logger.debug(s"Closing producer ${GetLabel()}for ${subjectType.name}")
     kafkaProducer.close()
-    Await.ready(producerNode.SetState(false), Duration.Inf)
+    Await.ready(producerNode.setState(false), Duration.Inf)
   }
 
   override def open(parameters: Configuration): Unit = {
     kafkaProducer
     logger.debug(s"Opening producer ${GetLabel()} for ${subjectType.name}")
-    Await.ready(producerNode.SetState(true), Duration.Inf)
+    Await.ready(producerNode.setState(true), Duration.Inf)
   }
 }
 
@@ -117,7 +117,7 @@ class RowSink(override val subjectType: SubjectType, override val sinkUuid: Stri
     val actionType = if (value.f0) ActionType.Add else ActionType.Remove
     //TODO: Optimize these steps
     val record = Record(value.f1, subjectType.uuid, actionType)
-    val trailed = TrailedRecord(record, keyFactory.GetKey(record))
+    val trailed = TrailedRecord(record, keyFactory.getKey(record))
     kafkaProducer.send(new ProducerRecord(topic, trailed.trail, trailed.row))
   }
 }

@@ -33,13 +33,13 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * Note that the node does not necessarily need to exist on zookeeper
   *
   * @param name name of the current node
-  * @param parent the parent
+  * @param p the parent
   */
-class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase)
+class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)
     extends ZkNodeBase(name)
     with LazyLogging {
 
-  override def Parent(): ZkNodeBase = parent
+  override def parent(): ZkNodeBase = p
 
   /**
     * Create a node with data
@@ -47,9 +47,9 @@ class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase)
     * @param data data to set on the created node
     * @return a future of the saved data
     */
-  def Create(data: TData): Future[TData] = async {
-    await(zkClient.CreateWithData(Path(), data))
-    await(PostCreate())
+  def create(data: TData): Future[TData] = async {
+    await(zkClient.createWithData(path(), data))
+    await(postCreate())
     data
   }
 
@@ -59,19 +59,19 @@ class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase)
     * @param factory    method that creates the data that should be stored in this zookeeper node
     * @return
     */
-  def GetOrCreate(factory: () => TData): Future[TData] = {
+  def getOrCreate(factory: () => TData): Future[TData] = {
     async {
-      if (await(Exists())) {
-        await(GetData()).get
+      if (await(exists())) {
+        await(getData()).get
       } else {
-        val r = await(Create(factory()))
+        val r = await(create(factory()))
         //Call post-create hooks
-        await(PostCreate())
+        await(postCreate())
         //Return data as result
         r
       }
     }.recoverWith { //Register type. When error because node already exists just retrieve this value because the first writer wins.
-      case _: NodeExistsException => GetData().map(o => o.get)
+      case _: NodeExistsException => getData().map(o => o.get)
     }
   }
 
@@ -80,8 +80,8 @@ class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase)
     *
     * @return
     */
-  def GetData(): Future[Option[TData]] =
-    zkClient.GetData[TData](Path())
+  def getData(): Future[Option[TData]] =
+    zkClient.getData[TData](path())
 
   /**
     * Set data of the node
@@ -89,7 +89,7 @@ class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase)
     * @param data data object to set
     * @return a future that resolves when the data has been set
     */
-  def SetData(data: TData): Future[Unit] = zkClient.SetData[TData](Path(), data).map(_ => Unit)
+  def setData(data: TData): Future[Unit] = zkClient.setData[TData](path(), data).map(_ => Unit)
 
   /**
     * Create the child of the node with the given name
@@ -98,7 +98,7 @@ class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase)
     * @tparam TChild type exposed by the childnode
     * @return
     */
-  def GetChild[TChild: ClassTag](name: String): ZkNode[TChild] = new ZkNode[TChild](name, this)
+  def getChild[TChild: ClassTag](name: String): ZkNode[TChild] = new ZkNode[TChild](name, this)
 
   /**
     * Creates a future that watches the node until the data matches the given condition
@@ -106,8 +106,8 @@ class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase)
     * @param condition Condition that should be true for the future to resolve
     * @return a future that resolves when the given condition is true
     */
-  def AwaitCondition(condition: TData => Boolean): Future[TData] =
-    zkClient.AwaitCondition(Path(), condition)
+  def awaitCondition(condition: TData => Boolean): Future[TData] =
+    zkClient.awaitCondition(path(), condition)
 
   /**
     * Get an observable of the data of the node
@@ -116,7 +116,7 @@ class ZkNode[TData: ClassTag](name: String, val parent: ZkNodeBase)
     * For messages use Kafka
     * @return
     */
-  def ObserveData(): Observable[TData] = zkClient.ObserveData[TData](Path())
+  def observeData(): Observable[TData] = zkClient.observeData[TData](path())
 }
 
 object ZkNode {

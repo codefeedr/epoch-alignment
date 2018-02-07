@@ -38,32 +38,32 @@ class KafkaControllerSpec extends LibraryServiceSpec with Matchers with BeforeAn
   val testTopic = "TestTopic"
 
   override def beforeEach(): Unit = {
-    Await.ready(subjectLibrary.Initialize(),Duration(1, SECONDS))
+    Await.ready(subjectLibrary.initialize(),Duration(1, SECONDS))
   }
 
   override def afterEach(): Unit = {
-    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
 
   }
 
   "A kafkaController" should "be able to create and delete new topics" in async {
-      await(KafkaController.CreateTopic(testTopic, 4))
-      assert(await(KafkaController.GetTopics()).contains(testTopic))
-      await(KafkaController.DeleteTopic(testTopic))
-      assert(!await(KafkaController.GetTopics()).contains(testTopic))
+      await(KafkaController.createTopic(testTopic, 4))
+      assert(await(KafkaController.getTopics()).contains(testTopic))
+      await(KafkaController.deleteTopic(testTopic))
+      assert(!await(KafkaController.getTopics()).contains(testTopic))
   }
 
   it should "create a new topic if guarantee is called and it does not exist yet" in async {
-    await(KafkaController.GuaranteeTopic(testTopic, 4))
-    assert(await(KafkaController.GetTopics()).contains(testTopic))
-    await(KafkaController.DeleteTopic(testTopic))
-    assert(!await(KafkaController.GetTopics()).contains(testTopic))
+    await(KafkaController.guaranteeTopic(testTopic, 4))
+    assert(await(KafkaController.getTopics()).contains(testTopic))
+    await(KafkaController.deleteTopic(testTopic))
+    assert(!await(KafkaController.getTopics()).contains(testTopic))
   }
 
   it should "create a topic with the configured amount of partitions" in async {
-      await(KafkaController.GuaranteeTopic(testTopic, 4))
+      await(KafkaController.guaranteeTopic(testTopic, 4))
       val r = assert(await(KafkaController.getPartitions(testTopic)) == 4)
-      await(KafkaController.DeleteTopic(testTopic))
+      await(KafkaController.deleteTopic(testTopic))
       r
   }
 }

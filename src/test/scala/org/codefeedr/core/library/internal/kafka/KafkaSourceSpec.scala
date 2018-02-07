@@ -26,7 +26,7 @@ import org.codefeedr.core.FullIntegrationSpec
 import org.codefeedr.core.library.internal.SubjectTypeFactory
 import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkNodeBase}
 import org.codefeedr.core.library.LibraryServices
-import org.codefeedr.Model.TrailedRecord
+import org.codefeedr.model.TrailedRecord
 import org.scalatest.time.Seconds
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, BeforeAndAfterEach}
 
@@ -45,28 +45,28 @@ class KafkaSourceSpec extends FullIntegrationSpec  {
   "A KafkaSource" should "Register and remove itself in the SubjectLibrary" in async {
     val sourceName = "testSource"
     val subjectType = SubjectTypeFactory.getSubjectType[TestKafkaSourceSubject]
-    val subjectNode = subjectLibrary.GetSubject(subjectType.name)
+    val subjectNode = subjectLibrary.getSubject(subjectType.name)
     //Create the node, normally the sinks are responsible for the creation of the subject node
-    await(subjectNode.Create(subjectType))
-    assert(await(subjectNode.GetState()).get)
+    await(subjectNode.create(subjectType))
+    assert(await(subjectNode.getState()).get)
 
-    val subject = await(subjectNode.GetOrCreateType[TestKafkaSourceSubject]())
+    val subject = await(subjectNode.getOrCreateType[TestKafkaSourceSubject]())
 
     val source = new KafkaTrailedRecordSource(subject, sourceName)
-    val sourceNode = subjectNode.GetSources().GetChild(sourceName)
+    val sourceNode = subjectNode.getSources().getChild(sourceName)
 
-    assert(!await(sourceNode.Exists()))
-    source.InitRun()
+    assert(!await(sourceNode.exists()))
+    source.initRun()
 
-    assert(await(sourceNode.Exists()))
-    assert(await(sourceNode.GetConsumers().GetState()))
-    assert(await(subjectNode.GetSources().GetState()))
+    assert(await(sourceNode.exists()))
+    assert(await(sourceNode.getConsumers().getState()))
+    assert(await(subjectNode.getSources().getState()))
     assert(source.running)
 
     //Since the subject has no sources, just calling update should close it
-    await(subjectNode.UpdateState())
+    await(subjectNode.updateState())
 
-    await(subjectNode.AwaitClose())
+    await(subjectNode.awaitClose())
 
     //HACK: Somehow need to wait until the callback on the source has fired
     Thread.sleep(100)

@@ -39,14 +39,14 @@ class SubjectLibrary extends LazyLogging {
     *
     * @return true when initialisation is done
     */
-  def Initialize(): Future[Boolean] =
-    new MetaRootNode().GetSubjects().Create().map(_ => true)
+  def initialize(): Future[Boolean] =
+    new MetaRootNode().getSubjects().create().map(_ => true)
 
   /**
     * Retrieves the nodes representing all registered subjects
     * @return
     */
-  def GetSubjects(): SubjectCollectionNode = new MetaRootNode().GetSubjects()
+  def getSubjects(): SubjectCollectionNode = new MetaRootNode().getSubjects()
 
   /**
     * Retrieves a node representing a single subject of the given name
@@ -54,7 +54,7 @@ class SubjectLibrary extends LazyLogging {
     * @param subjectName name of the subject
     * @return
     */
-  def GetSubject(subjectName: String): SubjectNode = GetSubjects().GetChild(subjectName)
+  def getSubject(subjectName: String): SubjectNode = getSubjects().getChild(subjectName)
 
   /**
     * Get the subjectNode based on generic type
@@ -62,5 +62,5 @@ class SubjectLibrary extends LazyLogging {
     * @tparam T
     * @return
     */
-  def GetSubject[T: ru.TypeTag](): SubjectNode = GetSubject(SubjectTypeFactory.getSubjectName[T])
+  def getSubject[T: ru.TypeTag](): SubjectNode = getSubject(SubjectTypeFactory.getSubjectName[T])
 }

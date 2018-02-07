@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.Model
+package org.codefeedr.model
 
 import org.apache.flink.api.common.typeinfo.{TypeInfo, TypeInformation}
 import org.apache.flink.types.Row

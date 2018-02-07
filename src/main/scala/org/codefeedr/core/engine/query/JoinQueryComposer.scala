@@ -23,7 +23,7 @@ import java.util.UUID
 
 import org.apache.flink.api.scala._
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
-import org.codefeedr.Model._
+import org.codefeedr.model._
 import org.codefeedr.core.library.internal.RecordUtils
 import org.codefeedr.core.Util
 
@@ -217,7 +217,7 @@ class JoinQueryComposer(leftComposer: StreamComposer,
       subjectType,
       join.SelectLeft,
       join.SelectRight,
-      Util.UuidToByteArray(UUID.randomUUID()))
+      Util.uuidToByteArray(UUID.randomUUID()))
     val mapSideJoinFunction = JoinQueryComposer.mapSideInnerJoin(mergeFunction) _
     val keyed = union.keyBy(keyFunction)
     val mapped = keyed.flatMapWithState(mapSideJoinFunction)

@@ -22,7 +22,7 @@ package org.codefeedr.core.plugin
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.codefeedr.core.library.internal.{AbstractPlugin, SubjectTypeFactory}
 import org.codefeedr.core.library.SubjectFactory
-import org.codefeedr.Model.SubjectType
+import org.codefeedr.model.SubjectType
 
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -42,9 +42,9 @@ abstract class SimplePlugin[TData: ru.TypeTag: ClassTag] extends AbstractPlugin 
     * @param env The environment to create the datastream on
     * @return The datastream itself
     */
-  def GetStream(env: StreamExecutionEnvironment): DataStream[TData]
+  def getStream(env: StreamExecutionEnvironment): DataStream[TData]
 
-  override def CreateSubjectType(): SubjectType = {
+  override def createSubjectType(): SubjectType = {
     SubjectTypeFactory.getSubjectType[TData]
   }
 
@@ -54,10 +54,10 @@ abstract class SimplePlugin[TData: ru.TypeTag: ClassTag] extends AbstractPlugin 
     * @param env the environment where the source should be composed on
     * @return
     */
-  override def Compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit] = async {
+  override def compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit] = async {
     val sinkName = s"composedsink_${queryId}"
     val sink = await(SubjectFactory.GetSink[TData](sinkName))
-    val stream = GetStream(env)
+    val stream = getStream(env)
     stream.addSink(sink)
   }
 

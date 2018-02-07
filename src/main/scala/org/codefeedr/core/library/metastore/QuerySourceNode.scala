@@ -2,7 +2,7 @@ package org.codefeedr.core.library.metastore
 
 import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.core.library.internal.zookeeper.{ZkNode, ZkNodeBase, ZkStateNode}
-import org.codefeedr.Model.zookeeper.{QuerySink, QuerySource}
+import org.codefeedr.model.zookeeper.{QuerySink, QuerySource}
 
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -14,25 +14,25 @@ class QuerySourceNode(name: String, parent: ZkNodeBase)
     with ZkStateNode[QuerySource, Boolean]
     with LazyLogging {
 
-  def GetConsumers(): ConsumerCollection = new ConsumerCollection("consumers", this)
+  def getConsumers(): ConsumerCollection = new ConsumerCollection("consumers", this)
 
-  override def TypeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
-  override def InitialState(): Boolean = true
+  override def typeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
+  override def initialState(): Boolean = true
 
   /**
     * Computes the aggregate state of the subject
     * If the state changed, the change is propagated to the parent.
     * @return
     */
-  def UpdateState(): Future[Unit] = async {
-    val currentState = await(GetState()).get
+  def updateState(): Future[Unit] = async {
+    val currentState = await(getState()).get
     //Only perform update if the source nod was not active.
     if (currentState) {
-      val childState = await(GetConsumers().GetState())
+      val childState = await(getConsumers().getState())
       if (!childState) {
         logger.info(
-          s"Closing source $name of subject ${parent.Parent().name} because all consumers closed.")
-        await(SetState(childState))
+          s"Closing source $name of subject ${parent.parent().name} because all consumers closed.")
+        await(setState(childState))
       }
     }
   }

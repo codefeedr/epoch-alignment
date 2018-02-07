@@ -45,23 +45,23 @@ class KafkaSinkSpec extends LibraryServiceSpec with BeforeAndAfterEach with Befo
 
   "A KafkaSink" should "Register and remove itself in the SubjectLibrary" in async {
     val sinkId = "testSink"
-    val subjectNode = subjectLibrary.GetSubject[TestKafkaSinkSubject]()
-    val subject = await(subjectNode.GetOrCreateType[TestKafkaSinkSubject]())
+    val subjectNode = subjectLibrary.getSubject[TestKafkaSinkSubject]()
+    val subject = await(subjectNode.getOrCreateType[TestKafkaSinkSubject]())
 
     val sink = new KafkaGenericSink[TestKafkaSinkSubject](subject,sinkId)
-    val sinkNode = subjectNode.GetSinks().GetChild(sinkId)
+    val sinkNode = subjectNode.getSinks().getChild(sinkId)
 
-    assert(!await(sinkNode.Exists()))
+    assert(!await(sinkNode.exists()))
     sink.open(null)
-    assert(await(sinkNode.Exists()))
-    assert(await(subjectNode.GetSinks().GetState()))
+    assert(await(sinkNode.exists()))
+    assert(await(subjectNode.getSinks().getState()))
     sink.close()
 
-    assert(!await(subjectNode.GetSinks().GetState()))
+    assert(!await(subjectNode.getSinks().getState()))
   }
 
   override def afterEach(): Unit = {
-    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
-    Await.ready(subjectLibrary.Initialize(),Duration(1, SECONDS))
+    Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(subjectLibrary.initialize(),Duration(1, SECONDS))
   }
 }

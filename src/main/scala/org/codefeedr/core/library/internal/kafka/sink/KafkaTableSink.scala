@@ -29,7 +29,7 @@ import org.apache.flink.table.sinks.{RetractStreamTableSink, TableSink}
 import org.apache.flink.types.Row
 import org.codefeedr.core.library.internal.SubjectTypeFactory
 import org.codefeedr.core.library.{LibraryServices, SubjectFactory, TypeInformationServices}
-import org.codefeedr.Model._
+import org.codefeedr.model._
 
 import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, _}
@@ -37,7 +37,7 @@ import scala.concurrent.duration.{Duration, _}
 class KafkaTableSink(subjectName: String, subjectType: SubjectType, sinkId: String)
     extends RetractStreamTableSink[Row] {
   @transient lazy val sink: SinkFunction[tuple.Tuple2[lang.Boolean, Row]] =
-    SubjectFactory.GetRowSink(subjectType, sinkId)
+    SubjectFactory.getRowSink(subjectType, sinkId)
 
   override def emitDataStream(dataStream: DataStream[tuple.Tuple2[lang.Boolean, Row]]): Unit =
     dataStream
@@ -61,7 +61,7 @@ class KafkaTableSink(subjectName: String, subjectType: SubjectType, sinkId: Stri
   }
 
   override def getRecordType: TypeInformation[Row] =
-    TypeInformationServices.GetRowTypeInfo(subjectType)
+    TypeInformationServices.getRowTypeInfo(subjectType)
 
 }
 
@@ -71,8 +71,8 @@ object KafkaTableSink extends LibraryServices {
             fieldTypes: Array[TypeInformation[_]],
             sinkId: String): KafkaTableSink = {
     val subjectFuture = subjectLibrary
-      .GetSubject(subjectName)
-      .GetOrCreate(() => SubjectTypeFactory.getSubjectType(subjectName, fieldNames, fieldTypes))
+      .getSubject(subjectName)
+      .getOrCreate(() => SubjectTypeFactory.getSubjectType(subjectName, fieldNames, fieldTypes))
     //Have to implement the non-async FLINK api, thus must block here
     val subjectType =
       Await.ready[SubjectType](subjectFuture, Duration(5000, MILLISECONDS)).value.get.get

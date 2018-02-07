@@ -22,7 +22,7 @@
 package org.codefeedr.core.library.internal
 
 import org.apache.flink.streaming.api.scala.createTypeInformation
-import org.codefeedr.Model.SubjectType
+import org.codefeedr.model.SubjectType
 import org.scalatest.{AsyncFlatSpec, FlatSpec, Matchers}
 
 class A {

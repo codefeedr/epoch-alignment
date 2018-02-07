@@ -6,8 +6,8 @@ import org.codefeedr.core.library.internal.zookeeper.ZkNodeBase
   * Root node used for zookeeper configuration
   */
 class MetaRootNode extends ZkNodeBase("Metastore") {
-  override def Parent(): ZkNodeBase = null
-  override def Path(): String = s"/$name"
+  override def parent(): ZkNodeBase = null
+  override def path(): String = s"/$name"
 
-  def GetSubjects() = new SubjectCollectionNode(this)
+  def getSubjects() = new SubjectCollectionNode(this)
 }

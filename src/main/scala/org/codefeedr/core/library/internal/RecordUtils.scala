@@ -20,7 +20,7 @@
 package org.codefeedr.core.library.internal
 
 import com.typesafe.scalalogging.LazyLogging
-import org.codefeedr.Model.{Record, SubjectType}
+import org.codefeedr.model.{Record, SubjectType}
 
 import scala.reflect.ClassTag
 

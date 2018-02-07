@@ -17,7 +17,7 @@ class SubjectCollectionNode(parent: ZkNodeBase)
     * Retrieves the current set of registered subject names
     * @return A future with the set of registered subjects
     */
-  def GetNames(): Future[immutable.Set[String]] = async {
-    await(GetChildren()).map(o => o.name).toSet
+  def getNames(): Future[immutable.Set[String]] = async {
+    await(getChildren()).map(o => o.name).toSet
   }
 }

@@ -47,7 +47,7 @@ class GenericSerialiser[T: ClassTag](implicit ct: ClassTag[T]) {
     * @param data the data to serialize
     * @return the data as bytearray
     */
-  def Serialize(data: T): Array[Byte] = serializeInternal(data)
+  def serialize(data: T): Array[Byte] = serializeInternal(data)
 }
 
 /**
@@ -55,6 +55,6 @@ class GenericSerialiser[T: ClassTag](implicit ct: ClassTag[T]) {
   */
 object GenericSerialiser {
   def apply[TData: ClassTag](tData: TData): Array[Byte] = {
-    new GenericSerialiser[TData]().Serialize(tData)
+    new GenericSerialiser[TData]().serialize(tData)
   }
 }

@@ -20,7 +20,7 @@
 package org.codefeedr.core.library.internal
 
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
-import org.codefeedr.Model.SubjectType
+import org.codefeedr.model.SubjectType
 
 import scala.concurrent.Future
 
@@ -33,6 +33,6 @@ abstract class AbstractPlugin {
     * Create a new subjecttype for the plugin
     * @return
     */
-  def CreateSubjectType(): SubjectType
-  def Compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit]
+  def createSubjectType(): SubjectType
+  def compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit]
 }

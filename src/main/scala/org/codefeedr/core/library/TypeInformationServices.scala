@@ -19,7 +19,7 @@
 
 package org.codefeedr.core.library
 
-import org.codefeedr.Model.{ActionType, RecordSourceTrail, SubjectType}
+import org.codefeedr.model.{ActionType, RecordSourceTrail, SubjectType}
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.typeutils.RowTypeInfo
 import org.apache.flink.types.Row
@@ -28,15 +28,15 @@ import collection.JavaConverters._
 
 object TypeInformationServices {
 
-  @transient lazy val additionalNames = AdditionalNames
-  @transient lazy val additionalTypes = AdditionalTypes
+  @transient lazy val _additionalNames = additionalNames
+  @transient lazy val _additionalTypes = additionalTypes
 
   /**
     * Build Flinks typeInformation using a subjectType.
     * @param subjecType
     * @return
     */
-  def GetRowTypeInfo(subjecType: SubjectType): TypeInformation[Row] = {
+  def getRowTypeInfo(subjecType: SubjectType): TypeInformation[Row] = {
     val names = subjecType.properties.map(o => o.name)
     val types = subjecType.properties.map(o => o.propertyType)
     new RowTypeInfo(types, names)
@@ -49,9 +49,9 @@ object TypeInformationServices {
     * @param subjectType
     * @return
     */
-  def GetEnrichedRowTypeInfo(subjectType: SubjectType): TypeInformation[Row] = {
-    val names = subjectType.properties.map(o => o.name) ++ additionalNames
-    val types = subjectType.properties.map(o => o.propertyType) ++ additionalTypes
+  def getEnrichedRowTypeInfo(subjectType: SubjectType): TypeInformation[Row] = {
+    val names = subjectType.properties.map(o => o.name) ++ _additionalNames
+    val types = subjectType.properties.map(o => o.propertyType) ++ _additionalTypes
     new RowTypeInfo(types, names)
   }
 
@@ -59,13 +59,13 @@ object TypeInformationServices {
     * Get the additional types added to the row with meta-informaiton for codefeedr
     * @return
     */
-  def AdditionalNames = Array("Trail", "ActionType", "TypeUuid")
+  def additionalNames = Array("Trail", "ActionType", "TypeUuid")
 
   /**
     * Get the typeDefinitions of th additional types added to the row with meta-information
     * @return
     */
-  def AdditionalTypes =
+  def additionalTypes =
     Array(TypeInformation.of(classOf[RecordSourceTrail]),
           TypeInformation.of(classOf[ActionType.Value]),
           TypeInformation.of(classOf[String]))

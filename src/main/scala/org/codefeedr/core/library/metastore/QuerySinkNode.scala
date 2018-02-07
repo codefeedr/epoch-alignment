@@ -2,7 +2,7 @@ package org.codefeedr.core.library.metastore
 
 import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.core.library.internal.zookeeper.{ZkNode, ZkNodeBase, ZkStateNode}
-import org.codefeedr.Model.zookeeper.{Producer, QuerySink}
+import org.codefeedr.model.zookeeper.{Producer, QuerySink}
 
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -14,15 +14,15 @@ class QuerySinkNode(name: String, parent: ZkNodeBase)
     with ZkStateNode[QuerySink, Boolean]
     with LazyLogging {
 
-  def GetProducers(): ProducerCollection = new ProducerCollection("producers", this)
+  def getProducers(): ProducerCollection = new ProducerCollection("producers", this)
 
-  override def TypeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
-  override def InitialState(): Boolean = true
+  override def typeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
+  override def initialState(): Boolean = true
 
-  override def SetState(state: Boolean): Future[Unit] = async {
-    await(super.SetState(state))
+  override def setState(state: Boolean): Future[Unit] = async {
+    await(super.setState(state))
     //Call subjectNode to update, because the state of the sink might influence the subjects node
-    await(parent.Parent().asInstanceOf[SubjectNode].UpdateState())
+    await(parent.parent().asInstanceOf[SubjectNode].updateState())
   }
 
   /**
@@ -30,12 +30,12 @@ class QuerySinkNode(name: String, parent: ZkNodeBase)
     * If the state changed, the change is propagated to the parent.
     * @return
     */
-  def UpdateState(): Future[Unit] = async {
-    val currentState = await(GetState()).get
+  def updateState(): Future[Unit] = async {
+    val currentState = await(getState()).get
     //Only perform update if the source nod was not active.
     if (currentState) {
-      val childState = await(GetProducers().GetState())
-      await(SetState(childState))
+      val childState = await(getProducers().getState())
+      await(setState(childState))
     }
   }
 }

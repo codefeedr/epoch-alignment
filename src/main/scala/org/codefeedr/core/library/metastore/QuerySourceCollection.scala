@@ -5,7 +5,7 @@ import org.codefeedr.core.library.internal.zookeeper.{
   ZkCollectionStateNode,
   ZkNodeBase
 }
-import org.codefeedr.Model.zookeeper.QuerySource
+import org.codefeedr.model.zookeeper.QuerySource
 
 import scala.concurrent.Future
 
@@ -15,8 +15,8 @@ class QuerySourceCollection(parent: ZkNodeBase)
                                               (name, parent) => new QuerySourceNode(name, parent))
     with ZkCollectionStateNode[QuerySourceNode, QuerySource, Boolean, Boolean] {
 
-  override def Initial(): Boolean = false
-  override def MapChild(child: Boolean): Boolean = child
-  override def ReduceAggregate(left: Boolean, right: Boolean): Boolean = left || right
+  override def initial(): Boolean = false
+  override def mapChild(child: Boolean): Boolean = child
+  override def reduceAggregate(left: Boolean, right: Boolean): Boolean = left || right
 
 }

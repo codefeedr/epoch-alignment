@@ -20,7 +20,7 @@
 package org.codefeedr.core.engine.query
 
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
-import org.codefeedr.Model.{SubjectType, TrailedRecord}
+import org.codefeedr.model.{SubjectType, TrailedRecord}
 
 /**
   * Created by Niels on 31/07/2017.

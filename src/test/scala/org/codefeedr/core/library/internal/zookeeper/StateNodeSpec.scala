@@ -18,7 +18,7 @@ class ZkStateNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAf
   "ZkStateNode.GetStateNode()" should "return the ckNode representing the state" in async {
     val root = new TestRoot()
     val child = new TestStateNode("child", root)
-    val stateNode = child.GetStateNode()
+    val stateNode = child.getStateNode()
     assert(stateNode.parent == child)
     assert(stateNode.name == "state")
   }
@@ -26,40 +26,40 @@ class ZkStateNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAf
   "ZkStateNode.GetState" should "return the current data stored in the state" in async {
     val root = new TestRoot()
     val child = new TestStateNode("child", root)
-    await(child.Create())
-    assert(await(child.GetState()).get == "initialvalue")
+    await(child.create())
+    assert(await(child.getState()).get == "initialvalue")
   }
 
   it should "throw an exception if the node was not created" in async {
     val root = new TestRoot()
     val child = new TestStateNode("child", root)
-    assert(await(child.GetState().failed.map(_ => true)))
+    assert(await(child.getState().failed.map(_ => true)))
   }
 
   "ZkStateNode.SetState(data)" should "set the data on the state" in async {
     val root = new TestRoot()
     val child = new TestStateNode("child", root)
-    await(child.Create())
-    await(child.SetState("samplestate"))
-    assert(await(child.GetState()).get == "samplestate")
+    await(child.create())
+    await(child.setState("samplestate"))
+    assert(await(child.getState()).get == "samplestate")
   }
 
   it should "throw an exception if the node was not created" in async {
     val root = new TestRoot()
     val child = new TestStateNode("child", root)
-    assert(await(child.SetState("samplestate").failed.map(_ => true)))
+    assert(await(child.setState("samplestate").failed.map(_ => true)))
   }
 
 
   "ZkStateNode.WatchState(c)" should "return a future that resolves when the given condition evaluates to true" in async {
     val root = new TestRoot()
     val child = new TestStateNode("child", root)
-    child.Create()
-    val f = child.WatchState(a => a == "expected")
+    child.create()
+    val f = child.watchState(a => a == "expected")
     assertThrows[TimeoutException](Await.ready(f, Duration(100, MILLISECONDS)))
-    child.SetState("notexpected")
+    child.setState("notexpected")
     assertThrows[TimeoutException](Await.ready(f, Duration(100, MILLISECONDS)))
-    child.SetState("expected")
+    child.setState("expected")
     assert(await(f.map(_ => true)))
   }
 
@@ -67,17 +67,17 @@ class ZkStateNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAf
   it should "fail if the node is removed" in async {
     val root = new TestRoot()
     val child = new TestStateNode("child", root)
-    await(child.Create())
-    val f = child.WatchState(a => a == "expected")
+    await(child.create())
+    val f = child.watchState(a => a == "expected")
     assertThrows[TimeoutException](Await.ready(f, Duration(100, MILLISECONDS)))
-    await(child.Delete())
+    await(child.delete())
     assert(await(f.failed.map(_ => true)))
   }
 
   it should "fail if the node does not exist" in async {
     val root = new TestRoot()
     val child = new TestStateNode("child", root)
-    val f = child.WatchState(a => a == "expected")
+    val f = child.watchState(a => a == "expected")
     assert(await(f.failed.map(_ => true)))
   }
 
@@ -86,13 +86,13 @@ class ZkStateNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAf
     * After each test, make sure to clean the zookeeper store
     */
   override def beforeEach(): Unit = {
-    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
   }
   /**
     * After each test, make sure to clean the zookeeper store
     */
   override def afterEach(): Unit = {
-    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
   }
 }
 
@@ -100,8 +100,8 @@ class ZkStateNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAf
 case class MyConfig(s: String)
 
 class TestRoot extends ZkNodeBase("TestRoot") {
-  override def Parent(): ZkNodeBase = null
-  override def Path(): String = s"/$name"
+  override def parent(): ZkNodeBase = null
+  override def path(): String = s"/$name"
 }
 
 class TestStateNode(name: String, parent: ZkNodeBase) extends ZkNode[MyConfig](name, parent) with ZkStateNode[MyConfig,String] {
@@ -110,8 +110,8 @@ class TestStateNode(name: String, parent: ZkNodeBase) extends ZkNode[MyConfig](n
     *
     * @return
     */
-  override def TypeT() : ClassTag[String] = ClassTag(classOf[String])
+  override def typeT() : ClassTag[String] = ClassTag(classOf[String])
 
-  override def InitialState(): String = "initialvalue"
+  override def initialState(): String = "initialvalue"
 }
 

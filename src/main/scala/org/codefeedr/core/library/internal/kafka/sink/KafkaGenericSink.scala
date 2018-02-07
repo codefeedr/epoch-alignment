@@ -21,7 +21,7 @@ package org.codefeedr.core.library.internal.kafka.sink
 
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.codefeedr.core.library.SubjectFactory
-import org.codefeedr.Model.SubjectType
+import org.codefeedr.model.SubjectType
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
@@ -33,7 +33,7 @@ class KafkaGenericSink[TData: ru.TypeTag: ClassTag](val subjectType: SubjectType
                                                     override val sinkUuid: String)
     extends KafkaSink[TData] {
 
-  @transient private lazy val Transformer = SubjectFactory.GetTransformer[TData](subjectType)
+  @transient private lazy val Transformer = SubjectFactory.getTransformer[TData](subjectType)
 
   override def invoke(value: TData): Unit = {
     val data = Transformer.apply(value)

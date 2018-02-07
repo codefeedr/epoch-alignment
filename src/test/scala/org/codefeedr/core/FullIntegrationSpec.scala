@@ -23,11 +23,11 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.table.api.StreamTableEnvironment
-import org.codefeedr.core.engine.query.{QueryTree, StreamComposerFactory}
+import org.codefeedr.core.engine.query.{QueryTree, streamComposerFactory}
 import org.codefeedr.core.library.internal.kafka.KafkaTrailedRecordSource
 import org.codefeedr.core.library.{LibraryServices, SubjectFactory}
 import org.codefeedr.core.plugin.CollectionPlugin
-import org.codefeedr.Model.{SubjectType, TrailedRecord}
+import org.codefeedr.model.{SubjectType, TrailedRecord}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach, FutureOutcome, Matchers}
 
 import scala.async.Async.{async, await}
@@ -41,12 +41,12 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
   val parallelism: Int = 2
 
   override def beforeEach(): Unit = {
-    Await.ready(subjectLibrary.Initialize(), Duration(1, SECONDS))
-    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(subjectLibrary.initialize(), Duration(1, SECONDS))
+    Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
   }
 
   override def afterEach(): Unit = {
-    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
   }
 
 
@@ -55,8 +55,8 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     * @param subject
     * @return
     */
-  def AwaitAllData(subject:SubjectType): Future[Array[TrailedRecord]] = async {
-    await(subjectLibrary.GetSubject(subject.name).AssertExists())
+  def awaitAllData(subject:SubjectType): Future[Array[TrailedRecord]] = async {
+    await(subjectLibrary.getSubject(subject.name).assertExists())
     val source = new KafkaTrailedRecordSource(subject, "testsource")
     val result = new mutable.ArrayBuffer[TrailedRecord]()
     source.runLocal(result.append(_))
@@ -69,15 +69,15 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     * @param query The query environment
     * @return When the environment is done, the subjectType that was the result of the query
     */
-  def RunQueryEnvironment(query: QueryTree): Future[SubjectType] = async {
+  def runQueryEnvironment(query: QueryTree): Future[SubjectType] = async {
     val queryEnv = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
     logger.debug("Creating query Composer")
-    val composer = await(StreamComposerFactory.GetComposer(query))
+    val composer = await(streamComposerFactory.getComposer(query))
     logger.debug("Composing queryEnv")
     val resultStream = composer.compose(queryEnv)
     val resultType = composer.getExposedType()
     logger.debug(s"Composing sink for ${resultType.name}.")
-    val sink = SubjectFactory.GetSink(resultType, "testsink")
+    val sink = SubjectFactory.getSink(resultType, "testsink")
     resultStream.addSink(sink)
     logger.debug("Starting queryEnv")
     queryEnv.execute()
@@ -102,12 +102,12 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     * @tparam T type of the data
     * @return A future that returns when all data has been pushed to kakfa, with the subjectType that was used
     */
-  def RunSourceEnvironment[T: ru.TypeTag: ClassTag: TypeInformation](data: Array[T]): Future[SubjectType] = async {
-    val t = await(subjectLibrary.GetSubject[T]().GetOrCreateType[T]())
+  def runSourceEnvironment[T: ru.TypeTag: ClassTag: TypeInformation](data: Array[T]): Future[SubjectType] = async {
+    val t = await(subjectLibrary.getSubject[T]().getOrCreateType[T]())
 
     val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
     logger.debug(s"Composing env for ${t.name}")
-    await(new CollectionPlugin(data).Compose(env, "testplugin"))
+    await(new CollectionPlugin(data).compose(env, "testplugin"))
     logger.debug(s"Starting env for ${t.name}")
     env.execute()
     logger.debug(s"Completed env for ${t.name}")

@@ -24,7 +24,7 @@ package org.codefeedr.core.library.internal
 import java.util.UUID
 
 import org.codefeedr.core.Util
-import org.codefeedr.Model.ActionType
+import org.codefeedr.model.ActionType
 import org.scalatest.{FlatSpec, Matchers}
 
 case class KeyFactoryTestClass(a: String, b: String, c: Int)
@@ -37,10 +37,10 @@ class KeyFactorySpec extends FlatSpec with Matchers {
     val t = SubjectTypeFactory.getSubjectType[KeyFactoryTestClass]
     val factory = new KeyFactory(t, UUID.randomUUID())
     val transformer = new RecordTransformer[KeyFactoryTestClass](t)
-    val record1 = transformer.Bag(KeyFactoryTestClass("a", "b", 12), ActionType.Add)
-    val record2 = transformer.Bag(KeyFactoryTestClass("a", "b", 12), ActionType.Add)
-    val k1 = factory.GetKey(record1)
-    val k2 = factory.GetKey(record2)
+    val record1 = transformer.bag(KeyFactoryTestClass("a", "b", 12), ActionType.Add)
+    val record2 = transformer.bag(KeyFactoryTestClass("a", "b", 12), ActionType.Add)
+    val k1 = factory.getKey(record1)
+    val k2 = factory.getKey(record2)
     assert(!(k1.Key sameElements k2.Key))
   }
 
@@ -49,19 +49,19 @@ class KeyFactorySpec extends FlatSpec with Matchers {
     val uuid = UUID.randomUUID()
     val factory = new KeyFactory(t, uuid)
     val transformer = new RecordTransformer[KeyFactoryTestClass](t)
-    val record1 = transformer.Bag(KeyFactoryTestClass("a", "b", 12), ActionType.Add)
-    val k1 = factory.GetKey(record1)
-    assert(k1.SourceId sameElements Util.UuidToByteArray(uuid))
+    val record1 = transformer.bag(KeyFactoryTestClass("a", "b", 12), ActionType.Add)
+    val k1 = factory.getKey(record1)
+    assert(k1.SourceId sameElements Util.uuidToByteArray(uuid))
   }
 
   "A KeyFactory" should "Use keyfields to generate a key if defined" in {
     val t = SubjectTypeFactory.getSubjectType[KeyFactoryTestClass](Array("a"))
     val factory = new KeyFactory(t, UUID.randomUUID())
     val transformer = new RecordTransformer[KeyFactoryTestClass](t)
-    val record1 = transformer.Bag(KeyFactoryTestClass("a", "b", 12), ActionType.Add)
-    val record2 = transformer.Bag(KeyFactoryTestClass("a", "b", 12), ActionType.Add)
-    val k1 = factory.GetKey(record1)
-    val k2 = factory.GetKey(record2)
+    val record1 = transformer.bag(KeyFactoryTestClass("a", "b", 12), ActionType.Add)
+    val record2 = transformer.bag(KeyFactoryTestClass("a", "b", 12), ActionType.Add)
+    val k1 = factory.getKey(record1)
+    val k2 = factory.getKey(record2)
     assert(k1.Key sameElements k2.Key)
   }
 
@@ -69,12 +69,12 @@ class KeyFactorySpec extends FlatSpec with Matchers {
     val t = SubjectTypeFactory.getSubjectType[KeyFactoryTestClass](Array("a", "b"))
     val factory = new KeyFactory(t, UUID.randomUUID())
     val transformer = new RecordTransformer[KeyFactoryTestClass](t)
-    val record1 = transformer.Bag(KeyFactoryTestClass("a", "b", 12), ActionType.Add)
-    val record2 = transformer.Bag(KeyFactoryTestClass("a", "b", 12), ActionType.Add)
-    val record3 = transformer.Bag(KeyFactoryTestClass("a", "c", 12), ActionType.Add)
-    val k1 = factory.GetKey(record1)
-    val k2 = factory.GetKey(record2)
-    val k3 = factory.GetKey(record3)
+    val record1 = transformer.bag(KeyFactoryTestClass("a", "b", 12), ActionType.Add)
+    val record2 = transformer.bag(KeyFactoryTestClass("a", "b", 12), ActionType.Add)
+    val record3 = transformer.bag(KeyFactoryTestClass("a", "c", 12), ActionType.Add)
+    val k1 = factory.getKey(record1)
+    val k2 = factory.getKey(record2)
+    val k3 = factory.getKey(record3)
     assert(k1.Key sameElements k2.Key)
     assert(!(k2.Key sameElements k3.Key))
   }

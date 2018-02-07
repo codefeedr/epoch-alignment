@@ -40,7 +40,7 @@ class CollectionPlugin[TData: ru.TypeTag: ClassTag: TypeInformation](data: Array
     * @param env The environment to create the datastream om
     * @return The datastream itself
     */
-  override def GetStream(env: StreamExecutionEnvironment): DataStream[TData] = {
+  override def getStream(env: StreamExecutionEnvironment): DataStream[TData] = {
     env.fromCollection[TData](data)
   }
 }

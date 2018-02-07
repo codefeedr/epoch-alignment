@@ -24,7 +24,7 @@ import java.util.UUID
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInfo, TypeInformation}
-import org.codefeedr.Model.{RecordProperty, SubjectType}
+import org.codefeedr.model.{RecordProperty, SubjectType}
 import org.apache.flink.streaming.api.scala.createTypeInformation
 
 import scala.reflect.api

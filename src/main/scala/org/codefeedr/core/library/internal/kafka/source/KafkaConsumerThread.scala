@@ -3,7 +3,7 @@ package org.codefeedr.core.library.internal.kafka.source
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.types.Row
 import org.apache.kafka.clients.consumer.KafkaConsumer
-import org.codefeedr.Model.{RecordSourceTrail, TrailedRecord}
+import org.codefeedr.model.{RecordSourceTrail, TrailedRecord}
 import java.util.UUID.randomUUID
 import scala.collection.JavaConverters._
 

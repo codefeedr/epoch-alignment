@@ -9,25 +9,25 @@ import scala.concurrent.ExecutionContext.Implicits.global
 abstract class ZkNodeBase(val name: String) {
   @transient lazy val zkClient: ZkClient = LibraryServices.zkClient
 
-  def Parent(): ZkNodeBase
+  def parent(): ZkNodeBase
 
-  def Path(): String = s"${Parent().Path()}/$name"
+  def path(): String = s"${parent().path()}/$name"
 
   /**
     * This method can be overridden to perform steps after the creation of the node
     * @return
     */
-  def PostCreate(): Future[Unit] = Future.successful(Unit)
+  def postCreate(): Future[Unit] = Future.successful(Unit)
 
   /**
     * Creates the node on zookeeper
     *
     * @return a future of the path used
     */
-  def Create(): Future[String] = async {
-    await(zkClient.Create(Path()))
-    await(PostCreate())
-    Path()
+  def create(): Future[String] = async {
+    await(zkClient.Create(path()))
+    await(postCreate())
+    path()
   }
 
   /**
@@ -35,23 +35,23 @@ abstract class ZkNodeBase(val name: String) {
     *
     * @return a future with the result
     */
-  def Exists(): Future[Boolean] = zkClient.Exists(Path)
+  def exists(): Future[Boolean] = zkClient.exists(path)
 
   /**
     * Delete the current node
     *
     * @return a future that resolves when the node has been deleted
     */
-  def Delete(): Future[Unit] =
-    Exists().flatMap(b => if (b) { zkClient.Delete(Path) } else { Future.successful() })
+  def delete(): Future[Unit] =
+    exists().flatMap(b => if (b) { zkClient.Delete(path) } else { Future.successful() })
 
   /**
     * Delete the current node and all its children
     *
     * @return a future that resolves when the node has been deleted
     */
-  def DeleteRecursive(): Future[Unit] =
-    Exists().flatMap(b => if (b) { zkClient.DeleteRecursive(Path) } else { Future.successful() })
+  def deleteRecursive(): Future[Unit] =
+    exists().flatMap(b => if (b) { zkClient.deleteRecursive(path) } else { Future.successful() })
 
   /**
     * Creates a future that awaits the registration of a specific child
@@ -59,12 +59,12 @@ abstract class ZkNodeBase(val name: String) {
     * @param child name of the child to await
     * @return a future that resolves when the child has been created, with the name of the child
     */
-  def AwaitChild(child: String): Future[String] = zkClient.AwaitChild(Path, child)
+  def awaitChild(child: String): Future[String] = zkClient.awaitChild(path, child)
 
   /**
     * Creates a future that resolves whenever the node has been deleted from zookeeper
     *
     * @return the future
     */
-  def AwaitRemoval(): Future[Unit] = zkClient.AwaitRemoval(Path)
+  def awaitRemoval(): Future[Unit] = zkClient.awaitRemoval(path)
 }

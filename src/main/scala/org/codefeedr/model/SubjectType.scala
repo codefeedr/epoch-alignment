@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.Model
+package org.codefeedr.model
 
 case class SubjectType(uuid: String,
                        name: String,

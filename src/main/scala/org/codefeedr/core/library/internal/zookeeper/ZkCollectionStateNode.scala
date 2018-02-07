@@ -15,20 +15,20 @@ trait ZkCollectionStateNode[
     TChildNode <: ZkStateNode[TChild, TChildState], TChild, TChildState, TAggregateState]
     extends ZkCollectionNode[TChildNode]
     with LazyLogging {
-  def GetChildren(): Future[Iterable[TChildNode]]
+  def getChildren(): Future[Iterable[TChildNode]]
 
   /**
     * Initial value of the aggreagate state before the fold
     * @return
     */
-  def Initial(): TAggregateState
+  def initial(): TAggregateState
 
   /**
     * Mapping from the child to the aggregate state
     * @param child
     * @return
     */
-  def MapChild(child: TChildState): TAggregateState
+  def mapChild(child: TChildState): TAggregateState
 
   /**
     * Reduce operator of the aggregation
@@ -36,14 +36,14 @@ trait ZkCollectionStateNode[
     * @param right
     * @return
     */
-  def ReduceAggregate(left: TAggregateState, right: TAggregateState): TAggregateState
+  def reduceAggregate(left: TAggregateState, right: TAggregateState): TAggregateState
 
-  def GetState(): Future[TAggregateState] = async {
-    val consumerNodes = await(GetChildren())
+  def getState(): Future[TAggregateState] = async {
+    val consumerNodes = await(getChildren())
     val states = await(
       Future.sequence(
-        consumerNodes.map(o => o.GetStateNode().GetData().map(o => MapChild(o.get))).toList))
-    states.foldLeft(Initial())(ReduceAggregate)
+        consumerNodes.map(o => o.getStateNode().getData().map(o => mapChild(o.get))).toList))
+    states.foldLeft(initial())(reduceAggregate)
   }
 
   /**
@@ -52,7 +52,7 @@ trait ZkCollectionStateNode[
     * @param f condition to evaluate for each child
     * @return
     */
-  def WatchStateAggregate(f: TChildState => Boolean): Future[Boolean] = async {
+  def watchStateAggregate(f: TChildState => Boolean): Future[Boolean] = async {
     val p = Promise[Boolean]
 
     //Accumulator used
@@ -69,11 +69,11 @@ trait ZkCollectionStateNode[
     }
 
     //First obtain the initial state
-    val childNodes = await(GetChildren())
+    val childNodes = await(getChildren())
     val initialState = await(
       Future.sequence(
         childNodes
-          .map(child => child.GetStateNode().GetData().map(state => (child.name, !f(state.get))))
+          .map(child => child.getStateNode().getData().map(state => (child.name, !f(state.get))))
           .toList))
       .filter(o => o._2)
       .map(o => o._1)
@@ -81,11 +81,11 @@ trait ZkCollectionStateNode[
     logger.debug(s"initial state: $initialState")
 
     //Once the initial state of all children is obtained, start watching
-    val subscription = ObserveNewChildren()
+    val subscription = observeNewChildren()
       .flatMap(
         o =>
-          o.GetStateNode()
-            .ObserveData()
+          o.getStateNode()
+            .observeData()
             .map(state => (o.name, f(state))) ++ Observable.just((o.name, true)))
       .map(o => { logger.debug(s"got event ${o}"); o })
       .scan[List[String]](initialState)(accumulator)

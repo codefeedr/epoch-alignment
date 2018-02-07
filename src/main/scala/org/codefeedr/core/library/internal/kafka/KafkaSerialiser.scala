@@ -31,9 +31,9 @@ import scala.reflect.ClassTag
 class KafkaSerialiser[T: ClassTag] extends org.apache.kafka.common.serialization.Serializer[T] {
   override def configure(configs: util.Map[String, _], isKey: Boolean): Unit = {}
 
-  private lazy val GenericSerialiser = new GenericSerialiser[T]()
+  private lazy val genericSerialiser = new GenericSerialiser[T]()
 
-  override def serialize(topic: String, data: T): Array[Byte] = GenericSerialiser.Serialize(data)
+  override def serialize(topic: String, data: T): Array[Byte] = genericSerialiser.serialize(data)
 
   override def close(): Unit = {}
 }

@@ -64,15 +64,15 @@ class TableApiIntegrationSpec extends FullIntegrationSpec{
 
     async {
       //Simulate source environment with the defined test sets
-      val objectType = await(RunSourceEnvironment(objects))
-      val groupType = await(RunSourceEnvironment(groups))
+      val objectType = await(runSourceEnvironment(objects))
+      val groupType = await(runSourceEnvironment(groups))
 
       //Validate that the data is actually sent and received by the kafka topic dedicated to both datasets
-      assert(await(AwaitAllData(objectType)).size == 6)
-      assert(await(AwaitAllData(groupType)).size == 2)
+      assert(await(awaitAllData(objectType)).size == 6)
+      assert(await(awaitAllData(groupType)).size == 2)
 
       //Execute the query environment, and obtain the typeDefinition of the result of the query
-      val resultType = await(RunQueryEnvironment(query))
+      val resultType = await(runQueryEnvironment(query))
 
       //Construct Flinks tableEnvironment
       val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
@@ -89,11 +89,11 @@ class TableApiIntegrationSpec extends FullIntegrationSpec{
       this.runEnvironment(env)
 
       //Use the zookeeper subject library to obtain the subject created by the table api environment
-      val mySumSubject =  await(subjectLibrary.GetSubjects().AwaitChild("my_sum").flatMap(name => subjectLibrary.GetSubject(name).GetData())).get
+      val mySumSubject =  await(subjectLibrary.getSubjects().awaitChild("my_sum").flatMap(name => subjectLibrary.getSubject(name).getData())).get
 
       //Use the obtained typedefinition to collect all results
       //Validate that the results have properly been added and grouped (thus that the Table API Query has been executed properly)
-      val mySumResult = await(AwaitAllData(mySumSubject))
+      val mySumResult = await(awaitAllData(mySumSubject))
       //Must use casts because there is no type compile time type of the result
       assert(mySumResult.filter(o => o.row.getField(1).asInstanceOf[Long] == 1).last.row.getField(0).asInstanceOf[Long] == 1+2+3)
       assert(mySumResult.filter(o => o.row.getField(1).asInstanceOf[Long] == 2).last.row.getField(0).asInstanceOf[Long] == 4+5+6)

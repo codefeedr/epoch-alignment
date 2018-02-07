@@ -7,7 +7,7 @@ import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
-object ObservableExtension extends LazyLogging {
+object observableExtension extends LazyLogging {
   implicit class FutureObservable[T](o: Observable[T]) {
 
     /**
@@ -18,7 +18,7 @@ object ObservableExtension extends LazyLogging {
       * @param condition condition to watch for
       * @return
       */
-    def SubscribeUntil(condition: T => Boolean): Future[Option[T]] = {
+    def subscribeUntil(condition: T => Boolean): Future[Option[T]] = {
       val p = Promise[Option[T]]
       val subscription: Subscription = o.subscribe(
         (data: T) => {
@@ -39,7 +39,7 @@ object ObservableExtension extends LazyLogging {
       * Subscribes on the observable, and returns a future that resolves when an error occurs in the observable
       * @return the future that resolves on the error
       */
-    def AwaitError(): Future[Option[Throwable]] = {
+    def awaitError(): Future[Option[Throwable]] = {
       val p = Promise[Option[Throwable]]
       val subscription: Subscription = o.subscribe(
         (_: T) => Unit,
@@ -58,7 +58,7 @@ object ObservableExtension extends LazyLogging {
       * Meant for testing purposes
       * @return
       */
-    def Collect(): Future[List[T]] = {
+    def collectAsFuture(): Future[List[T]] = {
       val p = Promise[List[T]]
       val collection = new mutable.ListBuffer[T]
       val subscription = o.subscribe(element => {

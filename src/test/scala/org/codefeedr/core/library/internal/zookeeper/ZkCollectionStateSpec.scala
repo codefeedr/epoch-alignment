@@ -2,8 +2,8 @@ package org.codefeedr.core.library.internal.zookeeper
 
 import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.core.LibraryServiceSpec
-import org.codefeedr.util.FutureExtensions._
-import org.codefeedr.util.ObservableExtension._
+import org.codefeedr.util.futureExtensions._
+import org.codefeedr.util.observableExtension._
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
 
 import scala.async.Async.{async, await}
@@ -20,41 +20,41 @@ class ZkCollectionStateNodeSpec  extends LibraryServiceSpec with Matchers with B
   "ZkCollectionStateNode.GetState" should "return the aggregate of all states" in async {
     val root = new TestRoot()
     val collection = new TestCollectionStateNode("testCollection", root)
-    await(collection.Create())
-    await(collection.GetChild("child1").Create("child1data"))
-    await(collection.GetChild("child2").Create("child2data"))
-    val aggregate = await(collection.GetState())
+    await(collection.create())
+    await(collection.getChild("child1").create("child1data"))
+    await(collection.getChild("child2").create("child2data"))
+    val aggregate = await(collection.getState())
     assert(aggregate == "(s_child1)-(s_child2)")
   }
 
   it should "return the default if there are no children" in async {
     val root = new TestRoot()
     val collection = new TestCollectionStateNode("testCollection", root)
-    await(collection.Create())
-    val aggregate = await(collection.GetState())
+    await(collection.create())
+    val aggregate = await(collection.getState())
     assert(aggregate == null)
   }
 
   it should "throw an exception if the collection does not exist" in async {
     val root = new TestRoot()
     val collection = new TestCollectionStateNode("testCollection", root)
-    assert(await(collection.GetState().failed.map(_ => true)))
+    assert(await(collection.getState().failed.map(_ => true)))
   }
 
   "ZkCollectionStateNode.WatchStateAggregate" should "place a watch that resolves when the condition evaluates to true for all states" in async {
     val root = new TestRoot()
     val collection = new TestCollectionStateNode("testCollection", root)
-    await(collection.Create())
-    val c1 = collection.GetChild("child1")
-    val c2 = collection.GetChild("child2")
-    await(c1.Create("child1data"))
-    await(c2.Create("child2data"))
+    await(collection.create())
+    val c1 = collection.getChild("child1")
+    val c2 = collection.getChild("child2")
+    await(c1.create("child1data"))
+    await(c2.create("child2data"))
 
-    val f = collection.WatchStateAggregate(s => s == "flagged").map(_ => true)
-    await(f.AssertTimeout())
-    c1.SetState("flagged")
-    await(f.AssertTimeout())
-    c2.SetState("flagged")
+    val f = collection.watchStateAggregate(s => s == "flagged").map(_ => true)
+    await(f.assertTimeout())
+    c1.setState("flagged")
+    await(f.assertTimeout())
+    c2.setState("flagged")
 
     assert(await(f))
   }
@@ -62,100 +62,100 @@ class ZkCollectionStateNodeSpec  extends LibraryServiceSpec with Matchers with B
   it should "listen for new children" in async {
     val root = new TestRoot()
     val collection = new TestCollectionStateNode("testCollection", root)
-    await(collection.Create())
-    val c1 = collection.GetChild("child1")
-    val c2 = collection.GetChild("child2")
-    val c3 = collection.GetChild("child3")
-    await(c1.Create("child1data"))
-    await(c2.Create("child2data"))
+    await(collection.create())
+    val c1 = collection.getChild("child1")
+    val c2 = collection.getChild("child2")
+    val c3 = collection.getChild("child3")
+    await(c1.create("child1data"))
+    await(c2.create("child2data"))
 
-    val f = collection.WatchStateAggregate(s => s == "flagged").map(_ => true)
-    await(f.AssertTimeout())
-    c1.SetState("flagged")
-    await(f.AssertTimeout())
-    c3.Create("child3data")
-    await(f.AssertTimeout())
-    c2.SetState("flagged")
-    await(f.AssertTimeout())
-    c3.SetState("flagged")
+    val f = collection.watchStateAggregate(s => s == "flagged").map(_ => true)
+    await(f.assertTimeout())
+    c1.setState("flagged")
+    await(f.assertTimeout())
+    c3.create("child3data")
+    await(f.assertTimeout())
+    c2.setState("flagged")
+    await(f.assertTimeout())
+    c3.setState("flagged")
     assert(await(f))
   }
 
   it should "no longer accept if a state is no longer valid" in async {
     val root = new TestRoot()
     val collection = new TestCollectionStateNode("testCollection", root)
-    await(collection.Create())
-    val c1 = collection.GetChild("child1")
-    val c2 = collection.GetChild("child2")
-    val c3 = collection.GetChild("child3")
-    await(c1.Create("child1data"))
-    await(c2.Create("child2data"))
-    await(c3.Create("child3data"))
+    await(collection.create())
+    val c1 = collection.getChild("child1")
+    val c2 = collection.getChild("child2")
+    val c3 = collection.getChild("child3")
+    await(c1.create("child1data"))
+    await(c2.create("child2data"))
+    await(c3.create("child3data"))
 
-    val f = collection.WatchStateAggregate(s => s == "flagged").map(_ => true)
-    await(f.AssertTimeout())
-    c1.SetState("flagged")
-    await(f.AssertTimeout())
-    c2.SetState("flagged")
-    await(f.AssertTimeout())
-    c1.SetState("nolongerflagged")
-    await(f.AssertTimeout())
-    c3.SetState("flagged")
-    await(f.AssertTimeout())
-    c1.SetState("flagged")
+    val f = collection.watchStateAggregate(s => s == "flagged").map(_ => true)
+    await(f.assertTimeout())
+    c1.setState("flagged")
+    await(f.assertTimeout())
+    c2.setState("flagged")
+    await(f.assertTimeout())
+    c1.setState("nolongerflagged")
+    await(f.assertTimeout())
+    c3.setState("flagged")
+    await(f.assertTimeout())
+    c1.setState("flagged")
     assert(await(f))
   }
 
   it should "no longer watch for state nodes that no longer exist" in async {
     val root = new TestRoot()
     val collection = new TestCollectionStateNode("testCollection", root)
-    await(collection.Create())
-    val c1 = collection.GetChild("child1")
-    val c2 = collection.GetChild("child2")
-    val c3 = collection.GetChild("child3")
-    await(c1.Create("child1data"))
-    await(c2.Create("child2data"))
-    await(c3.Create("child3data"))
+    await(collection.create())
+    val c1 = collection.getChild("child1")
+    val c2 = collection.getChild("child2")
+    val c3 = collection.getChild("child3")
+    await(c1.create("child1data"))
+    await(c2.create("child2data"))
+    await(c3.create("child3data"))
 
-    val f = collection.WatchStateAggregate(s => s == "flagged").map(_ => true)
-    await(f.AssertTimeout())
-    c1.SetState("flagged")
-    await(f.AssertTimeout())
-    c2.Delete()
-    await(f.AssertTimeout())
-    c3.SetState("flagged")
+    val f = collection.watchStateAggregate(s => s == "flagged").map(_ => true)
+    await(f.assertTimeout())
+    c1.setState("flagged")
+    await(f.assertTimeout())
+    c2.delete()
+    await(f.assertTimeout())
+    c3.setState("flagged")
     assert(await(f))
   }
 
   it should "also trigger if the removal of a state node moves the evaluation to true" in async {
     val root = new TestRoot()
     val collection = new TestCollectionStateNode("testCollection", root)
-    await(collection.Create())
-    val c1 = collection.GetChild("child1")
-    val c2 = collection.GetChild("child2")
-    val c3 = collection.GetChild("child3")
-    await(c1.Create("child1data"))
-    await(c2.Create("child2data"))
-    await(c3.Create("child3data"))
+    await(collection.create())
+    val c1 = collection.getChild("child1")
+    val c2 = collection.getChild("child2")
+    val c3 = collection.getChild("child3")
+    await(c1.create("child1data"))
+    await(c2.create("child2data"))
+    await(c3.create("child3data"))
 
-    val f = collection.WatchStateAggregate(s => s == "flagged").map(_ => true)
-    await(f.AssertTimeout())
-    c1.SetState("flagged")
-    await(f.AssertTimeout())
-    c3.SetState("flagged")
-    await(f.AssertTimeout())
-    c2.Delete()
+    val f = collection.watchStateAggregate(s => s == "flagged").map(_ => true)
+    await(f.assertTimeout())
+    c1.setState("flagged")
+    await(f.assertTimeout())
+    c3.setState("flagged")
+    await(f.assertTimeout())
+    c2.delete()
     assert(await(f))
   }
 
   it should "return immediately if the conditions are already met" in async {
     val root = new TestRoot()
     val collection = new TestCollectionStateNode("testCollection", root)
-    await(collection.Create())
-    val c1 = collection.GetChild("child1")
-    await(c1.Create("child1data"))
-    await(c1.SetState("flagged"))
-    val f = collection.WatchStateAggregate(s => s == "flagged").map(_ => true)
+    await(collection.create())
+    val c1 = collection.getChild("child1")
+    await(c1.create("child1data"))
+    await(c1.setState("flagged"))
+    val f = collection.watchStateAggregate(s => s == "flagged").map(_ => true)
     assert(await(f))
   }
 
@@ -163,7 +163,7 @@ class ZkCollectionStateNodeSpec  extends LibraryServiceSpec with Matchers with B
     * After each test, make sure to clean the zookeeper store
     */
   override def afterEach(): Unit = {
-    Await.ready(zkClient.DeleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
   }
 }
 
@@ -177,7 +177,7 @@ class TestCollectionStateNode(name: String, parent: ZkNodeBase)
     *
     * @return
     */
-  override def Initial(): String = null
+  override def initial(): String = null
 
   /**
     * Mapping from the child to the aggregate state
@@ -185,7 +185,7 @@ class TestCollectionStateNode(name: String, parent: ZkNodeBase)
     * @param child
     * @return
     */
-  override def MapChild(child: String): String = child
+  override def mapChild(child: String): String = child
 
   /**
     * Reduce operator of the aggregation
@@ -194,7 +194,7 @@ class TestCollectionStateNode(name: String, parent: ZkNodeBase)
     * @param right
     * @return
     */
-  override def ReduceAggregate(left: String, right: String): String = {
+  override def reduceAggregate(left: String, right: String): String = {
     if(left != null) {
       s"$left-$right"
     } else {
@@ -211,12 +211,12 @@ class TestCollectionStateChildNode(name: String, parent: ZkNodeBase)
     *
     * @return
     */
-  override def TypeT(): ClassTag[String] = ClassTag(classOf[String])
+  override def typeT(): ClassTag[String] = ClassTag(classOf[String])
 
   /**
     * The initial state of the node. State is not allowed to be empty
     *
     * @return
     */
-  override def InitialState(): String = s"(s_$name)"
+  override def initialState(): String = s"(s_$name)"
 }
