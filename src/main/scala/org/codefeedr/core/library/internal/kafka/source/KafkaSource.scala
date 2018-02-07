@@ -25,7 +25,11 @@ import java.util.UUID
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable
-import org.apache.flink.runtime.state.{CheckpointListener, FunctionInitializationContext, FunctionSnapshotContext}
+import org.apache.flink.runtime.state.{
+  CheckpointListener,
+  FunctionInitializationContext,
+  FunctionSnapshotContext
+}
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
@@ -104,20 +108,20 @@ abstract class KafkaSource[T](subjectType: SubjectType)
   @volatile private var started = false
 
   //State of the source
-  @transient private var currentOffsets:Map[TopicPartition,Long] = _
+  @transient private var currentOffsets: Map[TopicPartition, Long] = _
 
   //Contains for each checkpoint in progress the collection of topicPartitions that should be committed
-  @transient private val shouldCommit:mutable.Map[Long, Map[TopicPartition, Long]] =
-  mutable.Map.empty[Long, Map[TopicPartition, Long]]
+  @transient private lazy val shouldCommit: mutable.Map[Long, Map[TopicPartition, Long]] =
+    mutable.Map.empty[Long, Map[TopicPartition, Long]]
 
   //Get a display label of the current source
   def getLabel(): String = s"KafkaSource ${subjectType.name}($sourceUuid-$instanceUuid)"
 
   //Get a readable print of the partitions and offset.
-  def getReadablePartitions(partitionOffsets: Map[TopicPartition,Long]): String =
-    partitionOffsets.map(tp => s"p: ${tp._1.topic()}_${tp._1.partition()}, o: ${tp._2}")
+  def getReadablePartitions(partitionOffsets: Map[TopicPartition, Long]): String =
+    partitionOffsets
+      .map(tp => s"p: ${tp._1.topic()}_${tp._1.partition()}, o: ${tp._2}")
       .mkString(", ")
-
 
   override def cancel(): Unit = {
     logger.debug(s"Source $getLabel on subject $topic is cancelled")
@@ -140,15 +144,25 @@ abstract class KafkaSource[T](subjectType: SubjectType)
 
   override def notifyCheckpointComplete(checkpointId: Long): Unit = {
     val offsets = shouldCommit.get(checkpointId)
-    if(offsets.isEmpty) {
-      throw new RuntimeException(s"Got a checkpoint completed for unknown checkpoint id ${checkpointId}")
+    if (offsets.isEmpty) {
+      throw new RuntimeException(
+        s"Got a checkpoint completed for unknown checkpoint id ${checkpointId}")
     }
-    dataConsumer.commitAsync(offsets.get.map(o => (o._1, new OffsetAndMetadata(o._2))).asJava, new OffsetCommitCallback {
-      override def onComplete(offsets: util.Map[TopicPartition, OffsetAndMetadata], exception: Exception): Unit = {
-        val parsedOffset = offsets.asScala.map(o => (o._1, o._2.offset()))
-        logger.debug(s"Offsetts ${getReadablePartitions(parsedOffset.toMap)} successfully committed to kafka")
-      }
-    })
+    if (offsets.get == null) {
+      logger.warn(s"${getLabel()} ignoring checkpoint $checkpointId because offsets was null")
+    } else {
+      dataConsumer.commitAsync(
+        offsets.get.map(o => (o._1, new OffsetAndMetadata(o._2))).asJava,
+        new OffsetCommitCallback {
+          override def onComplete(offsets: util.Map[TopicPartition, OffsetAndMetadata],
+                                  exception: Exception): Unit = {
+            val parsedOffset = offsets.asScala.map(o => (o._1, o._2.offset()))
+            logger.debug(
+              s"Offsetts ${getReadablePartitions(parsedOffset.toMap)} successfully committed to kafka")
+          }
+        }
+      )
+    }
   }
 
   private[kafka] def initRun(): Unit = {
@@ -182,17 +196,16 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     */
   private[kafka] def awaitClose(): Future[Unit] = closePromise.future
 
-
   /**
     * Retrieves the current offsets that have been pushed along, but have not been committed yet
     * @return
     */
   def getUncommittedOffset(): Map[TopicPartition, Long] =
     dataConsumer
-      .assignment().asScala
-        .map(o => o -> dataConsumer.position(o))
-          .toMap
-
+      .assignment()
+      .asScala
+      .map(o => o -> dataConsumer.position(o))
+      .toMap
 
   /**
     * Perform a poll on the kafka consumer and collect data on the given method
@@ -207,9 +220,6 @@ abstract class KafkaSource[T](subjectType: SubjectType)
       logger.debug(s"Completed ${getLabel()} poll, ${getReadablePartitions(currentOffsets)}")
     }
   }
-
-
-
 
   override def run(ctx: SourceFunction.SourceContext[T]): Unit = {
     started = true
