@@ -93,6 +93,9 @@ class GetOrAddPushEventTest extends MongoDBSpec {
     //call invoke
     operator.asyncInvoke(fakePush, mockFuture)
 
+    //sleep so it can be inserted
+    Thread.sleep(1000)
+
     //verify the future has been used
     verify(mockFuture, timeout(1000).times(1)).complete(List(fakePush).asJavaCollection)
 
