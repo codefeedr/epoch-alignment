@@ -54,16 +54,16 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
     * @param parameters of this job.
     */
   override def open(parameters: Configuration): Unit = {
-    SetIndexes(GetIndexNames)
+    setIndexes(getIndexNames)
   }
 
   /**
     * Sets the indexes.
     * @param indexes the indexes to set.
     */
-  def SetIndexes(indexes: Seq[String]) = {
+  def setIndexes(indexes: Seq[String]) = {
     mongoDB
-      .getCollection[B](GetCollectionName)
+      .getCollection[B](getCollectionName)
       .createIndex(ascending(indexes: _*), new IndexOptions().unique(true))
       .toFuture()
   }
@@ -74,13 +74,13 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
     * @param resultFuture future of output type B.
     */
   override def asyncInvoke(input: A, resultFuture: ResultFuture[B]): Unit = {
-    val col = mongoDB.getCollection[B](GetCollectionName)
+    val col = mongoDB.getCollection[B](getCollectionName)
 
     //keep track if result is already send
     var send = false
 
     col
-      .find(ConstructFilter(GetIndexNames.zip(GetIndexValues(input)).seq))
+      .find(constructFilter(getIndexNames.zip(getIndexValues(input)).seq))
       .first()
       .subscribe(new Observer[B] {
 
@@ -95,7 +95,7 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
 
           Async.async {
             //retrieve output
-            val output: B = Async.await(GetFunction(input))
+            val output: B = Async.await(getFunction(input))
 
             //insert and complete future
             col.insertOne(output).toFuture()
@@ -116,34 +116,34 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
     * @param fieldsAndValues the fields and values to transform.
     * @return the final filter.
     */
-  def ConstructFilter(fieldsAndValues: Seq[(String, String)]): Bson = fieldsAndValues match {
+  def constructFilter(fieldsAndValues: Seq[(String, String)]): Bson = fieldsAndValues match {
     case (a, b) :: Nil => equal(a, b) //if only 1 element, just return an equal
-    case (a, b) :: tail => and(equal(a, b), ConstructFilter(tail)) //if still a tail, create an and
+    case (a, b) :: tail => and(equal(a, b), constructFilter(tail)) //if still a tail, create an and
   }
 
   /**
     * Get the name of the collection to store in.
     * @return the name of the collection.
     */
-  def GetCollectionName: String
+  def getCollectionName: String
 
   /**
     * Get the name of the index.
     * @return the name of the index.
     */
-  def GetIndexNames: Seq[String]
+  def getIndexNames: Seq[String]
 
   /**
     * Get the value of the index.
     * @param input to retrieve value from.
     * @return the value of the index.
     */
-  def GetIndexValues(input: A): Seq[String]
+  def getIndexValues(input: A): Seq[String]
 
   /**
     * Factory method to retrieve B using A
     * @param input the input variable A.
     * @return the output variable B.
     */
-  def GetFunction(input: A): Future[B]
+  def getFunction(input: A): Future[B]
 }

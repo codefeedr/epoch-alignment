@@ -43,12 +43,12 @@ class GetOrAddCommitTest extends MongoDBSpec with Eventually {
 
   "The correct indexes" should "be set when the GetOrAddCommit is initialized" taggedAs(Slow) in async {
     val operator = new GetOrAddCommit()
-    await(operator.SetIndexes(operator.GetIndexNames))
+    await(operator.setIndexes(operator.getIndexNames))
 
     val indexes = await {
       operator.
         mongoDB.
-        getCollection(operator.GetCollectionName).
+        getCollection(operator.getCollectionName).
         listIndexes().toFuture()
     }
 
@@ -71,7 +71,7 @@ class GetOrAddCommitTest extends MongoDBSpec with Eventually {
     operator.open(new Configuration())
 
     //assert the 3th token is picked (3 modulo 3 == 0)
-    assert(operator.GitHubAPI.SetOAuthToken() == "0")
+    assert(operator.GitHubAPI.setOAuthToken() == "0")
   }
 
   "The correct URL" should "be returned when inputting a commit and reponame" in {
@@ -79,7 +79,7 @@ class GetOrAddCommitTest extends MongoDBSpec with Eventually {
     val input = (repo, simpleCommit)
 
     //call method
-    val output = operator.GetIndexValues(input)
+    val output = operator.getIndexValues(input)
 
     //assert it is correct
     assert(output.head == "https://api.github.com/repos/codefeedr/codefeedr/commits/2439402a43e11b5efa2a680ac31207f2210b63d5")
@@ -96,13 +96,13 @@ class GetOrAddCommitTest extends MongoDBSpec with Eventually {
     operator.setRuntimeContext(runtimeContext)
 
     //await the clearing of the collection
-    await(ClearCollection(collectionName))
+    await(clearCollection(collectionName))
 
     //open operator
     operator.open(new Configuration())
 
     //insertion
-    await(InsertDocument(collectionName, fakeCommit))
+    await(insertDocument(collectionName, fakeCommit))
 
     //setup mocking environment
     val mockFuture = mock[ResultFuture[Commit]]
@@ -129,7 +129,7 @@ class GetOrAddCommitTest extends MongoDBSpec with Eventually {
     operator.setRuntimeContext(runtimeContext)
 
     //await the clearing of the collection
-    await(ClearCollection(collectionName))
+    await(clearCollection(collectionName))
 
     //open operator
     operator.open(new Configuration())
@@ -150,7 +150,7 @@ class GetOrAddCommitTest extends MongoDBSpec with Eventually {
     verify(mockFuture, Mockito.timeout(10000)).complete(captor.capture())
 
     //verify that GetFunction is called
-    verify(operator, Mockito.timeout(10000)).GetFunction(any[(String, SimpleCommit)])
+    verify(operator, Mockito.timeout(10000)).getFunction(any[(String, SimpleCommit)])
 
     //asser the correct is found
     assert(captor.getValue.asScala.head.sha == simpleCommit.sha)

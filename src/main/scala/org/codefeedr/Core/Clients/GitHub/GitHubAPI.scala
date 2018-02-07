@@ -44,7 +44,7 @@ class GitHubAPI(workerNumber: Integer) {
     * Set the OAuthToken of the GitHub API using the number of the process.
     * @return the o auth key
     */
-  def SetOAuthToken(): String = {
+  def setOAuthToken(): String = {
     val apiKeys = conf.getStringList("codefeedr.input.github.apikeys")
     val index = workerNumber % apiKeys.size() //get index of api key
 
@@ -55,5 +55,5 @@ class GitHubAPI(workerNumber: Integer) {
   }
 
   //set the auth token
-  SetOAuthToken()
+  setOAuthToken()
 }

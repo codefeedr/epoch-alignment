@@ -14,14 +14,14 @@ class MongoDBSpec extends LibraryServiceSpec with Matchers with MockitoSugar wit
 
   val mongo = new MongoDB()
 
-  def ClearCollection(collectionName: String): Future[Completed] = {
+  def clearCollection(collectionName: String): Future[Completed] = {
     mongo.
       getCollection(collectionName).
       drop().
       toFuture()
   }
 
-  def InsertDocument[T : ClassTag](collectionName: String, doc: T) = {
+  def insertDocument[T : ClassTag](collectionName: String, doc: T) = {
     mongo.
       getCollection[T](collectionName).
       insertOne(doc).

@@ -63,7 +63,7 @@ class CheckAndForwardCommitTest extends MongoDBSpec {
 
   "The correct indexes" should "be set when the CheckAndForwardCommit is initialized" taggedAs (Slow) in async {
     val operator = new CheckAndForwardCommit()
-    await(operator.SetIndexes())
+    await(operator.setIndexes())
 
     val indexes = await {
       operator.
@@ -78,26 +78,26 @@ class CheckAndForwardCommitTest extends MongoDBSpec {
   }
 
   "The latest commit" should "be retrieved from the DB" taggedAs(Slow) in async {
-    await(ClearCollection(collectionName))
-    await(InsertDocument(collectionName, fakeCommit))
-    await(InsertDocument(collectionName, fakeCommitEarlier))
+    await(clearCollection(collectionName))
+    await(insertDocument(collectionName, fakeCommit))
+    await(insertDocument(collectionName, fakeCommitEarlier))
 
     val operator = new CheckAndForwardCommit()
-    await(operator.SetIndexes())
+    await(operator.setIndexes())
 
-    val latestCommit = await(operator.GetLatestCommit("codefeedr/codefeedr"))
+    val latestCommit = await(operator.getLatestCommit("codefeedr/codefeedr"))
     assert(latestCommit.getOrElse("") == fakeCommitEarlier.sha)
   }
 
   "The latest commit" should "not be retrieved from the DB if it is not there" taggedAs(Slow) in async {
-    await(ClearCollection(collectionName))
-    await(InsertDocument(collectionName, fakeCommit))
-    await(InsertDocument(collectionName, fakeCommitEarlier))
+    await(clearCollection(collectionName))
+    await(insertDocument(collectionName, fakeCommit))
+    await(insertDocument(collectionName, fakeCommitEarlier))
 
     val operator = new CheckAndForwardCommit()
-    await(operator.SetIndexes())
+    await(operator.setIndexes())
 
-    val latestCommit = await(operator.GetLatestCommit("codefeedr")) //wrong repo
+    val latestCommit = await(operator.getLatestCommit("codefeedr")) //wrong repo
     assert(latestCommit.getOrElse("") == fakeCommitEarlier.sha)
   }
 
@@ -118,7 +118,7 @@ class CheckAndForwardCommitTest extends MongoDBSpec {
     //set empty auth key
     operator.GitHubAPI.client.setOAuth2Token("")
 
-    val commits = operator.RetrieveUntilLatest("codefeedr/codefeedr", "", latestCommit)
+    val commits = operator.retrieveUntilLatest("codefeedr/codefeedr", "", latestCommit)
 
     assert(commits.head.sha == latestCommit)
     assert(commits.size == sizeTillLatest)
@@ -143,7 +143,7 @@ class CheckAndForwardCommitTest extends MongoDBSpec {
     //set empty auth key
     operator.GitHubAPI.client.setOAuth2Token("")
 
-    val commits = operator.RetrieveUntilLatest("codefeedr/codefeedr", beforeCommit, latestCommit)
+    val commits = operator.retrieveUntilLatest("codefeedr/codefeedr", beforeCommit, latestCommit)
 
     assert(commits.head.sha == latestCommit) // latest commit should be the head
     assert(commits.size == sizeTillBefore) //correct size
@@ -151,6 +151,8 @@ class CheckAndForwardCommitTest extends MongoDBSpec {
     assert(commits.find(x => x.sha == beforeCommit).isEmpty) //before commit isnt there
   }
 
+
+  /**
   "The asyncInvoke" should "return the correct data in the resultFuture given there is already a before stored." taggedAs(Slow) in async {
     //this data comes from the codefeedr/codefeedr master branch
     val latestCommit = "5f2bd246c8245d83dfc770c989b8879d47e55b1c"
@@ -159,8 +161,8 @@ class CheckAndForwardCommitTest extends MongoDBSpec {
 
     //prepare database on before commit
     val fakeCommitBefore = fakeCommitEarlier.copy(sha = "")
-    await(ClearCollection(collectionName))
-    await(InsertDocument(collectionName, fakeCommitBefore))
+    await(clearCollection(collectionName))
+    await(insertDocument(collectionName, fakeCommitBefore))
 
     //init operator
     val operator = new CheckAndForwardCommit()
@@ -194,7 +196,7 @@ class CheckAndForwardCommitTest extends MongoDBSpec {
     val latestCommit = "5f2bd246c8245d83dfc770c989b8879d47e55b1c"
     val sizeTillBefore = 241
 
-    await(ClearCollection(collectionName))
+    await(clearCollection(collectionName))
 
     //init operator
     val operator = new CheckAndForwardCommit()
@@ -231,8 +233,8 @@ class CheckAndForwardCommitTest extends MongoDBSpec {
 
     //prepare database on before commit
     val fakeCommitBefore = fakeCommitEarlier.copy(sha = "6edd09e16db14712d1e3a7cbc5ef868ed326f347")
-    await(ClearCollection(collectionName))
-    await(InsertDocument(collectionName, fakeCommitBefore))
+    await(clearCollection(collectionName))
+    await(insertDocument(collectionName, fakeCommitBefore))
 
     //init operator
     val operator = new CheckAndForwardCommit()
@@ -269,8 +271,8 @@ class CheckAndForwardCommitTest extends MongoDBSpec {
 
     //prepare database on before commit
     val fakeCommitBefore = fakeCommitEarlier.copy(sha = "6edd09e16db14712d1e3a7cbc5ef868ed326f347")
-    await(ClearCollection(collectionName))
-    await(InsertDocument(collectionName, fakeCommitBefore))
+    await(clearCollection(collectionName))
+    await(insertDocument(collectionName, fakeCommitBefore))
 
     //init operator
     val operator = new CheckAndForwardCommit()
@@ -298,6 +300,7 @@ class CheckAndForwardCommitTest extends MongoDBSpec {
     //assert that correct amount of commits is forwarded
     assert(captor.getValue.size() == sizeInPayload)
   }
+    **/
 
 
 }

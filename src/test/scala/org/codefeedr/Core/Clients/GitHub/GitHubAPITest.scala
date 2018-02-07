@@ -19,10 +19,10 @@ class GitHubAPITest extends AsyncFlatSpec with Matchers {
     val source3 = new GitHubAPI(3)
     val source4 = new GitHubAPI(4)
 
-    val key1 = source1.SetOAuthToken()
-    val key2 = source2.SetOAuthToken()
-    val key3 = source3.SetOAuthToken()
-    val key4 = source4.SetOAuthToken()
+    val key1 = source1.setOAuthToken()
+    val key2 = source2.setOAuthToken()
+    val key3 = source3.setOAuthToken()
+    val key4 = source4.setOAuthToken()
 
     //there are 3 keys in the configuration (["0", "1", "2"])
     assert(key1 == "1")

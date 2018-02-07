@@ -33,7 +33,7 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
   val log: Logger = LoggerFactory.getLogger(classOf[GitHubSource])
 
   //loads the github api
-  var GitHubAPI: GitHubAPI = _
+  var gitHubAPI: GitHubAPI = _
 
   //amount of events polled after closing
   var eventsPolled: Integer = 0
@@ -50,7 +50,7 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
     val taskId = getRuntimeContext.getIndexOfThisSubtask + 1
 
     //initiate GitHubAPI
-    GitHubAPI = new GitHubAPI(taskId)
+    gitHubAPI = new GitHubAPI(taskId)
     isRunning = true
   }
 
@@ -70,7 +70,7 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
     log.info("Opening connection with GitHub API")
 
     //get github service
-    val service: GitHubRequestService = new GitHubRequestService(GitHubAPI.client)
+    val service: GitHubRequestService = new GitHubRequestService(gitHubAPI.client)
 
     //keep track of the request
     var currentRequest = 0

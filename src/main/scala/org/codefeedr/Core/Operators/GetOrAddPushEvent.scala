@@ -39,25 +39,25 @@ class GetOrAddPushEvent extends GetOrAddGeneric[PushEvent, PushEvent] {
     * Get the name of the collection.
     * @return the name of the collection.
     */
-  override def GetCollectionName: String = collectionName
+  override def getCollectionName: String = collectionName
 
   /**
     * Get the name of the index.
     * @return the name of the index.
     */
-  override def GetIndexNames: Seq[String] = Seq("id")
+  override def getIndexNames: Seq[String] = Seq("id")
 
   /**
     * Get the value of the index.
     * @param input to retrieve value from.
     * @return the value of the index.
     */
-  override def GetIndexValues(input: PushEvent): Seq[String] = Seq(input.id)
+  override def getIndexValues(input: PushEvent): Seq[String] = Seq(input.id)
 
   /**
     * Transforms a PushEvent to the same event.
     * @param input the input variable A.
     * @return the output variable B.
     */
-  override def GetFunction(input: PushEvent): Future[PushEvent] = Future(input)
+  override def getFunction(input: PushEvent): Future[PushEvent] = Future(input)
 }

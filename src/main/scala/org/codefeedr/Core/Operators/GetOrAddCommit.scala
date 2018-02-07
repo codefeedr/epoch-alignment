@@ -41,20 +41,20 @@ class GetOrAddCommit extends GetOrAddGeneric[(String, SimpleCommit), Commit] {
     * Get the name of the collection to store in.
     * @return the name of the collection.
     */
-  override def GetCollectionName: String = collectionName
+  override def getCollectionName: String = collectionName
 
   /**
     * Get the name of the index.
     * @return the name of the index.
     */
-  override def GetIndexNames: Seq[String] = Seq("url")
+  override def getIndexNames: Seq[String] = Seq("url")
 
   /**
     * Get the value of the index.
     * @param input to retrieve value from.
     * @return the value of the index.
     */
-  override def GetIndexValues(input: (String, SimpleCommit)): Seq[String] =
+  override def getIndexValues(input: (String, SimpleCommit)): Seq[String] =
     Seq(s"https://api.github.com/repos/${input._1}/commits/${input._2.sha}")
 
   /**
@@ -62,7 +62,7 @@ class GetOrAddCommit extends GetOrAddGeneric[(String, SimpleCommit), Commit] {
     * @param input the input variable A.
     * @return the output variable B.
     */
-  override def GetFunction(input: (String, SimpleCommit)): Future[Commit] = {
+  override def getFunction(input: (String, SimpleCommit)): Future[Commit] = {
     Future(gitHubRequestService.getCommit(input._1, input._2.sha))
   }
 }

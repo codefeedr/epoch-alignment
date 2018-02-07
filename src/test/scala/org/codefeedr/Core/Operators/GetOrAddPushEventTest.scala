@@ -36,12 +36,12 @@ class GetOrAddPushEventTest extends MongoDBSpec {
 
   "The correct indexes" should "be set when the GetOrAddPushEvent is initialized" taggedAs(Slow) in async {
     val operator = new GetOrAddPushEvent()
-    await(operator.SetIndexes(operator.GetIndexNames))
+    await(operator.setIndexes(operator.getIndexNames))
 
     val indexes = await {
         operator.
           mongoDB.
-          getCollection(operator.GetCollectionName).
+          getCollection(operator.getCollectionName).
           listIndexes().toFuture()
     }
 
@@ -54,12 +54,12 @@ class GetOrAddPushEventTest extends MongoDBSpec {
     val operator = new GetOrAddPushEvent()
 
     //await the clearing of the collection
-    await(ClearCollection(collectionName))
+    await(clearCollection(collectionName))
 
     operator.open(new Configuration()) //open operator
 
     //insert document
-    await(InsertDocument(collectionName, fakePush))
+    await(insertDocument(collectionName, fakePush))
 
     //setup mocking environment
     val mockFuture = mock[ResultFuture[PushEvent]]
@@ -77,7 +77,7 @@ class GetOrAddPushEventTest extends MongoDBSpec {
     val operator = new GetOrAddPushEvent()
 
     //await the clearing of the collection
-    await(ClearCollection(collectionName))
+    await(clearCollection(collectionName))
 
     operator.open(new Configuration()) //open operator
 

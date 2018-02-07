@@ -29,7 +29,7 @@ class GitHubSourceTest extends FlatSpec with Matchers with MockitoSugar {
     verify(runtimeContext, times(1)).getIndexOfThisSubtask
 
     //3 keys in config, so 5 modulo 3 is key 2
-    assert(source.GitHubAPI.SetOAuthToken() == "2")
+    assert(source.gitHubAPI.setOAuthToken() == "2")
   }
 
   "GitHubSource" should "collect the results of an event request" in {
@@ -48,7 +48,7 @@ class GitHubSourceTest extends FlatSpec with Matchers with MockitoSugar {
     source.setRuntimeContext(runtimeContext)
 
     source.open(new Configuration()) //open
-    source.GitHubAPI.client.setOAuth2Token("") //set oauthtoken
+    source.gitHubAPI.client.setOAuth2Token("") //set oauthtoken
     source.run(sourceContext)
 
     verify(sourceContext, atLeastOnce()).collect(any[Event]) //expect collect call at least once

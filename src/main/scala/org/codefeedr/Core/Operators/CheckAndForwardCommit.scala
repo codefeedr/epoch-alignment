@@ -81,26 +81,24 @@ class CheckAndForwardCommit extends RichAsyncFunction[PushEvent, SimpleCommit] {
     gitHubRequestService = new GitHubRequestService(GitHubAPI.client)
 
     //we want an index on the date, to retrieve the latest commit faster
-    SetIndexes()
+    setIndexes()
   }
 
   /**
     * Set indexes both on the commit date and the url.
     */
-  def SetIndexes(): Future[String] = {
+  def setIndexes(): Future[String] = {
     collection
       .createIndex(ascending("commit.author.date"))
       .toFuture()
 
-    collection.
-      createIndex(Indexes.text("url")).
-      toFuture()
+    collection.createIndex(Indexes.text("url")).toFuture()
   }
 
   //TODO refactor this method in multiple readable method
   override def asyncInvoke(input: PushEvent, resultFuture: ResultFuture[SimpleCommit]): Unit =
     async {
-      val latestCommit = await(GetLatestCommit(input.repo.name))
+      val latestCommit = await(getLatestCommit(input.repo.name))
 
       //no latest found, then set sha to ""
       val latestSha = latestCommit.getOrElse("")
@@ -110,7 +108,7 @@ class CheckAndForwardCommit extends RichAsyncFunction[PushEvent, SimpleCommit] {
         resultFuture.complete(input.payload.commits.map(x => SimpleCommit(x.sha)).asJava)
       } else {
         val commitsToForward =
-          RetrieveUntilLatest(input.repo.name, latestSha, input.payload.head)
+          retrieveUntilLatest(input.repo.name, latestSha, input.payload.head)
 
         resultFuture.complete(commitsToForward.asJava)
       }
@@ -123,7 +121,7 @@ class CheckAndForwardCommit extends RichAsyncFunction[PushEvent, SimpleCommit] {
     * @param headSHA the head sha, commits are retrieved from this point
     * @return a list of commit sha's
     */
-  def RetrieveUntilLatest(repoName: String,
+  def retrieveUntilLatest(repoName: String,
                           beforeSHA: String,
                           headSHA: String): List[SimpleCommit] = {
     //get all commits starting from the head
@@ -156,7 +154,7 @@ class CheckAndForwardCommit extends RichAsyncFunction[PushEvent, SimpleCommit] {
     * @param repoName the repositoy name.
     * @return the optional commit sha.
     */
-  def GetLatestCommit(repoName: String): Future[Option[String]] = async {
+  def getLatestCommit(repoName: String): Future[Option[String]] = async {
     //TODO can this be more efficient
     val commit = await {
       collection
