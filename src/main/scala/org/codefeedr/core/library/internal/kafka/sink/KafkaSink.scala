@@ -100,9 +100,6 @@ class TrailedRecordSink(override val subjectType: SubjectType, override val sink
     override def invoke(trailedRecord: TrailedRecord): Unit = {
     logger.debug(s"Producer ${GetLabel}sending a message to topic $topic")
     kafkaProducer.send(new ProducerRecord(topic, trailedRecord.trail, trailedRecord.row))
-
-      kafkaProducer.beginTransaction()
-
   }
 }
 

@@ -26,8 +26,7 @@ import org.apache.flink.streaming.api.scala._
 import org.codefeedr.core.library.internal.{RecordTransformer, SubjectTypeFactory}
 import org.codefeedr.model.{ActionType, _}
 import org.codefeedr.core.engine.query
-import org.codefeedr.core.engine.query.{JoinQueryComposer, JoinState}
-import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, FlatSpec, Matchers}
+import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, Matchers}
 
 case class SomeJoinTestObject(id: Int, name: String)
 case class SomeJoinTestMessage(id: Int, objectId: Int, message: String, dataBag: Array[Byte])
