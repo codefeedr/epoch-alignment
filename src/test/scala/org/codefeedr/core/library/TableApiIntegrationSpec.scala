@@ -19,7 +19,7 @@
 
 package org.codefeedr.core.library
 
-import org.codefeedr.core.engine.query.query.{Join, SubjectSource}
+import org.codefeedr.core.engine.query.{Join, SubjectSource}
 import org.codefeedr.core.{FullIntegrationSpec, KafkaTest}
 import org.scalatest.tagobjects.Slow
 import org.apache.flink.api.scala._

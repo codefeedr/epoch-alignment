@@ -23,7 +23,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.table.api.StreamTableEnvironment
-import org.codefeedr.core.engine.query.query.{QueryTree, StreamComposerFactory}
+import org.codefeedr.core.engine.query.{QueryTree, StreamComposerFactory}
 import org.codefeedr.core.library.internal.kafka.KafkaTrailedRecordSource
 import org.codefeedr.core.library.{LibraryServices, SubjectFactory}
 import org.codefeedr.core.plugin.CollectionPlugin
