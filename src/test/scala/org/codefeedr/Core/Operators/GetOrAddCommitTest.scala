@@ -20,7 +20,7 @@ import scala.async.Async
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class GetOrAddCommitTest extends MongoDBSpec with Eventually {
+class GetOrAddCommitTest extends MongoGitHubSpec with Eventually {
 
   val collectionName = "github_commits"
 

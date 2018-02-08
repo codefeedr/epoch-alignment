@@ -28,7 +28,7 @@ import org.mongodb.scala._
 import org.mongodb.scala.model.Indexes.{ascending, _}
 import com.mongodb.client.model.IndexOptions
 import org.apache.flink.runtime.concurrent.Executors
-import org.mongodb.scala.model.Filters.text
+import org.mongodb.scala.model.Filters.regex
 import org.bson.conversions.Bson
 import org.codefeedr.core.clients.github.{GitHubAPI, GitHubRequestService}
 import org.codefeedr.core.clients.github.GitHubProtocol.{Commit, PushEvent, SimpleCommit}
@@ -88,16 +88,15 @@ class CheckAndForwardCommit extends RichAsyncFunction[PushEvent, SimpleCommit] {
     */
   def setIndexes(): Future[String] = {
     collection
-      .createIndex(ascending("commit.author.date"))
+      .createIndex(ascending("commit.author.date", "url"))
       .toFuture()
-
-    collection.createIndex(Indexes.text("url")).toFuture()
   }
 
   //TODO refactor this method in multiple readable method
   override def asyncInvoke(input: PushEvent, resultFuture: ResultFuture[SimpleCommit]): Unit =
     async {
 
+      //for now we only want to forward the 'real-time' commits
       resultFuture.complete(input.payload.commits.map(x => SimpleCommit(x.sha)).asJava)
       /**
       val latestCommit = await(getLatestCommit(input.repo.name))
@@ -161,7 +160,7 @@ class CheckAndForwardCommit extends RichAsyncFunction[PushEvent, SimpleCommit] {
     //TODO can this be more efficient
     val commit = await {
       collection
-        .find(text(repoName))
+        .find(regex("url", "/" + repoName.replace("/", "\\/") + "/"))
         .sort(ascending("commit.author.date"))
         .first()
         .toFuture()

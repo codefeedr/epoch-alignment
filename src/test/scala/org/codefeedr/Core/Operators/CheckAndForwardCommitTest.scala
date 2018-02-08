@@ -12,24 +12,9 @@ import org.scalatest.tagobjects.Slow
 
 import scala.async.Async._
 
-class CheckAndForwardCommitTest extends MongoDBSpec {
+class CheckAndForwardCommitTest extends MongoGitHubSpec {
 
   val collectionName = "github_commits"
-
-  val fakeCommit = Commit("2439402a43e11b5efa2a680ac31207f2210b63d5",
-    "https://api.github.com/repos/codefeedr/codefeedr/commits/2439402a43e11b5efa2a680ac31207f2210b63d5",
-    CommitData(
-      CommitUser("wouter", "test", new Date()),
-      CommitUser("wouter", "test", new Date()),
-      "test",
-      Tree("test"),
-      1,
-      Verification(false, "", None, None)),
-    User(1, "wouter", "test", "test", false),
-    User(1, "wouter", "test", "test", false),
-    Nil,
-    Stats(2, 1, 1),
-    Nil)
 
   //02/05/2018 @ 10:00am (UTC)
   val earlierDate = {
@@ -38,31 +23,9 @@ class CheckAndForwardCommitTest extends MongoDBSpec {
     date
   }
 
-  val fakeCommitEarlier = Commit("aDifferentSha",
-    "https://api.github.com/repos/codefeedr/codefeedr/commits/2439402a43e11b5efa2a680ac31207f2210b63d5",
-    CommitData(
-      CommitUser("wouter", "test", earlierDate),
-      CommitUser("wouter", "test", earlierDate),
-      "test",
-      Tree("test"),
-      1,
-      Verification(false, "", None, None)),
-    User(1, "wouter", "test", "test", false),
-    User(1, "wouter", "test", "test", false),
-    Nil,
-    Stats(2, 1, 1),
-    Nil)
-
-  val fakePush = PushEvent("123",
-    Repo(123, "codefeedr/codefeedr"),
-    Actor(123, "test", "test", "test"),
-    None,
-    Payload(123, 0, 0, "testRef", "5f2bd246c8245d83dfc770c989b8879d47e55b1c", "doesntMatter", Nil),
-    true,
-    new Date())
-
   "The correct indexes" should "be set when the CheckAndForwardCommit is initialized" taggedAs (Slow) in async {
     val operator = new CheckAndForwardCommit()
+    await(clearCollection(collectionName))
     await(operator.setIndexes())
 
     val indexes = await {
@@ -78,27 +41,35 @@ class CheckAndForwardCommitTest extends MongoDBSpec {
   }
 
   "The latest commit" should "be retrieved from the DB" taggedAs(Slow) in async {
+    //generate commits
+    val commit = fakeCommit()
+    val commitEarlier = fakeCommit(earlierDate)
+
     await(clearCollection(collectionName))
-    await(insertDocument(collectionName, fakeCommit))
-    await(insertDocument(collectionName, fakeCommitEarlier))
+    await(insertDocument(collectionName, commit))
+    await(insertDocument(collectionName, commitEarlier))
 
     val operator = new CheckAndForwardCommit()
     await(operator.setIndexes())
 
     val latestCommit = await(operator.getLatestCommit("codefeedr/codefeedr"))
-    assert(latestCommit.getOrElse("") == fakeCommitEarlier.sha)
+    assert(latestCommit.getOrElse("") == commitEarlier.sha)
   }
 
   "The latest commit" should "not be retrieved from the DB if it is not there" taggedAs(Slow) in async {
+    //generate commits
+    val commit = fakeCommit()
+    val commitEarlier = fakeCommit(earlierDate)
+
     await(clearCollection(collectionName))
-    await(insertDocument(collectionName, fakeCommit))
-    await(insertDocument(collectionName, fakeCommitEarlier))
+    await(insertDocument(collectionName, commit))
+    await(insertDocument(collectionName, commitEarlier))
 
     val operator = new CheckAndForwardCommit()
     await(operator.setIndexes())
 
-    val latestCommit = await(operator.getLatestCommit("codefeedr")) //wrong repo
-    assert(latestCommit.getOrElse("") == fakeCommitEarlier.sha)
+    val latestCommit = await(operator.getLatestCommit("codefeedr/bestaatniet")) //wrong repo
+    assert(latestCommit.getOrElse("") != commitEarlier.sha)
   }
 
   "The correct commitlist" should "be returned when retrieving from GitHub API when using no beforeSHA" taggedAs(Slow) in async {

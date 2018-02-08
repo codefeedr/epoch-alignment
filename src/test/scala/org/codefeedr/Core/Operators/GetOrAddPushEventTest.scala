@@ -22,17 +22,9 @@ import ExecutionContext.Implicits.global
 import collection.JavaConverters._
 import scala.reflect.ClassTag
 
-class GetOrAddPushEventTest extends MongoDBSpec {
+class GetOrAddPushEventTest extends MongoGitHubSpec {
 
   val collectionName = "github_events"
-
-  val fakePush = PushEvent("123",
-    Repo(123, "test/test"),
-    Actor(123, "test", "test", "test"),
-    None,
-    Payload(123, 1, 1, "testRef", "testHead", "testBefore", Nil),
-    true,
-    new Date())
 
   "The correct indexes" should "be set when the GetOrAddPushEvent is initialized" taggedAs(Slow) in async {
     val operator = new GetOrAddPushEvent()
@@ -53,28 +45,34 @@ class GetOrAddPushEventTest extends MongoDBSpec {
   "A PushEvent" should "be forwarded if already in the DB" taggedAs (Slow) in async {
     val operator = new GetOrAddPushEvent()
 
+    //get pushevent
+    val pushEvent = fakePush()
+
     //await the clearing of the collection
     await(clearCollection(collectionName))
 
     operator.open(new Configuration()) //open operator
 
     //insert document
-    await(insertDocument(collectionName, fakePush))
+    await(insertDocument(collectionName, pushEvent))
 
     //setup mocking environment
     val mockFuture = mock[ResultFuture[PushEvent]]
 
     //call invoke
-    operator.asyncInvoke(fakePush, mockFuture)
+    operator.asyncInvoke(pushEvent, mockFuture)
 
     //verify the future has been used
-    verify(mockFuture, timeout(1000).times(1)).complete(List(fakePush).asJavaCollection)
+    verify(mockFuture, timeout(1000).times(1)).complete(List(pushEvent).asJavaCollection)
 
     succeed
   }
 
   "A PushEvent" should "be stored and forwarded if not in the DB" taggedAs (Slow) in async {
     val operator = new GetOrAddPushEvent()
+
+    //get pushevent
+    val pushEvent = fakePush()
 
     //await the clearing of the collection
     await(clearCollection(collectionName))
@@ -85,22 +83,22 @@ class GetOrAddPushEventTest extends MongoDBSpec {
     val mockFuture = mock[ResultFuture[PushEvent]]
 
     //not in db first
-    val notInDB = await(mongo.getCollection(collectionName).find[PushEvent](Filters.equal("id", fakePush.id)).toFuture())
+    val notInDB = await(mongo.getCollection(collectionName).find[PushEvent](Filters.equal("id", pushEvent.id)).toFuture())
 
     //check not in db
     assert(notInDB.size == 0)
 
     //call invoke
-    operator.asyncInvoke(fakePush, mockFuture)
+    operator.asyncInvoke(pushEvent, mockFuture)
 
     //sleep so it can be inserted
     Thread.sleep(2000)
 
     //verify the future has been used
-    verify(mockFuture, timeout(1000).times(1)).complete(List(fakePush).asJavaCollection)
+    verify(mockFuture, timeout(1000).times(1)).complete(List(pushEvent).asJavaCollection)
 
     //verify it is in database
-    val inDB = await(mongo.getCollection(collectionName).find[PushEvent](Filters.equal("id", fakePush.id)).toFuture())
+    val inDB = await(mongo.getCollection(collectionName).find[PushEvent](Filters.equal("id", pushEvent.id)).toFuture())
 
     //should be in db now
     assert(inDB.size == 1)
