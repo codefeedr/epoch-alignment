@@ -98,6 +98,9 @@ class CheckAndForwardCommit extends RichAsyncFunction[PushEvent, SimpleCommit] {
   //TODO refactor this method in multiple readable method
   override def asyncInvoke(input: PushEvent, resultFuture: ResultFuture[SimpleCommit]): Unit =
     async {
+
+      resultFuture.complete(input.payload.commits.map(x => SimpleCommit(x.sha)).asJava)
+      /**
       val latestCommit = await(getLatestCommit(input.repo.name))
 
       //no latest found, then set sha to ""
@@ -112,6 +115,7 @@ class CheckAndForwardCommit extends RichAsyncFunction[PushEvent, SimpleCommit] {
 
         resultFuture.complete(commitsToForward.asJava)
       }
+        **/
     }
 
   /**

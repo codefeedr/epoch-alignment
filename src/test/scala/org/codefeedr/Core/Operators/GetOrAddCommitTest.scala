@@ -43,6 +43,7 @@ class GetOrAddCommitTest extends MongoDBSpec with Eventually {
 
   "The correct indexes" should "be set when the GetOrAddCommit is initialized" taggedAs(Slow) in async {
     val operator = new GetOrAddCommit()
+    await(clearCollection(collectionName))
     await(operator.setIndexes(operator.getIndexNames))
 
     val indexes = await {
