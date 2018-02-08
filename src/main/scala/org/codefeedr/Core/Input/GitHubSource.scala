@@ -17,12 +17,12 @@
  *
  */
 
-package org.codefeedr.Core.Input
+package org.codefeedr.core.input
 
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
-import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.Event
-import org.codefeedr.Core.Clients.GitHub.{GitHubAPI, GitHubRequestService}
+import org.codefeedr.core.clients.GitHub.{GitHubAPI, GitHubRequestService}
+import org.codefeedr.core.clients.GitHub.GitHubProtocol.Event
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConverters._

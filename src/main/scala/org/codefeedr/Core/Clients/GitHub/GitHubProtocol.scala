@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.Core.Clients.GitHub
+package org.codefeedr.core.clients.GitHub
 
 import java.util.Date
 import org.json4s.JObject

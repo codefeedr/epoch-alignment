@@ -1,13 +1,13 @@
-package org.codefeedr.Core.Operators
+package org.codefeedr.core.operators
 
 import java.util.Date
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.async.ResultFuture
-import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.{Actor, Payload, PushEvent, Repo}
-import org.codefeedr.Core.Clients.MongoDB.MongoDB
-import org.codefeedr.Core.LibraryServiceSpec
+import org.codefeedr.core.clients.GitHub.GitHubProtocol._
+import org.codefeedr.core.clients.MongoDB.MongoDB
+import org.codefeedr.core.LibraryServiceSpec
 import org.mongodb.scala.Completed
 import org.bson.conversions.Bson
 import org.scalatest.mockito.MockitoSugar
@@ -94,7 +94,7 @@ class GetOrAddPushEventTest extends MongoDBSpec {
     operator.asyncInvoke(fakePush, mockFuture)
 
     //sleep so it can be inserted
-    Thread.sleep(1000)
+    Thread.sleep(2000)
 
     //verify the future has been used
     verify(mockFuture, timeout(1000).times(1)).complete(List(fakePush).asJavaCollection)

@@ -1,9 +1,9 @@
-package org.codefeedr.Core.Input
+package org.codefeedr.core.input
 
 import org.apache.flink.api.common.functions.RuntimeContext
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.source.SourceFunction
-import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.Event
+import org.codefeedr.core.clients.GitHub.GitHubProtocol.Event
 import org.scalatest.mockito.MockitoSugar
 import org.mockito.Mockito._
 import org.mockito.ArgumentMatchers.any

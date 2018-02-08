@@ -1,11 +1,8 @@
-package org.codefeedr.Core.Clients.GitHub
+package org.codefeedr.core.clients.GitHub
 
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.flink.calcite.shaded.com.google.common.collect.Iterables
-import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.SimpleCommit
-import org.codefeedr.Core.ZkTest
+import org.codefeedr.core.clients.GitHub.GitHubProtocol.Commit
 import org.eclipse.egit.github.core.client.GitHubClient
-import org.eclipse.egit.github.core.service.RepositoryService
 import org.scalatest.{AsyncFlatSpec, Matchers}
 import org.scalatest.tagobjects.Slow
 

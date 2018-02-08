@@ -1,9 +1,9 @@
-package org.codefeedr.Core.Operators
+package org.codefeedr.core.operators
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.flink.configuration.Configuration
-import org.codefeedr.Core.Clients.GitHub.{GitHubAPI, GitHubRequestService}
-import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.{Commit, SimpleCommit}
+import org.codefeedr.core.clients.GitHub.{GitHubAPI, GitHubRequestService}
+import org.codefeedr.core.clients.GitHub.GitHubProtocol.{Commit, SimpleCommit}
 
 import scala.async.Async._
 import scala.concurrent.Future

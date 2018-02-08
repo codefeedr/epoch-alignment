@@ -1,8 +1,8 @@
-package org.codefeedr.Core.Operators
+package org.codefeedr.core.operators
 
 import com.typesafe.scalalogging.LazyLogging
-import org.codefeedr.Core.Clients.MongoDB.MongoDB
-import org.codefeedr.Core.LibraryServiceSpec
+import org.codefeedr.core.LibraryServiceSpec
+import org.codefeedr.core.clients.MongoDB.MongoDB
 import org.mongodb.scala.Completed
 import org.scalatest.Matchers
 import org.scalatest.mockito.MockitoSugar

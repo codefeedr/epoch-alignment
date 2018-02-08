@@ -17,18 +17,14 @@
  *
  */
 
-package org.codefeedr.Core.Plugin
+package org.codefeedr.core.plugin
 
 import java.util.concurrent.TimeUnit
 
 import com.google.gson.{Gson, GsonBuilder, JsonObject}
-import org.codefeedr.Core.Input.GitHubSource
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.apache.flink.streaming.api.datastream.{AsyncDataStream => JavaAsyncDataStream}
 import org.apache.flink.streaming.api.functions.async.{AsyncFunction => JavaAsyncFunction}
-import org.codefeedr.Core.Library.Internal.{AbstractPlugin, SubjectTypeFactory}
-import org.codefeedr.Core.Library.SubjectFactory
-import org.codefeedr.Model.SubjectType
 
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -36,15 +32,13 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 import org.apache.flink.api.scala._
-import org.apache.flink.streaming.api.functions.async
-import org.apache.flink.streaming.api.scala.async.{
-  AsyncFunction,
-  JavaResultFutureWrapper,
-  ResultFuture
-}
-import org.codefeedr.Core.Clients.GitHub.GitHubProtocol
-import org.codefeedr.Core.Clients.GitHub.GitHubProtocol.{Actor, Payload, PushEvent, Repo}
-import org.codefeedr.Core.Operators.GetOrAddPushEvent
+import org.codefeedr.core.clients.GitHub.GitHubProtocol
+import org.codefeedr.core.clients.GitHub.GitHubProtocol.{Payload, PushEvent}
+import org.codefeedr.core.input.GitHubSource
+import org.codefeedr.core.library.SubjectFactory
+import org.codefeedr.core.library.internal.{AbstractPlugin, SubjectTypeFactory}
+import org.codefeedr.core.operators.GetOrAddPushEvent
+import org.codefeedr.model.SubjectType
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
@@ -57,7 +51,7 @@ class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
     * Creates a new SubjectType.
     * @return
     */
-  override def CreateSubjectType(): SubjectType = {
+  override def createSubjectType(): SubjectType = {
     return SubjectTypeFactory.getSubjectType[PushEvent]
 
   }
@@ -67,7 +61,7 @@ class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
     * @param env the environment to prepare.
     * @return the data stream.
     */
-  def GetStream(env: StreamExecutionEnvironment): DataStream[GitHubProtocol.PushEvent] = {
+  def getStream(env: StreamExecutionEnvironment): DataStream[GitHubProtocol.PushEvent] = {
     val stream =
       env.addSource(new GitHubSource(maxRequests)).filter(_.`type` == "PushEvent").map { x =>
         implicit val formats = DefaultFormats
@@ -87,9 +81,10 @@ class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
     * @param env the environment to compose.
     * @return a future of the method.
     */
-  override def Compose(env: StreamExecutionEnvironment): Future[Unit] = Async.async {
-    val sink = await(SubjectFactory.GetSink[GitHubProtocol.PushEvent])
-    val stream = GetStream(env)
+  override def compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit] = Async.async {
+    val sinkName = s"composedsink_${queryId}"
+    val sink = await(SubjectFactory.GetSink[GitHubProtocol.PushEvent](sinkName))
+    val stream = getStream(env)
     stream.addSink(sink)
     //stream.addSink(new MongoSink[GitHubProtocol.PushEvent](PUSH_EVENT, "id"))
   }

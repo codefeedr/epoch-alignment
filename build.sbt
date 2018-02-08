@@ -25,25 +25,30 @@ val dep_flink = Seq(
 
 val dep_core = Seq(
   "codes.reactive" %% "scala-time" % "0.4.1",
+  "org.apache.zookeeper" % "zookeeper" % "3.4.9",
+  "org.mockito" % "mockito-core" % "2.13.0" % "test",
+  "org.json4s" % "json4s-scalap_2.11" % "3.6.0-M2",
+  "org.json4s" % "json4s-jackson_2.11" % "3.6.0-M2",
+
 
   "org.scalactic" %% "scalactic" % "3.0.1",
   "org.scalatest" %% "scalatest" % "3.0.1" % "test",
-  "org.mockito" % "mockito-core" % "2.13.0" % "test",
 
   "ch.qos.logback" % "logback-classic" % "1.1.7",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
 
   "org.eclipse.mylyn.github" % "org.eclipse.egit.github.core" % "2.1.5" % "provided",
-  "org.json4s" % "json4s-scalap_2.11" % "3.6.0-M2",
-  "org.json4s" % "json4s-jackson_2.11" % "3.6.0-M2",
   "com.typesafe" % "config" % "1.3.1",
   "org.mongodb.scala" %% "mongo-scala-driver" % "2.1.0",
 
   "org.apache.kafka" % "kafka-clients" % "1.0.0",
   "com.jsuereth" %% "scala-arm" % "2.0",
   "org.scala-lang.modules" % "scala-java8-compat_2.11" % "0.8.0",
-  "org.scala-lang.modules" %% "scala-async" % "0.9.7"
+  "org.scala-lang.modules" %% "scala-async" % "0.9.7",
+  "io.reactivex" %% "rxscala" % "0.26.5"
 )
+
+
 
 lazy val root = (project in file("."))
   .settings(
@@ -58,8 +63,8 @@ mainClass in assembly := Some("org.codefeedr.Job")
 
 // make run command include the provided dependencies
 run in Compile := Defaults.runTask(fullClasspath in Compile,
-                                   mainClass in (Compile, run),
-                                   runner in (Compile, run))
+  mainClass in (Compile, run),
+  runner in (Compile, run))
 
 // exclude Scala library from assembly
 assemblyOption in assembly := (assemblyOption in assembly).value

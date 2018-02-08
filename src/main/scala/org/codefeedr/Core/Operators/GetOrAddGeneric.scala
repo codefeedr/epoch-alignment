@@ -17,17 +17,17 @@
  *
  */
 
-package org.codefeedr.Core.Operators
+package org.codefeedr.core.operators
 
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.runtime.concurrent.Executors
 import org.apache.flink.streaming.api.functions.async
 import org.apache.flink.streaming.api.functions.async.{ResultFuture, RichAsyncFunction}
 import org.bson.conversions.Bson
-import org.codefeedr.Core.Clients.MongoDB.MongoDB
 import org.mongodb.scala._
 import org.mongodb.scala.model.Indexes._
 import com.mongodb.client.model.IndexOptions
+import org.codefeedr.core.clients.MongoDB.MongoDB
 import org.mongodb.scala.model.Filters._
 
 import scala.concurrent.{ExecutionContext, Future}
