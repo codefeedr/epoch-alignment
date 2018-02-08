@@ -21,8 +21,8 @@ package org.codefeedr.core.input
 
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
-import org.codefeedr.core.clients.GitHub.{GitHubAPI, GitHubRequestService}
-import org.codefeedr.core.clients.GitHub.GitHubProtocol.Event
+import org.codefeedr.core.clients.github.{GitHubAPI, GitHubRequestService}
+import org.codefeedr.core.clients.github.GitHubProtocol.Event
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConverters._

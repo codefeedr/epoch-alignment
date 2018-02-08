@@ -17,11 +17,11 @@
  *
  */
 
-package org.codefeedr.core.clients.MongoDB
+package org.codefeedr.core.clients.mongodb
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
-import org.codefeedr.core.clients.GitHub.GitHubProtocol._
+import org.codefeedr.core.clients.github.GitHubProtocol._
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import org.mongodb.scala.bson.codecs.Macros._
 import org.mongodb.scala.connection.ClusterSettings

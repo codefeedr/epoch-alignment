@@ -17,13 +17,13 @@
  *
  */
 
-package org.codefeedr.core.clients.GitHub
+package org.codefeedr.core.clients.github
 
 import java.io.IOException
 
 import com.google.gson.{Gson, JsonElement, JsonObject}
 import com.google.gson.reflect.TypeToken
-import org.codefeedr.core.clients.GitHub.GitHubProtocol.{Commit, Event, SimpleCommit}
+import org.codefeedr.core.clients.github.GitHubProtocol.{Commit, Event, SimpleCommit}
 import org.eclipse.egit.github.core.client.{GitHubClient, GitHubRequest, PageIterator}
 import org.eclipse.egit.github.core.client.PagedRequest.PAGE_FIRST
 import org.eclipse.egit.github.core.client.PagedRequest.PAGE_SIZE

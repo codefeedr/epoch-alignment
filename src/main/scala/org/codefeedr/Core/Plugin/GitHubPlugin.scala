@@ -32,8 +32,8 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 import org.apache.flink.api.scala._
-import org.codefeedr.core.clients.GitHub.GitHubProtocol
-import org.codefeedr.core.clients.GitHub.GitHubProtocol.{Payload, PushEvent}
+import org.codefeedr.core.clients.github.GitHubProtocol
+import org.codefeedr.core.clients.github.GitHubProtocol.{Payload, PushEvent}
 import org.codefeedr.core.input.GitHubSource
 import org.codefeedr.core.library.SubjectFactory
 import org.codefeedr.core.library.internal.{AbstractPlugin, SubjectTypeFactory}
@@ -81,12 +81,13 @@ class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
     * @param env the environment to compose.
     * @return a future of the method.
     */
-  override def compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit] = Async.async {
-    val sinkName = s"composedsink_${queryId}"
-    val sink = await(SubjectFactory.GetSink[GitHubProtocol.PushEvent](sinkName))
-    val stream = getStream(env)
-    stream.addSink(sink)
-    //stream.addSink(new MongoSink[GitHubProtocol.PushEvent](PUSH_EVENT, "id"))
-  }
+  override def compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit] =
+    Async.async {
+      val sinkName = s"composedsink_${queryId}"
+      val sink = await(SubjectFactory.GetSink[GitHubProtocol.PushEvent](sinkName))
+      val stream = getStream(env)
+      stream.addSink(sink)
+      //stream.addSink(new MongoSink[GitHubProtocol.PushEvent](PUSH_EVENT, "id"))
+    }
 
 }

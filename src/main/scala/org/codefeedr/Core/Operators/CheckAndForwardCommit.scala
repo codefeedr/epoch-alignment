@@ -30,9 +30,9 @@ import com.mongodb.client.model.IndexOptions
 import org.apache.flink.runtime.concurrent.Executors
 import org.mongodb.scala.model.Filters.text
 import org.bson.conversions.Bson
-import org.codefeedr.core.clients.GitHub.{GitHubAPI, GitHubRequestService}
-import org.codefeedr.core.clients.GitHub.GitHubProtocol.{Commit, PushEvent, SimpleCommit}
-import org.codefeedr.core.clients.MongoDB.MongoDB
+import org.codefeedr.core.clients.github.{GitHubAPI, GitHubRequestService}
+import org.codefeedr.core.clients.github.GitHubProtocol.{Commit, PushEvent, SimpleCommit}
+import org.codefeedr.core.clients.mongodb.MongoDB
 import org.mongodb.scala.model.Indexes
 
 import scala.concurrent.{ExecutionContext, Future}

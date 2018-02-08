@@ -1,4 +1,4 @@
-package org.codefeedr.core.clients.GitHub
+package org.codefeedr.core.clients.github
 
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{AsyncFlatSpec, Matchers}

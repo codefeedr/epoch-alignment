@@ -5,8 +5,8 @@ import java.util.Date
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.async.ResultFuture
-import org.codefeedr.core.clients.GitHub.GitHubProtocol._
-import org.codefeedr.core.clients.MongoDB.MongoDB
+import org.codefeedr.core.clients.github.GitHubProtocol._
+import org.codefeedr.core.clients.mongodb.MongoDB
 import org.codefeedr.core.LibraryServiceSpec
 import org.mongodb.scala.Completed
 import org.bson.conversions.Bson

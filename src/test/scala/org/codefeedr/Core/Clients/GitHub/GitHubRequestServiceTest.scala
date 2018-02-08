@@ -1,7 +1,7 @@
-package org.codefeedr.core.clients.GitHub
+package org.codefeedr.core.clients.github
 
 import com.typesafe.scalalogging.LazyLogging
-import org.codefeedr.core.clients.GitHub.GitHubProtocol.Commit
+import org.codefeedr.core.clients.github.GitHubProtocol.Commit
 import org.eclipse.egit.github.core.client.GitHubClient
 import org.scalatest.{AsyncFlatSpec, Matchers}
 import org.scalatest.tagobjects.Slow

@@ -56,7 +56,7 @@ import scala.util.Try
   * Created by Niels on 18/07/2017.
   */
 abstract class KafkaSource[T](subjectType: SubjectType)
-  extends RichSourceFunction[T]
+    extends RichSourceFunction[T]
     with ResultTypeQueryable[T]
     with CheckpointedFunction
     with CheckpointListener
@@ -90,9 +90,9 @@ abstract class KafkaSource[T](subjectType: SubjectType)
 
   //Node in zookeeper representing state of the instance of the consumer
   @transient protected lazy val consumerNode: ConsumerNode =
-  sourceNode
-    .getConsumers()
-    .getChild(instanceUuid)
+    sourceNode
+      .getConsumers()
+      .getChild(instanceUuid)
 
   //Node in zookeeper representing state of the subject this consumer is subscribed on
 

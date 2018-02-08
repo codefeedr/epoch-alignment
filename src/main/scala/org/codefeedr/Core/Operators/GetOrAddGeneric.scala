@@ -27,7 +27,7 @@ import org.bson.conversions.Bson
 import org.mongodb.scala._
 import org.mongodb.scala.model.Indexes._
 import com.mongodb.client.model.IndexOptions
-import org.codefeedr.core.clients.MongoDB.MongoDB
+import org.codefeedr.core.clients.mongodb.MongoDB
 import org.mongodb.scala.model.Filters._
 
 import scala.concurrent.{ExecutionContext, Future}

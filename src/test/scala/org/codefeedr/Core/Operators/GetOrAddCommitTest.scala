@@ -5,7 +5,7 @@ import java.util.Date
 import org.apache.flink.api.common.functions.RuntimeContext
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.async.ResultFuture
-import org.codefeedr.core.clients.GitHub.GitHubProtocol._
+import org.codefeedr.core.clients.github.GitHubProtocol._
 import org.scalatest.tagobjects.Slow
 import org.mockito.Mockito._
 import org.mockito.ArgumentMatchers.any
