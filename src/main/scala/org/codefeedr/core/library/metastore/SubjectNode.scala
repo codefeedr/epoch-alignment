@@ -1,6 +1,7 @@
 package org.codefeedr.core.library.metastore
 
 import com.typesafe.scalalogging.LazyLogging
+import org.apache.calcite.plan.RelOptUtil.Exists
 import org.codefeedr.core.library.internal.SubjectTypeFactory
 import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkNode, ZkNodeBase, ZkStateNode}
 import org.codefeedr.exceptions._
@@ -30,6 +31,7 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
     await(getSources().create())
     await(super.postCreate())
   }
+
 
   override def create(data: SubjectType): Future[SubjectType] = async {
     val r = await(super.create(data))

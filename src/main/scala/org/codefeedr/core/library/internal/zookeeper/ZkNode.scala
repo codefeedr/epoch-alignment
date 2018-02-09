@@ -48,6 +48,10 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)
     * @return a future of the saved data
     */
   def create(data: TData): Future[TData] = async {
+    //TODO: Implement proper locks
+    if(await(exists())) {
+      throw new Exception(s"Cannot node ${path()}. Node already exists")
+    }
     await(zkClient.createWithData(path(), data))
     await(postCreate())
     data
