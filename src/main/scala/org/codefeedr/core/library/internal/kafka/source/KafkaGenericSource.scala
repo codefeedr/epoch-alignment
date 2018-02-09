@@ -30,7 +30,7 @@ import scala.reflect.runtime.{universe => ru}
 class KafkaGenericSource[T: ru.TypeTag : ClassTag : TypeInformation](subjectType: SubjectType, override val sourceUuid: String) extends KafkaSource[T](subjectType: SubjectType) {
   @transient private lazy val Transformer = SubjectFactory.getUnTransformer[T](subjectType)
 
-  override def map(record: TrailedRecord): T = Transformer.apply(record)
+  override def mapToT(record: TrailedRecord): T = Transformer.apply(record)
 
   /**
     * Get typeinformation of the returned type
