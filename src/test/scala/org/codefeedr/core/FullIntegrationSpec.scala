@@ -21,7 +21,9 @@ package org.codefeedr.core
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.typeinfo.TypeInformation
+import org.apache.flink.streaming.api.functions.source.SourceFunction.SourceContext
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
+import org.apache.flink.streaming.api.watermark.Watermark
 import org.apache.flink.table.api.StreamTableEnvironment
 import org.codefeedr.core.engine.query.{QueryTree, streamComposerFactory}
 import org.codefeedr.core.library.internal.kafka.KafkaTrailedRecordSource
@@ -59,7 +61,19 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     await(subjectLibrary.getSubject(subject.name).assertExists())
     val source = new KafkaTrailedRecordSource(subject, "testsource")
     val result = new mutable.ArrayBuffer[TrailedRecord]()
-    source.runLocal(result.append(_))
+    source.run(new SourceContext[TrailedRecord] {
+      override def collectWithTimestamp(element: TrailedRecord, timestamp: Long): Unit = ???
+
+      override def getCheckpointLock: AnyRef = this
+
+      override def markAsTemporarilyIdle(): Unit = ???
+
+      override def emitWatermark(mark: Watermark): Unit = ???
+
+      override def collect(element: TrailedRecord): Unit = result.append(element)
+
+      override def close(): Unit = ???
+    })
     result.toArray
   }
 

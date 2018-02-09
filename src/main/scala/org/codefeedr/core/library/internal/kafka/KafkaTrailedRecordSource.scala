@@ -25,7 +25,7 @@ import org.codefeedr.model.{SubjectType, TrailedRecord}
 
 class KafkaTrailedRecordSource(subjectType: SubjectType, override val sourceUuid: String)
     extends KafkaSource[TrailedRecord](subjectType) {
-  override def map(record: TrailedRecord) = record
+  override def mapToT(record: TrailedRecord) = record
 
   /**
     * Get typeinformation of the returned type
