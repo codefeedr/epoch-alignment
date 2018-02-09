@@ -25,7 +25,7 @@ import java.util.UUID
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.java.tuple
 import org.apache.flink.configuration.Configuration
-import org.apache.flink.streaming.api.functions.sink.RichSinkFunction
+import org.apache.flink.streaming.api.functions.sink.{RichSinkFunction, TwoPhaseCommitSinkFunction}
 import org.apache.flink.types.Row
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.codefeedr.core.library.internal.KeyFactory
@@ -46,9 +46,10 @@ import scala.concurrent.duration.Duration
   * Created by Niels on 11/07/2017.
   */
 abstract class KafkaSink[TSink]
-    extends RichSinkFunction[TSink]
+    extends TwoPhaseCommitSinkFunction[TSink,]
     with LazyLogging
     with Serializable
+
     with LibraryServices {
 
   @transient protected lazy val kafkaProducer = {
@@ -80,7 +81,7 @@ abstract class KafkaSink[TSink]
   //A random identifier for this specific sink
   @transient lazy val instanceUuid = UUID.randomUUID().toString
 
-  def GetLabel(): String = s"KafkaSink ${subjectType.name}(${sinkUuid}-${instanceUuid})"
+  def GetLabel(): String = s"KafkaSink ${subjectType.name}($sinkUuid-$instanceUuid)"
 
   override def close(): Unit = {
     logger.debug(s"Closing producer ${GetLabel()}for ${subjectType.name}")
