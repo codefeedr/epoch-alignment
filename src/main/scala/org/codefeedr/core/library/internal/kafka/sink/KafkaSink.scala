@@ -20,19 +20,22 @@
 package org.codefeedr.core.library.internal.kafka.sink
 
 import java.lang
-import java.util.UUID
+import java.util.{Optional, UUID}
 
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
+import org.apache.flink.api.common.typeutils.TypeSerializer
 import org.apache.flink.api.java.tuple
 import org.apache.flink.configuration.Configuration
-import org.apache.flink.streaming.api.functions.sink.{RichSinkFunction, TwoPhaseCommitSinkFunction}
+import org.apache.flink.runtime.state.FunctionSnapshotContext
+import org.apache.flink.streaming.api.functions.sink.{RichSinkFunction, SinkFunction, TwoPhaseCommitSinkFunction}
 import org.apache.flink.types.Row
-import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.codefeedr.core.library.internal.KeyFactory
 import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.library.metastore.{ProducerNode, QuerySinkNode, SubjectNode}
 import org.codefeedr.model.zookeeper.{Producer, QuerySink}
-import org.codefeedr.model._
+import org.codefeedr.model.{RecordSourceTrail, _}
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -45,54 +48,112 @@ import scala.concurrent.duration.Duration
   * Serializable (with lazy initialisation)
   * Created by Niels on 11/07/2017.
   */
-abstract class KafkaSink[TSink]
-    extends RichSinkFunction[TSink]
+ abstract class KafkaSink[TSink]()
+    extends TwoPhaseCommitSinkFunction[TSink, TransactionState, TransactionContext](transactionStateSerializer, transactionContextSerializer)
     with LazyLogging
     with Serializable
-
     with LibraryServices {
 
-  @transient protected lazy val kafkaProducer = {
-    val producer = KafkaProducerFactory.create[RecordSourceTrail, Row]
-    //Create the producer node alongside
-    //Need to block here because the producer cannot start before the zookeeper state has been configured
-    Await.ready(subjectNode.create(subjectType), Duration(5, SECONDS))
-    Await.ready(sinkNode.create(QuerySink(sinkUuid)), Duration(5, SECONDS))
-    Await.ready(producerNode.create(Producer(instanceUuid, null, System.currentTimeMillis())),
-                Duration(5, SECONDS))
 
-    logger.debug(s"Producer ${GetLabel()} created for topic $topic")
-    producer
-  }
+  protected val subjectType: SubjectType
+  protected val sinkUuid: String
 
-  val subjectType: SubjectType
-  val sinkUuid: String
+  @transient protected lazy val subjectNode: SubjectNode = subjectLibrary.getSubject(subjectType.name)
 
-  @transient lazy val subjectNode: SubjectNode = subjectLibrary.getSubject(subjectType.name)
-
-  @transient lazy val sinkNode: QuerySinkNode = subjectNode.getSinks().getChild(sinkUuid)
+  @transient protected lazy val sinkNode: QuerySinkNode = subjectNode.getSinks().getChild(sinkUuid)
 
   /**
     * The ZookeeperNode that represent this instance of the producer
     */
-  @transient lazy val producerNode: ProducerNode = sinkNode.getProducers().getChild(instanceUuid)
+  @transient protected lazy val producerNode: ProducerNode = sinkNode.getProducers().getChild(instanceUuid)
 
   @transient protected lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
   //A random identifier for this specific sink
-  @transient lazy val instanceUuid = UUID.randomUUID().toString
+  @transient protected lazy  val instanceUuid: String = UUID.randomUUID().toString
 
-  def GetLabel(): String = s"KafkaSink ${subjectType.name}($sinkUuid-$instanceUuid)"
+  //Size (amount) of kafkaProducers
+  @transient private lazy val producerPoolSize: Long = ConfigFactory.load.getLong("codefeedr.kafka.custom.producer.count")
+
+  //Current set of available kafka producers
+  @transient protected lazy val producerPool: List[KafkaProducer[RecordSourceTrail, Row]] =
+    (1 to producerPoolSize).map(_ => KafkaProducerFactory.create[RecordSourceTrail, Row]).toList
+
+
+  def getLabel(): String = s"KafkaSink ${subjectType.name}($sinkUuid-$instanceUuid)"
+
+
+  override def initializeUserContext(): Optional[TransactionContext] =
+    Optional.of(TransactionContext((0 until producerPoolSize).map(id => id -> true).toMap))
+
 
   override def close(): Unit = {
-    logger.debug(s"Closing producer ${GetLabel()}for ${subjectType.name}")
-    kafkaProducer.close()
+    if(getUserContext.get().availableProducers.exists(o => o._2)) {
+      throw new Exception(s"Error while closing producer ${getLabel()}. There are still uncommitted transactions")
+    }
     Await.ready(producerNode.setState(false), Duration.Inf)
+    logger.debug(s"Closing producer ${getLabel()}")
   }
 
+
   override def open(parameters: Configuration): Unit = {
-    kafkaProducer
-    logger.debug(s"Opening producer ${GetLabel()} for ${subjectType.name}")
+    logger.debug(s"Opening producer ${getLabel()} for ${subjectType.name}")
+    //Create zookeeper nodes synchronous
+    Await.ready(subjectNode.create(subjectType), Duration(5, SECONDS))
+    Await.ready(sinkNode.create(QuerySink(sinkUuid)), Duration(5, SECONDS))
+    Await.ready(producerNode.create(Producer(instanceUuid, null, System.currentTimeMillis())),Duration(5, SECONDS))
     Await.ready(producerNode.setState(true), Duration.Inf)
+    logger.debug(s"Producer ${getLabel()} created for topic $topic")
   }
+
+  override def snapshotState(context: FunctionSnapshotContext): Unit = {
+    super.snapshotState(context)
+    //Save the checkpointId on the transaction, so it can be tracked to the right epoch
+    currentTransaction().checkPointId = context.getCheckpointId
+    val producerIndex = context.getCheckpointId % producerPoolSize
+    if(!getUserContext.get().availableProducers(producerIndex)) {
+      throw new Exception(s"Error while obtaining a new producer for ${getLabel()}. Requested producer has not yet performed its commit. Either increase producer pool, reduce checkpoint interval or make checkpoints run faster")
+    }
+    currentTransaction().producer = producerPool(producerIndex.toInt)
+    //Set the producer to be unavailable
+    getUserContext.get().availableProducers(producerIndex) = false
+    logger.debug(s"${getLabel()} started transaction ${context.getCheckpointId} on producer $producerIndex")
+  }
+
+
+  /**
+    * Transform the sink type into the type that is actually sent to kafka
+    * @param value
+    * @return
+    */
+  def transform(value: TSink): (RecordSourceTrail, Row)
+
+  override def invoke(transaction: TransactionState, value: TSink, context: SinkFunction.Context[_]): Unit = {
+    val event = transform(value)
+    val record = new ProducerRecord[RecordSourceTrail, Row](topic,event._1, event._2)
+    //TODO: Obtain offsets from the future
+    val metaF = transaction.producer.send(record)
+  }
+
+  override def commit(transaction: TransactionState): Unit = {
+    transaction.producer.commitTransaction()
+  }
+
+  /**
+    * Perform all pre-commit operations. Commit is not allowed to fail after precommit
+    * @param transaction
+    */
+  override def preCommit(transaction: TransactionState): Unit = {
+    transaction.producer.flush()
+  }
+
+  override def beginTransaction(): TransactionState = new TransactionState()
+
+  override def abort(transaction: TransactionState): Unit = {
+    transaction.producer.abortTransaction()
+    getUserContext.get().availableProducers(transaction.checkPointId % producerPoolSize) = true
+  }
+
+
+
 }
 
