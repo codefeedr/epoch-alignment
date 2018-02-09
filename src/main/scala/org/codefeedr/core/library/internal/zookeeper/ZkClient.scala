@@ -80,7 +80,7 @@ class ZkClient extends LazyLogging {
       new Watcher {
         override def process(event: WatchedEvent): Unit = {
           event.getState match {
-            case KeeperState.SyncConnected => connectPromise.completeWith(Create(""))
+            case KeeperState.SyncConnected => connectPromise.completeWith(create(""))
             case KeeperState.Expired => connect()
             case _ =>
           }
@@ -209,19 +209,19 @@ class ZkClient extends LazyLogging {
     * @return
     */
   def createWithData[T: ClassTag](path: String, data: T, ctx: Option[Any] = None): Future[Unit] =
-    Create(path, GenericSerialiser(data), ctx)
+    create(path, GenericSerialiser(data), ctx)
 
   /**
     * Recursively creates a path of nodes on zookeeper
     * @param path the path to the node to create
     * @return a future that resolves when the node has been created
     */
-  def Create(path: String, data: Array[Byte] = null, ctx: Option[Any] = None): Future[Unit] =
+  def create(path: String, data: Array[Byte] = null, ctx: Option[Any] = None): Future[Unit] =
     async {
       val p = path.lastIndexOf("/")
       if (p > 0) { //Both 0 and -1 should continue
         //Create child nodes if needed
-        await(Create(path.take(p)))
+        await(guaranteeExists(path.take(p)))
       }
       val resultPromise = Promise[Unit]()
       zk.create(
@@ -417,6 +417,24 @@ class ZkClient extends LazyLogging {
     val children = await(GetChildren(p))
     await(Future.sequence(children.map(o => s"$p/$o").map(deleteRecursive)))
     await(Delete(path))
+  }
+
+
+  /**
+    * Guarantees the path exists
+    * If a node does not exists, it recursively guarantees its parant and creates the node
+    * @param path
+    * @return
+    */
+  def guaranteeExists(path: String): Future[Unit] = async {
+    if (!await(exists(path))) {
+      val p = path.lastIndexOf("/")
+      if (p > 0) { //Both 0 and -1 should continue
+        //Create child nodes if needed
+        await(guaranteeExists(path.take(p)))
+      }
+      await(create(path))
+    }
   }
 
   /**

@@ -4,10 +4,12 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.zookeeper.KeeperException.NoNodeException
 import org.codefeedr.core.LibraryServiceSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
+import org.codefeedr.util.futureExtensions.AssertableFuture
 
 import scala.async.Async.{async, await}
 import scala.concurrent.{Await, Future, TimeoutException}
 import scala.concurrent.duration.{Duration, MILLISECONDS, SECONDS}
+
 import scala.reflect.ClassTag
 
 /**
@@ -54,11 +56,11 @@ class ZkStateNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAf
   "ZkStateNode.WatchState(c)" should "return a future that resolves when the given condition evaluates to true" in async {
     val root = new TestRoot()
     val child = new TestStateNode("child", root)
-    child.create()
+    await(child.create())
     val f = child.watchState(a => a == "expected")
-    assertThrows[TimeoutException](Await.ready(f, Duration(100, MILLISECONDS)))
+    f.assertTimeout()
     child.setState("notexpected")
-    assertThrows[TimeoutException](Await.ready(f, Duration(100, MILLISECONDS)))
+    f.assertTimeout()
     child.setState("expected")
     assert(await(f.map(_ => true)))
   }
@@ -69,7 +71,7 @@ class ZkStateNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAf
     val child = new TestStateNode("child", root)
     await(child.create())
     val f = child.watchState(a => a == "expected")
-    assertThrows[TimeoutException](Await.ready(f, Duration(100, MILLISECONDS)))
+    f.assertTimeout()
     await(child.delete())
     assert(await(f.failed.map(_ => true)))
   }

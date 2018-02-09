@@ -25,7 +25,7 @@ abstract class ZkNodeBase(val name: String) {
     * @return a future of the path used
     */
   def create(): Future[String] = async {
-    await(zkClient.Create(path()))
+    await(zkClient.create(path()))
     await(postCreate())
     path()
   }
