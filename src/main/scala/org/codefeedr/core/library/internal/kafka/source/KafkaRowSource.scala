@@ -29,7 +29,7 @@ import org.codefeedr.model.{SubjectType, TrailedRecord}
   */
 class KafkaRowSource(subjectType: SubjectType, override val sourceUuid: String)
     extends KafkaSource[Row](subjectType) {
-  override def map(record: TrailedRecord) = record.row
+  override def mapToT(record: TrailedRecord) = record.row
 
   /**
     * Get typeinformation of the returned type
