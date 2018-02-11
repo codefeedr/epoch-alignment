@@ -419,7 +419,6 @@ class ZkClient extends LazyLogging {
     await(Delete(path))
   }
 
-
   /**
     * Guarantees the path exists
     * If a node does not exists, it recursively guarantees its parant and creates the node

@@ -37,7 +37,6 @@ class GPlugin extends Plugin {
     await(retrieveJob.setupType(subjectLibrary))
     retrieveJob.setSource(eventsJob)
 
-
     eventsJob :: retrieveJob :: Nil
   }
 

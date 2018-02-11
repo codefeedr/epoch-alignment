@@ -36,8 +36,9 @@ class RetrieveCommitsJob extends Job[PushEvent, Commit]("retrieve_commits") {
     * @return the prepared datastream.
     */
   override def getStream(env: StreamExecutionEnvironment): DataStream[Commit] = {
-    val stream = env.addSource(source).
-      flatMap(event => event.payload.commits.map(x => (event.repo.name, SimpleCommit(x.sha))))
+    val stream = env
+      .addSource(source)
+      .flatMap(event => event.payload.commits.map(x => (event.repo.name, SimpleCommit(x.sha))))
 
     //work around for not existing RichAsyncFunction in Scala
     val getCommit = new GetOrAddCommit //get or add commit to mongo

@@ -32,7 +32,6 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
     await(super.postCreate())
   }
 
-
   override def create(data: SubjectType): Future[SubjectType] = async {
     val r = await(super.create(data))
     logger.debug(s"Created subject node with name $name")

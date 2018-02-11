@@ -10,11 +10,9 @@ import org.apache.kafka.clients.producer.ProducerRecord
 import org.codefeedr.core.library.internal.KeyFactory
 import org.codefeedr.model._
 
-
 class RowSink(override val subjectType: SubjectType, override val sinkUuid: String)
-  extends KafkaSink[tuple.Tuple2[lang.Boolean, Row]] {
+    extends KafkaSink[tuple.Tuple2[lang.Boolean, Row]] {
   @transient lazy val keyFactory = new KeyFactory(subjectType, UUID.randomUUID())
-
 
   override def transform(value: tuple.Tuple2[lang.Boolean, Row]): (RecordSourceTrail, Row) = {
     val actionType = if (value.f0) ActionType.Add else ActionType.Remove

@@ -36,14 +36,15 @@ import async.Async.{async, await}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.TypeTag: ClassTag](name: String) {
+abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.TypeTag: ClassTag](
+    name: String) {
 
   lazy val logger: Logger =
     Logger(LoggerFactory.getLogger(getClass.getName))
 
-  var subjectType : SubjectType = _
+  var subjectType: SubjectType = _
 
-  var source : RichSourceFunction[Input] = _
+  var source: RichSourceFunction[Input] = _
 
   /**
     * Returns the amount of parallel workers.
@@ -78,7 +79,7 @@ abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.Type
     source = new KafkaGenericSource[Input](job.subjectType, job.subjectType.uuid)
   }
 
-  def startJob(subjectLibrary : SubjectLibrary) = async {
+  def startJob(subjectLibrary: SubjectLibrary) = async {
     val env = StreamExecutionEnvironment.createLocalEnvironment(getParallelism)
     logger.debug(s"Composing env for ${subjectType.name}")
     await(compose(env, s"$name"))

@@ -149,7 +149,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
         s"Got a checkpoint completed for unknown checkpoint id ${checkpointId}")
     }
     if (offsets.get == null) {
-      logger.warn(s"${getLabel()} ignoring checkpoint $checkpointId because offsets was null")
+      logger.debug(s"${getLabel()} ignoring checkpoint $checkpointId because offsets was null")
     } else {
       dataConsumer.commitAsync(
         offsets.get.map(o => (o._1, new OffsetAndMetadata(o._2))).asJava,
@@ -209,16 +209,15 @@ abstract class KafkaSource[T](subjectType: SubjectType)
 
   /**
     * Perform a poll on the kafka consumer and collect data on the given method
+    * Completely under checkpoint lock because all of this method depends on the dataConsumer, which is not built for multi-threaded access
     */
-  def poll(ctx: SourceFunction.SourceContext[T]): Unit = {
+  def poll(ctx: SourceFunction.SourceContext[T]): Unit = ctx.getCheckpointLock.synchronized {
     logger.debug(s"${getLabel} started polling")
     val data = dataConsumer.poll(pollTimeout).iterator().asScala
     logger.debug(s"${getLabel} completed polling")
-    ctx.getCheckpointLock.synchronized {
-      data.foreach(o => ctx.collect(mapToT(TrailedRecord(o.value()))))
-      currentOffsets = getUncommittedOffset()
-      logger.debug(s"Completed ${getLabel()} poll, ${getReadablePartitions(currentOffsets)}")
-    }
+    data.foreach(o => ctx.collect(mapToT(TrailedRecord(o.value()))))
+    currentOffsets = getUncommittedOffset()
+    logger.debug(s"Completed ${getLabel()} poll, ${getReadablePartitions(currentOffsets)}")
   }
 
   override def run(ctx: SourceFunction.SourceContext[T]): Unit = {

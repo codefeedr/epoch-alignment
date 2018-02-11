@@ -24,6 +24,7 @@ package org.codefeedr.core.library
 import java.util.concurrent.Executors
 
 import com.typesafe.scalalogging.LazyLogging
+import org.apache.flink.streaming.api.CheckpointingMode
 import org.scalatest._
 import org.apache.flink.streaming.api.scala._
 import org.codefeedr.core.{FullIntegrationSpec, KafkaTest}
@@ -172,7 +173,7 @@ class MyOwnSourceQuery(nr: Int, parallelism: Int) extends Runnable with LazyLogg
 
   override def run(): Unit = {
     val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
-    env.enableCheckpointing()
+    env.enableCheckpointing(100,CheckpointingMode.EXACTLY_ONCE)
     val topology = createTopology(env, nr)
     Await.ready(topology, Duration(120, SECONDS))
     topology.value match {

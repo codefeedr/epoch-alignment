@@ -27,19 +27,26 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.typeutils.TypeSerializer
 import org.apache.flink.api.java.tuple
 import org.apache.flink.configuration.Configuration
-import org.apache.flink.runtime.state.FunctionSnapshotContext
-import org.apache.flink.streaming.api.functions.sink.{RichSinkFunction, SinkFunction, TwoPhaseCommitSinkFunction}
+import org.apache.flink.runtime.state.{FunctionInitializationContext, FunctionSnapshotContext}
+import org.apache.flink.streaming.api.functions.sink.{
+  RichSinkFunction,
+  SinkFunction,
+  TwoPhaseCommitSinkFunction
+}
 import org.apache.flink.types.Row
-import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
+import org.apache.kafka.clients.producer.{Callback, KafkaProducer, ProducerRecord, RecordMetadata}
 import org.codefeedr.core.library.internal.KeyFactory
 import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.library.metastore.{ProducerNode, QuerySinkNode, SubjectNode}
 import org.codefeedr.model.zookeeper.{Producer, QuerySink}
 import org.codefeedr.model.{RecordSourceTrail, _}
 
+import scala.collection.mutable
 import scala.concurrent.duration._
-import scala.concurrent.Await
+import scala.concurrent.{Await, Promise, blocking}
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
+import scala.util.{Failure, Success}
 
 /**
   * A simple kafka sink, pushing all records to a kafka topic of the given subjecttype
@@ -48,77 +55,39 @@ import scala.concurrent.duration.Duration
   * Serializable (with lazy initialisation)
   * Created by Niels on 11/07/2017.
   */
- abstract class KafkaSink[TSink]()
-    extends TwoPhaseCommitSinkFunction[TSink, TransactionState, TransactionContext](transactionStateSerializer, transactionContextSerializer)
+abstract class KafkaSink[TSink]()
+    extends TwoPhaseCommitSinkFunction[TSink, TransactionState, TransactionContext](
+      transactionStateSerializer,
+      transactionContextSerializer)
     with LazyLogging
     with Serializable
     with LibraryServices {
 
-
   protected val subjectType: SubjectType
   protected val sinkUuid: String
 
-  @transient protected lazy val subjectNode: SubjectNode = subjectLibrary.getSubject(subjectType.name)
+  @transient protected lazy val subjectNode: SubjectNode =
+    subjectLibrary.getSubject(subjectType.name)
 
   @transient protected lazy val sinkNode: QuerySinkNode = subjectNode.getSinks().getChild(sinkUuid)
 
   /**
     * The ZookeeperNode that represent this instance of the producer
     */
-  @transient protected lazy val producerNode: ProducerNode = sinkNode.getProducers().getChild(instanceUuid)
+  @transient protected lazy val producerNode: ProducerNode =
+    sinkNode.getProducers().getChild(instanceUuid)
 
   @transient protected lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
   //A random identifier for this specific sink
-  @transient protected lazy  val instanceUuid: String = UUID.randomUUID().toString
+  @transient protected lazy val instanceUuid: String = UUID.randomUUID().toString
 
   //Size (amount) of kafkaProducers
-  @transient private lazy val producerPoolSize: Long = ConfigFactory.load.getLong("codefeedr.kafka.custom.producer.count")
+  @transient private lazy val producerPoolSize: Int =
+    ConfigFactory.load.getInt("codefeedr.kafka.custom.producer.count")
 
   //Current set of available kafka producers
   @transient protected lazy val producerPool: List[KafkaProducer[RecordSourceTrail, Row]] =
     (1 to producerPoolSize).map(_ => KafkaProducerFactory.create[RecordSourceTrail, Row]).toList
-
-
-  def getLabel(): String = s"KafkaSink ${subjectType.name}($sinkUuid-$instanceUuid)"
-
-
-  override def initializeUserContext(): Optional[TransactionContext] =
-    Optional.of(TransactionContext((0 until producerPoolSize).map(id => id -> true).toMap))
-
-
-  override def close(): Unit = {
-    if(getUserContext.get().availableProducers.exists(o => o._2)) {
-      throw new Exception(s"Error while closing producer ${getLabel()}. There are still uncommitted transactions")
-    }
-    Await.ready(producerNode.setState(false), Duration.Inf)
-    logger.debug(s"Closing producer ${getLabel()}")
-  }
-
-
-  override def open(parameters: Configuration): Unit = {
-    logger.debug(s"Opening producer ${getLabel()} for ${subjectType.name}")
-    //Create zookeeper nodes synchronous
-    Await.ready(subjectNode.create(subjectType), Duration(5, SECONDS))
-    Await.ready(sinkNode.create(QuerySink(sinkUuid)), Duration(5, SECONDS))
-    Await.ready(producerNode.create(Producer(instanceUuid, null, System.currentTimeMillis())),Duration(5, SECONDS))
-    Await.ready(producerNode.setState(true), Duration.Inf)
-    logger.debug(s"Producer ${getLabel()} created for topic $topic")
-  }
-
-  override def snapshotState(context: FunctionSnapshotContext): Unit = {
-    super.snapshotState(context)
-    //Save the checkpointId on the transaction, so it can be tracked to the right epoch
-    currentTransaction().checkPointId = context.getCheckpointId
-    val producerIndex = context.getCheckpointId % producerPoolSize
-    if(!getUserContext.get().availableProducers(producerIndex)) {
-      throw new Exception(s"Error while obtaining a new producer for ${getLabel()}. Requested producer has not yet performed its commit. Either increase producer pool, reduce checkpoint interval or make checkpoints run faster")
-    }
-    currentTransaction().producer = producerPool(producerIndex.toInt)
-    //Set the producer to be unavailable
-    getUserContext.get().availableProducers(producerIndex) = false
-    logger.debug(s"${getLabel()} started transaction ${context.getCheckpointId} on producer $producerIndex")
-  }
-
 
   /**
     * Transform the sink type into the type that is actually sent to kafka
@@ -127,33 +96,115 @@ import scala.concurrent.duration.Duration
     */
   def transform(value: TSink): (RecordSourceTrail, Row)
 
-  override def invoke(transaction: TransactionState, value: TSink, context: SinkFunction.Context[_]): Unit = {
-    val event = transform(value)
-    val record = new ProducerRecord[RecordSourceTrail, Row](topic,event._1, event._2)
-    //TODO: Obtain offsets from the future
-    val metaF = transaction.producer.send(record)
+  def getLabel(): String = s"KafkaSink ${subjectType.name}($sinkUuid-$instanceUuid)"
+
+  def getFirstFreeProducerIndex() =
+    getUserContext.get().availableProducers.zipWithIndex.filter(_._1._2).values.head
+
+  override def initializeUserContext(): Optional[TransactionContext] =
+    Optional.of(
+      TransactionContext(mutable.Map() ++ (0 until producerPoolSize).map(id => id -> true)))
+
+  override def close(): Unit = {
+    logger.debug(s"Closing producer ${getLabel()}")
+
+    if (getUserContext.get().availableProducers.exists(o => !o._2)) {
+      logger.error(
+        s"Error while closing producer ${getLabel()}. There are still uncommitted transactions")
+      //throw new Exception()
+    }
+    Await.ready(producerNode.setState(false), Duration.Inf)
+
   }
 
+  override def open(parameters: Configuration): Unit = {
+    logger.debug(s"Opening producer ${getLabel()} for ${subjectType.name}")
+    //Create zookeeper nodes synchronous
+    Await.ready(subjectNode.create(subjectType), Duration(5, SECONDS))
+    Await.ready(sinkNode.create(QuerySink(sinkUuid)), Duration(5, SECONDS))
+    Await.ready(producerNode.create(Producer(instanceUuid, null, System.currentTimeMillis())),
+                Duration(5, SECONDS))
+    Await.ready(producerNode.setState(true), Duration.Inf)
+    logger.debug(s"Producer ${getLabel()} created for topic $topic")
+  }
+
+  override def snapshotState(context: FunctionSnapshotContext): Unit = {
+    super.snapshotState(context)
+    logger.debug(s"snapshot State called on ${getLabel()}")
+    //Save the checkpointId on the transaction, so it can be tracked to the right epoch
+    currentTransaction().checkPointId = context.getCheckpointId
+    logger.debug(
+      s"${getLabel()} assigned transaction on producer ${currentTransaction().producerIndex} to checkpoint ${context.getCheckpointId}")
+  }
+
+  override def invoke(transaction: TransactionState,
+                      value: TSink,
+                      context: SinkFunction.Context[_]): Unit = {
+    logger.debug(
+      s"${getLabel()} sending event on transaction ${transaction.checkPointId} producer ${transaction.producerIndex}")
+    val event = transform(value)
+    val record = new ProducerRecord[RecordSourceTrail, Row](topic, event._1, event._2)
+
+    //Wrap the callback into a proper scala future
+    val p = Promise[RecordMetadata]
+    //Notify state an event has been sent
+    transaction.sent()
+    producerPool(transaction.producerIndex).send(
+      record,
+      new Callback {
+        override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
+          if (exception == null) {
+            p.success(metadata)
+          } else {
+            p.failure(exception)
+          }
+        }
+      }
+    )
+
+    //For now just throw any exception. Flink should catch this and restore the worker
+    p.future.onComplete {
+      case Success(rm) => transaction.confirmed(rm)
+      case Failure(e) => throw e
+    }
+  }
+
+  /**
+    * Await result from all pending events, and perform the actual commit
+    * @param transaction
+    */
   override def commit(transaction: TransactionState): Unit = {
-    transaction.producer.commitTransaction()
+    logger.debug(
+      s"${getLabel()} committing transaction ${transaction.checkPointId}.\r\n${transaction.displayOffsets()}")
+    producerPool(transaction.producerIndex).commitTransaction()
+    getUserContext.get().availableProducers(transaction.producerIndex) = true
   }
 
   /**
     * Perform all pre-commit operations. Commit is not allowed to fail after precommit
+    * Blocking operation
     * @param transaction
     */
-  override def preCommit(transaction: TransactionState): Unit = {
-    transaction.producer.flush()
+  override def preCommit(transaction: TransactionState): Unit = blocking {
+    producerPool(transaction.producerIndex).flush()
+    logger.debug(s"${getLabel()} flushed and is awaiting events to commit")
+    Await.ready(transaction.awaitCommit(), Duration(5, SECONDS))
   }
 
-  override def beginTransaction(): TransactionState = new TransactionState()
+  override def beginTransaction(): TransactionState = {
+    val producerIndex = getFirstFreeProducerIndex()
+    getUserContext.get().availableProducers(producerIndex) = false
+    logger.debug(s"${getLabel()} started new transaction on producer ${producerIndex}")
+    new TransactionState(producerIndex)
+  }
 
   override def abort(transaction: TransactionState): Unit = {
-    transaction.producer.abortTransaction()
-    getUserContext.get().availableProducers(transaction.checkPointId % producerPoolSize) = true
+    logger.debug(
+      s"${getLabel()} aborting transaction ${transaction.checkPointId} on producer ${transaction.producerIndex}")
+    producerPool(transaction.producerIndex).abortTransaction()
+    getUserContext
+      .get()
+      .availableProducers((transaction.checkPointId % producerPoolSize).toInt) = true
   }
 
-
-
 }
-

@@ -19,9 +19,10 @@
 
 package org.codefeedr.core.library.internal.kafka.sink
 
+import org.apache.flink.types.Row
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.codefeedr.core.library.SubjectFactory
-import org.codefeedr.model.SubjectType
+import org.codefeedr.model.{RecordSourceTrail, SubjectType}
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
@@ -35,9 +36,8 @@ class KafkaGenericSink[TData: ru.TypeTag: ClassTag](val subjectType: SubjectType
 
   @transient private lazy val Transformer = SubjectFactory.getTransformer[TData](subjectType)
 
-  override def invoke(value: TData): Unit = {
+  override def transform(value: TData): (RecordSourceTrail, Row) = {
     val data = Transformer.apply(value)
-    logger.debug(s"Producer $sinkUuid instance $instanceUuid sending a message to topic $topic")
-    kafkaProducer.send(new ProducerRecord(topic, data.trail, data.row))
+    (data.trail, data.row)
   }
 }

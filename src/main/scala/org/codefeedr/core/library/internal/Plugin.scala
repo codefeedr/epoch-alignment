@@ -31,7 +31,7 @@ abstract class Plugin {
   lazy val subjectLibrary = LibraryServices.subjectLibrary
   lazy val zkClient = LibraryServices.zkClient
 
-  var jobs : List[Job[_,_]] = List()
+  var jobs: List[Job[_, _]] = List()
 
   private def startPlugin() = async {
     Await.ready(subjectLibrary.initialize(), Duration(1, SECONDS))
@@ -43,7 +43,7 @@ abstract class Plugin {
     Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
   }
 
-  def setupJobs : Future[List[Job[_, _]]]
+  def setupJobs: Future[List[Job[_, _]]]
 
   def run() = async {
     await(startPlugin())

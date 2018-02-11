@@ -32,7 +32,7 @@ import org.json4s.DefaultFormats
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-class EventsJob(maxRequests : Int) extends Job[Event, PushEvent]("events_job") {
+class EventsJob(maxRequests: Int) extends Job[Event, PushEvent]("events_job") {
 
   /**
     * Setups a stream for the given environment.
@@ -55,6 +55,5 @@ class EventsJob(maxRequests : Int) extends Job[Event, PushEvent]("events_job") {
 
     new org.apache.flink.streaming.api.scala.DataStream(finalStream)
   }
-
 
 }
