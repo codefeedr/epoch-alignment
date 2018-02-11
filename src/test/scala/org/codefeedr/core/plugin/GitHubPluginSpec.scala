@@ -29,10 +29,10 @@ import org.scalatest.tagobjects.Slow
 
 import async.Async._
 
-class GPluginSpec extends LibraryServiceSpec with Matchers with LazyLogging {
+class GitHubPluginSpec extends LibraryServiceSpec with Matchers with LazyLogging {
 
   "" should "" taggedAs (Slow) in async {
-    val plugin = new GPlugin()
+    val plugin = new GitHubPlugin()
 
     /**
     val client = new GitHubClient()

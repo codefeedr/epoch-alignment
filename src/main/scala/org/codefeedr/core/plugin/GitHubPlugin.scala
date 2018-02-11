@@ -25,7 +25,7 @@ import scala.concurrent._
 import ExecutionContext.Implicits.global
 import async.Async._
 
-class GPlugin extends Plugin {
+class GitHubPlugin extends Plugin {
 
   /**
     * Setup all jobs.
