@@ -20,7 +20,11 @@ package org.codefeedr.core.plugin
 
 import java.util.concurrent.TimeUnit
 
-import org.apache.flink.streaming.api.scala.{AsyncDataStream, DataStream, StreamExecutionEnvironment}
+import org.apache.flink.streaming.api.scala.{
+  AsyncDataStream,
+  DataStream,
+  StreamExecutionEnvironment
+}
 import org.apache.flink.streaming.api.datastream.{AsyncDataStream => JavaAsyncDataStream}
 import org.codefeedr.core.clients.github.GitHubProtocol._
 import org.codefeedr.core.input.GitHubSource
@@ -32,7 +36,7 @@ import org.json4s.DefaultFormats
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-class EventsJob(maxRequests : Int) extends Job[Event, PushEvent]("events_job") {
+class EventsJob(maxRequests: Int) extends Job[Event, PushEvent]("events_job") {
 
   override def getParallelism: Int = 2
 
@@ -57,6 +61,5 @@ class EventsJob(maxRequests : Int) extends Job[Event, PushEvent]("events_job") {
 
     new DataStream(finalStream)
   }
-
 
 }

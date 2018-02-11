@@ -37,17 +37,18 @@ import async.Async.{async, await}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.TypeTag: ClassTag](name: String) {
+abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.TypeTag: ClassTag](
+    name: String) {
 
   //logger
   lazy val logger: Logger =
     Logger(LoggerFactory.getLogger(getClass.getName))
 
   //job subjecttype
-  var subjectType : SubjectType = _
+  var subjectType: SubjectType = _
 
   //custom source of a job
-  var source : RichSourceFunction[Input] = _
+  var source: RichSourceFunction[Input] = _
 
   /**
     * Returns the amount of parallel workers.

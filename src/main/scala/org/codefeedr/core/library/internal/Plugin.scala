@@ -34,7 +34,7 @@ abstract class Plugin {
   lazy val zkClient = LibraryServices.zkClient
 
   //keep track of job list
-  var jobs : List[Job[_,_]] = List()
+  var jobs: List[Job[_, _]] = List()
 
   /**
     * Starts a plugin.
@@ -59,7 +59,7 @@ abstract class Plugin {
     * Setup jobs.
     * @return a list of jobs.
     */
-  def setupJobs : Future[List[Job[_, _]]]
+  def setupJobs: Future[List[Job[_, _]]]
 
   /**
     * Runs a job.
@@ -76,7 +76,6 @@ abstract class Plugin {
     await(subjectLibrary.getSubject(job1.subjectType.name).assertExists())
     //await(job2.startJob(subjectLibrary))
     //await(subjectLibrary.getSubject(job2.subjectType.name).assertExists())
-
 
     await(stopPlugin())
   }

@@ -27,7 +27,9 @@ import org.apache.flink.streaming.api.scala._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-class KafkaGenericSource[T: ru.TypeTag : ClassTag : TypeInformation](subjectType: SubjectType, override val sourceUuid: String) extends KafkaSource[T](subjectType: SubjectType) {
+class KafkaGenericSource[T: ru.TypeTag: ClassTag: TypeInformation](subjectType: SubjectType,
+                                                                   override val sourceUuid: String)
+    extends KafkaSource[T](subjectType: SubjectType) {
   @transient private lazy val Transformer = SubjectFactory.getUnTransformer[T](subjectType)
 
   override def mapToT(record: TrailedRecord): T = Transformer.apply(record)

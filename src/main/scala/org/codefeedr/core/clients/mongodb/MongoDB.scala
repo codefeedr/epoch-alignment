@@ -26,7 +26,14 @@ import org.codefeedr.core.clients.github.GitHubProtocol._
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import org.mongodb.scala.bson.codecs.Macros._
 import org.mongodb.scala.connection.ClusterSettings
-import org.mongodb.scala.{MongoClient, MongoClientSettings, MongoCollection, MongoCredential, MongoDatabase, ServerAddress}
+import org.mongodb.scala.{
+  MongoClient,
+  MongoClientSettings,
+  MongoCollection,
+  MongoCredential,
+  MongoDatabase,
+  ServerAddress
+}
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag

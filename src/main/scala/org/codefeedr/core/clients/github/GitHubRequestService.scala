@@ -24,7 +24,12 @@ import java.io.IOException
 import com.google.gson.{Gson, JsonElement, JsonObject}
 import com.google.gson.reflect.TypeToken
 import org.codefeedr.core.clients.github.GitHubProtocol.{Commit, Event, SimpleCommit}
-import org.eclipse.egit.github.core.client.{GitHubClient, GitHubRequest, GitHubResponse, PageIterator}
+import org.eclipse.egit.github.core.client.{
+  GitHubClient,
+  GitHubRequest,
+  GitHubResponse,
+  PageIterator
+}
 import org.eclipse.egit.github.core.client.PagedRequest.PAGE_FIRST
 import org.eclipse.egit.github.core.client.PagedRequest.PAGE_SIZE
 import org.eclipse.egit.github.core.service.GitHubService
@@ -66,7 +71,7 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
       val request: GitHubRequest = createRequest()
       request.setUri(uri.toString())
       request.setType(new TypeToken[JsonElement]() {}.getType)
-      val response : GitHubResponse = client.get(request)
+      val response: GitHubResponse = client.get(request)
       commit = response.getBody.asInstanceOf[JsonElement]
     } catch {
       case e: IOException => e.printStackTrace()

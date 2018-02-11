@@ -41,7 +41,6 @@ class GitHubPlugin extends Plugin {
     //await(retrieveJob.setupType(subjectLibrary))
     //retrieveJob.setSource(eventsJob)
 
-
     eventsJob :: Nil
   }
 
