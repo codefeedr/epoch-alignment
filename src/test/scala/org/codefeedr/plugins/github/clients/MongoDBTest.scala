@@ -1,6 +1,6 @@
-package org.codefeedr.core.clients.mongodb
+package org.codefeedr.plugins.github.clients
 
-import org.codefeedr.core.clients.github.GitHubProtocol.PushEvent
+import org.codefeedr.plugins.github.clients.GitHubProtocol.PushEvent
 import org.scalatest.tagobjects.Slow
 import org.scalatest.{AsyncFlatSpec, Matchers}
 

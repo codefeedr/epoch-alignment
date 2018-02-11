@@ -17,32 +17,29 @@
  *
  */
 
-package org.codefeedr.core.plugin
+package org.codefeedr.plugins.github
 
 import java.util.concurrent.TimeUnit
 
-import com.google.gson.{Gson, GsonBuilder, JsonObject}
-import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
+import org.apache.flink.api.scala._
 import org.apache.flink.streaming.api.datastream.{AsyncDataStream => JavaAsyncDataStream}
 import org.apache.flink.streaming.api.functions.async.{AsyncFunction => JavaAsyncFunction}
+import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
+import org.codefeedr.core.library.SubjectFactory
+import org.codefeedr.core.library.internal.{AbstractPlugin, SubjectTypeFactory}
+import org.codefeedr.model.SubjectType
+import org.codefeedr.plugins.github.clients.GitHubProtocol
+import org.codefeedr.plugins.github.clients.GitHubProtocol.{Payload, PushEvent}
+import org.codefeedr.plugins.github.input.GitHubSource
+import org.codefeedr.plugins.github.operators.GetOrAddPushEvent
+import org.json4s._
 
-import scala.async.Async.{async, await}
+import scala.async.Async
+import scala.async.Async.await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
-import org.apache.flink.api.scala._
-import org.codefeedr.core.clients.github.GitHubProtocol
-import org.codefeedr.core.clients.github.GitHubProtocol.{Payload, PushEvent}
-import org.codefeedr.core.input.GitHubSource
-import org.codefeedr.core.library.SubjectFactory
-import org.codefeedr.core.library.internal.{AbstractPlugin, SubjectTypeFactory}
-import org.codefeedr.core.operators.GetOrAddPushEvent
-import org.codefeedr.model.SubjectType
-import org.json4s._
-import org.json4s.jackson.JsonMethods._
-
-import scala.async.Async
 
 class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
     extends AbstractPlugin {
