@@ -20,19 +20,13 @@
 package org.codefeedr.core.clients.mongodb
 
 import com.typesafe.config.{Config, ConfigFactory}
+import org.apache.log4j.{Level, Logger}
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.codefeedr.core.clients.github.GitHubProtocol._
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import org.mongodb.scala.bson.codecs.Macros._
 import org.mongodb.scala.connection.ClusterSettings
-import org.mongodb.scala.{
-  MongoClient,
-  MongoClientSettings,
-  MongoCollection,
-  MongoCredential,
-  MongoDatabase,
-  ServerAddress
-}
+import org.mongodb.scala.{MongoClient, MongoClientSettings, MongoCollection, MongoCredential, MongoDatabase, ServerAddress}
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
@@ -45,6 +39,8 @@ class MongoDB {
 
   //get the codefeedr configuration files
   private lazy val conf: Config = ConfigFactory.load()
+  // Enable MongoDB logging in general
+  val mongoLogger = Logger.getLogger("org.mongodb.driver")
 
   //setup credentials from config
   @transient
@@ -110,6 +106,8 @@ class MongoDB {
     * @return the correct collection, based on type.
     */
   def getCollection[T: ClassTag](collectionName: String): MongoCollection[T] = {
+    mongoLogger.setLevel(Level.OFF); // e.g. or Log.WARNING, etc.
     mongoDatabase.getCollection[T](collectionName)
   }
+
 }

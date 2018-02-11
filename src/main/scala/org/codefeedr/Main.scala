@@ -16,34 +16,24 @@
  * limitations under the License.
  *
  */
-package org.codefeedr.core.plugin
+package org.codefeedr
 
-import com.typesafe.scalalogging.LazyLogging
-import org.apache.log4j.{Level, Logger}
-import org.codefeedr.core.LibraryServiceSpec
-import org.codefeedr.core.clients.github.GitHubRequestService
-import org.eclipse.egit.github.core.client.GitHubClient
-import org.scalatest.Matchers
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.tagobjects.Slow
-
+import org.codefeedr.core.plugin.GPlugin
 import async.Async._
+import scala.concurrent._
+import ExecutionContext.Implicits.global
 
-class GPluginSpec extends LibraryServiceSpec with Matchers with LazyLogging {
+object Main {
 
-  "" should "" taggedAs (Slow) in async {
+  def main(args: Array[String]): Unit = {
     val plugin = new GPlugin()
 
-    /**
-    val client = new GitHubClient()
-    val requestService = new GitHubRequestService(client)
+    plugin.run()
 
-    val events = requestService.getEvents()
-    val latestEvent = events.head
-    **/
-    await(plugin.run())
-
-    assert(1 == 1)
+    while (true) {
+      Thread.sleep(100)
+    }
   }
+
 
 }

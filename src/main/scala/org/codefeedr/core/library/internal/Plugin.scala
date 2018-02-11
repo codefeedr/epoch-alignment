@@ -19,6 +19,7 @@
 package org.codefeedr.core.library.internal
 
 import org.codefeedr.core.library.LibraryServices
+import org.codefeedr.core.library.metastore.MetaRootNode
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent._
@@ -28,26 +29,55 @@ import scala.concurrent.duration.{Duration, SECONDS}
 
 abstract class Plugin {
 
+  //setup library and zk client
   lazy val subjectLibrary = LibraryServices.subjectLibrary
   lazy val zkClient = LibraryServices.zkClient
 
+  //keep track of job list
   var jobs : List[Job[_,_]] = List()
 
+  /**
+    * Starts a plugin.
+    */
   private def startPlugin() = async {
-    Await.ready(subjectLibrary.initialize(), Duration(1, SECONDS))
-    Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
+    await(subjectLibrary.initialize())
+    await(new MetaRootNode().deleteRecursive())
+
+    //setups job and set correct type
     jobs = await(setupJobs)
+    jobs.foreach(_.setupType(subjectLibrary))
   }
 
+  /**
+    * Stops a plugin.
+    */
   private def stopPlugin() = async {
-    Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
+    await(new MetaRootNode().deleteRecursive())
   }
 
+  /**
+    * Setup jobs.
+    * @return a list of jobs.
+    */
   def setupJobs : Future[List[Job[_, _]]]
 
+  /**
+    * Runs a job.
+    */
   def run() = async {
     await(startPlugin())
-    await(Future.sequence(jobs.map(_.startJob(subjectLibrary))))
+    //await(Future.sequence(jobs.map(_.startJob(subjectLibrary))))
+
+    //really hacky
+    val job1 = jobs(0)
+    //val job2 = jobs(1)
+
+    await(job1.startJob())
+    await(subjectLibrary.getSubject(job1.subjectType.name).assertExists())
+    //await(job2.startJob(subjectLibrary))
+    //await(subjectLibrary.getSubject(job2.subjectType.name).assertExists())
+
+
     await(stopPlugin())
   }
 }

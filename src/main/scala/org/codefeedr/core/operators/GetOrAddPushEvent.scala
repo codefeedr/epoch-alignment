@@ -59,5 +59,5 @@ class GetOrAddPushEvent extends GetOrAddGeneric[PushEvent, PushEvent] {
     * @param input the input variable A.
     * @return the output variable B.
     */
-  override def getFunction(input: PushEvent): Future[PushEvent] = Future(input)
+  override def getFunction(input: PushEvent): PushEvent = input
 }

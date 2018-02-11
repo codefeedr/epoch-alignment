@@ -145,8 +145,8 @@ object GitHubProtocol {
   case class Commit(sha: String,
                     url: String,
                     commit: CommitData,
-                    author: User,
-                    committer: User,
+                    author: Option[User],
+                    committer: Option[User],
                     parents: List[Parent],
                     stats: Stats,
                     files: List[File])
@@ -217,16 +217,16 @@ object GitHubProtocol {
     * @param contents_url the url of the contents.
     * @param patch the patch information.
     */
-  case class File(sha: String,
-                  filename: String,
-                  status: String,
+  case class File(sha: Option[String],
+                  filename: Option[String],
+                  status: Option[String],
                   additions: Int,
                   deletions: Int,
                   changes: Int,
-                  blob_url: String,
-                  raw_url: String,
-                  contents_url: String,
-                  patch: String)
+                  blob_url: Option[String],
+                  raw_url: Option[String],
+                  contents_url: Option[String],
+                  patch: Option[String])
 
   /**
     * The parents of this commit.

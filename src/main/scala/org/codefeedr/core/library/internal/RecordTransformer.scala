@@ -81,7 +81,7 @@ class RecordTransformer[TData: ru.TypeTag: ClassTag](subjectType: SubjectType) {
     * @return hopefully the constructed type
     */
   def unbag(record: Record): TData = {
-    val args = record.data.map(o => o.asInstanceOf[AnyRef]).toArray
+    val args = record.data.map(o => o.asInstanceOf[AnyRef]).toArray.reverse
     val instance = constructor.newInstance(args: _*).asInstanceOf[TData]
     instance
   }

@@ -62,7 +62,7 @@ class GetOrAddCommit extends GetOrAddGeneric[(String, SimpleCommit), Commit] {
     * @param input the input variable A.
     * @return the output variable B.
     */
-  override def getFunction(input: (String, SimpleCommit)): Future[Commit] = {
-    Future(gitHubRequestService.getCommit(input._1, input._2.sha))
+  override def getFunction(input: (String, SimpleCommit)): Commit = {
+    gitHubRequestService.getCommit(input._1, input._2.sha)
   }
 }

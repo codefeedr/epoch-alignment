@@ -35,8 +35,8 @@ class GetOrAddCommitTest extends MongoGitHubSpec with Eventually {
       Tree("test"),
       1,
       Verification(false, "", None, None)),
-    User(1, "wouter", "test", "test", false),
-    User(1, "wouter", "test", "test", false),
+    Some(User(1, "wouter", "test", "test", false)),
+    Some(User(1, "wouter", "test", "test", false)),
     Nil,
     Stats(2, 1, 1),
     Nil)
@@ -66,7 +66,7 @@ class GetOrAddCommitTest extends MongoGitHubSpec with Eventually {
     when(runtimeContext.getIndexOfThisSubtask).thenReturn(2)
 
     //set runtime context
-    operator.setRuntimeContext(runtimeContext)
+    //operator.setRuntimeContext(runtimeContext)
 
     //open operator
     operator.open(new Configuration())
@@ -94,7 +94,7 @@ class GetOrAddCommitTest extends MongoGitHubSpec with Eventually {
     when(runtimeContext.getIndexOfThisSubtask).thenReturn(2)
 
     //set runtime context
-    operator.setRuntimeContext(runtimeContext)
+    //operator.setRuntimeContext(runtimeContext)
 
     //await the clearing of the collection
     await(clearCollection(collectionName))
@@ -127,7 +127,7 @@ class GetOrAddCommitTest extends MongoGitHubSpec with Eventually {
     when(runtimeContext.getIndexOfThisSubtask).thenReturn(2)
 
     //set runtime context
-    operator.setRuntimeContext(runtimeContext)
+    //operator.setRuntimeContext(runtimeContext)
 
     //await the clearing of the collection
     await(clearCollection(collectionName))

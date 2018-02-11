@@ -29,6 +29,7 @@ val dep_core = Seq(
   "org.mockito" % "mockito-core" % "2.13.0" % "test",
   "org.json4s" % "json4s-scalap_2.11" % "3.6.0-M2",
   "org.json4s" % "json4s-jackson_2.11" % "3.6.0-M2",
+  "org.apache.flink" %% "flink-runtime-web" % "1.4.0",
 
 
   "org.scalactic" %% "scalactic" % "3.0.1",
@@ -59,7 +60,7 @@ lazy val root = (project in file("."))
 
 
 
-mainClass in assembly := Some("org.codefeedr.Job")
+mainClass in assembly := Some("org.codefeedr.Main")
 
 // make run command include the provided dependencies
 run in Compile := Defaults.runTask(fullClasspath in Compile,

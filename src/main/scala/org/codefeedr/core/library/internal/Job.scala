@@ -20,6 +20,7 @@ package org.codefeedr.core.library.internal
 
 import com.typesafe.scalalogging.Logger
 import org.apache.flink.api.common.typeinfo.TypeInformation
+import org.apache.flink.configuration.{ConfigConstants, Configuration}
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.codefeedr.core.library.SubjectFactory
@@ -38,11 +39,14 @@ import scala.reflect.runtime.{universe => ru}
 
 abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.TypeTag: ClassTag](name: String) {
 
+  //logger
   lazy val logger: Logger =
     Logger(LoggerFactory.getLogger(getClass.getName))
 
+  //job subjecttype
   var subjectType : SubjectType = _
 
+  //custom source of a job
   var source : RichSourceFunction[Input] = _
 
   /**
@@ -70,16 +74,29 @@ abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.Type
     stream.addSink(sink)
   }
 
+  /**
+    * Setup the subjecttype.
+    * @param subjectLibrary the subject library.
+    */
   def setupType(subjectLibrary: SubjectLibrary) = async {
     subjectType = await(subjectLibrary.getSubject[Output]().getOrCreateType[Output]())
   }
 
+  /**
+    * Creates a generic source based on a Job.
+    * @param job the job from which the source is composed.
+    */
   def setSource(job: Job[_, Input]) = {
     source = new KafkaGenericSource[Input](job.subjectType, job.subjectType.uuid)
   }
 
-  def startJob(subjectLibrary : SubjectLibrary) = async {
-    val env = StreamExecutionEnvironment.createLocalEnvironment(getParallelism)
+  /**
+    * Starts a job asynchronous.
+    */
+  def startJob() = async {
+    val conf = new Configuration()
+    conf.setBoolean(ConfigConstants.LOCAL_START_WEBSERVER, true)
+    val env = StreamExecutionEnvironment.createLocalEnvironment(getParallelism, conf)
     logger.debug(s"Composing env for ${subjectType.name}")
     await(compose(env, s"$name"))
     logger.debug(s"Starting env for ${subjectType.name}")

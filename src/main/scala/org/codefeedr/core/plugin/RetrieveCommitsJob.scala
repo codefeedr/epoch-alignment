@@ -29,6 +29,8 @@ import org.apache.flink.streaming.api.scala._
 
 class RetrieveCommitsJob extends Job[PushEvent, Commit]("retrieve_commits") {
 
+  override def getParallelism: Int = 50
+
   /**
     * Setups a stream for the given environment.
     *
@@ -41,9 +43,8 @@ class RetrieveCommitsJob extends Job[PushEvent, Commit]("retrieve_commits") {
 
     //work around for not existing RichAsyncFunction in Scala
     val getCommit = new GetOrAddCommit //get or add commit to mongo
-    val finalStream =
-      JavaAsyncDataStream.unorderedWait(stream.javaStream, getCommit, 10, TimeUnit.SECONDS, 50)
+    val finalStream = JavaAsyncDataStream.unorderedWait(stream.javaStream, getCommit, 10, TimeUnit.SECONDS, 10)
 
-    new org.apache.flink.streaming.api.scala.DataStream(finalStream)
+    new DataStream(finalStream)
   }
 }

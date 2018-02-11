@@ -27,18 +27,22 @@ import async.Async._
 
 class GPlugin extends Plugin {
 
+  /**
+    * Setup all jobs.
+    * @return a list of jobs.
+    */
   override def setupJobs: Future[List[Job[_, _]]] = async {
     //setup events job
-    val eventsJob = new EventsJob(1)
+    val eventsJob = new EventsJob(-1)
     await(eventsJob.setupType(subjectLibrary))
 
     //setup commit retrieval job
-    val retrieveJob = new RetrieveCommitsJob()
-    await(retrieveJob.setupType(subjectLibrary))
-    retrieveJob.setSource(eventsJob)
+    //val retrieveJob = new RetrieveCommitsJob()
+    //await(retrieveJob.setupType(subjectLibrary))
+    //retrieveJob.setSource(eventsJob)
 
 
-    eventsJob :: retrieveJob :: Nil
+    eventsJob :: Nil
   }
 
 }

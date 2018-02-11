@@ -22,11 +22,11 @@ package org.codefeedr.core.operators
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.runtime.concurrent.Executors
 import org.apache.flink.streaming.api.functions.async
-import org.apache.flink.streaming.api.functions.async.{ResultFuture, RichAsyncFunction}
 import org.bson.conversions.Bson
 import org.mongodb.scala._
 import org.mongodb.scala.model.Indexes._
 import com.mongodb.client.model.IndexOptions
+import org.apache.flink.streaming.api.functions.async.{ResultFuture, RichAsyncFunction}
 import org.codefeedr.core.clients.mongodb.MongoDB
 import org.mongodb.scala.model.Filters._
 
@@ -78,37 +78,38 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
 
     //keep track if result is already send
     var send = false
-
     col
       .find(constructFilter(getIndexNames.zip(getIndexValues(input)).seq))
       .first()
       .subscribe(new Observer[B] {
 
         override def onError(e: Throwable): Unit = {
-          resultFuture.complete(Iterable().asJavaCollection)
+          e.printStackTrace()
+          resultFuture.completeExceptionally(e)
         }
 
         override def onComplete(): Unit = {
           if (send) { //if already send then ignore
+            //println("Im here now")
             return
           }
 
-          Async.async {
-            //retrieve output
-            val output: B = Async.await(getFunction(input))
+          //retrieve output
+          val output: B = getFunction(input)
 
-            //insert and complete future
-            col.insertOne(output).toFuture()
-            resultFuture.complete(Iterable(output).asJavaCollection)
-          }
+          //insert and complete future
+          resultFuture.complete(Iterable(output).asJavaCollection)
+          col.insertOne(output).toFuture()
         }
 
         override def onNext(result: B): Unit = {
+          //println(s"Data already found $result")
           //found the record, so lets end the future
           send = true
           resultFuture.complete(Iterable(result).asJavaCollection)
         }
       })
+    //resultFuture.complete(Iterable(getFunction(input)).asJavaCollection)
   }
 
   /**
@@ -145,5 +146,5 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
     * @param input the input variable A.
     * @return the output variable B.
     */
-  def getFunction(input: A): Future[B]
+  def getFunction(input: A): B
 }

@@ -96,6 +96,8 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
         log.info(s"Going to send $eventsPolled events")
         return
       }
+
+      Thread.sleep(2500) //wait 2.5 second
     }
   }
 }

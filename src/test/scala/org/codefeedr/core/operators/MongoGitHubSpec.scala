@@ -27,8 +27,8 @@ class MongoGitHubSpec extends LibraryServiceSpec with Matchers with MockitoSugar
         Tree("test"),
         1,
         Verification(false, "", None, None)),
-      User(1, "wouter", "test", "test", false),
-      User(1, "wouter", "test", "test", false),
+      Some(User(1, "wouter", "test", "test", false)),
+      Some(User(1, "wouter", "test", "test", false)),
       Nil,
       Stats(2, 1, 1),
       Nil)

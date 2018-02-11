@@ -20,19 +20,21 @@ package org.codefeedr.core.plugin
 
 import java.util.concurrent.TimeUnit
 
-import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
+import org.apache.flink.streaming.api.scala.{AsyncDataStream, DataStream, StreamExecutionEnvironment}
 import org.apache.flink.streaming.api.datastream.{AsyncDataStream => JavaAsyncDataStream}
-import org.codefeedr.core.clients.github.GitHubProtocol.{Event, Payload, PushEvent}
+import org.codefeedr.core.clients.github.GitHubProtocol._
 import org.codefeedr.core.input.GitHubSource
 import org.codefeedr.core.library.internal.{Job, Plugin}
 import org.apache.flink.api.scala._
-import org.codefeedr.core.operators.GetOrAddPushEvent
+import org.codefeedr.core.operators.{GetOrAddCommit, GetOrAddPushEvent}
 import org.json4s.DefaultFormats
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
 class EventsJob(maxRequests : Int) extends Job[Event, PushEvent]("events_job") {
+
+  override def getParallelism: Int = 2
 
   /**
     * Setups a stream for the given environment.
@@ -49,11 +51,11 @@ class EventsJob(maxRequests : Int) extends Job[Event, PushEvent]("events_job") {
       }
 
     //work around for not existing RichAsyncFunction in Scala
-    val asyncFunction = new GetOrAddPushEvent
+    val getPush = new GetOrAddPushEvent //get or add push event to mongo
     val finalStream =
-      JavaAsyncDataStream.unorderedWait(stream.javaStream, asyncFunction, 10, TimeUnit.SECONDS, 50)
+      JavaAsyncDataStream.unorderedWait(stream.javaStream, getPush, 10, TimeUnit.SECONDS, 50)
 
-    new org.apache.flink.streaming.api.scala.DataStream(finalStream)
+    new DataStream(finalStream)
   }
 
 
