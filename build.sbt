@@ -18,9 +18,10 @@ parallelExecution in Test := false
 
 val flinkVersion = "1.4.0"
 val dep_flink = Seq(
-  "org.apache.flink" %% "flink-scala" % flinkVersion % "provided",
-  "org.apache.flink" %% "flink-streaming-scala" % flinkVersion % "provided",
-  "org.apache.flink" %% "flink-table" % flinkVersion % "provided"
+  "org.apache.flink" %% "flink-scala" % flinkVersion,
+  "org.apache.flink" %% "flink-streaming-scala" % flinkVersion,
+  "org.apache.flink" %% "flink-table" % flinkVersion,
+  "org.apache.flink" %% "flink-runtime-web" % flinkVersion,
 )
 
 val dep_core = Seq(
@@ -29,8 +30,6 @@ val dep_core = Seq(
   "org.mockito" % "mockito-core" % "2.13.0" % "test",
   "org.json4s" % "json4s-scalap_2.11" % "3.6.0-M2",
   "org.json4s" % "json4s-jackson_2.11" % "3.6.0-M2",
-  "org.apache.flink" %% "flink-runtime-web" % "1.4.0",
-
 
   "org.scalactic" %% "scalactic" % "3.0.1",
   "org.scalatest" %% "scalatest" % "3.0.1" % "test",
@@ -38,7 +37,7 @@ val dep_core = Seq(
   "ch.qos.logback" % "logback-classic" % "1.1.7",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
 
-  "org.eclipse.mylyn.github" % "org.eclipse.egit.github.core" % "2.1.5" % "provided",
+  "org.eclipse.mylyn.github" % "org.eclipse.egit.github.core" % "2.1.5",
   "com.typesafe" % "config" % "1.3.1",
   "org.mongodb.scala" %% "mongo-scala-driver" % "2.1.0",
 

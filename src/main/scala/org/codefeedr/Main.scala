@@ -19,20 +19,19 @@
 package org.codefeedr
 
 import org.codefeedr.core.plugin.GitHubPlugin
+
 import async.Async._
 import scala.concurrent._
 import ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 
 object Main {
 
   def main(args: Array[String]): Unit = {
     val plugin = new GitHubPlugin()
 
-    plugin.run()
+    Await.result(plugin.run(), Duration.Inf)
 
-    while (true) {
-      Thread.sleep(100)
-    }
   }
 
 }
