@@ -16,20 +16,19 @@
  * limitations under the License.
  *
  */
-package org.codefeedr.core.plugin
+package org.codefeedr.plugins.github.jobs
 
 import java.util.concurrent.TimeUnit
 
-import org.apache.flink.streaming.api.scala.{AsyncDataStream, DataStream, StreamExecutionEnvironment}
-import org.apache.flink.streaming.api.datastream.{AsyncDataStream => JavaAsyncDataStream}
-import org.codefeedr.core.library.internal.{Job, Plugin}
 import org.apache.flink.api.scala._
+import org.apache.flink.streaming.api.datastream.{AsyncDataStream => JavaAsyncDataStream}
+import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
+import org.codefeedr.core.library.internal.Job
 import org.codefeedr.plugins.github.clients.GitHubProtocol.{Event, Payload, PushEvent}
 import org.codefeedr.plugins.github.input.GitHubSource
 import org.codefeedr.plugins.github.operators.GetOrAddPushEvent
 import org.json4s.DefaultFormats
 
-import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
 class EventsJob(maxRequests: Int) extends Job[Event, PushEvent]("events_job") {

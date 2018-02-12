@@ -16,14 +16,13 @@
  * limitations under the License.
  *
  */
-package org.codefeedr.core.plugin
+package org.codefeedr.plugins.github.jobs
 
 import java.util.concurrent.TimeUnit
 
-import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.apache.flink.streaming.api.datastream.{AsyncDataStream => JavaAsyncDataStream}
-import org.codefeedr.core.library.internal.{Job, Plugin}
-import org.apache.flink.streaming.api.scala._
+import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment, _}
+import org.codefeedr.core.library.internal.Job
 import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, PushEvent, SimpleCommit}
 import org.codefeedr.plugins.github.operators.GetOrAddCommit
 

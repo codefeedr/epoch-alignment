@@ -19,6 +19,7 @@
 package org.codefeedr.core.plugin
 
 import org.codefeedr.core.library.internal.{Job, Plugin}
+import org.codefeedr.plugins.github.jobs.EventsJob
 
 import scala.concurrent.Future
 import scala.concurrent._
