@@ -45,7 +45,8 @@ val dep_core = Seq(
   "com.jsuereth" %% "scala-arm" % "2.0",
   "org.scala-lang.modules" % "scala-java8-compat_2.11" % "0.8.0",
   "org.scala-lang.modules" %% "scala-async" % "0.9.7",
-  "io.reactivex" %% "rxscala" % "0.26.5"
+  "io.reactivex" %% "rxscala" % "0.26.5",
+  "com.sksamuel.avro4s" % "avro4s-core_2.11" % "1.8.1"
 )
 
 
