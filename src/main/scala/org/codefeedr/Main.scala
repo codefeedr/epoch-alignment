@@ -19,13 +19,7 @@
 package org.codefeedr
 
 import com.sksamuel.avro4s.AvroSchema
-import org.codefeedr.core.clients.github.GitHubProtocol.Commit
-
-import async.Async._
-import scala.concurrent._
-import ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
-import scala.io.Source
+import org.codefeedr.plugins.github.clients.GitHubProtocol.Commit
 
 object Main {
 

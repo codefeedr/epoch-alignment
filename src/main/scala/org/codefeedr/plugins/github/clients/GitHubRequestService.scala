@@ -17,30 +17,26 @@
  *
  */
 
-package org.codefeedr.core.clients.github
+package org.codefeedr.plugins.github.clients
 
 import java.io.IOException
 
-import com.google.gson.{Gson, JsonElement, JsonObject}
 import com.google.gson.reflect.TypeToken
-import org.codefeedr.core.clients.github.GitHubProtocol.{Commit, Event, SimpleCommit}
-import org.eclipse.egit.github.core.client.{
-  GitHubClient,
-  GitHubRequest,
-  GitHubResponse,
-  PageIterator
-}
-import org.eclipse.egit.github.core.client.PagedRequest.PAGE_FIRST
-import org.eclipse.egit.github.core.client.PagedRequest.PAGE_SIZE
+import com.google.gson.{Gson, JsonElement}
+import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, Event, SimpleCommit}
+import org.eclipse.egit.github.core.client.{GitHubClient, GitHubRequest, GitHubResponse, PageIterator}
 import org.eclipse.egit.github.core.service.GitHubService
+import org.json4s.DefaultFormats
+import org.eclipse.egit.github.core.client.PagedRequest.{PAGE_FIRST, PAGE_SIZE}
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 
 /**
   * Requests commit and events into correct case classes.
   * This service is hooked on the GitHubService (dependency).
+  *
   * @param client GitHubClient
   */
 //TODO ADD EXCEPTIONS!

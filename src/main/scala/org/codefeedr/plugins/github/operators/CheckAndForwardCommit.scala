@@ -16,12 +16,13 @@
  * limitations under the License.
  *
  */
-package org.codefeedr.core.operators
+package org.codefeedr.plugins.github.operators
 
 import com.mongodb.client.model.TextSearchOptions
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.async.{ResultFuture, RichAsyncFunction}
+
 import scala.async.Async.{async, await}
 import org.mongodb.scala.model.Sorts._
 import org.mongodb.scala._
@@ -30,9 +31,8 @@ import com.mongodb.client.model.IndexOptions
 import org.apache.flink.runtime.concurrent.Executors
 import org.mongodb.scala.model.Filters.regex
 import org.bson.conversions.Bson
-import org.codefeedr.core.clients.github.{GitHubAPI, GitHubRequestService}
-import org.codefeedr.core.clients.github.GitHubProtocol.{Commit, PushEvent, SimpleCommit}
-import org.codefeedr.core.clients.mongodb.MongoDB
+import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, PushEvent, SimpleCommit}
+import org.codefeedr.plugins.github.clients.{GitHubAPI, GitHubRequestService, MongoDB}
 import org.mongodb.scala.model.Indexes
 
 import scala.concurrent.{ExecutionContext, Future}

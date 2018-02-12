@@ -20,17 +20,13 @@ package org.codefeedr.core.plugin
 
 import java.util.concurrent.TimeUnit
 
-import org.apache.flink.streaming.api.scala.{
-  AsyncDataStream,
-  DataStream,
-  StreamExecutionEnvironment
-}
+import org.apache.flink.streaming.api.scala.{AsyncDataStream, DataStream, StreamExecutionEnvironment}
 import org.apache.flink.streaming.api.datastream.{AsyncDataStream => JavaAsyncDataStream}
-import org.codefeedr.core.clients.github.GitHubProtocol._
-import org.codefeedr.core.input.GitHubSource
 import org.codefeedr.core.library.internal.{Job, Plugin}
 import org.apache.flink.api.scala._
-import org.codefeedr.core.operators.{GetOrAddCommit, GetOrAddPushEvent}
+import org.codefeedr.plugins.github.clients.GitHubProtocol.{Event, Payload, PushEvent}
+import org.codefeedr.plugins.github.input.GitHubSource
+import org.codefeedr.plugins.github.operators.GetOrAddPushEvent
 import org.json4s.DefaultFormats
 
 import scala.reflect.ClassTag

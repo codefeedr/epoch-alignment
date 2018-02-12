@@ -1,15 +1,15 @@
-package org.codefeedr.core.operators
+package org.codefeedr.plugins.github.operators
 
 import java.util.Date
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.async.ResultFuture
-import org.codefeedr.core.clients.github.GitHubProtocol._
-import org.codefeedr.core.clients.mongodb.MongoDB
+import org.codefeedr.plugins.github.clients.GitHubProtocol._
 import org.codefeedr.core.LibraryServiceSpec
 import org.mongodb.scala.Completed
 import org.bson.conversions.Bson
+import org.codefeedr.plugins.github.clients.MongoDB
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.tagobjects.Slow
 import org.scalatest.{AsyncFlatSpec, FlatSpec, Matchers}

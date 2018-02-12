@@ -17,7 +17,7 @@
  *
  */
 
-package org.codefeedr.core.operators
+package org.codefeedr.plugins.github.operators
 
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.runtime.concurrent.Executors
@@ -27,7 +27,7 @@ import org.mongodb.scala._
 import org.mongodb.scala.model.Indexes._
 import com.mongodb.client.model.IndexOptions
 import org.apache.flink.streaming.api.functions.async.{ResultFuture, RichAsyncFunction}
-import org.codefeedr.core.clients.mongodb.MongoDB
+import org.codefeedr.plugins.github.clients.MongoDB
 import org.mongodb.scala.model.Filters._
 
 import scala.concurrent.{ExecutionContext, Future}

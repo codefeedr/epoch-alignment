@@ -24,7 +24,6 @@ import scala.concurrent.Future
 import scala.concurrent._
 import ExecutionContext.Implicits.global
 import async.Async._
-
 class GitHubPlugin extends Plugin {
 
   /**

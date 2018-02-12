@@ -21,7 +21,6 @@ package org.codefeedr.core.plugin
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.log4j.{Level, Logger}
 import org.codefeedr.core.LibraryServiceSpec
-import org.codefeedr.core.clients.github.GitHubRequestService
 import org.eclipse.egit.github.core.client.GitHubClient
 import org.scalatest.Matchers
 import org.scalatest.mockito.MockitoSugar
