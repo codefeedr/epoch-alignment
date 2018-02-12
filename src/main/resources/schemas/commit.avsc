@@ -1,0 +1,172 @@
+{
+  "type" : "record",
+  "name" : "Commit",
+  "namespace" : "org.codefeedr.plugins.github.clients",
+  "fields" : [ {
+    "name" : "sha",
+    "type" : "string"
+  }, {
+    "name" : "url",
+    "type" : "string"
+  }, {
+    "name" : "commit",
+    "type" : {
+      "type" : "record",
+      "name" : "CommitData",
+      "fields" : [ {
+        "name" : "author",
+        "type" : {
+          "type" : "record",
+          "name" : "CommitUser",
+          "fields" : [ {
+            "name" : "name",
+            "type" : "string"
+          }, {
+            "name" : "email",
+            "type" : "string"
+          }, {
+            "name" : "date",
+            "type" : {
+              "type" : "record",
+              "name" : "Date",
+              "namespace" : "java.util",
+              "fields" : [ ]
+            }
+          } ]
+        }
+      }, {
+        "name" : "committer",
+        "type" : "CommitUser"
+      }, {
+        "name" : "message",
+        "type" : "string"
+      }, {
+        "name" : "tree",
+        "type" : {
+          "type" : "record",
+          "name" : "Tree",
+          "fields" : [ {
+            "name" : "sha",
+            "type" : "string"
+          } ]
+        }
+      }, {
+        "name" : "comment_count",
+        "type" : "int"
+      }, {
+        "name" : "verification",
+        "type" : {
+          "type" : "record",
+          "name" : "Verification",
+          "fields" : [ {
+            "name" : "verified",
+            "type" : "boolean"
+          }, {
+            "name" : "reason",
+            "type" : "string"
+          }, {
+            "name" : "signature",
+            "type" : [ "null", "string" ]
+          }, {
+            "name" : "payload",
+            "type" : [ "null", "string" ]
+          } ]
+        }
+      } ]
+    }
+  }, {
+    "name" : "author",
+    "type" : [ "null", {
+      "type" : "record",
+      "name" : "User",
+      "fields" : [ {
+        "name" : "id",
+        "type" : "long"
+      }, {
+        "name" : "login",
+        "type" : "string"
+      }, {
+        "name" : "avatar_url",
+        "type" : "string"
+      }, {
+        "name" : "type",
+        "type" : "string"
+      }, {
+        "name" : "site_admin",
+        "type" : "boolean"
+      } ]
+    } ]
+  }, {
+    "name" : "committer",
+    "type" : [ "null", "User" ]
+  }, {
+    "name" : "parents",
+    "type" : {
+      "type" : "array",
+      "items" : {
+        "type" : "record",
+        "name" : "Parent",
+        "fields" : [ {
+          "name" : "sha",
+          "type" : "string"
+        } ]
+      }
+    }
+  }, {
+    "name" : "stats",
+    "type" : {
+      "type" : "record",
+      "name" : "Stats",
+      "fields" : [ {
+        "name" : "total",
+        "type" : "int"
+      }, {
+        "name" : "additions",
+        "type" : "int"
+      }, {
+        "name" : "deletions",
+        "type" : "int"
+      } ]
+    }
+  }, {
+    "name" : "files",
+    "type" : {
+      "type" : "array",
+      "items" : {
+        "type" : "record",
+        "name" : "File",
+        "fields" : [ {
+          "name" : "sha",
+          "type" : [ "null", "string" ]
+        }, {
+          "name" : "filename",
+          "type" : [ "null", "string" ]
+        }, {
+          "name" : "status",
+          "type" : [ "null", "string" ]
+        }, {
+          "name" : "additions",
+          "type" : "int"
+        }, {
+          "name" : "deletions",
+          "type" : "int"
+        }, {
+          "name" : "changes",
+          "type" : "int"
+        }, {
+          "name" : "blob_url",
+          "type" : [ "null", "string" ]
+        }, {
+          "name" : "raw_url",
+          "type" : [ "null", "string" ]
+        }, {
+          "name" : "contents_url",
+          "type" : [ "null", "string" ]
+        }, {
+          "name" : "patch",
+          "type" : [ "null", "string" ]
+        } ]
+      }
+    }
+  } ]
+}
