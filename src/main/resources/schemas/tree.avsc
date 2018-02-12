@@ -1,0 +1,12 @@
+{
+  "type":"record",
+  "namespace":"com.github",
+  "name":"Tree",
+  "fields": [
+    {
+      "name":"sha",
+      "type" : ["string", "null"],
+      "default": ""
+    }
+  ]
+}

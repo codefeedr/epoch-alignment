@@ -1,0 +1,36 @@
+{
+  "type":"record",
+  "namespace":"com.github",
+  "name":"CommitData",
+  "fields": [
+    {
+      "name": "author",
+      "type" : [com.github.CommitUser, "null"],
+      "default" : null
+    },
+    {
+      "name": "committer",
+      "type" : [com.github.CommitUser, "null"],
+      "default" : null
+    },
+    {
+      "name": "message",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "tree",
+      "type": [comt.github.Tree, "null"],
+      "default": null
+    },
+    {
+      "name": "comment_count",
+      "type": "int"
+    },
+    {
+      "name": "verification",
+      "type": [com.github.Verification, "null"],
+      "default": null
+    }
+  ]
+}

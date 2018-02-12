@@ -1,0 +1,22 @@
+{
+  "type":"record",
+  "namespace":"com.github",
+  "name":"CommitUser",
+  "fields": [
+    {
+      "name":"name",
+      "type" : ["string", "null"],
+      "default": ""
+    },
+    {
+      "name":"email",
+      "type" : ["string", "null"],
+      "default": ""
+    },
+    {
+      "name":"date",
+      "type" : ["date", "null"],
+      "default": null
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "type":"record",
+  "namespace":"com.github",
+  "name":"Stats",
+  "fields": [
+    {
+      "name":"total",
+      "type" : ["int", "null"],
+      "default": null
+    },
+    {
+      "name":"additions",
+      "type" : ["int", "null"],
+      "default": null
+    },
+    {
+      "name":"deletions",
+      "type" : ["int", "null"],
+      "default": null
+    }
+  ]
+}

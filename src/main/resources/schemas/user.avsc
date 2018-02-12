@@ -1,0 +1,31 @@
+{
+  "type":"record",
+  "namespace":"com.github",
+  "name":"User",
+  "fields": [
+    {
+      "name":"id",
+      "type" : ["long", "null"]
+    },
+    {
+      "name":"login",
+      "type" : ["string", "null"],
+      "default": ""
+    },
+    {
+      "name":"avatar_url",
+      "type" : ["string", "null"],
+      "default": ""
+    },
+    {
+      "name":"type",
+      "type" : ["string", "null"],
+      "default": ""
+    },
+    {
+      "name":"site_admin",
+      "type" : ["boolean", "null"],
+      "default": null
+    }
+  ]
+}
