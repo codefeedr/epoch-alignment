@@ -46,7 +46,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future, Promise}
+import scala.concurrent.{Await, Future, Promise, blocking}
 import scala.util.Try
 
 /**
@@ -107,6 +107,9 @@ abstract class KafkaSource[T](subjectType: SubjectType)
   @transient
   @volatile private var started = false
 
+  //Boolean indicating that all data is currently committed
+  @transient @volatile private var comitted = true
+
   //State of the source
   @transient private var currentOffsets: Map[TopicPartition, Long] = _
 
@@ -140,6 +143,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
 
   override def snapshotState(context: FunctionSnapshotContext): Unit = {
     shouldCommit += context.getCheckpointId -> currentOffsets
+    comitted = true
   }
 
   override def notifyCheckpointComplete(checkpointId: Long): Unit = {
@@ -163,27 +167,43 @@ abstract class KafkaSource[T](subjectType: SubjectType)
         }
       )
     }
+
+    //If the source is no longer running, perform the cleanup
+    if(!running) {
+      finalizeRun()
+    }
   }
 
+
+  /**
+    * Performs all operations needed to start up the consumer
+    * Blocks on the creation of zookeeper state
+    */
   private[kafka] def initRun(): Unit = {
     //Create self on zookeeper
     val initialConsumer = Consumer(instanceUuid, null, System.currentTimeMillis())
 
-    //Update zookeeper state blocking, because the source cannot start until the proper zookeeper state has been configured
-    Await.ready(sourceNode.create(QuerySource(sourceUuid)), Duration(5, SECONDS))
-    Await.ready(consumerNode.create(initialConsumer), Duration(5, SECONDS))
-
+    blocking {
+      //Update zookeeper state blocking, because the source cannot start until the proper zookeeper state has been configured
+      Await.ready(sourceNode.create(QuerySource(sourceUuid)), Duration(5, SECONDS))
+      Await.ready(consumerNode.create(initialConsumer), Duration(5, SECONDS))
+    }
     started = true
 
     //Call cancel when the subject has closed
     subjectNode.awaitClose().map(_ => cancel())
   }
 
+  /**
+    * Finalizes the run
+    * Called form the notifyCheckpointComplete, because the cleanup cannot occur until the last checkpoint has been completed
+    */
   private[kafka] def finalizeRun(): Unit = {
     //Finally unsubscribe from the library
-    logger.debug(s"Unsubscribing ${getLabel}on subject $topic.")
-
-    Await.ready(consumerNode.setState(false), Duration(5, SECONDS))
+    logger.debug(s"${getLabel()} performing finalization step")
+    blocking {
+      Await.ready(consumerNode.setState(false), Duration(5, SECONDS))
+    }
     dataConsumer.close()
     //Notify of the closing, to whoever is interested
     closePromise.success()
@@ -209,16 +229,19 @@ abstract class KafkaSource[T](subjectType: SubjectType)
 
   /**
     * Perform a poll on the kafka consumer and collect data on the given method
-    * Completely under checkpoint lock because all of this method depends on the dataConsumer, which is not built for multi-threaded access
+    * Should be  under checkpoint lock because all of this method depends on the dataConsumer, which is not built for multi-threaded access
     */
-  def poll(ctx: SourceFunction.SourceContext[T]): Unit = ctx.getCheckpointLock.synchronized {
-    logger.debug(s"${getLabel} started polling")
-    val data = dataConsumer.poll(pollTimeout).iterator().asScala
-    logger.debug(s"${getLabel} completed polling")
-    data.foreach(o => ctx.collect(mapToT(TrailedRecord(o.value()))))
-    currentOffsets = getUncommittedOffset()
-    logger.debug(s"Completed ${getLabel()} poll, ${getReadablePartitions(currentOffsets)}")
+  def poll(ctx: SourceFunction.SourceContext[T]): Unit = {
+    ctx.getCheckpointLock.synchronized {
+      logger.debug(s"${getLabel} started polling")
+      val data = dataConsumer.poll(pollTimeout).iterator().asScala
+      logger.debug(s"${getLabel} completed polling")
+      data.foreach(o => ctx.collect(mapToT(TrailedRecord(o.value()))))
+      currentOffsets = getUncommittedOffset()
+      logger.debug(s"Completed ${getLabel()} poll, ${getReadablePartitions(currentOffsets)}")
+    }
   }
+
 
   override def run(ctx: SourceFunction.SourceContext[T]): Unit = {
     started = true
@@ -230,13 +253,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     while (running) {
       poll(ctx)
     }
-
-    //TODO: This should be done by closing after offsets have been reached, instead of immediately after zookeeper trigger
-    Thread.sleep(1000)
-    poll(ctx)
-
     logger.debug(s"Source ${getLabel()} stopped running.")
-    finalizeRun()
   }
 
   /**
