@@ -1,6 +1,7 @@
 package org.codefeedr.core.library.internal.zookeeper
 
 import com.typesafe.scalalogging.LazyLogging
+import jdk.nashorn.internal.runtime.regexp.joni.ast.StateNode
 import rx.lang.scala.Observable
 
 import scala.concurrent.Future
@@ -42,5 +43,9 @@ class ZkCollectionNode[TNode <: ZkNodeBase](name: String,
     * @return
     */
   def observeNewChildren(): Observable[TNode] =
-    zkClient.observeNewChildren(path()).map(o => childConstructor(o, this))
+    //Hack: We should place waiting logic based on type of node elsewhere...
+    zkClient.observeNewChildren(path()).map(o => childConstructor(o, this)).flatMap(o => o match {
+      case s: ZkStateNode[_,_] => Observable.from(s.awaitChild(s.getStateNode().name)).map(o => s.asInstanceOf[TNode])
+      case a => Observable.from(Future.successful(a))
+    })
 }
