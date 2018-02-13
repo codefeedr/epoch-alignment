@@ -109,6 +109,9 @@ abstract class KafkaSource[T](subjectType: SubjectType)
   @transient
   @volatile private var started = false
 
+  @transient
+  @volatile private var loopEnded = false
+
   //State of the source
   @transient private var currentOffsets: Map[TopicPartition, Long] = _
   @transient
@@ -207,17 +210,22 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     if (offsets == null) {
       logger.debug(s"${getLabel()} ignoring checkpoint $checkpointId because offsets was null")
     } else {
-      dataConsumer.commitAsync(
-        offsets.map(o => (o._1, new OffsetAndMetadata(o._2))).asJava,
-        new OffsetCommitCallback {
-          override def onComplete(offsets: util.Map[TopicPartition, OffsetAndMetadata],
-                                  exception: Exception): Unit = {
-            val parsedOffset = offsets.asScala.map(o => (o._1, o._2.offset()))
-            logger.debug(
-              s"Offsetts ${getReadablePartitions(parsedOffset.toMap)} successfully committed to kafka")
+      if (loopEnded) {
+        logger.warn(
+          s"Cannot commit offsets for epoch $checkpointId on ${getLabel()}. Consumer already closed")
+      } else {
+        dataConsumer.commitAsync(
+          offsets.map(o => (o._1, new OffsetAndMetadata(o._2))).asJava,
+          new OffsetCommitCallback {
+            override def onComplete(offsets: util.Map[TopicPartition, OffsetAndMetadata],
+                                    exception: Exception): Unit = {
+              val parsedOffset = offsets.asScala.map(o => (o._1, o._2.offset()))
+              logger.debug(
+                s"Offsetts ${getReadablePartitions(parsedOffset.toMap)} successfully committed to kafka")
+            }
           }
-        }
-      )
+        )
+      }
     }
   }
 
@@ -310,6 +318,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     //Perform cleanup under checkpoint lock
     ctx.getCheckpointLock.synchronized {
       finalizeRun()
+      loopEnded = true
       logger.debug(s"Source ${getLabel()} stopped running.")
     }
 

@@ -110,12 +110,17 @@ abstract class KafkaSink[TSink]()
   override def close(): Unit = {
 
     logger.debug(s"Closing producer ${getLabel()}")
-    logger.debug(s"Committing current transaction")
+
     //HACK: Comitting current transaction should not happen here!!!
     //This is a must to support the current sources, this should be removed ASAP
     if (currentTransaction() != null) {
+      //HACK: Need to ensure all producers are created before the first is closed
+      //Probably automatically fixed when we no longer auto-commit upon closing
+      blocking {
+        Thread.sleep(200)
+      }
+      logger.debug(s"Committing current transaction")
       commit(currentTransaction())
-
     }
     //HACK: When ran from unit test this context is null
     //Somehow need to mock this away
