@@ -87,7 +87,9 @@ abstract class KafkaSink[TSink]()
 
   //Current set of available kafka producers
   @transient protected lazy val producerPool: List[KafkaProducer[RecordSourceTrail, Row]] =
-    (1 to producerPoolSize).map(_ => KafkaProducerFactory.create[RecordSourceTrail, Row]).toList
+    (1 to producerPoolSize)
+      .map(i => KafkaProducerFactory.create[RecordSourceTrail, Row](s"$instanceUuid->$i"))
+      .toList
 
   /**
     * Transform the sink type into the type that is actually sent to kafka
@@ -106,15 +108,18 @@ abstract class KafkaSink[TSink]()
       TransactionContext(mutable.Map() ++ (0 until producerPoolSize).map(id => id -> true)))
 
   override def close(): Unit = {
-    logger.debug(s"Closing producer ${getLabel()}")
 
+    logger.debug(s"Closing producer ${getLabel()}")
+    logger.debug(s"Committing current transaction")
+    //HACK: Comitting current transaction should not happen here!!!
+    //This is a must to support the current sources, this should be removed ASAP
+    commit(currentTransaction())
     if (getUserContext.get().availableProducers.exists(o => !o._2)) {
       logger.error(
         s"Error while closing producer ${getLabel()}. There are still uncommitted transactions")
       //throw new Exception()
     }
     Await.ready(producerNode.setState(false), Duration.Inf)
-
   }
 
   override def open(parameters: Configuration): Unit = {
@@ -195,6 +200,7 @@ abstract class KafkaSink[TSink]()
     val producerIndex = getFirstFreeProducerIndex()
     getUserContext.get().availableProducers(producerIndex) = false
     logger.debug(s"${getLabel()} started new transaction on producer ${producerIndex}")
+    producerPool(producerIndex).beginTransaction()
     new TransactionState(producerIndex)
   }
 
@@ -204,7 +210,7 @@ abstract class KafkaSink[TSink]()
     producerPool(transaction.producerIndex).abortTransaction()
     getUserContext
       .get()
-      .availableProducers((transaction.checkPointId % producerPoolSize).toInt) = true
+      .availableProducers(transaction.producerIndex) = true
   }
 
 }
