@@ -44,8 +44,13 @@ class ZkCollectionNode[TNode <: ZkNodeBase](name: String,
     */
   def observeNewChildren(): Observable[TNode] =
     //Hack: We should place waiting logic based on type of node elsewhere...
-    zkClient.observeNewChildren(path()).map(o => childConstructor(o, this)).flatMap(o => o match {
-      case s: ZkStateNode[_,_] => Observable.from(s.awaitChild(s.getStateNode().name)).map(o => s.asInstanceOf[TNode])
-      case a => Observable.from(Future.successful(a))
-    })
+    zkClient
+      .observeNewChildren(path())
+      .map(o => childConstructor(o, this))
+      .flatMap(o =>
+        o match {
+          case s: ZkStateNode[_, _] =>
+            Observable.from(s.awaitChild(s.getStateNode().name)).map(o => s.asInstanceOf[TNode])
+          case a => Observable.from(Future.successful(a))
+      })
 }

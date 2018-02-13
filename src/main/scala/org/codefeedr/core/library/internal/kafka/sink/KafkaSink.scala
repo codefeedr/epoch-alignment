@@ -113,11 +113,18 @@ abstract class KafkaSink[TSink]()
     logger.debug(s"Committing current transaction")
     //HACK: Comitting current transaction should not happen here!!!
     //This is a must to support the current sources, this should be removed ASAP
-    commit(currentTransaction())
-    if (getUserContext.get().availableProducers.exists(o => !o._2)) {
-      logger.error(
-        s"Error while closing producer ${getLabel()}. There are still uncommitted transactions")
-      //throw new Exception()
+    if (currentTransaction() != null) {
+      commit(currentTransaction())
+
+    }
+    //HACK: When ran from unit test this context is null
+    //Somehow need to mock this away
+    if (getUserContext != null) {
+      if (getUserContext.get().availableProducers.exists(o => !o._2)) {
+        logger.error(
+          s"Error while closing producer ${getLabel()}. There are still uncommitted transactions")
+        //throw new Exception()
+      }
     }
     Await.ready(producerNode.setState(false), Duration.Inf)
   }

@@ -21,6 +21,8 @@
 
 package org.codefeedr.core.library.internal.kafka
 
+import org.apache.flink.api.common.state.{KeyedStateStore, OperatorStateStore}
+import org.apache.flink.runtime.state.FunctionInitializationContext
 import org.codefeedr.core.library.internal.kafka.sink.KafkaGenericSink
 import org.codefeedr.core.library.internal.zookeeper.ZkClient
 import org.codefeedr.core.library.LibraryServices
@@ -52,7 +54,10 @@ class KafkaSinkSpec extends LibraryServiceSpec with BeforeAndAfterEach with Befo
     val sinkNode = subjectNode.getSinks().getChild(sinkId)
 
     assert(!await(sinkNode.exists()))
+
     sink.open(null)
+
+
     assert(await(sinkNode.exists()))
     assert(await(subjectNode.getSinks().getState()))
     sink.close()
