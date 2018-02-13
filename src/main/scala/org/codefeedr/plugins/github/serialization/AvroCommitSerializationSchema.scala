@@ -16,32 +16,23 @@
  * limitations under the License.
  *
  */
-package org.codefeedr.core.plugin
+package org.codefeedr.plugins.github.serialization
 
-import org.codefeedr.core.library.internal.{Job, Plugin}
-import org.codefeedr.plugins.github.jobs.{EventsJob, RetrieveCommitsJob}
+import java.io.ByteArrayOutputStream
 
-import scala.concurrent.Future
-import scala.concurrent._
-import ExecutionContext.Implicits.global
-import async.Async._
-class GitHubPlugin extends Plugin {
+import com.sksamuel.avro4s.AvroOutputStream
+import org.apache.flink.api.common.serialization.SerializationSchema
+import org.codefeedr.plugins.github.clients.GitHubProtocol.Commit
 
-  /**
-    * Setup all jobs.
-    * @return a list of jobs.
-    */
-  override def setupJobs: Future[List[Job[_, _]]] = async {
-    //setup events job
-    val eventsJob = new EventsJob(5)
-    await(eventsJob.setupType(subjectLibrary))
+class AvroCommitSerializationSchema extends SerializationSchema[Commit] {
 
-    //setup commit retrieval job
-    val retrieveJob = new RetrieveCommitsJob()
-    await(retrieveJob.setupType(subjectLibrary))
-    retrieveJob.setSource(eventsJob)
+  override def serialize(element: Commit): Array[Byte] = {
+    val baos = new ByteArrayOutputStream()
+    val output = AvroOutputStream.json[Commit](baos)
 
-    eventsJob :: retrieveJob :: Nil
+    output.write(element)
+    output.close()
+
+    baos.toByteArray
   }
-
 }

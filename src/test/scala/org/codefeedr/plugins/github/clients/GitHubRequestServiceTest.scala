@@ -15,7 +15,7 @@ class GitHubRequestServiceTest extends AsyncFlatSpec with Matchers with LazyLogg
     val requestService = new GitHubRequestService(client)
 
     val commit = requestService.getCommit("codefeedr/codefeedr", "2439402a43e11b5efa2a680ac31207f2210b63d5")
-    assert(commit.files.size == 5)
+    assert(commit.get.files.size == 5)
   }
 
   "getAllCommits " should " should parse and return a list of SimpleCommits" taggedAs (Slow) in async {

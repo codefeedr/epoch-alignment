@@ -29,9 +29,9 @@ fi
 IFS=','; for topicToCreate in $KAFKA_CREATE_TOPICS; do
     echo "creating topics: $topicToCreate"
     IFS=':' read -a topicConfig <<< "$topicToCreate"
-    config=
+    config="--config message.max.bytes=10000000"
     if [ -n "${topicConfig[3]}" ]; then
-        config="--config cleanup.policy=${topicConfig[3]}"
+        config="--config cleanup.policy=${topicConfig[3]} message.max.bytes=10000000"
     fi
     JMX_PORT='' $KAFKA_HOME/bin/kafka-topics.sh --create --zookeeper $KAFKA_ZOOKEEPER_CONNECT --replication-factor ${topicConfig[2]} --partitions ${topicConfig[1]} --topic "${topicConfig[0]}" $config --if-not-exists &
 done

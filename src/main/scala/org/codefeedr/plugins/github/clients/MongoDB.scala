@@ -19,13 +19,20 @@
 
 package org.codefeedr.plugins.github.clients
 
+import java.util.concurrent.TimeUnit
+
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.log4j.{Level, Logger}
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.codefeedr.plugins.github.clients.GitHubProtocol._
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import org.mongodb.scala.bson.codecs.Macros._
-import org.mongodb.scala.connection.ClusterSettings
+import org.mongodb.scala.connection.{
+  ClusterSettings,
+  ConnectionPoolSettings,
+  ServerSettings,
+  SocketSettings
+}
 import org.mongodb.scala.{
   MongoClient,
   MongoClientSettings,
@@ -64,11 +71,26 @@ class MongoDB {
     conf.getInt("codefeedr.mongo.port")
   )
 
+  @transient
+  private lazy val socketSettings: SocketSettings =
+    SocketSettings.builder().keepAlive(true).build()
+
+  @transient
+  private lazy val connectionSettings: ConnectionPoolSettings =
+    ConnectionPoolSettings
+      .builder()
+      .maxWaitQueueSize(10000)
+      .maxConnectionIdleTime(0, TimeUnit.SECONDS)
+      .maxConnectionLifeTime(0, TimeUnit.SECONDS)
+      .build()
+
   //set all settings
   @transient
   private lazy val mongoSettings: MongoClientSettings = MongoClientSettings
     .builder()
     .clusterSettings(ClusterSettings.builder().hosts(List(mongoServer).asJava).build())
+    .socketSettings(socketSettings)
+    .connectionPoolSettings(connectionSettings)
     .codecRegistry(fromRegistries(
       fromProviders(
         classOf[PushEvent],

@@ -21,7 +21,6 @@ package org.codefeedr.plugins.github.operators
 
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.runtime.concurrent.Executors
-import org.apache.flink.streaming.api.functions.async
 import org.bson.conversions.Bson
 import org.mongodb.scala._
 import org.mongodb.scala.model.Indexes._
@@ -30,10 +29,11 @@ import org.apache.flink.streaming.api.functions.async.{ResultFuture, RichAsyncFu
 import org.codefeedr.plugins.github.clients.MongoDB
 import org.mongodb.scala.model.Filters._
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.reflect.ClassTag
 import collection.JavaConverters._
-import scala.async.Async
+import scala.async.Async._
+import scala.concurrent.duration.Duration
 
 /**
   * Get or (retrieve and) add a value to MongoDB.
@@ -47,7 +47,10 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
     ExecutionContext.fromExecutor(Executors.directExecutor())
 
   //mongodb instance
+  @transient
   lazy val mongoDB: MongoDB = new MongoDB()
+
+  var documents: List[B] = List()
 
   /**
     * Called when runtime context is started.
@@ -95,11 +98,16 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
           }
 
           //retrieve output
-          val output: B = getFunction(input)
+          val getReturn: Option[B] = getFunction(input)
 
-          //insert and complete future
+          if (getReturn.isEmpty) {
+            resultFuture.complete(Iterable().asJavaCollection)
+          }
+
+          val output = getReturn.get
+
+          Await.ready(col.insertOne(output).toFuture(), Duration.Inf)
           resultFuture.complete(Iterable(output).asJavaCollection)
-          col.insertOne(output).toFuture()
         }
 
         override def onNext(result: B): Unit = {
@@ -109,7 +117,16 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
           resultFuture.complete(Iterable(result).asJavaCollection)
         }
       })
-    //resultFuture.complete(Iterable(getFunction(input)).asJavaCollection)
+
+    /**
+
+    val output = getFunction(input)
+
+    if (output.isEmpty) {
+      resultFuture.complete(Iterable().asJavaCollection)
+    } else {
+      resultFuture.complete(Iterable(output.get).asJavaCollection)
+    } **/
   }
 
   /**
@@ -146,5 +163,12 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
     * @param input the input variable A.
     * @return the output variable B.
     */
-  def getFunction(input: A): B
+  def getFunction(input: A): Option[B]
+
+  override def close(): Unit = {
+    val collection = mongoDB.getCollection[B](getCollectionName)
+    if (documents.size > 0) {
+      Await.result(collection.insertMany(documents).toFuture(), Duration.Inf)
+    }
+  }
 }

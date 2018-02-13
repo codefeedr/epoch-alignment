@@ -24,7 +24,12 @@ import java.io.IOException
 import com.google.gson.reflect.TypeToken
 import com.google.gson.{Gson, JsonElement}
 import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, Event, SimpleCommit}
-import org.eclipse.egit.github.core.client.{GitHubClient, GitHubRequest, GitHubResponse, PageIterator}
+import org.eclipse.egit.github.core.client.{
+  GitHubClient,
+  GitHubRequest,
+  GitHubResponse,
+  PageIterator
+}
 import org.eclipse.egit.github.core.service.GitHubService
 import org.json4s.DefaultFormats
 import org.eclipse.egit.github.core.client.PagedRequest.{PAGE_FIRST, PAGE_SIZE}
@@ -55,7 +60,7 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     * @return the commit case class.
     */
   @throws(classOf[Exception])
-  def getCommit(repoName: String, sha: String): Commit = {
+  def getCommit(repoName: String, sha: String): Option[Commit] = {
     val uri: StringBuilder = new StringBuilder("/repos")
     uri.append("/").append(repoName)
     uri.append("/commits")
@@ -70,11 +75,11 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
       val response: GitHubResponse = client.get(request)
       commit = response.getBody.asInstanceOf[JsonElement]
     } catch {
-      case e: IOException => e.printStackTrace()
+      case e: IOException => return None
     }
 
     //return extracted as Commit
-    return parse(gson.toJson(commit)).extract[Commit]
+    return Some(parse(gson.toJson(commit)).extract[Commit])
   }
 
   /**

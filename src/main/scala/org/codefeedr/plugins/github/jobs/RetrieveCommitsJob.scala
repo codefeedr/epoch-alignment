@@ -18,17 +18,36 @@
  */
 package org.codefeedr.plugins.github.jobs
 
+import java.util.Properties
 import java.util.concurrent.TimeUnit
 
+import com.typesafe.config.ConfigFactory
 import org.apache.flink.streaming.api.datastream.{AsyncDataStream => JavaAsyncDataStream}
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment, _}
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer010
+import org.codefeedr.core.library.SubjectFactory
 import org.codefeedr.core.library.internal.Job
+import scala.concurrent._
+import ExecutionContext.Implicits.global
 import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, PushEvent, SimpleCommit}
 import org.codefeedr.plugins.github.operators.GetOrAddCommit
+import org.codefeedr.plugins.github.serialization.AvroCommitSerializationSchema
+
+import scala.async.Async.{async, await}
+import scala.concurrent.Future
 
 class RetrieveCommitsJob extends Job[PushEvent, Commit]("retrieve_commits") {
 
-  override def getParallelism: Int = 50
+  lazy val config = ConfigFactory.load()
+
+  //define kafka/zk related information
+  val topicId = "commits"
+  val kafka = config.getString("codefeedr.kafka.server.bootstrap.servers")
+  val zKeeper = config.getString("codefeedr.zookeeper.connectionstring")
+
+  val serSchema = new AvroCommitSerializationSchema()
+
+  override def getParallelism: Int = 10
 
   /**
     * Setups a stream for the given environment.
@@ -44,8 +63,20 @@ class RetrieveCommitsJob extends Job[PushEvent, Commit]("retrieve_commits") {
     //work around for not existing RichAsyncFunction in Scala
     val getCommit = new GetOrAddCommit //get or add commit to mongo
     val finalStream =
-      JavaAsyncDataStream.unorderedWait(stream.javaStream, getCommit, 10, TimeUnit.SECONDS, 10)
+      JavaAsyncDataStream.unorderedWait(stream.javaStream, getCommit, 10, TimeUnit.SECONDS, 100)
 
     new DataStream(finalStream)
+  }
+
+  override def compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit] = async {
+    val prop = new Properties()
+    prop.setProperty("bootstrap.servers", kafka)
+    prop.setProperty("group.id", topicId)
+    prop.setProperty("zookeeper.connect", zKeeper)
+    prop.setProperty("max.request.size", "10000000") //+- 10 mb
+
+    val sink = new FlinkKafkaProducer010[Commit](topicId, serSchema, prop)
+    val stream = getStream(env)
+    stream.addSink(sink)
   }
 }

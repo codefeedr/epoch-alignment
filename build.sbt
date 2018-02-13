@@ -22,6 +22,9 @@ val dep_flink = Seq(
   "org.apache.flink" %% "flink-streaming-scala" % flinkVersion,
   "org.apache.flink" %% "flink-table" % flinkVersion,
   "org.apache.flink" %% "flink-runtime-web" % flinkVersion,
+  "org.apache.flink" %% "flink-connector-kafka-0.11" % flinkVersion,
+  "org.apache.flink" % "flink-avro" % flinkVersion,
+  "org.apache.flink" %% "flink-queryable-state-runtime" % flinkVersion
 )
 
 val dep_core = Seq(
@@ -39,7 +42,7 @@ val dep_core = Seq(
 
   "org.eclipse.mylyn.github" % "org.eclipse.egit.github.core" % "2.1.5",
   "com.typesafe" % "config" % "1.3.1",
-  "org.mongodb.scala" %% "mongo-scala-driver" % "2.1.0",
+  "org.mongodb.scala" %% "mongo-scala-driver" % "2.2.0",
 
   "org.apache.kafka" % "kafka-clients" % "1.0.0",
   "com.jsuereth" %% "scala-arm" % "2.0",

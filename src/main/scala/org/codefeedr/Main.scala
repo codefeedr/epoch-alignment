@@ -19,18 +19,18 @@
 package org.codefeedr
 
 import com.sksamuel.avro4s.AvroSchema
+import org.codefeedr.core.plugin.GitHubPlugin
 import org.codefeedr.plugins.github.clients.GitHubProtocol.Commit
+
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 object Main {
 
   def main(args: Array[String]): Unit = {
-    val schema = AvroSchema[Commit]
+    val plugin = new GitHubPlugin()
 
-    println(schema.toString(true))
-    //val plugin = new GitHubPlugin()
-
-    //Await.result(plugin.run(), Duration.Inf)
-
+    Await.result(plugin.run(), Duration.Inf)
   }
 
 }
