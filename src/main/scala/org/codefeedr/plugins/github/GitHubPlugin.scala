@@ -19,7 +19,7 @@
 package org.codefeedr.core.plugin
 
 import org.codefeedr.core.library.internal.{Job, Plugin}
-import org.codefeedr.plugins.github.jobs.{EventsJob, RetrieveCommitsJob}
+import org.codefeedr.plugins.github.jobs.{EventToCommitsJob, EventsJob, RetrieveCommitsJob}
 
 import scala.concurrent.Future
 import scala.concurrent._
@@ -33,7 +33,7 @@ class GitHubPlugin extends Plugin {
     */
   override def setupJobs: Future[List[Job[_, _]]] = async {
     //setup events job
-    val eventsJob = new EventsJob()
+    val eventsJob = new EventToCommitsJob(5)
     await(eventsJob.setupType(subjectLibrary))
 
     //setup commit retrieval job
