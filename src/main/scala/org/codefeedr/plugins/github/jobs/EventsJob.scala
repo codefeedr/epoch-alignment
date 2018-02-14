@@ -31,7 +31,7 @@ import org.json4s.DefaultFormats
 
 import scala.reflect.runtime.{universe => ru}
 
-class EventsJob(maxRequests: Int) extends Job[Event, PushEvent]("events_job") {
+class EventsJob(maxRequests: Int = -1) extends Job[Event, PushEvent]("events_job") {
 
   override def getParallelism: Int = 2
 

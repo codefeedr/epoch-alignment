@@ -70,12 +70,12 @@ abstract class Plugin {
 
     //really hacky
     val job1 = jobs(0)
-    val job2 = jobs(1)
+//    val job2 = jobs(1)
 
     await(job1.startJob())
     await(subjectLibrary.getSubject(job1.subjectType.name).assertExists())
-    await(job2.startJob())
-    await(subjectLibrary.getSubject(job2.subjectType.name).assertExists())
+    //await(job2.startJob())
+    //await(subjectLibrary.getSubject(job2.subjectType.name).assertExists())
 
     await(stopPlugin())
   }

@@ -19,6 +19,7 @@
 
 package org.codefeedr.plugins.github.input
 
+import com.typesafe.config.ConfigFactory
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
 import org.codefeedr.plugins.github.clients.GitHubProtocol.Event
@@ -49,6 +50,7 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
 
     //initiate GitHubAPI
     gitHubAPI = new GitHubAPI(taskId)
+    gitHubAPI.client.setOAuth2Token(ConfigFactory.load().getString("codefeedr.input.github.input_api_key"))
     isRunning = true
   }
 

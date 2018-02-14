@@ -33,15 +33,15 @@ class GitHubPlugin extends Plugin {
     */
   override def setupJobs: Future[List[Job[_, _]]] = async {
     //setup events job
-    val eventsJob = new EventsJob(5)
+    val eventsJob = new EventsJob()
     await(eventsJob.setupType(subjectLibrary))
 
     //setup commit retrieval job
-    val retrieveJob = new RetrieveCommitsJob()
-    await(retrieveJob.setupType(subjectLibrary))
-    retrieveJob.setSource(eventsJob)
+    //val retrieveJob = new RetrieveCommitsJob()
+    //await(retrieveJob.setupType(subjectLibrary))
+    //retrieveJob.setSource(eventsJob)
 
-    eventsJob :: retrieveJob :: Nil
+    eventsJob :: Nil
   }
 
 }
