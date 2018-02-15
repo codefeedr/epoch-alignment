@@ -50,7 +50,8 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
 
     //initiate GitHubAPI
     gitHubAPI = new GitHubAPI(taskId)
-    gitHubAPI.client.setOAuth2Token(ConfigFactory.load().getString("codefeedr.input.github.input_api_key"))
+    gitHubAPI.client.setOAuth2Token(
+      ConfigFactory.load().getString("codefeedr.input.github.input_api_key"))
     isRunning = true
   }
 

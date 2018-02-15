@@ -18,7 +18,8 @@ import scala.async.Async.async
 import scala.concurrent._
 import ExecutionContext.Implicits.global
 
-class EventToCommitsJob(maxRequests : Int = -1) extends Job[Event, Commit]("events_to_commits_job") {
+class EventToCommitsJob(maxRequests: Int = -1)
+    extends Job[Event, Commit]("events_to_commits_job") {
 
   lazy val config = ConfigFactory.load()
 
@@ -27,9 +28,11 @@ class EventToCommitsJob(maxRequests : Int = -1) extends Job[Event, Commit]("even
   val kafka = config.getString("codefeedr.kafka.server.bootstrap.servers")
   val zKeeper = config.getString("codefeedr.zookeeper.connectionstring")
 
-  val serSchema = new AvroCommitSerializationSchema()
+  @transient
+  val serSchema = new AvroCommitSerializationSchema(topicId)
 
   override def getParallelism: Int = 20
+
   /**
     * Setups a stream for the given environment.
     *
@@ -50,14 +53,17 @@ class EventToCommitsJob(maxRequests : Int = -1) extends Job[Event, Commit]("even
       JavaAsyncDataStream.unorderedWait(stream.javaStream, getPush, 10, TimeUnit.SECONDS, 50)
 
     //map to commits of push event
-    val pushStream = new DataStream(pushJavaStream).
-      flatMap(event => event.payload.commits.map(x => (event.repo.name, SimpleCommit(x.sha))))
-
+    val pushStream = new DataStream(pushJavaStream).flatMap(event =>
+      event.payload.commits.map(x => (event.repo.name, SimpleCommit(x.sha))))
 
     //work around for not existing RichAsyncFunction in Scala
     val getCommit = new GetOrAddCommit //get or add commit to mongo
     val finalStream =
-      JavaAsyncDataStream.unorderedWait(pushStream.javaStream, getCommit, 10, TimeUnit.SECONDS, 100)
+      JavaAsyncDataStream.unorderedWait(pushStream.javaStream,
+                                        getCommit,
+                                        10,
+                                        TimeUnit.SECONDS,
+                                        100)
 
     new DataStream(finalStream)
   }

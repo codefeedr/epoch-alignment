@@ -1,5 +1,6 @@
 package org.codefeedr.plugins.github.operators
 
+import java.time.LocalDate
 import java.util.Date
 
 import org.apache.flink.api.common.functions.RuntimeContext
@@ -29,8 +30,8 @@ class GetOrAddCommitTest extends MongoGitHubSpec with Eventually {
   val fakeCommit = Commit("2439402a43e11b5efa2a680ac31207f2210b63d5",
     "https://api.github.com/repos/codefeedr/codefeedr/commits/2439402a43e11b5efa2a680ac31207f2210b63d5",
     CommitData(
-      CommitUser("wouter", "test", new Date()),
-      CommitUser("wouter", "test", new Date()),
+      CommitUser("wouter", "test", ""),
+      CommitUser("wouter", "test", ""),
       "test",
       Tree("test"),
       1,

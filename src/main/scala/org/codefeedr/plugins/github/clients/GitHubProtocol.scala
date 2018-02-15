@@ -19,6 +19,7 @@
 
 package org.codefeedr.plugins.github.clients
 
+import java.time.LocalDate
 import java.util.Date
 
 import org.json4s.JObject
@@ -174,7 +175,7 @@ object GitHubProtocol {
     * @param email email of the user.
     * @param date date of the commit.
     */
-  case class CommitUser(name: String, email: String, date: Date)
+  case class CommitUser(name: String, email: String, date: String)
 
   /**
     * Represent the author/committer of the commit.

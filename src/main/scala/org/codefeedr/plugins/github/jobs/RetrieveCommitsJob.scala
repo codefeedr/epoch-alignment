@@ -45,7 +45,8 @@ class RetrieveCommitsJob extends Job[PushEvent, Commit]("retrieve_commits") {
   val kafka = config.getString("codefeedr.kafka.server.bootstrap.servers")
   val zKeeper = config.getString("codefeedr.zookeeper.connectionstring")
 
-  val serSchema = new AvroCommitSerializationSchema()
+  @transient
+  val serSchema = new AvroCommitSerializationSchema(topicId)
 
   override def getParallelism: Int = 10
 

@@ -3,7 +3,13 @@ import sbt.Keys.libraryDependencies
 resolvers in ThisBuild ++= Seq(
   "Apache Development Snapshot Repository" at "https://repository.apache.org/content/repositories/snapshots/",
   Resolver.mavenLocal)
+
 resolvers += "Artima Maven Repository" at "http://repo.artima.com/releases"
+
+resolvers ++= Seq(
+  "confluent" at "http://packages.confluent.io/maven/",
+  Resolver.mavenLocal //so we can use local build of kafka-avro-serializer
+)
 
 name := "CodeFeedr"
 
@@ -48,7 +54,8 @@ val dep_core = Seq(
   "org.scala-lang.modules" % "scala-java8-compat_2.11" % "0.8.0",
   "org.scala-lang.modules" %% "scala-async" % "0.9.7",
   "io.reactivex" %% "rxscala" % "0.26.5",
-  "com.sksamuel.avro4s" % "avro4s-core_2.11" % "1.8.1"
+  "com.sksamuel.avro4s" % "avro4s-core_2.11" % "1.8.1",
+  "io.confluent" % "kafka-avro-serializer" % "4.0.0"
 )
 
 

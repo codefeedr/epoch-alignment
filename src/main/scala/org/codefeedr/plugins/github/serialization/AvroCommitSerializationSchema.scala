@@ -19,20 +19,38 @@
 package org.codefeedr.plugins.github.serialization
 
 import java.io.ByteArrayOutputStream
+import java.util
 
-import com.sksamuel.avro4s.AvroOutputStream
+import com.sksamuel.avro4s._
+import io.confluent.kafka.schemaregistry.client.{
+  CachedSchemaRegistryClient,
+  SchemaMetadata,
+  SchemaRegistryClient
+}
+import io.confluent.kafka.serializers.KafkaAvroSerializer
+import org.apache.avro.Schema
 import org.apache.flink.api.common.serialization.SerializationSchema
-import org.codefeedr.plugins.github.clients.GitHubProtocol.Commit
+import org.codefeedr.plugins.github.clients.GitHubProtocol._
 
-class AvroCommitSerializationSchema extends SerializationSchema[Commit] {
+class AvroCommitSerializationSchema(topic: String) extends SerializationSchema[Commit] {
+
+  @transient
+  lazy val schemaRegistry: SchemaRegistryClient = {
+    val registry = new CachedSchemaRegistryClient("http://127.0.0.1:8081", 1000)
+
+    val schema = AvroSchema[Commit]
+    registry.register(topic + "-value", schema)
+    registry
+  }
+
+  @transient
+  lazy val avroSerializer: KafkaAvroSerializer = new KafkaAvroSerializer(schemaRegistry)
 
   override def serialize(element: Commit): Array[Byte] = {
-    val baos = new ByteArrayOutputStream()
-    val output = AvroOutputStream.json[Commit](baos)
-
-    output.write(element)
-    output.close()
-
-    baos.toByteArray
+    val format = RecordFormat[Commit]
+    println(topic)
+    println(element)
+    avroSerializer.serialize(topic, format.to(element))
   }
+
 }

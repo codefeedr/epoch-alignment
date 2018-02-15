@@ -275,7 +275,7 @@ class ZkClient extends LazyLogging {
         override def processResult(rc: Int,
                                    path: String,
                                    ctx: scala.Any,
-                                   children: util.List[String]): Unit = {
+                                   children: java.util.List[String]): Unit = {
           handleResponse[Iterable[String]](resultPromise, rc, path, Some(ctx), children.asScala)
         }
       },
@@ -371,7 +371,7 @@ class ZkClient extends LazyLogging {
         override def processResult(rc: Int,
                                    path: String,
                                    ctx: scala.Any,
-                                   children: util.List[String]): Unit = {
+                                   children: java.util.List[String]): Unit = {
           subscriber.onNext(children.asScala)
         }
       }
@@ -542,7 +542,7 @@ class ZkClient extends LazyLogging {
         override def processResult(rc: Int,
                                    path: String,
                                    ctx: scala.Any,
-                                   children: util.List[String]): Unit = {
+                                   children: java.util.List[String]): Unit = {
           //The promise could already be completed at this point by the previous trigger
           if (!p.isCompleted) {
             if (children != null && children.contains(nemo)) {

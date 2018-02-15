@@ -1,5 +1,6 @@
 package org.codefeedr.plugins.github.operators
 
+import java.time.LocalDate
 import java.util.Date
 
 import com.typesafe.scalalogging.LazyLogging
@@ -17,12 +18,12 @@ class MongoGitHubSpec extends LibraryServiceSpec with Matchers with MockitoSugar
 
   val mongo = new MongoDB()
 
-  def fakeCommit(date : Date = new Date()) = {
+  def fakeCommit(date : String = "") = {
     Commit("2439402a43e11b5efa2a680ac31207f2210b63d5",
       "https://api.github.com/repos/codefeedr/codefeedr/commits/2439402a43e11b5efa2a680ac31207f2210b63d5",
       CommitData(
-        CommitUser("wouter", "test", date),
-        CommitUser("wouter", "test", date),
+        CommitUser("wouter", "test", ""),
+        CommitUser("wouter", "test", ""),
         "test",
         Tree("test"),
         1,
