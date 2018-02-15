@@ -96,7 +96,6 @@ abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.Type
     */
   def startJob() = async {
     val conf = new Configuration()
-    conf.setBoolean(ConfigConstants.LOCAL_START_WEBSERVER, true)
     val env = StreamExecutionEnvironment.createLocalEnvironment(getParallelism, conf)
     logger.debug(s"Composing env for ${subjectType.name}")
     await(compose(env, s"$name"))

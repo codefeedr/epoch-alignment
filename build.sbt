@@ -23,8 +23,7 @@ val dep_flink = Seq(
   "org.apache.flink" %% "flink-table" % flinkVersion,
   "org.apache.flink" %% "flink-runtime-web" % flinkVersion,
   "org.apache.flink" %% "flink-connector-kafka-0.11" % flinkVersion,
-  "org.apache.flink" % "flink-avro" % flinkVersion,
-  "org.apache.flink" %% "flink-queryable-state-runtime" % flinkVersion
+  "org.apache.flink" % "flink-avro" % flinkVersion
 )
 
 val dep_core = Seq(
