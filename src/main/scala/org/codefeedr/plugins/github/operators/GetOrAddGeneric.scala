@@ -114,7 +114,8 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
           //println(s"Data already found $result")
           //found the record, so lets end the future
           send = true
-          resultFuture.complete(Iterable(result).asJavaCollection)
+          //TODO Currently duplicates are disabled
+          //resultFuture.complete(Iterable(result).asJavaCollection)
         }
       })
 
