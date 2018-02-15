@@ -20,7 +20,7 @@ package org.codefeedr.core.library.internal
 
 import com.typesafe.scalalogging.Logger
 import org.apache.flink.api.common.typeinfo.TypeInformation
-import org.apache.flink.configuration.{ConfigConstants, Configuration}
+import org.apache.flink.configuration.{ConfigConstants, Configuration, WebOptions}
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.codefeedr.core.library.SubjectFactory

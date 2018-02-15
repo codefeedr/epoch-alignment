@@ -34,6 +34,7 @@ import scala.reflect.ClassTag
 import collection.JavaConverters._
 import scala.async.Async._
 import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 
 /**
   * Get or (retrieve and) add a value to MongoDB.
@@ -88,7 +89,7 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
 
         override def onError(e: Throwable): Unit = {
           e.printStackTrace()
-          resultFuture.completeExceptionally(e)
+          resultFuture.complete(Iterable().asJavaCollection)
         }
 
         override def onComplete(): Unit = {
@@ -106,7 +107,7 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
 
           val output = getReturn.get
 
-          Await.ready(col.insertOne(output).toFuture(), Duration.Inf)
+          val result = Await.result(col.insertOne(output).toFuture(), Duration.Inf)
           resultFuture.complete(Iterable(output).asJavaCollection)
         }
 
@@ -114,20 +115,19 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
           //println(s"Data already found $result")
           //found the record, so lets end the future
           send = true
-          //TODO Currently duplicates are disabled
-          //resultFuture.complete(Iterable(result).asJavaCollection)
+          //TODO Currently duplicates are removed
+          resultFuture.complete(Iterable().asJavaCollection)
         }
       })
 
     /**
-
     val output = getFunction(input)
 
     if (output.isEmpty) {
       resultFuture.complete(Iterable().asJavaCollection)
     } else {
       resultFuture.complete(Iterable(output.get).asJavaCollection)
-    } **/
+    }**/
   }
 
   /**

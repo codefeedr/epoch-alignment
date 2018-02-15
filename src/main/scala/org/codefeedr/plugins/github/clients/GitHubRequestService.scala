@@ -68,18 +68,25 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
 
     var commit = new JsonElement {}
 
+    var toReturn: Option[Commit] = None
+
     try {
       val request: GitHubRequest = createRequest()
       request.setUri(uri.toString())
       request.setType(new TypeToken[JsonElement]() {}.getType)
       val response: GitHubResponse = client.get(request)
       commit = response.getBody.asInstanceOf[JsonElement]
+
+      toReturn = Some(parse(gson.toJson(commit)).extract[Commit])
     } catch {
-      case e: IOException => return None
+      case e: Exception => {
+        println(s"ERROR: ||| ${e.getMessage} ||| $repoName and $sha")
+        toReturn = None
+      }
     }
 
     //return extracted as Commit
-    return Some(parse(gson.toJson(commit)).extract[Commit])
+    toReturn
   }
 
   /**
