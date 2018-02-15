@@ -48,8 +48,6 @@ class AvroCommitSerializationSchema(topic: String) extends SerializationSchema[C
 
   override def serialize(element: Commit): Array[Byte] = {
     val format = RecordFormat[Commit]
-    println(topic)
-    println(element)
     avroSerializer.serialize(topic, format.to(element))
   }
 
