@@ -1,0 +1,117 @@
+{
+  "type" : "record",
+  "name" : "PushEvent",
+  "namespace" : "org.codefeedr.plugins.github.clients",
+  "fields" : [ {
+    "name" : "id",
+    "type" : "string"
+  }, {
+    "name" : "repo",
+    "type" : {
+      "type" : "record",
+      "name" : "Repo",
+      "fields" : [ {
+        "name" : "id",
+        "type" : "long"
+      }, {
+        "name" : "name",
+        "type" : "string"
+      } ]
+    }
+  }, {
+    "name" : "actor",
+    "type" : {
+      "type" : "record",
+      "name" : "Actor",
+      "fields" : [ {
+        "name" : "id",
+        "type" : "long"
+      }, {
+        "name" : "login",
+        "type" : "string"
+      }, {
+        "name" : "display_login",
+        "type" : "string"
+      }, {
+        "name" : "avatar_url",
+        "type" : "string"
+      } ]
+    }
+  }, {
+    "name" : "org",
+    "type" : [ "null", {
+      "type" : "record",
+      "name" : "Organization",
+      "fields" : [ {
+        "name" : "id",
+        "type" : "long"
+      }, {
+        "name" : "login",
+        "type" : "string"
+      } ]
+    } ]
+  }, {
+    "name" : "payload",
+    "type" : {
+      "type" : "record",
+      "name" : "Payload",
+      "fields" : [ {
+        "name" : "push_id",
+        "type" : "long"
+      }, {
+        "name" : "size",
+        "type" : "int"
+      }, {
+        "name" : "distinct_size",
+        "type" : "int"
+      }, {
+        "name" : "ref",
+        "type" : "string"
+      }, {
+        "name" : "head",
+        "type" : "string"
+      }, {
+        "name" : "before",
+        "type" : "string"
+      }, {
+        "name" : "commits",
+        "type" : {
+          "type" : "array",
+          "items" : {
+            "type" : "record",
+            "name" : "PushCommit",
+            "fields" : [ {
+              "name" : "sha",
+              "type" : "string"
+            }, {
+              "name" : "author",
+              "type" : {
+                "type" : "record",
+                "name" : "PushAuthor",
+                "fields" : [ {
+                  "name" : "email",
+                  "type" : "string"
+                }, {
+                  "name" : "name",
+                  "type" : "string"
+                } ]
+              }
+            }, {
+              "name" : "message",
+              "type" : "string"
+            }, {
+              "name" : "distinct",
+              "type" : "boolean"
+            } ]
+          }
+        }
+      } ]
+    }
+  }, {
+    "name" : "public",
+    "type" : "boolean"
+  }, {
+    "name" : "created_at",
+    "type" : "string"
+  } ]
+}

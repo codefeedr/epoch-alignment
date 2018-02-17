@@ -42,7 +42,7 @@ class MongoGitHubSpec extends LibraryServiceSpec with Matchers with MockitoSugar
       None,
       Payload(123, 0, 0, "testRef", "5f2bd246c8245d83dfc770c989b8879d47e55b1c", "doesntMatter", Nil),
       true,
-      new Date())
+      "")
   }
 
   def clearCollection(collectionName: String): Future[Completed] = {

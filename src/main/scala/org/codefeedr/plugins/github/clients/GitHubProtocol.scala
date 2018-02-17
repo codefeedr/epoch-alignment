@@ -50,7 +50,7 @@ object GitHubProtocol {
                    org: Option[Organization],
                    payload: JObject,
                    public: Boolean,
-                   created_at: Date)
+                   created_at: String)
 
   /**
     * Represents a 'generic' GitHub event.
@@ -68,7 +68,7 @@ object GitHubProtocol {
                        org: Option[Organization],
                        payload: Payload,
                        public: Boolean,
-                       created_at: Date)
+                       created_at: String)
 
   /**
     * Payload of the PushEvent.
