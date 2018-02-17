@@ -18,27 +18,20 @@
  */
 package org.codefeedr.plugins.github.serialization
 
-import java.io.ByteArrayOutputStream
-import java.util
-
-import com.sksamuel.avro4s._
-import io.confluent.kafka.schemaregistry.client.{
-  CachedSchemaRegistryClient,
-  SchemaMetadata,
-  SchemaRegistryClient
-}
+import com.sksamuel.avro4s.{AvroSchema, RecordFormat}
+import io.confluent.kafka.schemaregistry.client.{CachedSchemaRegistryClient, SchemaRegistryClient}
 import io.confluent.kafka.serializers.KafkaAvroSerializer
-import org.apache.avro.Schema
 import org.apache.flink.api.common.serialization.SerializationSchema
-import org.codefeedr.plugins.github.clients.GitHubProtocol._
+import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, PushEvent}
 
-class AvroCommitSerializationSchema(topic: String) extends SerializationSchema[Commit] {
+//TODO MAKE THIS GENERIC
+class AvroPushEventSerialization(topic: String) extends SerializationSchema[PushEvent] {
 
   @transient
   private lazy val schemaRegistry: SchemaRegistryClient = {
     val registry = new CachedSchemaRegistryClient("http://127.0.0.1:8081", 1000)
 
-    val schema = AvroSchema[Commit]
+    val schema = AvroSchema[PushEvent]
     registry.register(topic + "-value", schema)
     registry
   }
@@ -46,8 +39,8 @@ class AvroCommitSerializationSchema(topic: String) extends SerializationSchema[C
   @transient
   lazy val avroSerializer: KafkaAvroSerializer = new KafkaAvroSerializer(schemaRegistry)
 
-  override def serialize(element: Commit): Array[Byte] = {
-    val format = RecordFormat[Commit]
+  override def serialize(element: PushEvent): Array[Byte] = {
+    val format = RecordFormat[PushEvent]
     avroSerializer.serialize(topic, format.to(element))
   }
 
