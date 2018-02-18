@@ -22,11 +22,13 @@ import java.util.Properties
 import java.util.concurrent.TimeUnit
 
 import com.typesafe.config.ConfigFactory
+import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient
 import org.apache.flink.streaming.api.datastream.{AsyncDataStream => JavaAsyncDataStream}
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment, _}
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer010
 import org.codefeedr.core.library.SubjectFactory
 import org.codefeedr.core.library.internal.Job
+
 import scala.concurrent._
 import ExecutionContext.Implicits.global
 import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, PushEvent, SimpleCommit}
@@ -36,7 +38,7 @@ import org.codefeedr.plugins.github.serialization.AvroCommitSerializationSchema
 import scala.async.Async.{async, await}
 import scala.concurrent.Future
 
-class RetrieveCommitsJob extends Job[PushEvent, Commit]("retrieve_commits") {
+class RetrieveCommitsJob() extends Job[PushEvent, Commit]("retrieve_commits") {
 
   lazy val config = ConfigFactory.load()
 

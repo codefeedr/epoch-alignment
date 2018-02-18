@@ -18,19 +18,20 @@
  */
 package org.codefeedr.plugins.github.serialization
 
-import com.sksamuel.avro4s.{AvroSchema, RecordFormat}
+import com.sksamuel.avro4s.{AvroSchema, RecordFormat, SchemaFor}
 import io.confluent.kafka.schemaregistry.client.{CachedSchemaRegistryClient, SchemaRegistryClient}
-import io.confluent.kafka.serializers.KafkaAvroSerializer
+import io.confluent.kafka.serializers.{KafkaAvroDeserializer, KafkaAvroSerializer}
 import org.apache.avro.generic.GenericRecord
-import org.apache.flink.api.common.serialization.SerializationSchema
-import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, PushEvent}
+import org.apache.flink.api.common.serialization.DeserializationSchema
+import org.apache.flink.api.common.typeinfo.TypeInformation
+import org.apache.flink.api.java.typeutils.{TypeExtractionUtils, TypeExtractor}
+import org.codefeedr.plugins.github.clients.GitHubProtocol.PushEvent
 
-//TODO MAKE THIS GENERIC
-class AvroPushEventSerialization(topic: String) extends SerializationSchema[PushEvent] {
+class AvroPushEventDeserializer(topic: String) extends DeserializationSchema[PushEvent] {
 
   @transient
   private lazy val schemaRegistry: SchemaRegistryClient = {
-    val registry = new CachedSchemaRegistryClient("http://127.0.0.1:8081", 20)
+    val registry = new CachedSchemaRegistryClient("http://127.0.0.1:8081", 1000)
     val subject = topic + "-value"
     val schema = AvroSchema[PushEvent]
 
@@ -42,12 +43,21 @@ class AvroPushEventSerialization(topic: String) extends SerializationSchema[Push
   }
 
   @transient
-  lazy val recordFormat = RecordFormat[PushEvent]
+  private lazy val schema = AvroSchema[PushEvent]
 
   @transient
-  lazy val avroSerializer: KafkaAvroSerializer = new KafkaAvroSerializer(schemaRegistry)
+  lazy val avroSerializer: KafkaAvroDeserializer = new KafkaAvroDeserializer(schemaRegistry)
 
-  override def serialize(element: PushEvent): Array[Byte] = {
-    avroSerializer.serialize(topic, recordFormat.to(element))
+  override def isEndOfStream(nextElement: PushEvent): Boolean = {
+    false
+  }
+
+  override def deserialize(message: Array[Byte]): PushEvent = {
+    val format = RecordFormat[PushEvent]
+    format.from(avroSerializer.deserialize(topic, message, schema).asInstanceOf[GenericRecord])
+  }
+
+  override def getProducedType: TypeInformation[PushEvent] = {
+    TypeExtractor.createTypeInfo(classOf[PushEvent])
   }
 }

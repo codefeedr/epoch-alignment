@@ -37,9 +37,13 @@ class AvroCommitSerializationSchema(topic: String) extends SerializationSchema[C
   @transient
   private lazy val schemaRegistry: SchemaRegistryClient = {
     val registry = new CachedSchemaRegistryClient("http://127.0.0.1:8081", 1000)
-
+    val subject = topic + "-value"
     val schema = AvroSchema[Commit]
-    registry.register(topic + "-value", schema)
+
+    if (!registry.getAllSubjects.contains(subject)) {
+      registry.register(subject, schema)
+    }
+
     registry
   }
 

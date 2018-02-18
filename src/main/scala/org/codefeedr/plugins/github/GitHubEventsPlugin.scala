@@ -16,35 +16,30 @@
  * limitations under the License.
  *
  */
-package org.codefeedr.core.plugin
+package org.codefeedr.plugins.github
 
 import com.sksamuel.avro4s.AvroSchema
 import io.confluent.kafka.schemaregistry.client.{CachedSchemaRegistryClient, SchemaRegistryClient}
 import org.codefeedr.core.library.internal.{Job, Plugin}
-import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, PushEvent}
-import org.codefeedr.plugins.github.jobs.{EventToCommitsJob, EventsJob, RetrieveCommitsJob}
+import org.codefeedr.plugins.github.clients.GitHubProtocol.PushEvent
+import org.codefeedr.plugins.github.jobs.EventsJob
 
 import scala.concurrent.Future
 import scala.concurrent._
 import ExecutionContext.Implicits.global
 import async.Async._
-class GitHubPlugin extends Plugin {
+
+class GitHubEventsPlugin extends Plugin {
 
   /**
-    * Setup all jobs.
+    * Setup jobs.
+    *
     * @return a list of jobs.
     */
   override def setupJobs: Future[List[Job[_, _]]] = async {
-    //setup events job
-    val eventsJob = new EventToCommitsJob()
+    val eventsJob = new EventsJob()
     await(eventsJob.setupType(subjectLibrary))
-
-    //setup commit retrieval job
-    //val retrieveJob = new RetrieveCommitsJob()
-    //await(retrieveJob.setupType(subjectLibrary))
-    //retrieveJob.setSource(eventsJob)
 
     eventsJob :: Nil
   }
-
 }

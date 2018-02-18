@@ -18,22 +18,41 @@
  */
 package org.codefeedr.plugins.github.jobs
 
+import java.util.Properties
 import java.util.concurrent.TimeUnit
 
+import com.typesafe.config.ConfigFactory
+import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient
 import org.apache.flink.api.scala._
 import org.apache.flink.streaming.api.datastream.{AsyncDataStream => JavaAsyncDataStream}
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer010
 import org.codefeedr.core.library.internal.Job
-import org.codefeedr.plugins.github.clients.GitHubProtocol.{Event, Payload, PushEvent}
+import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, Event, Payload, PushEvent}
 import org.codefeedr.plugins.github.input.GitHubSource
 import org.codefeedr.plugins.github.operators.GetOrAddPushEvent
+import org.codefeedr.plugins.github.serialization.{AvroCommitSerializationSchema, AvroPushEventSerialization}
 import org.json4s.DefaultFormats
 
+import scala.async.Async.async
+import scala.concurrent.Future
+import scala.concurrent._
+import ExecutionContext.Implicits.global
 import scala.reflect.runtime.{universe => ru}
 
 class EventsJob(maxRequests: Int = -1) extends Job[Event, PushEvent]("events_job") {
 
   override def getParallelism: Int = 2
+
+  lazy val config = ConfigFactory.load()
+
+  //define kafka/zk related information
+  val topicId = "push_events"
+  val kafka = config.getString("codefeedr.kafka.server.bootstrap.servers")
+  val zKeeper = config.getString("codefeedr.zookeeper.connectionstring")
+
+  @transient
+  val serSchema = new AvroPushEventSerialization(topicId)
 
   /**
     * Setups a stream for the given environment.
@@ -55,6 +74,18 @@ class EventsJob(maxRequests: Int = -1) extends Job[Event, PushEvent]("events_job
       JavaAsyncDataStream.unorderedWait(stream.javaStream, getPush, 10, TimeUnit.SECONDS, 50)
 
     new DataStream(finalStream)
+  }
+
+  override def compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit] = async {
+    val prop = new Properties()
+    prop.setProperty("bootstrap.servers", kafka)
+    prop.setProperty("group.id", topicId)
+    prop.setProperty("zookeeper.connect", zKeeper)
+    prop.setProperty("max.request.size", "10000000") //+- 10 mb
+
+    val sink = new FlinkKafkaProducer010[PushEvent](topicId, serSchema, prop)
+    val stream = getStream(env)
+    stream.addSink(sink)
   }
 
 }

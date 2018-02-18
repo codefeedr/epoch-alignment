@@ -35,6 +35,7 @@ import collection.JavaConverters._
 import scala.async.Async._
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 /**
   * Get or (retrieve and) add a value to MongoDB.
@@ -107,8 +108,13 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
 
           val output = getReturn.get
 
-          val result = Await.result(col.insertOne(output).toFuture(), Duration.Inf)
-          resultFuture.complete(Iterable(output).asJavaCollection)
+          val result = Await.ready(col.insertOne(output).toFuture(), Duration.Inf)
+
+          //match on await; we want to filter duplicates once again, because they might have been processed at the same time
+          result.value.get match {
+            case Success(_) => resultFuture.complete(Iterable(output).asJavaCollection) //if success then forward
+            case Failure(_) => resultFuture.complete(Iterable().asJavaCollection) //else empty forward
+          }
         }
 
         override def onNext(result: B): Unit = {
