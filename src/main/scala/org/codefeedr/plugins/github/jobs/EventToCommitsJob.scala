@@ -12,17 +12,22 @@ import org.codefeedr.plugins.github.input.GitHubSource
 import org.codefeedr.plugins.github.operators.{GetOrAddCommit, GetOrAddPushEvent}
 import org.apache.flink.streaming.api.datastream.{AsyncDataStream => JavaAsyncDataStream}
 import org.apache.flink.streaming.connectors.kafka.{FlinkKafkaConsumer010, FlinkKafkaProducer010}
-import org.codefeedr.plugins.github.serialization.{AvroCommitSerializationSchema, AvroPushEventDeserializer}
+import org.codefeedr.plugins.github.serialization.{
+  AvroCommitSerializationSchema,
+  AvroPushEventDeserializer
+}
 import org.json4s.DefaultFormats
 import org.apache.flink.api.scala._
-import org.apache.flink.streaming.api.functions.source.{RichParallelSourceFunction, RichSourceFunction}
+import org.apache.flink.streaming.api.functions.source.{
+  RichParallelSourceFunction,
+  RichSourceFunction
+}
 
 import scala.async.Async.async
 import scala.concurrent._
 import ExecutionContext.Implicits.global
 
-class EventToCommitsJob()
-    extends Job[Event, Commit]("events_to_commits_job") {
+class EventToCommitsJob() extends Job[Event, Commit]("events_to_commits_job") {
 
   lazy val config = ConfigFactory.load()
 
@@ -79,7 +84,7 @@ class EventToCommitsJob()
     stream.addSink(sink)
   }
 
-  def setupSource() : RichParallelSourceFunction[PushEvent] = {
+  def setupSource(): RichParallelSourceFunction[PushEvent] = {
     val prop = new Properties()
     prop.setProperty("bootstrap.servers", kafka)
     prop.setProperty("group.id", in_topic)

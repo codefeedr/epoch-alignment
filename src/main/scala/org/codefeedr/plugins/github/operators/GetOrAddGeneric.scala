@@ -112,8 +112,10 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
 
           //match on await; we want to filter duplicates once again, because they might have been processed at the same time
           result.value.get match {
-            case Success(_) => resultFuture.complete(Iterable(output).asJavaCollection) //if success then forward
-            case Failure(_) => resultFuture.complete(Iterable().asJavaCollection) //else empty forward
+            case Success(_) =>
+              resultFuture.complete(Iterable(output).asJavaCollection) //if success then forward
+            case Failure(_) =>
+              resultFuture.complete(Iterable().asJavaCollection) //else empty forward
           }
         }
 

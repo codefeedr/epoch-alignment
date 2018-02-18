@@ -50,10 +50,9 @@ object Main {
     val actorSystem = ActorSystem()
     val scheduler = actorSystem.scheduler
     val task = new Runnable { def run() { runTimer() } }
-    scheduler.schedule(
-      initialDelay = Duration(1, TimeUnit.MINUTES),
-      interval = Duration(1, TimeUnit.MINUTES),
-      runnable = task)
+    scheduler.schedule(initialDelay = Duration(1, TimeUnit.MINUTES),
+                       interval = Duration(1, TimeUnit.MINUTES),
+                       runnable = task)
 
     Await.result(plugin.run(), Duration.Inf)
   }
@@ -64,25 +63,25 @@ object Main {
     var greaterThan = gte("_id", genObjectId(previousTime))
     var smaller = lt("_id", genObjectId(currentTime))
 
-    var events = await(mongoDB.getCollection[PushEvent]("github_events").
-      find(and(greaterThan, smaller)).toFuture())
+    var events = await(
+      mongoDB.getCollection[PushEvent]("github_events").find(and(greaterThan, smaller)).toFuture())
 
-    val uniqueCommits = events.
-      flatMap(x => x.payload.commits.map(y => y.sha)).
-      distinct.
-      size
+    val uniqueCommits = events.flatMap(x => x.payload.commits.map(y => y.sha)).distinct.size
 
     val document = Document("beforeDate" -> new Date(previousTime),
-      "afterDate" -> new Date(currentTime),
-    "uniqueCommits" -> uniqueCommits)
+                            "afterDate" -> new Date(currentTime),
+                            "uniqueCommits" -> uniqueCommits)
 
-    await(mongoDB.getCollection("events_stats")
-      .insertOne(document).toFuture())
+    await(
+      mongoDB
+        .getCollection("events_stats")
+        .insertOne(document)
+        .toFuture())
 
     previousTime = currentTime //update date
   }
 
-  def genObjectId(timeInMs: Long) : ObjectId = {
+  def genObjectId(timeInMs: Long): ObjectId = {
     var timeInS = timeInMs / 1000L
     var oidString = java.lang.Long.toHexString(timeInS) + "0000000000000000";
 

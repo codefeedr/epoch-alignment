@@ -31,7 +31,10 @@ import org.codefeedr.core.library.internal.Job
 import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, Event, Payload, PushEvent}
 import org.codefeedr.plugins.github.input.GitHubSource
 import org.codefeedr.plugins.github.operators.GetOrAddPushEvent
-import org.codefeedr.plugins.github.serialization.{AvroCommitSerializationSchema, AvroPushEventSerialization}
+import org.codefeedr.plugins.github.serialization.{
+  AvroCommitSerializationSchema,
+  AvroPushEventSerialization
+}
 import org.json4s.DefaultFormats
 
 import scala.async.Async.async
