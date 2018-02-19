@@ -80,11 +80,13 @@ object Main {
                             "uniqueCommits" -> uniqueCommits,
                             "eventSize" -> events.size)
 
-    await(
+    val inserted = await(
       mongoDB
         .getCollection("events_stats")
         .insertOne(document)
         .toFuture())
+
+    println(s"Inserted stats: $inserted")
 
     previousTime = currentTime //update date
   }
