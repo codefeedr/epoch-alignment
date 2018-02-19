@@ -38,6 +38,8 @@ import scala.concurrent.duration.Duration
 import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.bson._
 
+import scala.util.{Failure, Success}
+
 object Main {
 
   private lazy val mongoDB = new MongoDB()
@@ -54,7 +56,12 @@ object Main {
                        interval = Duration(1, TimeUnit.MINUTES),
                        runnable = task)
 
-    Await.result(plugin.run(), Duration.Inf)
+    val output = Await.ready(plugin.run(), Duration.Inf)
+
+    output.value.get match {
+      case Success(_) => System.exit(0)
+      case Failure(_) => System.exit(1)
+    }
   }
 
   def runTimer() = async {
@@ -70,7 +77,8 @@ object Main {
 
     val document = Document("beforeDate" -> new Date(previousTime),
                             "afterDate" -> new Date(currentTime),
-                            "uniqueCommits" -> uniqueCommits)
+                            "uniqueCommits" -> uniqueCommits,
+                            "eventSize" -> events.size)
 
     await(
       mongoDB
