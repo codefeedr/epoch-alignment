@@ -43,7 +43,7 @@ class CheckAndForwardCommitTest extends MongoGitHubSpec {
   "The latest commit" should "be retrieved from the DB" taggedAs(Slow) in async {
     //generate commits
     val commit = fakeCommit()
-    val commitEarlier = fakeCommit(earlierDate.toString)
+    val commitEarlier = fakeCommit(earlierDate)
 
     await(clearCollection(collectionName))
     await(insertDocument(collectionName, commit))
@@ -59,7 +59,7 @@ class CheckAndForwardCommitTest extends MongoGitHubSpec {
   "The latest commit" should "not be retrieved from the DB if it is not there" taggedAs(Slow) in async {
     //generate commits
     val commit = fakeCommit()
-    val commitEarlier = fakeCommit(earlierDate.toString)
+    val commitEarlier = fakeCommit(earlierDate)
 
     await(clearCollection(collectionName))
     await(insertDocument(collectionName, commit))

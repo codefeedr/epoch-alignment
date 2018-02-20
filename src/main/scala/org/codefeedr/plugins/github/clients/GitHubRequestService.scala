@@ -61,6 +61,13 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     */
   @throws(classOf[Exception])
   def getCommit(repoName: String, sha: String): Option[Commit] = {
+    val requestsLeft = client.getRemainingRequests
+
+    if (requestsLeft != -1 && requestsLeft <= 50) { //just forward none if there shouldn't be more request made
+      println(s"Not enough requests left: $requestsLeft")
+      return None
+    }
+
     val uri: StringBuilder = new StringBuilder("/repos")
     uri.append("/").append(repoName)
     uri.append("/commits")

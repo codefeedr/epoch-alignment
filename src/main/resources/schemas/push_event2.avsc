@@ -1,0 +1,83 @@
+{
+  "type": "record",
+  "namespace": "org.codefeedr.plugins.github.clients",
+  "name": "PushEvent",
+  "fields": [
+    {"name": "type", "type":"string"},
+    {"name": "public", "type":["boolean", "null"], "default" : null },
+    {"name": "repo", "type":[{
+      "type": "record",
+      "namespace": "org.codefeedr.plugins.github.clients",
+      "name": "Repo",
+      "fields": [
+        {"name": "id", "type":"int"},
+        {"name": "name", "type":"string", "default" : ""},
+        {"name": "url", "type":"string", "default" : ""}
+      ]}, "null"],
+      "default" : null
+    },
+    {"name": "actor", "type":{
+      "type": "record",
+      "namespace": "org.codefeedr.plugins.github.clients",
+      "name": "Actor",
+      "fields": [
+        {"name": "id", "type":"int"},
+        {"name": "login", "type":"string"},
+        {"name": "gravatar_id", "type":"string", "default" : ""},
+        {"name": "avatar_url", "type":"string", "default" : ""},
+        {"name": "url", "type":"string", "default" : ""}
+      ]}
+    },
+    {"name": "org", "type":[{
+      "type": "record",
+      "namespace": "org.codefeedr.plugins.github.clients",
+      "name": "Organization",
+      "fields": [
+        {"name": "id", "type":"int"},
+        {"name": "login", "type":"string"},
+        {"name": "gravatar_id", "type":"string", "default" : ""},
+        {"name": "avatar_url", "type":"string", "default" : ""},
+        {"name": "url", "type":"string", "default" : ""}
+      ]}, "null"],
+      "default" : null
+    },
+    {"name": "created_at", "type":"string"},
+    {"name": "id", "type":"string"},
+    {"name": "payload", "type":[{
+      "type": "record",
+      "namespace": "org.codefeedr.plugins.github.clients",
+      "name": "Payload",
+      "fields": [
+        {"name": "push_id", "type":["long","null"], "default" : null},
+        {"name": "size", "type":["int","null"], "default" : null},
+        {"name": "distinct_size", "type":["int", "null"], "default" : null},
+        {"name": "ref", "type":["string", "null"], "default" : null},
+        {"name": "head", "type":["string", "null"], "default" : null},
+        {"name": "before", "type":["string", "null"], "default" : null},
+        {"name": "commits", "type":[{
+          "type":"array", "items": {
+            "type": "record",
+            "namespace": "org.codefeedr.plugins.github.clients",
+            "name": "PushCommit",
+            "fields": [
+              {"name": "sha", "type":"string"},
+              {"name": "message", "type":["string", "null"], "default" : null},
+              {"name": "distinct", "type":["boolean", "null"], "default" : null},
+              {"name": "url", "type":["string", "null"], "default" : null},
+              {"name": "author", "type": [{
+                "type": "record",
+                "namespace": "org.codefeedr.plugins.github.clients",
+                "name": "PushAuthor",
+                "fields": [
+                  {"name": "email", "type":["null", "string"], "default" : null},
+                  {"name": "name", "type":["null", "string"], "default" : null}
+                ]}, "null"],
+                "default" : null }
+            ]}
+        }, "null"], "default": null
+        }
+      ]}, "null"],
+      "default" : null
+    }
+  ]
+}

@@ -18,7 +18,7 @@
  */
 package org.codefeedr.plugins.github.serialization
 
-import java.io.ByteArrayOutputStream
+import java.io.{ByteArrayOutputStream, InputStream}
 import java.util
 
 import com.sksamuel.avro4s._
@@ -32,6 +32,7 @@ import org.apache.avro.Schema
 import org.apache.flink.api.common.serialization.SerializationSchema
 import org.codefeedr.plugins.github.clients.GitHubProtocol._
 
+/**
 class AvroCommitSerializationSchema(topic: String) extends SerializationSchema[Commit] {
 
   @transient
@@ -41,6 +42,10 @@ class AvroCommitSerializationSchema(topic: String) extends SerializationSchema[C
     val schema = AvroSchema[Commit]
 
     if (!registry.getAllSubjects.contains(subject)) {
+      val stream : InputStream = getClass.getResourceAsStream("/schemas/commit.avsc")
+      val lines = scala.io.Source.fromInputStream( stream ).getLines
+
+      val schema = new Schema.Parser().parse(lines.toString())
       registry.register(subject, schema)
     }
 
@@ -55,4 +60,6 @@ class AvroCommitSerializationSchema(topic: String) extends SerializationSchema[C
     avroSerializer.serialize(topic, format.to(element))
   }
 
+
 }
+**/

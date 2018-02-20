@@ -31,10 +31,7 @@ import org.codefeedr.core.library.internal.Job
 import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, Event, Payload, PushEvent}
 import org.codefeedr.plugins.github.input.GitHubSource
 import org.codefeedr.plugins.github.operators.GetOrAddPushEvent
-import org.codefeedr.plugins.github.serialization.{
-  AvroCommitSerializationSchema,
-  AvroPushEventSerialization
-}
+import org.codefeedr.plugins.github.serialization.JsonPushEventSerialization
 import org.json4s.DefaultFormats
 
 import scala.async.Async.async
@@ -55,7 +52,7 @@ class EventsJob(maxRequests: Int = -1) extends Job[Event, PushEvent]("events_job
   val zKeeper = config.getString("codefeedr.zookeeper.connectionstring")
 
   @transient
-  val serSchema = new AvroPushEventSerialization(topicId)
+  val serSchema = new JsonPushEventSerialization()
 
   /**
     * Setups a stream for the given environment.

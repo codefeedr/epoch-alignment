@@ -18,12 +18,12 @@ class MongoGitHubSpec extends LibraryServiceSpec with Matchers with MockitoSugar
 
   val mongo = new MongoDB()
 
-  def fakeCommit(date : String = "") = {
+  def fakeCommit(date : Date = new Date()) = {
     Commit("2439402a43e11b5efa2a680ac31207f2210b63d5",
       "https://api.github.com/repos/codefeedr/codefeedr/commits/2439402a43e11b5efa2a680ac31207f2210b63d5",
       CommitData(
-        CommitUser("wouter", "test", ""),
-        CommitUser("wouter", "test", ""),
+        CommitUser("wouter", "test", date),
+        CommitUser("wouter", "test", date),
         "test",
         Tree("test"),
         1,
@@ -42,7 +42,7 @@ class MongoGitHubSpec extends LibraryServiceSpec with Matchers with MockitoSugar
       None,
       Payload(123, 0, 0, "testRef", "5f2bd246c8245d83dfc770c989b8879d47e55b1c", "doesntMatter", Nil),
       true,
-      "")
+      new Date())
   }
 
   def clearCollection(collectionName: String): Future[Completed] = {

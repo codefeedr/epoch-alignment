@@ -13,8 +13,8 @@ import org.codefeedr.plugins.github.operators.{GetOrAddCommit, GetOrAddPushEvent
 import org.apache.flink.streaming.api.datastream.{AsyncDataStream => JavaAsyncDataStream}
 import org.apache.flink.streaming.connectors.kafka.{FlinkKafkaConsumer010, FlinkKafkaProducer010}
 import org.codefeedr.plugins.github.serialization.{
-  AvroCommitSerializationSchema,
-  AvroPushEventDeserializer
+  JsonCommitSerialization,
+  JsonPushEventDeserialization
 }
 import org.json4s.DefaultFormats
 import org.apache.flink.api.scala._
@@ -38,10 +38,10 @@ class EventToCommitsJob() extends Job[Event, Commit]("events_to_commits_job") {
   val zKeeper = config.getString("codefeedr.zookeeper.connectionstring")
 
   @transient
-  val serSchema = new AvroCommitSerializationSchema(out_topic)
+  val serSchema = new JsonCommitSerialization()
 
   @transient
-  val deSerSchema = new AvroPushEventDeserializer(in_topic)
+  val deSerSchema = new JsonPushEventDeserialization()
 
   //parallelism
   override def getParallelism: Int = 20
@@ -87,7 +87,6 @@ class EventToCommitsJob() extends Job[Event, Commit]("events_to_commits_job") {
   def setupSource(): RichParallelSourceFunction[PushEvent] = {
     val prop = new Properties()
     prop.setProperty("bootstrap.servers", kafka)
-    prop.setProperty("group.id", in_topic)
     prop.setProperty("zookeeper.connect", zKeeper)
     prop.setProperty("group.id", "flink_read_push_events")
     prop.setProperty("fetch.max.message.bytes", "10000000") //+- 10 mb

@@ -18,23 +18,30 @@
  */
 package org.codefeedr.plugins.github.serialization
 
+import java.io.InputStream
+
 import com.sksamuel.avro4s.{AvroSchema, RecordFormat}
 import io.confluent.kafka.schemaregistry.client.{CachedSchemaRegistryClient, SchemaRegistryClient}
 import io.confluent.kafka.serializers.KafkaAvroSerializer
+import org.apache.avro.Schema
 import org.apache.avro.generic.GenericRecord
 import org.apache.flink.api.common.serialization.SerializationSchema
 import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, PushEvent}
 
 //TODO MAKE THIS GENERIC
+/**
 class AvroPushEventSerialization(topic: String) extends SerializationSchema[PushEvent] {
-
   @transient
   private lazy val schemaRegistry: SchemaRegistryClient = {
     val registry = new CachedSchemaRegistryClient("http://127.0.0.1:8081", 20)
     val subject = topic + "-value"
-    val schema = AvroSchema[PushEvent]
 
     if (!registry.getAllSubjects.contains(subject)) {
+      println("Now registering the push_event schema")
+      val stream : InputStream = getClass.getResourceAsStream("/schemas/push_event.avsc")
+      val lines = scala.io.Source.fromInputStream( stream ).mkString
+
+      val schema = new Schema.Parser().parse(lines)
       registry.register(subject, schema)
     }
 
@@ -50,4 +57,6 @@ class AvroPushEventSerialization(topic: String) extends SerializationSchema[Push
   override def serialize(element: PushEvent): Array[Byte] = {
     avroSerializer.serialize(topic, recordFormat.to(element))
   }
+
 }
+**/

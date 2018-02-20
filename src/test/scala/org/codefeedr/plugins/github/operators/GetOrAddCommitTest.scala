@@ -30,8 +30,8 @@ class GetOrAddCommitTest extends MongoGitHubSpec with Eventually {
   val fakeCommit = Commit("2439402a43e11b5efa2a680ac31207f2210b63d5",
     "https://api.github.com/repos/codefeedr/codefeedr/commits/2439402a43e11b5efa2a680ac31207f2210b63d5",
     CommitData(
-      CommitUser("wouter", "test", ""),
-      CommitUser("wouter", "test", ""),
+      CommitUser("wouter", "test", new Date()),
+      CommitUser("wouter", "test", new Date()),
       "test",
       Tree("test"),
       1,

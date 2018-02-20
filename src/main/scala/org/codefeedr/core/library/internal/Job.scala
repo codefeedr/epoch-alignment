@@ -18,9 +18,14 @@
  */
 package org.codefeedr.core.library.internal
 
+import java.util.concurrent.TimeUnit
+
 import com.typesafe.scalalogging.Logger
+import org.apache.flink.api.common.restartstrategy.RestartStrategies
+import org.apache.flink.api.common.time.Time
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.configuration.{ConfigConstants, Configuration, WebOptions}
+import org.apache.flink.runtime.executiongraph.restart.RestartStrategy
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.codefeedr.core.library.SubjectFactory
@@ -97,6 +102,7 @@ abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.Type
   def startJob() = async {
     val conf = new Configuration()
     val env = StreamExecutionEnvironment.createLocalEnvironment(getParallelism, conf)
+    env.setRestartStrategy(RestartStrategies.fixedDelayRestart(100, Time.of(1, TimeUnit.SECONDS)))
     logger.debug(s"Composing env for ${subjectType.name}")
     await(compose(env, s"$name"))
     logger.debug(s"Starting env for ${subjectType.name}")

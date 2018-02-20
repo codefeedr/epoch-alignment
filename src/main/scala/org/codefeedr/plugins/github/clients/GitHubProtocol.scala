@@ -50,7 +50,7 @@ object GitHubProtocol {
                    org: Option[Organization],
                    payload: JObject,
                    public: Boolean,
-                   created_at: String)
+                   created_at: Date)
 
   /**
     * Represents a 'generic' GitHub event.
@@ -68,7 +68,7 @@ object GitHubProtocol {
                        org: Option[Organization],
                        payload: Payload,
                        public: Boolean,
-                       created_at: String)
+                       created_at: Date)
 
   /**
     * Payload of the PushEvent.
@@ -175,7 +175,7 @@ object GitHubProtocol {
     * @param email email of the user.
     * @param date date of the commit.
     */
-  case class CommitUser(name: String, email: String, date: String)
+  case class CommitUser(name: String, email: String, date: Date)
 
   /**
     * Represent the author/committer of the commit.

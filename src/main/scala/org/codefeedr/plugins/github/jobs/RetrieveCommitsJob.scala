@@ -33,12 +33,12 @@ import scala.concurrent._
 import ExecutionContext.Implicits.global
 import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, PushEvent, SimpleCommit}
 import org.codefeedr.plugins.github.operators.GetOrAddCommit
-import org.codefeedr.plugins.github.serialization.AvroCommitSerializationSchema
+import org.codefeedr.plugins.github.serialization.JsonCommitSerialization
 
 import scala.async.Async.{async, await}
 import scala.concurrent.Future
 
-class RetrieveCommitsJob() extends Job[PushEvent, Commit]("retrieve_commits") {
+class RetrieveCommitsJob extends Job[PushEvent, Commit]("retrieve_commits") {
 
   lazy val config = ConfigFactory.load()
 
@@ -48,7 +48,7 @@ class RetrieveCommitsJob() extends Job[PushEvent, Commit]("retrieve_commits") {
   val zKeeper = config.getString("codefeedr.zookeeper.connectionstring")
 
   @transient
-  val serSchema = new AvroCommitSerializationSchema(topicId)
+  val serSchema = new JsonCommitSerialization()
 
   override def getParallelism: Int = 10
 

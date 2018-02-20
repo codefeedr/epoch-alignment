@@ -18,48 +18,25 @@
  */
 package org.codefeedr.plugins.github.serialization
 
-import com.sksamuel.avro4s.{AvroSchema, RecordFormat, SchemaFor}
-import io.confluent.kafka.schemaregistry.client.{CachedSchemaRegistryClient, SchemaRegistryClient}
-import io.confluent.kafka.serializers.{KafkaAvroDeserializer, KafkaAvroSerializer}
-import org.apache.avro.generic.GenericRecord
 import org.apache.flink.api.common.serialization.DeserializationSchema
 import org.apache.flink.api.common.typeinfo.TypeInformation
-import org.apache.flink.api.java.typeutils.{TypeExtractionUtils, TypeExtractor}
+import org.apache.flink.api.java.typeutils.TypeExtractor
 import org.codefeedr.plugins.github.clients.GitHubProtocol.PushEvent
+import org.json4s.NoTypeHints
+import org.json4s.jackson.Serialization
 
-/**
-class AvroPushEventDeserializer(topic: String) extends DeserializationSchema[PushEvent] {
-
-  @transient
-  private lazy val schemaRegistry: SchemaRegistryClient = {
-    val registry = new CachedSchemaRegistryClient("http://127.0.0.1:8081", 1000)
-    val subject = topic + "-value"
-    val schema = AvroSchema[PushEvent]
-
-    if (!registry.getAllSubjects.contains(subject)) {
-      registry.register(subject, schema)
-    }
-
-    registry
-  }
-
-  @transient
-  private lazy val schema = AvroSchema[PushEvent]
-
-  @transient
-  lazy val avroSerializer: KafkaAvroDeserializer = new KafkaAvroDeserializer(schemaRegistry)
+class JsonPushEventDeserialization extends DeserializationSchema[PushEvent] {
 
   override def isEndOfStream(nextElement: PushEvent): Boolean = {
     false
   }
 
   override def deserialize(message: Array[Byte]): PushEvent = {
-    val format = RecordFormat[PushEvent]
-    format.from(avroSerializer.deserialize(topic, message, schema).asInstanceOf[GenericRecord])
+    implicit val formats = Serialization.formats(NoTypeHints)
+    Serialization.read[PushEvent](new String(message))
   }
 
   override def getProducedType: TypeInformation[PushEvent] = {
     TypeExtractor.createTypeInfo(classOf[PushEvent])
   }
 }
-**/
