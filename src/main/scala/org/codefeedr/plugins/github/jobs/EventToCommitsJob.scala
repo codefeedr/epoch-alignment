@@ -44,7 +44,7 @@ class EventToCommitsJob() extends Job[Event, Commit]("events_to_commits_job") {
   val deSerSchema = new JsonPushEventDeserialization()
 
   //parallelism
-  override def getParallelism: Int = 20
+  override def getParallelism: Int = 14
 
   /**
     * Setups a stream for the given environment.
@@ -58,7 +58,7 @@ class EventToCommitsJob() extends Job[Event, Commit]("events_to_commits_job") {
 
     //map to commits of push event
     val pushStream = stream.flatMap(event =>
-      event.payload.commits.map(x => (event.repo.name, SimpleCommit(x.sha))))
+      event.payload.commits.map(x => (event.repo.name, SimpleCommit(x.sha)))).rebalance
 
     //work around for not existing RichAsyncFunction in Scala
     val getCommit = new GetOrAddCommit //get or add commit to mongo
@@ -67,7 +67,7 @@ class EventToCommitsJob() extends Job[Event, Commit]("events_to_commits_job") {
                                         getCommit,
                                         10,
                                         TimeUnit.SECONDS,
-                                        100)
+        50)
 
     new DataStream(finalStream)
   }

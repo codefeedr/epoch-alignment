@@ -60,9 +60,11 @@ class CheckAndForwardCommit extends RichAsyncFunction[PushEvent, SimpleCommit] {
   val collection = mongoDB.getCollection[Commit](collectionName)
 
   //loads the github api
+  @transient
   var GitHubAPI: GitHubAPI = _
 
   //loads the github request service
+  @transient
   var gitHubRequestService: GitHubRequestService = _
 
   /**

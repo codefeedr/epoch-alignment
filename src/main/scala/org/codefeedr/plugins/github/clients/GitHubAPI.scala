@@ -51,6 +51,8 @@ class GitHubAPI(workerNumber: Integer) {
     val key = apiKeys.get(index)
     client.setOAuth2Token(key)
 
+    println(s"[Debug] Worker $workerNumber with key: $key")
+
     key
   }
 

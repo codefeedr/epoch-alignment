@@ -61,10 +61,9 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     */
   @throws(classOf[Exception])
   def getCommit(repoName: String, sha: String): Option[Commit] = {
-    val requestsLeft = client.getRemainingRequests
-
-    if (requestsLeft != -1 && requestsLeft <= 50) { //just forward none if there shouldn't be more request made
-      println(s"Not enough requests left: $requestsLeft")
+    val requestLeft = client.getRemainingRequests
+    if (requestLeft != -1 && requestLeft <= 50) { //just forward none if there shouldn't be more request made
+      println(s"Not enough requests left: $requestLeft")
       return None
     }
 
@@ -83,7 +82,6 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
       request.setType(new TypeToken[JsonElement]() {}.getType)
       val response: GitHubResponse = client.get(request)
       commit = response.getBody.asInstanceOf[JsonElement]
-
       toReturn = Some(parse(gson.toJson(commit)).extract[Commit])
     } catch {
       case e: Exception => {
