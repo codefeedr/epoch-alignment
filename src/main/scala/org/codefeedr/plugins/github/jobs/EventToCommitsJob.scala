@@ -57,17 +57,14 @@ class EventToCommitsJob() extends Job[Event, Commit]("events_to_commits_job") {
       env.addSource(setupSource())
 
     //map to commits of push event
-    val pushStream = stream.flatMap(event =>
-      event.payload.commits.map(x => (event.repo.name, SimpleCommit(x.sha)))).rebalance
+    val pushStream = stream
+      .flatMap(event => event.payload.commits.map(x => (event.repo.name, SimpleCommit(x.sha))))
+      .rebalance
 
     //work around for not existing RichAsyncFunction in Scala
     val getCommit = new GetOrAddCommit //get or add commit to mongo
     val finalStream =
-      JavaAsyncDataStream.unorderedWait(pushStream.javaStream,
-                                        getCommit,
-                                        10,
-                                        TimeUnit.SECONDS,
-        50)
+      JavaAsyncDataStream.unorderedWait(pushStream.javaStream, getCommit, 10, TimeUnit.SECONDS, 50)
 
     new DataStream(finalStream)
   }
