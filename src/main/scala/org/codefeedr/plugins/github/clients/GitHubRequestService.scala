@@ -53,6 +53,24 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
   //use gson to convert back to string TODO: pretty inefficient to first parse and then 'unparse'?
   lazy val gson: Gson = new Gson()
 
+
+  /**
+    * Updates the rate limit by doing a 'free' request to the /rate_limit endpoint.
+    */
+  def updateRateLimit() = {
+    val url = "/rate_limit" //request to this address doesn't count for the rate limit
+
+    try {
+      val request: GitHubRequest = createRequest()
+      request.setUri(url)
+      request.setType(new TypeToken[JsonElement]() {}.getType)
+      client.get(request) //do the request
+    } catch {
+      //TODO Improve debugging
+      case e: Exception => println(s"ERROR: ||| ${e.getMessage}")
+    }
+  }
+
   /**
     * Gets a commit by SHA.
     * @param repoName the name of the repository.
@@ -64,6 +82,7 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     val requestLeft = client.getRemainingRequests
     if (requestLeft != -1 && requestLeft <= 50) { //just forward none if there shouldn't be more request made
       println(s"Not enough requests left: $requestLeft")
+      updateRateLimit() //update the rate limit
       return None
     }
 
