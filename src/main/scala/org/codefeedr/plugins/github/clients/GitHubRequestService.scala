@@ -53,7 +53,6 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
   //use gson to convert back to string TODO: pretty inefficient to first parse and then 'unparse'?
   lazy val gson: Gson = new Gson()
 
-
   /**
     * Updates the rate limit by doing a 'free' request to the /rate_limit endpoint.
     */
