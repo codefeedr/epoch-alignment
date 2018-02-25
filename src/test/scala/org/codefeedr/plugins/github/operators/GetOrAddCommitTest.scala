@@ -87,7 +87,7 @@ class GetOrAddCommitTest extends MongoGitHubSpec with Eventually {
     assert(output.head == "https://api.github.com/repos/codefeedr/codefeedr/commits/2439402a43e11b5efa2a680ac31207f2210b63d5")
   }
 
-  "A SimpleCommit" should "be retrieved and forwarded if already in DB" in async {
+  "A SimpleCommit" should "be retrieved and ignored if already in DB" in async {
     val operator = new GetOrAddCommit()
     val runtimeContext = mock[RuntimeContext]
 
@@ -114,7 +114,7 @@ class GetOrAddCommitTest extends MongoGitHubSpec with Eventually {
 
     eventually {
       //verify the future has been used
-      verify(mockFuture, times(1)).complete(List(fakeCommit).asJavaCollection)
+      verify(mockFuture, times(1)).complete(List().asJavaCollection)
 
       succeed
     }

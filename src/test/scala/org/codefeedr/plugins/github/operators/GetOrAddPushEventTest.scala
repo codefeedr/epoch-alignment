@@ -42,7 +42,7 @@ class GetOrAddPushEventTest extends MongoGitHubSpec {
     assert(findIndex.size == 1)
   }
 
-  "A PushEvent" should "be forwarded if already in the DB" taggedAs (Slow) in async {
+  "A PushEvent" should "be ignored if already in the DB" taggedAs (Slow) in async {
     val operator = new GetOrAddPushEvent()
 
     //get pushevent
@@ -63,7 +63,7 @@ class GetOrAddPushEventTest extends MongoGitHubSpec {
     operator.asyncInvoke(pushEvent, mockFuture)
 
     //verify the future has been used
-    verify(mockFuture, timeout(1000).times(1)).complete(List(pushEvent).asJavaCollection)
+    verify(mockFuture, timeout(1000).times(1)).complete(List().asJavaCollection)
 
     succeed
   }
