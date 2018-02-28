@@ -25,8 +25,8 @@ import com.sksamuel.avro4s.AvroSchema
 import org.bson.types.ObjectId
 import akka.actor.{ActorRef, ActorSystem}
 import org.bson.BsonDocument
-import org.codefeedr.core.plugin.GitHubCommitsPlugin
-import org.codefeedr.plugins.github.GitHubEventsPlugin
+import org.codefeedr.core.library.internal.Plugin
+import org.codefeedr.plugins.github.{GitHubCommitsPlugin, GitHubEventsPlugin}
 import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, PushEvent}
 import org.codefeedr.plugins.github.clients.MongoDB
 
@@ -38,64 +38,56 @@ import scala.concurrent.duration.Duration
 import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.bson._
 
+import scala.io.StdIn
 import scala.util.{Failure, Success}
 
 object Main {
 
-  private lazy val mongoDB = new MongoDB()
+  //all plugins we currenly have
+  val plugins : List[Plugin] = new GitHubEventsPlugin :: new GitHubCommitsPlugin :: Nil
 
-  var previousTime = System.currentTimeMillis()
+  //keep track if application is running
+  var running = false
 
   def main(args: Array[String]): Unit = {
-    val plugin = new GitHubEventsPlugin()
+    running = true
 
-    val actorSystem = ActorSystem()
-    val scheduler = actorSystem.scheduler
-    val task = new Runnable { def run() { runTimer() } }
-    scheduler.schedule(initialDelay = Duration(1, TimeUnit.MINUTES),
-                       interval = Duration(1, TimeUnit.MINUTES),
-                       runnable = task)
+    while (running) {
+      println("-- Choose an option --")
+      println("0) Stop application")
+
+      //print all plugins
+      plugins.zipWithIndex.foreach {
+        case (plugin, count) => println(s"${count + 1}) Start ${plugin.getClass.getName} job.")
+      }
+
+      val input = StdIn.readInt()
+      processInput(input)
+    }
+    println("Now stopping application.")
+  }
+
+  /**
+    * Processes the console input.
+    * @param input the console input.
+    */
+  def processInput(input: Int) = input match {
+    case 0 => running = false
+    case x if x <= plugins.size => runPlugin(x)
+    case _ => println("Unrecognized command, please retry.")
+  }
+
+  /**
+    * Runs a plugin.
+    * @param id the id of the plugin.
+    */
+  def runPlugin(id: Int) = {
+    val plugin = plugins(id - 1) //list starts from 0
 
     val output = Await.ready(plugin.run(), Duration.Inf)
 
-    output.value.get match {
-      case Success(_) => System.exit(0)
-      case Failure(_) => System.exit(1)
-    }
-  }
-
-  def runTimer() = async {
-    var currentTime = System.currentTimeMillis()
-
-    var greaterThan = gte("_id", genObjectId(previousTime))
-    var smaller = lt("_id", genObjectId(currentTime))
-
-    var events = await(
-      mongoDB.getCollection[PushEvent]("github_events").find(and(greaterThan, smaller)).toFuture())
-
-    val uniqueCommits = events.flatMap(x => x.payload.commits.map(y => y.sha)).distinct.size
-
-    val document = Document("beforeDate" -> new Date(previousTime),
-                            "afterDate" -> new Date(currentTime),
-                            "uniqueCommits" -> uniqueCommits,
-                            "eventSize" -> events.size)
-
-    val inserted = await(
-      mongoDB
-        .getCollection("events_stats")
-        .insertOne(document)
-        .toFuture())
-
-    println(s"Inserted stats: $inserted")
-
-    previousTime = currentTime //update date
-  }
-
-  def genObjectId(timeInMs: Long): ObjectId = {
-    var timeInS = timeInMs / 1000L
-    var oidString = java.lang.Long.toHexString(timeInS) + "0000000000000000";
-
-    new ObjectId(oidString)
+    //print output if there is one.
+    println(output.value.get)
   }
 
 }

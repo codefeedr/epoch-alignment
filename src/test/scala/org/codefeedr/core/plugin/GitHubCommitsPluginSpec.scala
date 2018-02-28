@@ -16,11 +16,12 @@
  * limitations under the License.
  *
  */
-package org.codefeedr.core.plugin
+package org.codefeedr.plugins.github
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.log4j.{Level, Logger}
 import org.codefeedr.core.LibraryServiceSpec
+import org.codefeedr.plugins.github.GitHubCommitsPlugin
 import org.eclipse.egit.github.core.client.GitHubClient
 import org.scalatest.Matchers
 import org.scalatest.mockito.MockitoSugar
