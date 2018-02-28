@@ -24,7 +24,12 @@ import java.io.IOException
 import com.google.gson.reflect.TypeToken
 import com.google.gson.{Gson, JsonElement}
 import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, Event, SimpleCommit}
-import org.eclipse.egit.github.core.client.{GitHubClient, GitHubRequest, GitHubResponse, PageIterator}
+import org.eclipse.egit.github.core.client.{
+  GitHubClient,
+  GitHubRequest,
+  GitHubResponse,
+  PageIterator
+}
 import org.eclipse.egit.github.core.service.GitHubService
 import org.json4s.DefaultFormats
 import org.eclipse.egit.github.core.client.PagedRequest.{PAGE_FIRST, PAGE_SIZE}
@@ -43,7 +48,7 @@ import scala.collection.JavaConverters._
 class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
 
   //default logger
-  private lazy val logger : Logger = LoggerFactory.getLogger(getClass.getName)
+  private lazy val logger: Logger = LoggerFactory.getLogger(getClass.getName)
 
   //should not exceed this margin in terms of requests per hour
   private lazy val requestMargin = 50
@@ -108,7 +113,8 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
       toReturn = Some(parse(gson.toJson(commit)).extract[Commit])
     } catch {
       case e: Exception => {
-        logger.error(s"Error while requesting and parsing a commit: ${e.getMessage} ||| $repoName and $sha")
+        logger.error(
+          s"Error while requesting and parsing a commit: ${e.getMessage} ||| $repoName and $sha")
         toReturn = None
       }
     }

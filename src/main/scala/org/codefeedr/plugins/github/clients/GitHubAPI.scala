@@ -28,7 +28,7 @@ import org.slf4j.{Logger, LoggerFactory}
 class GitHubAPI(workerNumber: Integer) {
 
   //default logger
-  private lazy val logger : Logger = LoggerFactory.getLogger(getClass.getName)
+  private lazy val logger: Logger = LoggerFactory.getLogger(getClass.getName)
 
   //get the codefeedr configuration files
   private lazy val conf: Config = ConfigFactory.load()
