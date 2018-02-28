@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
 import org.codefeedr.Main.runTimer
-import org.codefeedr.core.plugin.GitHubPlugin
+import org.codefeedr.core.plugin.GitHubCommitsPlugin
 import org.codefeedr.plugins.github.GitHubEventsPlugin
 
 import scala.concurrent.Await
@@ -32,7 +32,7 @@ import scala.util.{Failure, Success}
 object Main2 {
 
   def main(args: Array[String]): Unit = {
-    val plugin = new GitHubPlugin()
+    val plugin = new GitHubCommitsPlugin()
 
     val output = Await.ready(plugin.run(), Duration.Inf)
 

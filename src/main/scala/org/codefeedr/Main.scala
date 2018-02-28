@@ -25,7 +25,7 @@ import com.sksamuel.avro4s.AvroSchema
 import org.bson.types.ObjectId
 import akka.actor.{ActorRef, ActorSystem}
 import org.bson.BsonDocument
-import org.codefeedr.core.plugin.GitHubPlugin
+import org.codefeedr.core.plugin.GitHubCommitsPlugin
 import org.codefeedr.plugins.github.GitHubEventsPlugin
 import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, PushEvent}
 import org.codefeedr.plugins.github.clients.MongoDB
