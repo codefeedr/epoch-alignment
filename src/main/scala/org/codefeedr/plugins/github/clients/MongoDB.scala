@@ -53,8 +53,6 @@ class MongoDB {
 
   //get the codefeedr configuration files
   private lazy val conf: Config = ConfigFactory.load()
-  // Enable MongoDB logging in general
-  val mongoLogger = Logger.getLogger("org.mongodb.driver")
 
   //setup credentials from config
   @transient
@@ -112,7 +110,7 @@ class MongoDB {
       ),
       DEFAULT_CODEC_REGISTRY
     ))
-    //.credentialList(List(mongoCredential).asJava)
+    //.credentialList(List(mongoCredential).asJava) we are currently not using a credential list, but might in the future
     .build()
 
   //setup client
@@ -135,7 +133,6 @@ class MongoDB {
     * @return the correct collection, based on type.
     */
   def getCollection[T: ClassTag](collectionName: String): MongoCollection[T] = {
-    mongoLogger.setLevel(Level.OFF); // e.g. or Log.WARNING, etc.
     mongoDatabase.getCollection[T](collectionName)
   }
 

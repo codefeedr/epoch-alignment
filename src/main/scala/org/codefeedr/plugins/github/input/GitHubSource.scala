@@ -26,6 +26,10 @@ import org.codefeedr.plugins.github.clients.GitHubProtocol.Event
 import org.codefeedr.plugins.github.clients.{GitHubAPI, GitHubRequestService}
 import org.slf4j.{Logger, LoggerFactory}
 
+/**
+  * Functions as a Flink source which retrieves github events.
+  * @param maxRequests the maximum of requests this source should do to the GitHub API.
+  */
 class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] {
 
   //get logger used by Flink
@@ -33,9 +37,6 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
 
   //loads the github api
   var gitHubAPI: GitHubAPI = _
-
-  //amount of events polled after closing
-  var eventsPolled: Integer = 0
 
   //keeps track if the event polling is still running
   var isRunning = false
@@ -50,8 +51,11 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
 
     //initiate GitHubAPI
     gitHubAPI = new GitHubAPI(taskId)
+
+    //we want a different key for a source, so we override it
     gitHubAPI.client.setOAuth2Token(
       ConfigFactory.load().getString("codefeedr.input.github.input_api_key"))
+
     isRunning = true
   }
 
@@ -83,22 +87,29 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
 
       //collect all the events
       events.foreach { x =>
-        eventsPolled += 1
         ctx.collect(x)
       }
 
-      //update the amount of requests done
-      currentRequest += 1
+      //update the amount of requests done, only if maxRequests is used
+      currentRequest = if (maxRequests == -1) 0 else currentRequest + 1
 
       //this part is just for debugging/test purposes
       if (maxRequests != -1 && currentRequest >= maxRequests) {
         cancel()
 
-        log.info(s"Going to send $eventsPolled events")
+        log.info(s"Going to stop source after $currentRequest requests are done")
         return
       }
 
-      Thread.sleep(2500) //wait 2.5 second
+      /**
+        * We don't want to do more request than the rate limit per key (5000).
+        * On a maximum there are 3 request per event poll (3 pages, 100 events).
+        * We can do 5000 / 3 = 1666 event polls per hour.
+        * 1666 / 60 = 27 polls per minute.
+        *
+        * 60 / 27 = 2.222 seconds delay in between polls
+        */
+      Thread.sleep(2222)
     }
   }
 }

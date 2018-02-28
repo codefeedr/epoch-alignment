@@ -20,17 +20,18 @@ package org.codefeedr.plugins.github.clients
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.eclipse.egit.github.core.client.GitHubClient
+import org.slf4j.{Logger, LoggerFactory}
 
 /**
   * Wrapper class for setting up GitHubAPI connection.
   */
 class GitHubAPI(workerNumber: Integer) {
 
+  //default logger
+  private lazy val logger : Logger = LoggerFactory.getLogger(getClass.getName)
+
   //get the codefeedr configuration files
   private lazy val conf: Config = ConfigFactory.load()
-
-  //Github API rate limit
-  private val _rateLimit: Integer = 5000
 
   //initialize githubclient
   @transient
@@ -38,7 +39,6 @@ class GitHubAPI(workerNumber: Integer) {
 
   //some getters
   def client = _client
-  def rateLimit = _rateLimit
 
   /**
     * Set the OAuthToken of the GitHub API using the number of the process.
@@ -51,7 +51,7 @@ class GitHubAPI(workerNumber: Integer) {
     val key = apiKeys.get(index)
     client.setOAuth2Token(key)
 
-    println(s"[Debug] Worker $workerNumber with key: $key")
+    logger.info(s"Worker $workerNumber got assigned with key: $key")
 
     key
   }

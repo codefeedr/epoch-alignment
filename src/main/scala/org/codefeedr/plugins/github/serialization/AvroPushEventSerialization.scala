@@ -30,6 +30,7 @@ import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, PushEvent}
 
 //TODO MAKE THIS GENERIC
 /**
+Currently not used, but we might in the future. Need to comment out otherwise won't compile.
 class AvroPushEventSerialization(topic: String) extends SerializationSchema[PushEvent] {
   @transient
   private lazy val schemaRegistry: SchemaRegistryClient = {

@@ -38,19 +38,25 @@ import org.codefeedr.plugins.github.serialization.JsonCommitSerialization
 import scala.async.Async.{async, await}
 import scala.concurrent.Future
 
+/**
+  * This job retrieves events from other job within SAME application maps and requests commits and then pushes it to Kafka.
+  * NOTE: This is not working in the current infrastructure, since Kafka jobs cannot run concurrently.
+  */
 class RetrieveCommitsJob extends Job[PushEvent, Commit]("retrieve_commits") {
 
+  //lazily loaded config
   lazy val config = ConfigFactory.load()
 
   //define kafka/zk related information
-  val topicId = "commits"
+  val topicId = "commits" //topic to push to
   val kafka = config.getString("codefeedr.kafka.server.bootstrap.servers")
   val zKeeper = config.getString("codefeedr.zookeeper.connectionstring")
 
-  @transient
+  @transient //serialization for the commits
   val serSchema = new JsonCommitSerialization()
 
-  override def getParallelism: Int = 10
+  //set parallelism equal to amount of API keys
+  override def getParallelism: Int = config.getStringList("codefeedr.input.github.apikeys").size()
 
   /**
     * Setups a stream for the given environment.
@@ -60,17 +66,22 @@ class RetrieveCommitsJob extends Job[PushEvent, Commit]("retrieve_commits") {
     */
   override def getStream(env: StreamExecutionEnvironment): DataStream[Commit] = {
     val stream = env
-      .addSource(source)
+      .addSource(source) //links to previous Job TODO: add some error handling for this?
       .flatMap(event => event.payload.commits.map(x => (event.repo.name, SimpleCommit(x.sha))))
 
     //work around for not existing RichAsyncFunction in Scala
     val getCommit = new GetOrAddCommit //get or add commit to mongo
-    val finalStream =
+    val finalStream = //10 seconds time out, 100 async requests at the same time
       JavaAsyncDataStream.unorderedWait(stream.javaStream, getCommit, 10, TimeUnit.SECONDS, 100)
 
     new DataStream(finalStream)
   }
 
+  /**
+    * Composes the execution environment
+    * @param env the environment where the source should be composed on.
+    * @param queryId the id of this 'query'.
+    */
   override def compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit] = async {
     val prop = new Properties()
     prop.setProperty("bootstrap.servers", kafka)

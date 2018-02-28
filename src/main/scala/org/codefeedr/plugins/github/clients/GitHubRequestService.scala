@@ -24,17 +24,13 @@ import java.io.IOException
 import com.google.gson.reflect.TypeToken
 import com.google.gson.{Gson, JsonElement}
 import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, Event, SimpleCommit}
-import org.eclipse.egit.github.core.client.{
-  GitHubClient,
-  GitHubRequest,
-  GitHubResponse,
-  PageIterator
-}
+import org.eclipse.egit.github.core.client.{GitHubClient, GitHubRequest, GitHubResponse, PageIterator}
 import org.eclipse.egit.github.core.service.GitHubService
 import org.json4s.DefaultFormats
 import org.eclipse.egit.github.core.client.PagedRequest.{PAGE_FIRST, PAGE_SIZE}
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConverters._
 
@@ -44,13 +40,19 @@ import scala.collection.JavaConverters._
   *
   * @param client GitHubClient
   */
-//TODO ADD EXCEPTIONS!
 class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
+
+  //default logger
+  private lazy val logger : Logger = LoggerFactory.getLogger(getClass.getName)
+
+  //should not exceed this margin in terms of requests per hour
+  private lazy val requestMargin = 50
 
   // Brings in default date formats etc
   implicit val formats = DefaultFormats
 
-  //use gson to convert back to string TODO: pretty inefficient to first parse and then 'unparse'?
+  //use gson to convert back to string
+  // TODO: pretty inefficient to first parse and then 'unparse'?
   lazy val gson: Gson = new Gson()
 
   /**
@@ -60,13 +62,13 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     val url = "/rate_limit" //request to this address doesn't count for the rate limit
 
     try {
+      //by doing this 'free' request, the rate limit is automatically updated by the underlying library (e-git).
       val request: GitHubRequest = createRequest()
       request.setUri(url)
       request.setType(new TypeToken[JsonElement]() {}.getType)
       client.get(request) //do the request
     } catch {
-      //TODO Improve debugging
-      case e: Exception => println(s"ERROR: ||| ${e.getMessage}")
+      case e: Exception => logger.error(s"Error while updating the rate limit: ${e.getMessage}")
     }
   }
 
@@ -78,9 +80,10 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     */
   @throws(classOf[Exception])
   def getCommit(repoName: String, sha: String): Option[Commit] = {
-    val requestLeft = client.getRemainingRequests
-    if (requestLeft != -1 && requestLeft <= 50) { //just forward none if there shouldn't be more request made
-      println(s"Not enough requests left: $requestLeft")
+    val requestLeft = client.getRemainingRequests //get the request left
+
+    if (requestLeft != -1 && requestLeft <= requestMargin) { //just forward none if there shouldn't be more request made
+      logger.warn(s"Not enough requests left: $requestLeft")
       updateRateLimit() //update the rate limit
       return None
     }
@@ -95,15 +98,17 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     var toReturn: Option[Commit] = None
 
     try {
+      //setup request and parse response into a Commit case class
       val request: GitHubRequest = createRequest()
       request.setUri(uri.toString())
       request.setType(new TypeToken[JsonElement]() {}.getType)
       val response: GitHubResponse = client.get(request)
+
       commit = response.getBody.asInstanceOf[JsonElement]
       toReturn = Some(parse(gson.toJson(commit)).extract[Commit])
     } catch {
       case e: Exception => {
-        println(s"ERROR: ||| ${e.getMessage} ||| $repoName and $sha")
+        logger.error(s"Error while requesting and parsing a commit: ${e.getMessage} ||| $repoName and $sha")
         toReturn = None
       }
     }

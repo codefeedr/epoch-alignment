@@ -33,7 +33,6 @@ class GitHubEventsPlugin extends Plugin {
 
   /**
     * Setup jobs.
-    *
     * @return a list of jobs.
     */
   override def setupJobs: Future[List[Job[_, _]]] = async {

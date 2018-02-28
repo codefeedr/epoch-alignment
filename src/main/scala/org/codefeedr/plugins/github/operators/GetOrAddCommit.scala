@@ -8,6 +8,9 @@ import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, SimpleCommit
 import scala.async.Async._
 import scala.concurrent.Future
 
+/**
+  * Async operator which gets or adds a commit.
+  */
 class GetOrAddCommit extends GetOrAddGeneric[(String, SimpleCommit), Commit] {
 
   //get the codefeedr configuration files

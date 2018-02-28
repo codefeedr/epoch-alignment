@@ -28,6 +28,7 @@ import com.mongodb.client.model.IndexOptions
 import org.apache.flink.streaming.api.functions.async.{ResultFuture, RichAsyncFunction}
 import org.codefeedr.plugins.github.clients.MongoDB
 import org.mongodb.scala.model.Filters._
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.reflect.ClassTag
@@ -48,11 +49,12 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
   implicit lazy val executor: ExecutionContext =
     ExecutionContext.fromExecutor(Executors.directExecutor())
 
+  //lazily load the logger
+  private lazy val logger: Logger = LoggerFactory.getLogger(getClass.getName)
+
   //mongodb instance
   @transient
   lazy val mongoDB: MongoDB = new MongoDB()
-
-  var documents: List[B] = List()
 
   /**
     * Called when runtime context is started.
@@ -89,28 +91,30 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
       .subscribe(new Observer[B] {
 
         override def onError(e: Throwable): Unit = {
-          e.printStackTrace()
-          resultFuture.complete(Iterable().asJavaCollection)
+          logger.error(s"Error while finding document $input in MongoDB: ${e.getMessage}")
+          resultFuture.complete(Iterable().asJavaCollection) //empty output
         }
 
         override def onComplete(): Unit = {
-          if (send) { //if already send then ignore
-            //println("Im here now")
-            return
-          }
+          if (send) return //if already send, then future is closed
 
           //retrieve output
           val getReturn: Option[B] = getFunction(input)
 
+          //if some error occurred while retrieving, just return nothing
           if (getReturn.isEmpty) {
+            logger.error(s"Request service didn't return commit for $input.")
             resultFuture.complete(Iterable().asJavaCollection)
           }
 
+          //get commit
           val output = getReturn.get
 
+          //insert commit and wait for it //TODO: Is this the way to go? Thread-safety...
           val result = Await.ready(col.insertOne(output).toFuture(), Duration.Inf)
 
-          //match on await; we want to filter duplicates once again, because they might have been processed at the same time
+          //match on await;
+          //we want to filter duplicates once again, because they might have been processed at the same time
           result.value.get match {
             case Success(_) =>
               resultFuture.complete(Iterable(output).asJavaCollection) //if success then forward
@@ -120,22 +124,11 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
         }
 
         override def onNext(result: B): Unit = {
-          //println(s"Data already found $result")
-          //found the record, so lets end the future
+          //data found, so we end with empty future (we don't want to forward duplicates).
           send = true
-          //TODO Currently duplicates are removed
           resultFuture.complete(Iterable().asJavaCollection)
         }
       })
-
-    /**
-    val output = getFunction(input)
-
-    if (output.isEmpty) {
-      resultFuture.complete(Iterable().asJavaCollection)
-    } else {
-      resultFuture.complete(Iterable(output.get).asJavaCollection)
-    }**/
   }
 
   /**
@@ -174,10 +167,4 @@ abstract class GetOrAddGeneric[A: ClassTag, B: ClassTag]() extends RichAsyncFunc
     */
   def getFunction(input: A): Option[B]
 
-  override def close(): Unit = {
-    val collection = mongoDB.getCollection[B](getCollectionName)
-    if (documents.size > 0) {
-      Await.result(collection.insertMany(documents).toFuture(), Duration.Inf)
-    }
-  }
 }

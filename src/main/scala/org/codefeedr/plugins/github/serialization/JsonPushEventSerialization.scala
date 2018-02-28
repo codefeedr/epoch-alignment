@@ -24,8 +24,16 @@ import org.json4s.DefaultFormats
 import org.json4s._
 import org.json4s.jackson.Serialization
 
+/**
+  * Serializes a push event into JSON format.
+  */
 class JsonPushEventSerialization extends SerializationSchema[PushEvent] {
 
+  /**
+    * Serializes a push event.
+    * @param element push event to serialized.
+    * @return serialized into JSON.
+    */
   override def serialize(element: PushEvent): Array[Byte] = {
     implicit val formats = Serialization.formats(NoTypeHints)
     val bytes = Serialization.write(element)(formats)

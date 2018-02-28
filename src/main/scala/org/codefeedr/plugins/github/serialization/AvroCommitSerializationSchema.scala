@@ -33,6 +33,7 @@ import org.apache.flink.api.common.serialization.SerializationSchema
 import org.codefeedr.plugins.github.clients.GitHubProtocol._
 
 /**
+Currently not used, but we might in the future. Need to comment out otherwise won't compile.
 class AvroCommitSerializationSchema(topic: String) extends SerializationSchema[Commit] {
 
   @transient

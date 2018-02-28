@@ -25,17 +25,34 @@ import org.codefeedr.plugins.github.clients.GitHubProtocol.PushEvent
 import org.json4s.NoTypeHints
 import org.json4s.jackson.Serialization
 
+/**
+  * Deserializes push events from JSON to case class.
+  */
 class JsonPushEventDeserialization extends DeserializationSchema[PushEvent] {
 
+  /**
+    * We never reach the end of the stream, so we keep this to false.
+    * @param nextElement
+    * @return always false.
+    */
   override def isEndOfStream(nextElement: PushEvent): Boolean = {
     false
   }
 
+  /**
+    * Deserializes a json push event.
+    * @param message json push event.
+    * @return the case class of json.
+    */
   override def deserialize(message: Array[Byte]): PushEvent = {
     implicit val formats = Serialization.formats(NoTypeHints)
     Serialization.read[PushEvent](new String(message))
   }
 
+  /**
+    * Generates the type information based on the case class.
+    * @return the typeinformation of a push event.
+    */
   override def getProducedType: TypeInformation[PushEvent] = {
     TypeExtractor.createTypeInfo(classOf[PushEvent])
   }

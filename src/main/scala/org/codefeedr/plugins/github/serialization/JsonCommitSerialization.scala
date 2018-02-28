@@ -23,8 +23,16 @@ import org.codefeedr.plugins.github.clients.GitHubProtocol.Commit
 import org.json4s.NoTypeHints
 import org.json4s.jackson.Serialization
 
+/**
+  * Serializes a commit into JSON format.
+  */
 class JsonCommitSerialization extends SerializationSchema[Commit] {
 
+  /**
+    * Serializes a commit.
+    * @param element commit to serialized.
+    * @return serialized into JSON.
+    */
   override def serialize(element: Commit): Array[Byte] = {
     implicit val formats = Serialization.formats(NoTypeHints)
     val bytes = Serialization.write(element)(formats)

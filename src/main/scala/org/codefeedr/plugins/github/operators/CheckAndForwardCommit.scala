@@ -41,6 +41,7 @@ import collection.JavaConverters._
 /**
   * Checks the commit data we already have of a repository and forward the missing ones.
   */
+//TODO: IMPROVE THIS CLASS
 class CheckAndForwardCommit extends RichAsyncFunction[PushEvent, SimpleCommit] {
 
   //get the codefeedr configuration files
