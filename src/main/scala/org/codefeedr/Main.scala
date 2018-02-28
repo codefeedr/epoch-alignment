@@ -44,7 +44,7 @@ import scala.util.{Failure, Success}
 object Main {
 
   //all plugins we currenly have
-  val plugins : List[Plugin] = new GitHubEventsPlugin :: new GitHubCommitsPlugin :: Nil
+  val plugins: List[Plugin] = new GitHubEventsPlugin :: new GitHubCommitsPlugin :: Nil
 
   //keep track if application is running
   var running = false
