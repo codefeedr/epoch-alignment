@@ -68,14 +68,12 @@ abstract class Plugin {
     await(startPlugin())
     //await(Future.sequence(jobs.map(_.startJob(subjectLibrary))))
 
-    //really hacky
-    val job1 = jobs(0)
-//    val job2 = jobs(1)
+    //start and finish all jobs in order
+    for (job <- jobs) {
+      Await.ready(job.startJob(), Duration.Inf)
+      Await.ready(subjectLibrary.getSubject(job.subjectType.name).assertExists(), Duration.Inf)
+    }
 
-    await(job1.startJob())
-    await(subjectLibrary.getSubject(job1.subjectType.name).assertExists())
-    //await(job2.startJob())
-    //await(subjectLibrary.getSubject(job2.subjectType.name).assertExists())
 
     await(stopPlugin())
   }
