@@ -6,7 +6,8 @@
     - [Data structure](#data-structure)
 3. [GitHub requests](#github-requests)
     - [Commit retrieval](#commit-retrieval)
-4. [Dependencies](#dependencies)
+4. [Planning](#planning)
+5. [Dependencies](#dependencies)
 
 # Architecture
 ## Overview
@@ -27,6 +28,19 @@ then only retrieve commits enclosed in PushEvent.
 3. If this SHA doesn't correspond with the `before` field (or commit size is bigger than 20), 
 then start retrieving commits SHAs from the `/commits` endpoint. It should start retrieving and storing commits from the `head` of the 
 PushEvent until it finds the commits with the same SHA as retrieved from the DB. 
+
+# Planning
+The current (rough) planning for this GitHub plugin:
+- [ ] Process all event types 
+- [ ] GitHub plugin management?? (a way to manage all the different jobs in the GitHub plugin)
+    - [ ] Keep some plugin statistics (daily events processed, hourly throughput)
+    - [ ] API keys in ZooKeeper (add/del keys on runtime)
+- [ ] Improved debugging/logging
+- [ ] Support Avro Schema's
+- [ ] Run jobs in parallel (do we actually need this? can't we just run different jobs)
+- [ ] Start stream from historic point
+- [ ] Work out Kafka configuration (how long do we keep the data there?)
+- [ ] Add more jobs to the plugin (e.g. Issues/PullRequests etc)
 
 # Dependencies
 
