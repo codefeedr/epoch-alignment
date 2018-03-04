@@ -74,7 +74,6 @@ abstract class Plugin {
       Await.ready(subjectLibrary.getSubject(job.subjectType.name).assertExists(), Duration.Inf)
     }
 
-
     await(stopPlugin())
   }
 }
