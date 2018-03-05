@@ -31,16 +31,16 @@ PushEvent until it finds the commits with the same SHA as retrieved from the DB.
 
 # Planning
 The current (rough) planning for this GitHub plugin:
-- [ ] Process all event types 
-- [ ] GitHub plugin management?? (a way to manage all the different jobs in the GitHub plugin)
-    - [ ] Keep some plugin statistics (daily events processed, hourly throughput)
+- [ ] Process all event types (PushEvents/IssuesEvent etc.)
+- [ ] GitHub plugin management/monitoring?? (a way to manage/monitor all the different jobs in the GitHub plugin)
+    - [ ] Keep some (global) plugin statistics (daily events processed, hourly throughput)
     - [ ] API keys in ZooKeeper (add/del keys on runtime)
 - [ ] Improved debugging/logging
-- [ ] Support Avro Schema's
-- [ ] Run jobs in parallel (do we actually need this? can't we just run different jobs)
-- [ ] Start stream from historic point
+- [ ] Fully support Avro Schema's
+- [ ] Run jobs in parallel (do we actually need this? can't we just run different jobs seperately)
+- [ ] Start a job from a historic point using Mongo (is it feasible to stream mongo data into kafka/flink?)
 - [ ] Work out Kafka configuration (how long do we keep the data there?)
-- [ ] Add more jobs to the plugin (e.g. Issues/PullRequests etc)
+- [ ] Add more jobs to the plugin (e.g. Issues/PullRequests etc.)
 
 # Dependencies
 
