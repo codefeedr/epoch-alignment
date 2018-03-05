@@ -6,6 +6,10 @@ import scala.async.Async.{async, await}
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
+/**
+  * Non-generic base class for all ZkNodes
+  * @param name
+  */
 abstract class ZkNodeBase(val name: String) {
   @transient lazy val zkClient: ZkClient = LibraryServices.zkClient
 
@@ -67,4 +71,10 @@ abstract class ZkNodeBase(val name: String) {
     * @return the future
     */
   def awaitRemoval(): Future[Unit] = zkClient.awaitRemoval(path)
+
+  def ReadLock(): Future[ZkReadLock] = {
+    //Create a locknode
+    zkClient.Create(s"${path()}/_locknode_/read-",null)
+
+  }
 }

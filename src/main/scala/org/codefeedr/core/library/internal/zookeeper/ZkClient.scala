@@ -117,6 +117,13 @@ class ZkClient extends LazyLogging {
   def close(): Unit = zk.close()
 
   /**
+    * Returns the zookeeper connection object, for more advanced apis
+    * Please only use when really necessary
+    * @return
+    */
+  def getConnector(): ZooKeeper = zk
+
+  /**
     * Get the raw bytearray at the specific node
     * @param path path to the node
     * @return a promise that resolves into the raw data
