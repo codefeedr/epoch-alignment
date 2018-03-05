@@ -16,7 +16,7 @@
  * limitations under the License.
  *
  */
-package org.codefeedr.core.clients.github
+package org.codefeedr.plugins.github.clients
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.eclipse.egit.github.core.client.GitHubClient

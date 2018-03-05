@@ -17,10 +17,10 @@
  *
  */
 
-package org.codefeedr.core.operators
+package org.codefeedr.plugins.github.operators
 
 import com.typesafe.config.{Config, ConfigFactory}
-import org.codefeedr.core.clients.github.GitHubProtocol.PushEvent
+import org.codefeedr.plugins.github.clients.GitHubProtocol.PushEvent
 
 import scala.concurrent.Future
 

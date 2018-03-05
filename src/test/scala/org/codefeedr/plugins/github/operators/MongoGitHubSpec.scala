@@ -1,11 +1,11 @@
-package org.codefeedr.core.operators
+package org.codefeedr.plugins.github.operators
 
 import java.util.Date
 
 import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.core.LibraryServiceSpec
-import org.codefeedr.core.clients.github.GitHubProtocol._
-import org.codefeedr.core.clients.mongodb.MongoDB
+import org.codefeedr.plugins.github.clients.GitHubProtocol._
+import org.codefeedr.plugins.github.clients.MongoDB
 import org.mongodb.scala.Completed
 import org.scalatest.Matchers
 import org.scalatest.mockito.MockitoSugar

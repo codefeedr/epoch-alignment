@@ -1,13 +1,12 @@
-package org.codefeedr.core.clients.github
+package org.codefeedr.plugins.github.clients
 
 import com.typesafe.scalalogging.LazyLogging
-import org.codefeedr.core.clients.github.GitHubProtocol.Commit
 import org.eclipse.egit.github.core.client.GitHubClient
-import org.scalatest.{AsyncFlatSpec, Matchers}
 import org.scalatest.tagobjects.Slow
+import org.scalatest.{AsyncFlatSpec, Matchers}
 
-import scala.async.Async.{async, await}
-import collection.JavaConverters._
+import scala.async.Async.async
+import scala.collection.JavaConverters._
 
 class GitHubRequestServiceTest extends AsyncFlatSpec with Matchers with LazyLogging {
 

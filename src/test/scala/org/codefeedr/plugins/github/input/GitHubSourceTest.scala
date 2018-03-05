@@ -1,12 +1,12 @@
-package org.codefeedr.core.input
+package org.codefeedr.plugins.github.input
 
 import org.apache.flink.api.common.functions.RuntimeContext
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.source.SourceFunction
-import org.codefeedr.core.clients.github.GitHubProtocol.Event
-import org.scalatest.mockito.MockitoSugar
-import org.mockito.Mockito._
+import org.codefeedr.plugins.github.clients.GitHubProtocol.Event
 import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito._
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
 
 class GitHubSourceTest extends FlatSpec with Matchers with MockitoSugar {
