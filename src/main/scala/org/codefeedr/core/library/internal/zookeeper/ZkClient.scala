@@ -380,7 +380,7 @@ class ZkClient extends LazyLogging {
     })
 
   /**
-    * Places an obserable on the path that only produces events for new children added to the node of the given path
+    * Places an observable on the path that only produces events for new children added to the node of the given path
     * Maintains a mutable internal state
     * Current implementation does not guarantee an event is fired when a child is removed and added again
     * (but it should do so in all practical use cases)

@@ -1,10 +1,11 @@
 package org.codefeedr.core.library.internal.zookeeper
 
 import com.typesafe.scalalogging.LazyLogging
-import rx.lang.scala.Observable
+import rx.lang.scala.{Observable, Subscription}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.async.Async.{async, await}
+import scala.collection.mutable
 import scala.concurrent.duration.{Duration, MILLISECONDS}
 import scala.concurrent.{Future, Promise}
 
@@ -52,50 +53,92 @@ trait ZkCollectionStateNode[
     * @param f condition to evaluate for each child
     * @return
     */
-  def watchStateAggregate(f: TChildState => Boolean): Future[Boolean] = async {
-    val p = Promise[Boolean]
+  def watchStateAggregate(f: TChildState => Boolean): Future[Boolean] = {
+    val aggregateWatch = new AggregateWatch[TChildNode, TChild, TChildState](f)
+    //Observe the children
+    observeNewChildren().subscribe(o => aggregateWatch.newChild(o))
+    aggregateWatch.future
+  }
+}
 
-    //Accumulator used
-    def accumulator(current: List[String], element: (String, Boolean)) = {
-      if (element._2) {
-        current.filter(o => o != element._1)
-      } else {
-        if (!current.contains(element._1)) {
-          current ++ List[String](element._1)
-        } else {
-          current
-        }
+/**
+  * Class handling the state needed to watch node aggregates
+  * @param f mapping method from the state
+  * @tparam TChildNode Type of the childNode
+  * @tparam TChild Type of the child
+  * @tparam TChildState Type of the childs state
+  */
+private class AggregateWatch[TChildNode <: ZkStateNode[TChild, TChildState], TChild, TChildState](
+    f: TChildState => Boolean) {
+  private val lock = new Object()
+  private val p = Promise[Boolean]
+  //Contains the current state
+
+  private val stateMap = mutable.Map[String, Boolean]()
+  private val subscriptionMap = mutable.Map[String, Subscription]()
+
+  /**
+    * Retrieve the future of the aggregate watch
+    *
+    * @return
+    */
+  def future: Future[Boolean] = p.future
+
+  /**
+    * Methods adds a new child to the collection
+    * Synchronized method
+    *
+    * @param childNode
+    */
+  def newChild(childNode: TChildNode): Unit = lock.synchronized {
+    stateMap += childNode.name -> false
+    val subscription = childNode
+      .getStateNode()
+      .observeData()
+      .map(s => f(s))
+      .subscribe(o =>
+                   synchronized {
+                     stateMap.update(childNode.name, o)
+                     if (o) {
+                       checkFinish()
+                     }
+                 },
+                 error => {
+                   p.failure(error)
+                   cleanup()
+                 },
+                 () => {
+                   remove(childNode.name)
+                   checkFinish()
+                 })
+    subscriptionMap += childNode.name -> subscription
+  }
+
+  private def checkFinish(): Unit = lock.synchronized {
+    if (stateMap.forall(p => p._2)) {
+      if (!p.isCompleted) {
+        p.success(true)
+        cleanup()
       }
     }
+  }
 
-    //First obtain the initial state
-    val childNodes = await(getChildren())
-    val initialState = await(
-      Future.sequence(
-        childNodes
-          .map(child => child.getStateNode().getData().map(state => (child.name, !f(state.get))))
-          .toList))
-      .filter(o => o._2)
-      .map(o => o._1)
+  /*
+      Removes a child from the internal state
+   */
+  private def remove(child: String) = {
+    stateMap.remove(child)
+    if (!subscriptionMap(child).isUnsubscribed) {
+      subscriptionMap(child).unsubscribe()
+    }
+    subscriptionMap.remove(child)
+  }
 
-    logger.debug(s"initial state: $initialState")
-
-    //Once the initial state of all children is obtained, start watching
-    val subscription = observeNewChildren()
-      .flatMap(
-        o =>
-          o.getStateNode()
-            .observeData()
-            .map(state => (o.name, f(state))) ++ Observable.just((o.name, true)))
-      .map(o => { logger.debug(s"got event ${o}"); o })
-      .scan[List[String]](initialState)(accumulator)
-      .map(o => { logger.debug(s"Current state: $o"); o })
-      .map(o => o.isEmpty)
-      .map(o => { logger.debug(s"Current state after throttle: $o"); o })
-      .subscribe(o => if (o) p.success(true), error => p.failure(error), () => p.success(false))
-
-    //unsubscribe on comlete if needed
-    p.future.onComplete(o => if (o.get) subscription.unsubscribe())
-    await(p.future)
+  /**
+    * Cleans up all placed subscriptions
+    */
+  private def cleanup(): Unit = {
+    val children = stateMap.keys.toList
+    children.foreach(remove)
   }
 }
