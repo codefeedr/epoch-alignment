@@ -54,7 +54,7 @@ class ZkStateNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAf
   "ZkStateNode.WatchState(c)" should "return a future that resolves when the given condition evaluates to true" in async {
     val root = new TestRoot()
     val child = new TestStateNode("child", root)
-    child.create()
+    await(child.create())
     val f = child.watchState(a => a == "expected")
     assertThrows[TimeoutException](Await.ready(f, Duration(100, MILLISECONDS)))
     child.setState("notexpected")
