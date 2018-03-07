@@ -569,6 +569,24 @@ class ZkClient extends LazyLogging {
   }
 
   /**
+    * Creates a readlock on the given path
+    * Attempts to obtain lock from the moment of creation
+    * Please use the returned object as managed resource
+    * @param path path to the node for which to create the lock
+    * @return readlock for the node
+    */
+  def readLock(path: String): Future[ZkReadLock] = ZkReadLock.open(prependPath(path))
+
+  /**
+    * Creates a writelock on the given path
+    * Attempts to obtain lock from the moment of creation
+    * Please use the returned object as managed resource to prevent deadlocks
+    * @param path the path to the node for which to create the lock
+    * @return writeLock for the node
+    */
+  def writeLock(path: String): Future[ZkWriteLock] = ZkWriteLock.open(prependPath(path))
+
+  /**
     * Keeps placing watches on the given path until the given data condition is true
     * A watch might remain active after the promise has already been resolved
     * @param p promise to check on

@@ -72,9 +72,62 @@ abstract class ZkNodeBase(val name: String) {
     */
   def awaitRemoval(): Future[Unit] = zkClient.awaitRemoval(path)
 
-  def ReadLock(): Future[ZkReadLock] = {
-    //Create a locknode
-    zkClient.Create(s"${path()}/_locknode_/read-",null)
+  /**
+    * Creates a readLock on the given path
+    * Attempts to obtain lock from the moment of calling
+    * Please use the returned object as managed resource to prevent deadlocks
+    * @return future that resolves to the writeLock for the node
+    */
+  def readLock(): Future[ZkReadLock] = zkClient.readLock(path)
 
+  /**
+    * Performs the given asynchronous method within a read lock on the node
+    * @param a the asynchronous operation to perform
+    * @tparam TResult result type of the asynchronous operation
+    * @return
+    */
+  def asyncReadLock[TResult](a: () => Future[TResult]): Future[TResult] = async {
+    val lock = await(readLock())
+    await(try { //Make sure to catch any exception during the creation of the future
+      val f = a()
+      //Close lock when it completes
+      f.onComplete(_ => lock.close())
+      f
+    } catch {
+      case e: Exception => {
+        lock.close()
+        throw e
+      }
+    })
   }
+
+  /**
+    * Creates a writelock on the given path
+    * Attempts to obtain lock from the moment of calling
+    * Please use the returned object as managed resource to prevent deadlocks
+    * @return future that resolves to the writeLock for the node
+    */
+  def writeLock(): Future[ZkWriteLock] = zkClient.writeLock(path)
+
+  /**
+    * Performs the given asynchronous method within a write lock on the node
+    * @param a the asynchronous operation to perform
+    * @tparam TResult result type of the asynchronous operation
+    * @return
+    */
+  def asyncWriteLock[TResult](a: () => Future[TResult]): Future[TResult] = async {
+    val lock = await(writeLock())
+    await(try { //Make sure to catch any exception during the creation of the future
+      val f = a()
+      //Close lock when it completes
+      f.onComplete(_ => lock.close())
+      f
+    } catch {
+      case e: Exception => {
+        lock.close()
+        throw e
+      }
+    })
+  }
+
 }
