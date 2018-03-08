@@ -72,4 +72,11 @@ class APIKey(val key: String, val requestLimit: Int, var resetTime: Long) {
     */
   def reset() = requestsLeft = requestLimit
 
+  /**
+    * String representation of an api key.
+    * @return readable representation of key.
+    */
+  override def toString: String =
+    s"APIKey(key=$key, requestLimit=$requestLimit, requestsLeft=$requestsLeft, resetTime=$resetTime)"
+
 }

@@ -53,6 +53,14 @@ class APIKeyTest extends FlatSpec {
     assert(key.getResetTime() == newTime)
   }
 
+  "An API key" should "create the correct string representation" in {
+    val currentTime = System.currentTimeMillis()
+    val key = new APIKey("key4", 10, currentTime)
+
+    assert(key.toString == s"APIKey(key=key4, requestLimit=10, requestsLeft=10, resetTime=$currentTime)")
+  }
+
+
 
 
 }
