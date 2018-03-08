@@ -24,9 +24,7 @@ package org.codefeedr.plugins.github.clients
   * @param requestLimit the request limit.
   * @param resetTime the time on which a key is resetted (milliseconds since UNIX epoch).
   */
-class APIKey(val key: String,
-             val requestLimit : Int,
-             var resetTime: Long) {
+class APIKey(val key: String, val requestLimit: Int, var resetTime: Long) {
 
   /**
     * Keep track of the amount of request left.
@@ -37,38 +35,37 @@ class APIKey(val key: String,
     * Get the API key.
     * @return the api key.
     */
-  def getKey() : String = key
+  def getKey(): String = key
 
   /**
     * Get the limit of the API key.
     * @return the rate limit of an key.
     */
-  def getLimit() : Int = requestLimit
+  def getLimit(): Int = requestLimit
 
   /**
     * Get the amount of requests left.
     * @return the requests left.
     */
-  def getRequestsLeft() : Int = requestsLeft
+  def getRequestsLeft(): Int = requestsLeft
 
   /**
     * Get the time on which a rate limit is resetted.
     * @return the time on which the key is resetted (milliseconds since UNIX epoch).
     */
-  def getResetTime() : Long = resetTime
-
+  def getResetTime(): Long = resetTime
 
   /**
     * Update the amount of requests left.
     * @param newRequestsLeft the new amount of requests left.
     */
-  def updateRequestLeft(newRequestsLeft : Int) = requestsLeft = newRequestsLeft
+  def updateRequestLeft(newRequestsLeft: Int) = requestsLeft = newRequestsLeft
 
   /**
     * Update the time a key is reset.
     * @param newResetTime the new reset time (milliseconds since UNIX epoch).
     */
-  def updateResetTime(newResetTime : Long) = resetTime = newResetTime
+  def updateResetTime(newResetTime: Long) = resetTime = newResetTime
 
   /**
     * Reset a key to its requestlimit.
