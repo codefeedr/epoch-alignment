@@ -107,7 +107,7 @@ abstract class KafkaSink[TSink]()
     Optional.of(
       TransactionContext(mutable.Map() ++ (0 until producerPoolSize).map(id => id -> true)))
 
-  override def close(): Unit = {
+  override def close(): Unit = this.synchronized {
 
     logger.debug(s"Closing producer ${getLabel()}")
 
@@ -135,7 +135,7 @@ abstract class KafkaSink[TSink]()
     logger.debug(s"Closed producer ${getLabel()}")
   }
 
-  override def open(parameters: Configuration): Unit = {
+  override def open(parameters: Configuration): Unit = this.synchronized {
     logger.debug(s"Opening producer ${getLabel()} for ${subjectType.name}")
     //Create zookeeper nodes synchronous
     //TODO: Validate created subject type actually matches the expected type.
@@ -147,7 +147,7 @@ abstract class KafkaSink[TSink]()
     logger.debug(s"Producer ${getLabel()} created for topic $topic")
   }
 
-  override def snapshotState(context: FunctionSnapshotContext): Unit = {
+  override def snapshotState(context: FunctionSnapshotContext): Unit = this.synchronized {
     super.snapshotState(context)
     logger.debug(s"snapshot State called on ${getLabel()}")
     //Save the checkpointId on the transaction, so it can be tracked to the right epoch
@@ -158,7 +158,7 @@ abstract class KafkaSink[TSink]()
 
   override def invoke(transaction: TransactionState,
                       value: TSink,
-                      context: SinkFunction.Context[_]): Unit = {
+                      context: SinkFunction.Context[_]): Unit = this.synchronized {
     logger.debug(
       s"${getLabel()} sending event on transaction ${transaction.checkPointId} producer ${transaction.producerIndex}")
     val event = transform(value)
@@ -192,7 +192,7 @@ abstract class KafkaSink[TSink]()
     * Await result from all pending events, and perform the actual commit
     * @param transaction
     */
-  override def commit(transaction: TransactionState): Unit = {
+  override def commit(transaction: TransactionState): Unit = this.synchronized {
     logger.debug(
       s"${getLabel()} committing transaction ${transaction.checkPointId}.\r\n${transaction.displayOffsets()}")
     producerPool(transaction.producerIndex).commitTransaction()
@@ -204,13 +204,15 @@ abstract class KafkaSink[TSink]()
     * Blocking operation
     * @param transaction
     */
-  override def preCommit(transaction: TransactionState): Unit = blocking {
-    producerPool(transaction.producerIndex).flush()
-    logger.debug(s"${getLabel()} flushed and is awaiting events to commit")
-    Await.ready(transaction.awaitCommit(), Duration(5, SECONDS))
+  override def preCommit(transaction: TransactionState): Unit = this.synchronized {
+    blocking {
+      producerPool(transaction.producerIndex).flush()
+      logger.debug(s"${getLabel()} flushed and is awaiting events to commit")
+      Await.ready(transaction.awaitCommit(), Duration(5, SECONDS))
+    }
   }
 
-  override def beginTransaction(): TransactionState = {
+  override def beginTransaction(): TransactionState = this.synchronized {
     val producerIndex = getFirstFreeProducerIndex()
     getUserContext.get().availableProducers(producerIndex) = false
     logger.debug(s"${getLabel()} started new transaction on producer ${producerIndex}")
@@ -218,7 +220,7 @@ abstract class KafkaSink[TSink]()
     new TransactionState(producerIndex)
   }
 
-  override def abort(transaction: TransactionState): Unit = {
+  override def abort(transaction: TransactionState): Unit = this.synchronized {
     logger.debug(
       s"${getLabel()} aborting transaction ${transaction.checkPointId} on producer ${transaction.producerIndex}")
     producerPool(transaction.producerIndex).abortTransaction()
