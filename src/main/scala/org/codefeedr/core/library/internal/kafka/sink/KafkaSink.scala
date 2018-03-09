@@ -63,7 +63,7 @@ abstract class KafkaSink[TSink]()
     with Serializable
     with LibraryServices {
 
-  protected val subjectType: SubjectType
+  protected var subjectType: SubjectType
   protected val sinkUuid: String
 
   @transient protected lazy val subjectNode: SubjectNode =
@@ -137,7 +137,8 @@ abstract class KafkaSink[TSink]()
   override def open(parameters: Configuration): Unit = {
     logger.debug(s"Opening producer ${getLabel()} for ${subjectType.name}")
     //Create zookeeper nodes synchronous
-    Await.ready(subjectNode.create(subjectType), Duration(5, SECONDS))
+    //TODO: Validate created subject type actually matches the expected type.
+    subjectType = Await.result(subjectNode.getOrCreate(() => subjectType), Duration(5, SECONDS))
     Await.ready(sinkNode.create(QuerySink(sinkUuid)), Duration(5, SECONDS))
     Await.ready(producerNode.create(Producer(instanceUuid, null, System.currentTimeMillis())),
                 Duration(5, SECONDS))

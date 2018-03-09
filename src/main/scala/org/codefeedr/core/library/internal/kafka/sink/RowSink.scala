@@ -10,7 +10,7 @@ import org.apache.kafka.clients.producer.ProducerRecord
 import org.codefeedr.core.library.internal.KeyFactory
 import org.codefeedr.model._
 
-class RowSink(override val subjectType: SubjectType, override val sinkUuid: String)
+class RowSink(override var subjectType: SubjectType, override val sinkUuid: String)
     extends KafkaSink[tuple.Tuple2[lang.Boolean, Row]] {
   @transient lazy val keyFactory = new KeyFactory(subjectType, UUID.randomUUID())
 

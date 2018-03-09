@@ -21,11 +21,11 @@ package org.codefeedr.core.plugin
 import java.util.concurrent.TimeUnit
 
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
-import org.codefeedr.core.clients.github.GitHubProtocol.{Commit, PushEvent, SimpleCommit}
 import org.apache.flink.streaming.api.datastream.{AsyncDataStream => JavaAsyncDataStream}
 import org.codefeedr.core.library.internal.{Job, Plugin}
-import org.codefeedr.core.operators.{CheckAndForwardCommit, GetOrAddCommit, GetOrAddPushEvent}
 import org.apache.flink.streaming.api.scala._
+import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, PushEvent, SimpleCommit}
+import org.codefeedr.plugins.github.operators.GetOrAddCommit
 
 class RetrieveCommitsJob extends Job[PushEvent, Commit]("retrieve_commits") {
 

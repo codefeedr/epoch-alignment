@@ -117,6 +117,13 @@ class ZkClient extends LazyLogging {
   def close(): Unit = zk.close()
 
   /**
+    * Returns the zookeeper connection object, for more advanced apis
+    * Please only use when really necessary
+    * @return
+    */
+  def getConnector(): ZooKeeper = zk
+
+  /**
     * Get the raw bytearray at the specific node
     * @param path path to the node
     * @return a promise that resolves into the raw data
@@ -380,7 +387,7 @@ class ZkClient extends LazyLogging {
     })
 
   /**
-    * Places an obserable on the path that only produces events for new children added to the node of the given path
+    * Places an observable on the path that only produces events for new children added to the node of the given path
     * Maintains a mutable internal state
     * Current implementation does not guarantee an event is fired when a child is removed and added again
     * (but it should do so in all practical use cases)
@@ -577,6 +584,24 @@ class ZkClient extends LazyLogging {
     placeAwaitConditionWatch(promise, path, condition)
     promise.future
   }
+
+  /**
+    * Creates a readlock on the given path
+    * Attempts to obtain lock from the moment of creation
+    * Please use the returned object as managed resource
+    * @param path path to the node for which to create the lock
+    * @return readlock for the node
+    */
+  def readLock(path: String): Future[ZkReadLock] = ZkReadLock.open(prependPath(path))
+
+  /**
+    * Creates a writelock on the given path
+    * Attempts to obtain lock from the moment of creation
+    * Please use the returned object as managed resource to prevent deadlocks
+    * @param path the path to the node for which to create the lock
+    * @return writeLock for the node
+    */
+  def writeLock(path: String): Future[ZkWriteLock] = ZkWriteLock.open(prependPath(path))
 
   /**
     * Keeps placing watches on the given path until the given data condition is true
