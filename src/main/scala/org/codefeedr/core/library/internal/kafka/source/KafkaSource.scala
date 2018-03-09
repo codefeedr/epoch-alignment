@@ -69,6 +69,9 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     with Serializable
     with LibraryServices {
 
+  /**
+    * The kafka consumer
+    */
   @transient private lazy val dataConsumer = {
     val consumer = KafkaConsumerFactory.create[RecordSourceTrail, Row](instanceUuid.toString)
     consumer.subscribe(Iterable(topic).asJavaCollection)
@@ -117,12 +120,20 @@ abstract class KafkaSource[T](subjectType: SubjectType)
   //Get a display label of the current source
   def getLabel(): String = s"KafkaSource ${subjectType.name}($sourceUuid-$instanceUuid)"
 
-  //Get a readable print of the partitions and offset.
+  /**
+    * Gets a human readable string of the current partitions
+    * Used to print debug information
+    * @param partitionOffsets partitionOffsets to print
+    * @return human readible string
+    */
   def getReadablePartitions(partitionOffsets: Map[TopicPartition, Long]): String =
     partitionOffsets
       .map(tp => s"p: ${tp._1.topic()}_${tp._1.partition()}, o: ${tp._2}")
       .mkString(", ")
 
+  /**
+    * Cancels the current source
+    */
   override def cancel(): Unit = {
     logger.debug(s"Source $getLabel on subject $topic is cancelled")
     if (!started) {
@@ -136,6 +147,11 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     }
   }
 
+  /**
+    * Initialize from an existing state
+    * TODO: Implement
+    * @param context
+    */
   override def initializeState(context: FunctionInitializationContext): Unit = {}
 
   override def snapshotState(context: FunctionSnapshotContext): Unit = {

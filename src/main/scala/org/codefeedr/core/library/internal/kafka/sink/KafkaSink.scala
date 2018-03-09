@@ -55,7 +55,8 @@ abstract class KafkaSink[TSink]
     val producer = KafkaProducerFactory.create[RecordSourceTrail, Row]
     //Create the producer node alongside
     //Need to block here because the producer cannot start before the zookeeper state has been configured
-    Await.ready(subjectNode.create(subjectType), Duration(5, SECONDS))
+    //TODO: Perform some validation that the subjectType actually belongs to the given generic type?
+    subjectType = Await.result(subjectNode.getOrCreate(() => subjectType), Duration(5, SECONDS))
     Await.ready(sinkNode.create(QuerySink(sinkUuid)), Duration(5, SECONDS))
     Await.ready(producerNode.create(Producer(instanceUuid, null, System.currentTimeMillis())),
                 Duration(5, SECONDS))
@@ -64,7 +65,7 @@ abstract class KafkaSink[TSink]
     producer
   }
 
-  val subjectType: SubjectType
+  var subjectType: SubjectType
   val sinkUuid: String
 
   @transient lazy val subjectNode: SubjectNode = subjectLibrary.getSubject(subjectType.name)
@@ -95,7 +96,7 @@ abstract class KafkaSink[TSink]
   }
 }
 
-class TrailedRecordSink(override val subjectType: SubjectType, override val sinkUuid: String)
+class TrailedRecordSink(override var subjectType: SubjectType, override val sinkUuid: String)
     extends KafkaSink[TrailedRecord] {
   override def invoke(trailedRecord: TrailedRecord): Unit = {
     logger.debug(s"Producer ${GetLabel}sending a message to topic $topic")
@@ -103,7 +104,7 @@ class TrailedRecordSink(override val subjectType: SubjectType, override val sink
   }
 }
 
-class RowSink(override val subjectType: SubjectType, override val sinkUuid: String)
+class RowSink(override var subjectType: SubjectType, override val sinkUuid: String)
     extends KafkaSink[tuple.Tuple2[lang.Boolean, Row]] {
   @transient lazy val keyFactory = new KeyFactory(subjectType, UUID.randomUUID())
 
