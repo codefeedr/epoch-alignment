@@ -21,6 +21,8 @@ package org.codefeedr.plugins.github.clients
 import com.typesafe.config._
 import org.codefeedr.core.library.LibraryServices
 import async.Async._
+import scala.concurrent._
+import ExecutionContext.Implicits.global
 
 import scala.collection.JavaConverters._
 
@@ -42,8 +44,6 @@ class APIKeyManager {
     apiList.toList
   }
 
-  def saveToZK() = async {
-
-  }
+  def saveToZK() = async {}
 
 }
