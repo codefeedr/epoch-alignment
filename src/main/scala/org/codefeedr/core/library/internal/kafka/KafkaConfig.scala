@@ -58,4 +58,6 @@ object KafkaConfig {
 
   @transient lazy val consumerPropertes: Properties = propsFromConfig(
     conf.getConfig("codefeedr.kafka.consumer"))
+  @transient lazy val producerProperties: Properties = propsFromConfig(
+    conf.getConfig("codefeedr.kafka.producer"))
 }

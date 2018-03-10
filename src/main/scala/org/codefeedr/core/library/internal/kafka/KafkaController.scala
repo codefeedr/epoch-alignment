@@ -20,6 +20,7 @@
 package org.codefeedr.core.library.internal.kafka
 
 import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.admin.{AdminClient, NewTopic}
 import resource.managed
 
@@ -32,7 +33,7 @@ import scala.concurrent.Future
 /**
   * low level object to control the connected kafka
   */
-object KafkaController {
+object KafkaController extends LazyLogging {
 
   /**
     * Perform a method on the kafka admin. Using a managed resource to dispose of the admin client after use
@@ -56,6 +57,7 @@ object KafkaController {
     * @return a future that resolves when the topic has been created
     */
   def createTopic(name: String, partitions: Int): Future[Unit] = {
+    logger.debug(s"Creating kafka topic $name with $partitions partitions")
     val topic = new NewTopic(name, partitions, 1)
     val topicSet = Iterable(topic).asJavaCollection
     val result = apply(o => o.createTopics(topicSet))

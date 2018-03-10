@@ -21,6 +21,7 @@ package org.codefeedr.core
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.typeinfo.TypeInformation
+import org.apache.flink.streaming.api.CheckpointingMode
 import org.apache.flink.streaming.api.functions.source.SourceFunction.SourceContext
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.streaming.api.watermark.Watermark
@@ -120,6 +121,7 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     val t = await(subjectLibrary.getSubject[T]().getOrCreateType[T]())
 
     val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
+    env.enableCheckpointing(100,CheckpointingMode.EXACTLY_ONCE)
     logger.debug(s"Composing env for ${t.name}")
     await(new CollectionPlugin(data).compose(env, "testplugin"))
     logger.debug(s"Starting env for ${t.name}")
