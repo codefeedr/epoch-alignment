@@ -49,6 +49,9 @@ case class APIKey(val key: String,
   */
 class APIKeyManager {
 
+  //TODO: Handle keys with 0 requests left
+  //TODO: Handle keys which have to reset (due to time limit)
+
   private lazy val config: Config = ConfigFactory.load()
   private lazy val zkClient = LibraryServices.zkClient
 
@@ -162,6 +165,15 @@ class APIKeyManager {
       }
     }
 
+  }
+
+  /**
+    * Updates the key with a new request limit and makes the key available again.
+    * @param key the key to update.
+    */
+  def updateAndReleaseKey(key: APIKey) = async {
+    val node = new ZkNode[APIKey](key.key, keysNode)
+    val lock = await(node.setData(key.copy(available = true)))
   }
 
 }

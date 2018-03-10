@@ -81,6 +81,26 @@ class APIKeyManagerTest extends LibraryServiceSpec  with BeforeAndAfterEach {
     assert(keysLocked.filter(!_.isEmpty).size == 2) //2 getKeys called returned an actual key
   }
 
+  "The APIKeyManager" should "unlock a key after it has been released" in async {
+    val keyManager = new APIKeyManager()
+    await(keyManager.saveToZK())
+
+    val keyLocked = await(keyManager.getKey()).get
+
+    //release the key again
+    keyManager.updateAndReleaseKey(keyLocked.copy(requestsLeft = 0))
+
+    val children = await(zkClient.GetChildren("/keys")).toList
+    val childrenData = await(Future.sequence(children.map { x =>
+      val node = new ZkNode[APIKey](x, keyNode)
+      node.getData()
+    }))
+
+    val foundKey = childrenData.find(x => x.get.key == keyLocked.key).get
+    assert(foundKey.get.available == true) //foundKey should be available again
+    assert(foundKey.get.requestsLeft == 0) //requests left should be equal to zero
+  }
+
 
 
 
