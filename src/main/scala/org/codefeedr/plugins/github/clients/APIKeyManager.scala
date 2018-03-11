@@ -205,7 +205,7 @@ class APIKeyManager {
   }
 
   /**
-    * Resets a key. (Within this method it is checked if the key is already
+    * Resets a key. (Within this method it is checked if the key is already reset by another process).
     * @param key the updated key.
     */
   private def resetKey(key: APIKey) = async {
@@ -215,7 +215,12 @@ class APIKeyManager {
     managed(lock).acquireAndGet { x =>
       var data: APIKey = Await.result(node.getData(), Duration.Inf).get //get the key once again (it might be updated already)
 
+      if (!data.available) {
+        logger.warn(s"Trying to reset ${key.key} but the key is not available. Still procceeding to reset it.")
+      }
+
       if (data.requestsLeft == 0 && data.resetTime != key.resetTime) { //check if the key is already updated
+        logger.info(s"Now resetting ${key.key} because the reset time has been exceeded and there are no requests left.")
         Await.result(node.setData(key), Duration.Inf) //update key
       }
     }

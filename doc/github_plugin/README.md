@@ -6,8 +6,9 @@
     - [Data structure](#data-structure)
 3. [GitHub requests](#github-requests)
     - [Commit retrieval](#commit-retrieval)
-4. [Planning](#planning)
-5. [Dependencies](#dependencies)
+4. [API Key management](#api-key-management)
+5. [Planning](#planning)
+6. [Dependencies](#dependencies)
 
 # Architecture
 ## Overview
@@ -29,12 +30,35 @@ then only retrieve commits enclosed in PushEvent.
 then start retrieving commits SHAs from the `/commits` endpoint. It should start retrieving and storing commits from the `head` of the 
 PushEvent until it finds the commits with the same SHA as retrieved from the DB. 
 
+# API Key Management
+This plugin currently supports API key management using ZooKeeper. 
+Keys are retrieved from the configuration and stored in ZooKeeper using the following format:
+```json
+      keys = [
+        {
+          key = "example_key"
+          limit = 5000 #per hour
+        },
+        {
+          key = "example_key2"
+          limit = 3000 #per hour
+        }
+      ] 
+```
+
+Through the `APIKeyManager` a key can be acquired (locked) and should after usage be released. Keys with the most requests left are preferred.
+Use the following methods:
+- ` .acquireKey()` to acquire (and lock) an APIKey
+- `.updateAndReleaseKey(key: APIKey)` to release and update the key. Make sure to update both the amount of **requestsLeft** and the **resetTime**.
+
+There is an automatic check in the `acquireKey` method to 'reset' keys with 0 requests left and a resetTime which has been exceeded.
+Only keys with 0 requests left are considered since keys with requests left will eventually be updated when they are used.
 # Planning
 The current (rough) planning for this GitHub plugin:
 - [ ] Process all event types (PushEvents/IssuesEvent etc.)
 - [ ] GitHub plugin management/monitoring?? (a way to manage/monitor all the different jobs in the GitHub plugin)
     - [ ] Keep some (global) plugin statistics (daily events processed, hourly throughput)
-    - [ ] API keys in ZooKeeper (add/del keys on runtime)
+    - [x] API keys in ZooKeeper (add/del keys on runtime)
 - [ ] Improved debugging/logging
 - [ ] Fully support Avro Schema's
 - [ ] Run jobs in parallel (do we actually need this? can't we just run different jobs seperately)
