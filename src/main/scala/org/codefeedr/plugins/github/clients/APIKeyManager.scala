@@ -186,17 +186,20 @@ class APIKeyManager {
     * Resets keys for which the resetTime is expired and 0 requests left.
     * @param keys all the keys to check.
     */
-  private def resetKeys(keys : List[APIKey]) = async {
+  private def resetKeys(keys: List[APIKey]) = async {
     val currentTime = System.currentTimeMillis()
-    val keysToReset = keys.
-      filter(x => x.requestsLeft == 0). //we only consider keys without any requests left
-      filter(x => x.resetTime < currentTime) //check if the reset time is before the current time
+    val keysToReset = keys
+      .filter(x => x.requestsLeft == 0)
+      . //we only consider keys without any requests left
+      filter(x => x.resetTime <= currentTime) //check if the reset time is before the current time
 
-    val resettedKeys = keysToReset.map { x =>
-      val newTime = x.resetTime + 3600000
+    val resettedKeys = keysToReset
+      .map { x =>
+        val newTime = x.resetTime + 3600000
 
-      x.copy(requestsLeft = x.requestLimit, resetTime = newTime) //reset limit and time
-    }.map(resetKey(_)) //map to their future
+        x.copy(requestsLeft = x.requestLimit, resetTime = newTime) //reset limit and time
+      }
+      .map(resetKey(_)) //map to their future
 
     await(Future.sequence(resettedKeys)) //wait till all reset
   }
@@ -209,10 +212,10 @@ class APIKeyManager {
     val node = new ZkNode[APIKey](key.key, keysNode)
     val lock = await(node.writeLock()) //get a write lock
 
-    managed(lock).acquireAndGet{ x =>
+    managed(lock).acquireAndGet { x =>
       var data: APIKey = Await.result(node.getData(), Duration.Inf).get //get the key once again (it might be updated already)
 
-      if (data.requestsLeft == 0 && data.resetTime != key.resetTime)  { //check if the key is already updated
+      if (data.requestsLeft == 0 && data.resetTime != key.resetTime) { //check if the key is already updated
         Await.result(node.setData(key), Duration.Inf) //update key
       }
     }
