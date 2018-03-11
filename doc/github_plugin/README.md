@@ -33,17 +33,17 @@ PushEvent until it finds the commits with the same SHA as retrieved from the DB.
 # API Key Management
 This plugin currently supports API key management using ZooKeeper. 
 Keys are retrieved from the configuration and stored in ZooKeeper using the following format:
-```json
-      keys = [
-        {
-          key = "example_key"
-          limit = 5000 #per hour
-        },
-        {
-          key = "example_key2"
-          limit = 3000 #per hour
-        }
-      ] 
+```
+  keys = [
+    {
+      key = "example_key"
+      limit = 5000 #per hour
+    },
+    {
+      key = "example_key2"
+      limit = 3000 #per hour
+    }
+  ] 
 ```
 
 Through the `APIKeyManager` a key can be acquired (locked) and should after usage be released. Keys with the most requests left are preferred.
