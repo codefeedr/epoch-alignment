@@ -31,8 +31,7 @@ import scala.concurrent.{Await, Future}
 class APIKeyManagerTest extends LibraryServiceSpec  with BeforeAndAfterEach {
 
   val keyNode = new KeysNode
-
-
+  
   override def beforeEach() : Unit = {
     Await.ready(keyNode.deleteRecursive(), Duration(1, SECONDS))
   }
@@ -51,7 +50,7 @@ class APIKeyManagerTest extends LibraryServiceSpec  with BeforeAndAfterEach {
     val keyManager = new APIKeyManager()
     await(keyManager.saveToZK())
 
-    val keyLocked = await(keyManager.getKey())
+    val keyLocked = await(keyManager.acquireKey())
 
     val children = await(zkClient.GetChildren("/keys")).toList
     val childrenData = await(Future.sequence(children.map { x =>
@@ -67,7 +66,7 @@ class APIKeyManagerTest extends LibraryServiceSpec  with BeforeAndAfterEach {
     val keyManager = new APIKeyManager()
     await(keyManager.saveToZK())
 
-    val calls = keyManager.getKey() :: keyManager.getKey() :: keyManager.getKey() :: Nil
+    val calls = keyManager.acquireKey() :: keyManager.acquireKey() :: keyManager.acquireKey() :: Nil
     val keysLocked = await(Future.sequence(calls))
 
     val children = await(zkClient.GetChildren("/keys")).toList
@@ -85,7 +84,7 @@ class APIKeyManagerTest extends LibraryServiceSpec  with BeforeAndAfterEach {
     val keyManager = new APIKeyManager()
     await(keyManager.saveToZK())
 
-    val keyLocked = await(keyManager.getKey()).get
+    val keyLocked = await(keyManager.acquireKey()).get
 
     //release the key again
     keyManager.updateAndReleaseKey(keyLocked.copy(requestsLeft = 0))

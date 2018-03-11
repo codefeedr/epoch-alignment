@@ -21,6 +21,7 @@ package org.codefeedr.plugins.github.clients
 import com.typesafe.config._
 import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.library.internal.zookeeper.ZkNode
+import org.slf4j.{Logger, LoggerFactory}
 
 import async.Async._
 import scala.concurrent._
@@ -49,8 +50,10 @@ case class APIKey(val key: String,
   */
 class APIKeyManager {
 
-  //TODO: Handle keys with 0 requests left
   //TODO: Handle keys which have to reset (due to time limit)
+
+  //default logger
+  private lazy val logger: Logger = LoggerFactory.getLogger(getClass.getName)
 
   private lazy val config: Config = ConfigFactory.load()
   private lazy val zkClient = LibraryServices.zkClient
@@ -102,11 +105,14 @@ class APIKeyManager {
     * If no key is available None will be returned.
     * @return a key or None if no key available.
     */
-  def getKey(): Future[Option[APIKey]] = async {
+  def acquireKey(): Future[Option[APIKey]] = async {
     var keyFound = false //key is not found yet
 
     val keyNodes = await(getKeyNodes()) //get all key nodes
     val keyData = await(Future.sequence(keyNodes.map(x => x.getData()))) //get all key data
+
+    await(resetKeys(keyData.map(_.get))) //reset keys if the can be
+
     var keysAvailable = keyData
       .map(_.get)
       .filter(_.available) //check if available
@@ -174,6 +180,42 @@ class APIKeyManager {
   def updateAndReleaseKey(key: APIKey) = async {
     val node = new ZkNode[APIKey](key.key, keysNode)
     val lock = await(node.setData(key.copy(available = true)))
+  }
+
+  /**
+    * Resets keys for which the resetTime is expired and 0 requests left.
+    * @param keys all the keys to check.
+    */
+  private def resetKeys(keys : List[APIKey]) = async {
+    val currentTime = System.currentTimeMillis()
+    val keysToReset = keys.
+      filter(x => x.requestsLeft == 0). //we only consider keys without any requests left
+      filter(x => x.resetTime < currentTime) //check if the reset time is before the current time
+
+    val resettedKeys = keysToReset.map { x =>
+      val newTime = x.resetTime + 3600000
+
+      x.copy(requestsLeft = x.requestLimit, resetTime = newTime) //reset limit and time
+    }.map(resetKey(_)) //map to their future
+
+    await(Future.sequence(resettedKeys)) //wait till all reset
+  }
+
+  /**
+    * Resets a key. (Within this method it is checked if the key is already
+    * @param key the updated key.
+    */
+  private def resetKey(key: APIKey) = async {
+    val node = new ZkNode[APIKey](key.key, keysNode)
+    val lock = await(node.writeLock()) //get a write lock
+
+    managed(lock).acquireAndGet{ x =>
+      var data: APIKey = Await.result(node.getData(), Duration.Inf).get //get the key once again (it might be updated already)
+
+      if (data.requestsLeft == 0 && data.resetTime != key.resetTime)  { //check if the key is already updated
+        Await.result(node.setData(key), Duration.Inf) //update key
+      }
+    }
   }
 
 }
