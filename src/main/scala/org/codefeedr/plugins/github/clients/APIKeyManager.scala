@@ -109,9 +109,9 @@ class APIKeyManager {
     val keyData = await(Future.sequence(keyNodes.map(x => x.getData()))) //get all key data
     var keysAvailable = keyData
       .map(_.get)
-      .filter(_.available)
-      . //check if available
-      sortWith(_.requestsLeft > _.requestsLeft) //sort on highest requests left
+      .filter(_.available) //check if available
+      .filter(_.requestsLeft > 0) //remove keys with no requests left
+      .sortWith(_.requestsLeft > _.requestsLeft) //sort on highest requests left
 
     //set currentKey to None
     var returnKey: Option[APIKey] = None
