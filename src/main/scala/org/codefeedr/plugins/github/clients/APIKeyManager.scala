@@ -50,8 +50,6 @@ case class APIKey(val key: String,
   */
 class APIKeyManager {
 
-  //TODO: Handle keys which have to reset (due to time limit)
-
   //default logger
   private lazy val logger: Logger = LoggerFactory.getLogger(getClass.getName)
 
