@@ -53,6 +53,10 @@ Use the following methods:
 
 There is an automatic check in the `acquireKey` method to 'reset' keys with 0 requests left and a resetTime which has been exceeded.
 Only keys with 0 requests left are considered since keys with requests left will eventually be updated when they are used.
+
+**Note**: If no keys are available at the moment of the `acquireKey` call, `None` will be returned. In that situation you might want to add a mechanism to retry this x times. However, there should always be a **good balance** between the amount of keys and the amount of processes using these keys.  
+
+**Possible improvement**: Currently the amount of concurrent API calls == amount of API keys (because they are locked). If this needs to improved we might want to split keys (e.g `example_key` has 200 requests, this can be split into `example_key1` having 100 requests and `example_key2` having 100 requests.)
 # Planning
 The current (rough) planning for this GitHub plugin:
 - [ ] Process all event types (PushEvents/IssuesEvent etc.)
