@@ -23,7 +23,7 @@ import com.typesafe.config.ConfigFactory
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
 import org.codefeedr.plugins.github.clients.GitHubProtocol.Event
-import org.codefeedr.plugins.github.clients.{GitHubAPI, GitHubRequestService}
+import org.codefeedr.plugins.github.clients.{APIKeyManager, GitHubAPI, GitHubRequestService}
 import org.slf4j.{Logger, LoggerFactory}
 
 /**
@@ -55,6 +55,8 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
     //we want a different key for a source, so we override it
     gitHubAPI.client.setOAuth2Token(
       ConfigFactory.load().getString("codefeedr.input.github.input_api_key"))
+
+    new APIKeyManager().saveToZK()
 
     isRunning = true
   }

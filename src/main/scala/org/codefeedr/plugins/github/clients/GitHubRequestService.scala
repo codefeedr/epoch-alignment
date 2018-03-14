@@ -48,10 +48,12 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
   private lazy val logger: Logger = LoggerFactory.getLogger(getClass.getName)
 
   //should not exceed this margin in terms of requests per hour
-  private lazy val requestMargin = 50
+  private lazy val githubLimit = 5000
 
+  //key manager
   private lazy val keyManager = new APIKeyManager
 
+  //the current key used
   private var currentKey : Option[APIKey] = None
 
   // Brings in default date formats etc
@@ -245,8 +247,12 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
       logger.warn(s"Can't release a key if no key is acquired.")
     }
 
+    //correct the ratelimit, e.g. we have a max request limit set to 3000, but github allows 5000
+    val apiDelta = (githubLimit - currentKey.get.requestLimit)
+    val actualRateLimit = rateLimit._1 - apiDelta
+
     //update key with new requests left
-    val keyToUpdate = currentKey.get.copy(requestsLeft = rateLimit._1, resetTime = rateLimit._2)
+    val keyToUpdate = currentKey.get.copy(requestsLeft = actualRateLimit, resetTime = rateLimit._2)
 
     //reset current key
     currentKey = None

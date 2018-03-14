@@ -37,6 +37,9 @@ class APIKeyManagerTest extends LibraryServiceSpec  with BeforeAndAfterEach {
     Await.ready(keyNode.deleteRecursive(), Duration(1, SECONDS))
     Await.result(keyManager.saveToZK(), Duration(1, SECONDS))
   }
+  override def afterEach() : Unit = {
+    Await.ready(keyNode.deleteRecursive(), Duration(1, SECONDS))
+  }
 
   "The APIKeyManager" should "correctly store all keys in ZooKeeper" in async {
     val children = await(zkClient.GetChildren("/keys")).toList

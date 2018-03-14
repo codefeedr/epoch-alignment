@@ -86,6 +86,8 @@ class APIKeyManager {
     //create if it doesn't exist yet
     if (!exists) {
       await(keysNode.create())
+    } else {
+      await(keysNode.deleteRecursive()) //otherwise clear it
     }
 
     //get or create key
@@ -189,7 +191,7 @@ class APIKeyManager {
     val keysToReset = keys
       .filter(x => x.requestsLeft == 0)
       . //we only consider keys without any requests left
-      filter(x => x.resetTime <= currentTime) //check if the reset time is before the current time
+      filter(x => (x.resetTime * 1000) <= currentTime) //check if the reset time is before the current time
 
     val resettedKeys = keysToReset
       .map { x =>
