@@ -214,6 +214,7 @@ abstract class KafkaSink[TSink]()
   }
 
   override def beginTransaction(): TransactionState = {
+    logger.debug(s"beginTransaction called on ${getLabel()}. Opened: $opened")
     open(null)
     val producerIndex = getFirstFreeProducerIndex()
     getUserContext.get().availableProducers(producerIndex) = false

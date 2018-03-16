@@ -16,7 +16,7 @@ scalaVersion in ThisBuild := "2.11.11"
 
 parallelExecution in Test := false
 
-val flinkVersion = "1.4.0"
+val flinkVersion = "1.4.2"
 val dep_flink = Seq(
   "org.apache.flink" %% "flink-scala" % flinkVersion % "provided",
   "org.apache.flink" %% "flink-streaming-scala" % flinkVersion % "provided",
