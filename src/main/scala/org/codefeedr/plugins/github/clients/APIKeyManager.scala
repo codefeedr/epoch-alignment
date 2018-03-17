@@ -53,7 +53,10 @@ class APIKeyManager {
   //default logger
   private lazy val logger: Logger = LoggerFactory.getLogger(getClass.getName)
 
+  //configuration
   private lazy val config: Config = ConfigFactory.load()
+
+  //connection to ZooKeeper
   private lazy val zkClient = LibraryServices.zkClient
 
   //node under which the keys are stored
@@ -105,7 +108,7 @@ class APIKeyManager {
     * If no key is available None will be returned.
     * @return a key or None if no key available.
     */
-  def acquireKey(): Future[Option[APIKey]] = async {
+  def acquireKey(minimalRequestsLeft : Int = 1): Future[Option[APIKey]] = async {
     var keyFound = false //key is not found yet
 
     val keyNodes = await(getKeyNodes()) //get all key nodes
@@ -116,7 +119,7 @@ class APIKeyManager {
     var keysAvailable = keyData
       .map(_.get)
       .filter(_.available) //check if available
-      .filter(_.requestsLeft > 0) //remove keys with no requests left
+      .filter(_.requestsLeft >= minimalRequestsLeft) //remove keys with not enough requests left
       .sortWith(_.requestsLeft > _.requestsLeft) //sort on highest requests left
 
     //set currentKey to None
