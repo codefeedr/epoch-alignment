@@ -51,7 +51,16 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
   private lazy val githubLimit = 5000
 
   //key manager
-  private lazy val keyManager = new APIKeyManager
+  private lazy val keyManager = {
+    val keyManager = new APIKeyManager
+    keyManager.init { x =>
+      val limit = updateRateLimit()
+      val deltaGithub = githubLimit - x.requestLimit //difference between github and requestLimit
+      x.copy(requestsLeft = limit._1 - deltaGithub, resetTime = limit._2)
+    }
+
+    keyManager
+  }
 
   //the current key used
   private var currentKey : Option[APIKey] = None
@@ -65,7 +74,7 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
 
   /**
     * Updates the rate limit by doing a 'free' request to the /rate_limit endpoint.
-    * @return (requestsLeft, resetTime
+    * @return (requestsLeft, resetTime)
     */
   def updateRateLimit() : (Int, Long) = {
     val url = "/rate_limit" //request to this address doesn't count for the rate limit
@@ -94,7 +103,7 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     */
   @throws(classOf[Exception])
   def getCommit(repoName: String, sha: String): Option[Commit] = {
-    if (!retrieveKey()) { //if key can't be acquired, return empty list
+    if (!retrieveKey(1)) { //if key can't be acquired, return empty list
       return None
     }
 
@@ -124,9 +133,6 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
       }
     }
 
-    //release the key
-    releaseKey(updateRateLimit())
-
     //return extracted as Commit
     toReturn
   }
@@ -138,7 +144,7 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     */
   @throws(classOf[IOException])
   def getAllCommits(repoName: String): PageIterator[SimpleCommit] = {
-    if (!retrieveKey()) { //if key can't be acquired, return empty list
+    if (!retrieveKey(1)) { //if key can't be acquired, return empty list
       throw new IOException("Can't acquire API key so can't create an iterator for the SimpleCommits.")
     }
 
@@ -153,9 +159,6 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     //return page iterator for all commits
     val iterator = createPageIterator(request)
 
-    //release the key
-    releaseKey(updateRateLimit())
-
     return iterator
   }
 
@@ -167,7 +170,7 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     */
   @throws(classOf[IOException])
   def getAllCommits(repoName: String, sha: String): PageIterator[SimpleCommit] = {
-    if (!retrieveKey()) { //if key can't be acquired, return empty list
+    if (!retrieveKey(1)) { //if key can't be acquired, return empty list
       throw new IOException("Can't acquire API key so can't create an iterator for the SimpleCommits.")
     }
 
@@ -183,9 +186,6 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     //return page iterator for all commits
     val iterator = createPageIterator(request)
 
-    //release the key
-    releaseKey(updateRateLimit())
-
     return iterator
   }
 
@@ -195,7 +195,7 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     */
   @throws(classOf[IOException])
   def getEvents(): List[Event] = {
-    if (!retrieveKey()) { //if key can't be acquired, return empty list
+    if (!retrieveKey(3)) { //if key can't be acquired, return empty list
       return List()
     }
 
@@ -206,9 +206,6 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     //get all events
     val events = getAll((createPageIterator(request))).asScala.map(gson.toJson(_))
 
-    //release the key
-    releaseKey(updateRateLimit())
-
     //return extracted into Event class
     return events.map(parse(_).extract[Event]).toList
   }
@@ -217,11 +214,11 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     * Retrieves a key with 1000 retries.
     * @return if a key is succesfully retrieved.
     */
-  def retrieveKey() : Boolean = {
+  def retrieveKey(amountOfRequests: Int) : Boolean = {
     var attempts = 1000 //tries a 1000 times
 
     while (attempts > 0) {
-      val key = Await.result(keyManager.acquireKey(), Duration(1, SECONDS)) //get a key
+      val key = Await.result(keyManager.acquireKey(amountOfRequests), Duration(1, SECONDS)) //get a key
 
       if (!key.isEmpty) { //if a key is returned update and return true
         currentKey = key
@@ -236,32 +233,6 @@ class GitHubRequestService(client: GitHubClient) extends GitHubService(client) {
     currentKey = None //if no key is found reset
 
     false
-  }
-
-  /**
-    * Releases a key, so that others processes can use it for their request.
-    * @param rateLimit the ratelimit to update.
-    */
-  def releaseKey(rateLimit : (Int, Long)) = {
-    if (currentKey.isEmpty) { //if no key is set..
-      logger.warn(s"Can't release a key if no key is acquired.")
-    }
-
-    //correct the ratelimit, e.g. we have a max request limit set to 3000, but github allows 5000
-    val apiDelta = (githubLimit - currentKey.get.requestLimit)
-    val actualRateLimit = rateLimit._1 - apiDelta
-
-    //update key with new requests left
-    val keyToUpdate = currentKey.get.copy(requestsLeft = actualRateLimit, resetTime = rateLimit._2)
-
-    //reset current key
-    currentKey = None
-
-    //reset key of current client
-    client.setOAuth2Token("")
-
-    //release the key afterwards
-    Await.result(keyManager.updateAndReleaseKey(keyToUpdate), Duration(1, SECONDS))
   }
 
 }

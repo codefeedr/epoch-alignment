@@ -56,8 +56,6 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
     gitHubAPI.client.setOAuth2Token(
       ConfigFactory.load().getString("codefeedr.input.github.input_api_key"))
 
-    new APIKeyManager().saveToZK()
-
     isRunning = true
   }
 

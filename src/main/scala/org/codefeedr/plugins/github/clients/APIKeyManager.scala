@@ -37,13 +37,11 @@ import scala.concurrent.duration.Duration
   * @param requestLimit the request limit on this key.
   * @param requestsLeft the requests left on this key.
   * @param resetTime the time on which the request limit should be reset.
-  * @param available if the key is available to use or not.
   */
 case class APIKey(val key: String,
                   val requestLimit: Int,
                   val requestsLeft: Int,
-                  var resetTime: Long = 0,
-                  available: Boolean = true)
+                  var resetTime: Long = 0)
 
 /**
   * Manages all API keys in ZooKeeper.
@@ -62,19 +60,22 @@ class APIKeyManager {
   //node under which the keys are stored
   private lazy val keysNode = new KeysNode
 
+  //default init function
+  private var initFunction = (x : APIKey) => x
+
   /**
     * Loads all the keys from the configuration.
     * @return a list of API keys.
     */
-  def loadKeys(): List[APIKey] = {
+  private def loadKeys(): List[APIKey] = {
     val apiList = config
       .getObjectList("codefeedr.input.github.keys")
       .asScala
       .map(
         x =>
           new APIKey(x.toConfig.getString("key"),
-                     x.toConfig.getInt("limit"),
-                     x.toConfig.getInt("limit")))
+            x.toConfig.getInt("limit"),
+            x.toConfig.getInt("limit")))
 
     apiList.toList
   }
@@ -83,7 +84,7 @@ class APIKeyManager {
     * Saves all keys from the configuration to ZooKeeper.
     * @return all created keys.
     */
-  def saveToZK(): Future[List[APIKey]] = async {
+  private def saveToZK(keys: List[APIKey]): Future[List[APIKey]] = async {
     val exists = await(keysNode.exists())
 
     //create if it doesn't exist yet
@@ -94,13 +95,22 @@ class APIKeyManager {
     }
 
     //get or create key
-    val createKeys = Future.sequence(loadKeys().map { x =>
+    val createKeys = Future.sequence(keys.map { x =>
       val node = new ZkNode[APIKey](x.key, keysNode)
       node.getOrCreate(() => x)
     })
 
     //await till done
     await(createKeys)
+  }
+
+  /**
+    * Load all keys and initializes them.
+    * @param initKey should set correct fields.
+    */
+  def init(initKey: APIKey => APIKey) : Future[List[APIKey]]  = {
+    initFunction = initKey
+    saveToZK(loadKeys().map(initFunction))
   }
 
   /**
@@ -118,7 +128,6 @@ class APIKeyManager {
 
     var keysAvailable = keyData
       .map(_.get)
-      .filter(_.available) //check if available
       .filter(_.requestsLeft >= minimalRequestsLeft) //remove keys with not enough requests left
       .sortWith(_.requestsLeft > _.requestsLeft) //sort on highest requests left
 
@@ -130,7 +139,7 @@ class APIKeyManager {
       val firstKey = keysAvailable.head //get key with most requests left
 
       //try to acquire this key by looking it
-      val acquireKey = await(checkKey(new ZkNode[APIKey](s"${firstKey.key}", keysNode)))
+      val acquireKey = await(checkAndDecrementKey(new ZkNode[APIKey](s"${firstKey.key}", keysNode), minimalRequestsLeft))
       keyFound = acquireKey._1 //will be true if the key is successfully acquired
       keysAvailable = keysAvailable.filter(_.key != firstKey.key) //remove it from the list
 
@@ -155,18 +164,18 @@ class APIKeyManager {
   }
 
   /**
-    * Tries to check and acquire key using a WriteLock.
+    * Tries to check and acquire key using a WriteLock, then updates it with correct data.
     * @param key the key to acquire.
     * @return (true, key) if the key is successfully locked, (false, key) if not.
     */
-  private def checkKey(key: ZkNode[APIKey]): Future[(Boolean, APIKey)] = async {
+  private def checkAndDecrementKey(key: ZkNode[APIKey], requestsToRemove : Int): Future[(Boolean, APIKey)] = async {
     val lock = await(key.writeLock()) //await the write lock
 
     managed(lock).acquireAndGet { x =>
       var data: APIKey = Await.result(key.getData(), Duration.Inf).get //get the key
 
-      if (data.available) { //if available
-        data = data.copy(available = false) //set unavailable
+      if (data.requestsLeft >= requestsToRemove) { //still enough requests left
+        data = data.copy(requestsLeft = data.requestsLeft - requestsToRemove) //set unavailable
         Await.result(key.setData(data), Duration.Inf)
         (true, data)
       } else {
@@ -177,31 +186,17 @@ class APIKeyManager {
   }
 
   /**
-    * Updates the key with a new request limit and makes the key available again.
-    * @param key the key to update.
-    */
-  def updateAndReleaseKey(key: APIKey) = async {
-    val node = new ZkNode[APIKey](key.key, keysNode)
-    val lock = await(node.setData(key.copy(available = true)))
-  }
-
-  /**
-    * Resets keys for which the resetTime is expired and 0 requests left.
+    * Resets keys for which the resetTime is expired.
+    * For each function that is expired, the init function is called and the key is saved again.
     * @param keys all the keys to check.
     */
   private def resetKeys(keys: List[APIKey]) = async {
     val currentTime = System.currentTimeMillis()
-    val keysToReset = keys
-      .filter(x => x.requestsLeft == 0)
-      . //we only consider keys without any requests left
+    val keysToReset = keys.
       filter(x => (x.resetTime * 1000) <= currentTime) //check if the reset time is before the current time
 
     val resettedKeys = keysToReset
-      .map { x =>
-        val newTime = x.resetTime + 3600000
-
-        x.copy(requestsLeft = x.requestLimit, resetTime = newTime) //reset limit and time
-      }
+      .map(initFunction(_)) //reuse the init function
       .map(resetKey(_)) //map to their future
 
     await(Future.sequence(resettedKeys)) //wait till all reset
@@ -218,14 +213,9 @@ class APIKeyManager {
     managed(lock).acquireAndGet { x =>
       var data: APIKey = Await.result(node.getData(), Duration.Inf).get //get the key once again (it might be updated already)
 
-      if (!data.available) {
-        logger.warn(
-          s"Trying to reset ${key.key} but the key is not available. Still procceeding to reset it.")
-      }
-
-      if (data.requestsLeft == 0 && data.resetTime != key.resetTime) { //check if the key is already updated
+      if (data.resetTime != key.resetTime) { //check if the key is already updated
         logger.info(
-          s"Now resetting ${key.key} because the reset time has been exceeded and there are no requests left.")
+          s"Now resetting ${key.key} because the reset time has been exceeded.")
         Await.result(node.setData(key), Duration.Inf) //update key
       }
     }

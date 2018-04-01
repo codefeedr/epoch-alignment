@@ -30,12 +30,14 @@ import scala.concurrent.{Await, Future}
 
 class APIKeyManagerTest extends LibraryServiceSpec  with BeforeAndAfterEach {
 
+  //first key has 5000 requests
+  //second key has 3000 requests
   val keyNode = new KeysNode
   val keyManager = new APIKeyManager()
 
   override def beforeEach() : Unit = {
     Await.ready(keyNode.deleteRecursive(), Duration(1, SECONDS))
-    Await.result(keyManager.saveToZK(), Duration(1, SECONDS))
+    Await.result(keyManager.init((x) => x), Duration(1, SECONDS))
   }
   override def afterEach() : Unit = {
     Await.ready(keyNode.deleteRecursive(), Duration(1, SECONDS))
@@ -44,103 +46,73 @@ class APIKeyManagerTest extends LibraryServiceSpec  with BeforeAndAfterEach {
   "The APIKeyManager" should "correctly store all keys in ZooKeeper" in async {
     val children = await(zkClient.GetChildren("/keys")).toList
 
-    assert(children.size == keyManager.loadKeys().size)
-    assert(children == keyManager.loadKeys().map(_.key).reverse)
+    assert(children.size == 2) //2 children
   }
 
   "The APIKeyManager" should "lock a key when a key is requested" in async {
+
     val keyLocked = await(keyManager.acquireKey())
 
     val childrenData = await(getChildrenData())
 
     val foundKey = childrenData.find(x => x.get.key == keyLocked.get.key).get
-    assert(foundKey.get.available == false) //foundKey should be locked
+    assert(foundKey.get.requestsLeft == 4999) //foundKey should be decremented
   }
 
   "The APIKeyManager" should "lock multiple keys when multiple requests are done" in async {
-    val calls = keyManager.acquireKey() :: keyManager.acquireKey() :: keyManager.acquireKey() :: Nil
+    val calls = keyManager.acquireKey() :: keyManager.acquireKey() :: keyManager.acquireKey(2) :: Nil
     val keysLocked = await(Future.sequence(calls))
 
     val childrenData = await(getChildrenData())
 
-    assert(childrenData.filter(!_.get.available).size == 2) //2 keys are locked
-    assert(keysLocked.filter(_.isEmpty).size == 1) //1 getKey called returned None
-    assert(keysLocked.filter(!_.isEmpty).size == 2) //2 getKeys called returned an actual key
+    assert(childrenData.filter(x => x.get.requestsLeft == 4996) == 1) //decremented by 4
+    assert(keysLocked.filter(!_.isEmpty).size == 3) //2 getKeys called returned an actual key
   }
 
-  "The APIKeyManager" should "unlock a key after it has been released" in async {
-    val keyLocked = await(acquireAndReleaseKey(2))
-
-    val childrenData = await(getChildrenData())
-
-    val foundKey = childrenData.find(x => x.get.key == keyLocked.key).get
-    assert(foundKey.get.available == true) //foundKey should be available again
-    assert(foundKey.get.requestsLeft == 2) //requests left should be equal to zero
-  }
 
   "The APIKeyManager" should "resets a key after the reset time (synchronous requests)" in async {
-    val firstKey = await(acquireAndReleaseKey(0)) //this one should be reset afterwards because resetTime is 0
-    val secondKey = await(acquireAndReleaseKey(0)) //firstKey should now be reset and secondKey is 0
+    val firstKey = await(keyManager.acquireKey(5000)) //this one should be reset afterwards because resetTime is 0
+    val secondKey = await(keyManager.acquireKey(3000)) //firstKey should now be reset and secondKey is 0
 
     val childrenData = await(getChildrenData())
-    val firstKeyFound = childrenData.find(x => x.get.key == firstKey.key).get
-    val secondKeyFound = childrenData.find(x => x.get.key == secondKey.key).get
-
-    //both are available
-    assert(firstKeyFound.get.available == true)
-    assert(secondKeyFound.get.available == true)
+    val firstKeyFound = childrenData.find(x => x.get.key == firstKey.get.key).get
+    val secondKeyFound = childrenData.find(x => x.get.key == secondKey.get.key).get
 
     //first key is reset
     assert(firstKeyFound.get.requestsLeft == firstKeyFound.get.requestLimit)
-    assert(firstKeyFound.get.resetTime != 0)
+    assert(firstKeyFound.get.resetTime == 0) //reset time is also set to 0
 
     //second key has to be reset
     assert(secondKeyFound.get.requestsLeft == 0)
   }
 
   "The APIKeyManager" should "resets a key after the reset time (concurrent requests) " in async {
-    val firstKey = acquireAndReleaseKey(0) //both requests are done at the same time
-    val secondKey = acquireAndReleaseKey(0)
+    val firstKey = keyManager.acquireKey(5000) //both requests are done at the same time
+    val secondKey = keyManager.acquireKey(3000)
 
     val keys = await(Future.sequence(firstKey :: secondKey :: Nil))
 
     val childrenData = await(getChildrenData())
 
-    val firstKeyFound = childrenData.find(x => x.get.key == keys(0).key).get
-    val secondKeyFound = childrenData.find(x => x.get.key == keys(1).key).get
-
-    //both are available
-    assert(firstKeyFound.get.available == true)
-    assert(secondKeyFound.get.available == true)
+    val firstKeyFound = childrenData.find(x => x.get.key == keys(0).get.key).get
+    val secondKeyFound = childrenData.find(x => x.get.key == keys(1).get.key).get
 
     //both keys are not reset
     assert(firstKeyFound.get.requestsLeft == 0)
     assert(secondKeyFound.get.requestsLeft == 0)
 
-    //if we do a third request, both keys should be resetted
-    val thirdRequest = await(acquireAndReleaseKey(10))
+    //if we do a third request (with no decrement), both keys should be resetted
+    val thirdRequest = await(keyManager.acquireKey(0))
 
     val childrenDataUpdated = await(getChildrenData())
 
     //get third key
-    val thirdKeyFound = childrenDataUpdated.find(x => x.get.key == thirdRequest.key).get
+    val thirdKeyFound = childrenDataUpdated.find(x => x.get.key == thirdRequest.get.key).get
 
     assert(childrenDataUpdated.filter(x => x.get.requestsLeft > 0).size == 2) //2 keys with > 0 requests left
     assert(thirdKeyFound.get.requestsLeft == 10)
   }
 
-  /**
-    * Acquires a key and releases it with updated requests left.
-    * @param newRequests the new amount of requests left.
-    * @return the updated key.
-    */
-  def acquireAndReleaseKey(newRequests: Int) : Future[APIKey] = async {
-    val key = await(keyManager.acquireKey()).get
-    val updatedKey = key.copy(requestsLeft = newRequests)
-    await(keyManager.updateAndReleaseKey(updatedKey))
-
-    updatedKey
-  }
 
   /**
     * Get the current data stored in ZK about the keys.
