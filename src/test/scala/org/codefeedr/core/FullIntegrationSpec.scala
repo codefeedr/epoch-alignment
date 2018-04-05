@@ -85,7 +85,9 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     * @return When the environment is done, the subjectType that was the result of the query
     */
   def runQueryEnvironment(query: QueryTree): Future[SubjectType] = async {
+
     val queryEnv = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
+    queryEnv.getCheckpointingMode
     logger.debug("Creating query Composer")
     val composer = await(streamComposerFactory.getComposer(query))
     logger.debug("Composing queryEnv")

@@ -16,6 +16,8 @@ class QuerySinkNode(name: String, parent: ZkNodeBase)
 
   def getProducers(): ProducerCollection = new ProducerCollection("producers", this)
 
+  def getEpochs(): EpochCollectionNode = new EpochCollectionNode(this)
+
   override def typeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
   override def initialState(): Boolean = true
 

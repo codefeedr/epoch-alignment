@@ -169,7 +169,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
   }
 
   /**
-    * Sets the endOffsets, so the job fill finish on those offsets
+    * Sets the endOffsets, so it is known on which offsets the job ended
     */
   def cancelOnOffsets(): Unit = {
     logger.debug(s"Obtaining endOffsets for ${getLabel()}")
@@ -248,6 +248,9 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     subjectNode.awaitClose().map(_ => cancel())
   }
 
+
+
+
   /**
     * Finalizes the run
     * Called form the notifyCheckpointComplete, because the cleanup cannot occur until the last checkpoint has been completed
@@ -287,7 +290,6 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     */
   def poll(ctx: SourceFunction.SourceContext[T]): Unit = {
     ctx.getCheckpointLock.synchronized {
-
       logger.debug(s"${getLabel} started polling")
       val data = dataConsumer.poll(pollTimeout).iterator().asScala
       logger.debug(s"${getLabel} completed polling")

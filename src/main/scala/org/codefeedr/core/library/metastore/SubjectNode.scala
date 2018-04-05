@@ -51,6 +51,12 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
   def getSources(): QuerySourceCollection = new QuerySourceCollection(this)
 
   /**
+    * Obtains the node that contains the epochs that belong to this subject
+    * @return
+    */
+  def getEpochs(): EpochCollectionNode = new EpochCollectionNode(this)
+
+  /**
     * Retrieve a subjectType for an arbitrary scala type
     * Creates type information and registers the type in the library
     * Creates a non-persistent type
