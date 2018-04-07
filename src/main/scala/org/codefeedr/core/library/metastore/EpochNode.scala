@@ -7,8 +7,7 @@ import org.codefeedr.core.library.internal.zookeeper.{ZkNode, ZkNodeBase}
   * @param epoch
   * @param parent
   */
-class EpochNode(epoch: Int, parent: ZkNodeBase)
-extends ZkNode[String](s"$epoch", parent) {
+class EpochNode(epoch: Int, parent: ZkNodeBase) extends ZkNode[String](s"$epoch", parent) {
 
   /**
     * Retrieves the partitions that belong to this epoch

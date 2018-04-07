@@ -9,7 +9,8 @@ import scala.concurrent.Future
 
 class EpochState(transactionState: TransactionState, epochCollectionNode: EpochCollectionNode) {
 
-  lazy val epochNode: EpochNode = epochCollectionNode.getChild(transactionState.checkPointId.toString)
+  lazy val epochNode: EpochNode =
+    epochCollectionNode.getChild(transactionState.checkPointId.toString)
 
   /**
     * Precommits the current epoch state
@@ -23,27 +24,30 @@ class EpochState(transactionState: TransactionState, epochCollectionNode: EpochC
       Future.sequence(
         transactionState.offsetMap.map(a => {
           val partition = a._1._2
-          val offset= a._2
-          epochNode.getPartitions().getChild(partition.toString).create(Partition(partition, offset))
+          val offset = a._2
+          epochNode
+            .getPartitions()
+            .getChild(partition.toString)
+            .create(Partition(partition, offset))
         })
       )
     )
   }
 
   /**
-  * Perform the actual commit
-  * Flags the node as committed
-  */
+    * Perform the actual commit
+    * Flags the node as committed
+    */
   def commit(): Future[Unit] = async {
     //Perform await to convert return type to unit
-    await(Future.sequence(
-      transactionState.offsetMap.map(a => {
-        val partition = a._1._2
-        epochNode.getPartitions().getChild(partition.toString).setState(true)
-      })
-    ))
+    await(
+      Future.sequence(
+        transactionState.offsetMap.map(a => {
+          val partition = a._1._2
+          epochNode.getPartitions().getChild(partition.toString).setState(true)
+        })
+      ))
   }
-
 
   /**
     * Creates the epochnode if it does not exist yet

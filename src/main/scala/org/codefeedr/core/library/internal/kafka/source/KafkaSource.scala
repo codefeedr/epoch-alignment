@@ -248,9 +248,6 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     subjectNode.awaitClose().map(_ => cancel())
   }
 
-
-
-
   /**
     * Finalizes the run
     * Called form the notifyCheckpointComplete, because the cleanup cannot occur until the last checkpoint has been completed

@@ -8,12 +8,4 @@ import org.codefeedr.core.library.internal.zookeeper.{ZkCollectionNode, ZkNodeBa
   * @param parent
   */
 class EpochCollectionNode(parent: ZkNodeBase)
-  extends ZkCollectionNode[EpochNode]("epochs",
-    parent, (n, p) => new EpochNode(n.toInt, p)) {
-
-
-
-
-
-
-}
+    extends ZkCollectionNode[EpochNode]("epochs", parent, (n, p) => new EpochNode(n.toInt, p)) {}
