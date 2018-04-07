@@ -78,7 +78,7 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)
         r
       }
     }.recoverWith { //Register type. When error because node already exists just retrieve this value because the first writer wins.
-      case _: NodeExistsException => getData().map(o => o.get)
+      case _: Exception => getData().map(o => o.get)
     }
   }
 
