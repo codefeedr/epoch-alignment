@@ -170,6 +170,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
 
   /**
     * Sets the endOffsets, so it is known on which offsets the job ended
+    * TODO: This should become endEpoch
     */
   def cancelOnOffsets(): Unit = {
     logger.debug(s"Obtaining endOffsets for ${getLabel()}")
@@ -182,11 +183,13 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     logger.debug(s"obtained endOffsets for ${getLabel()}: \r\n${readableOffsets(endOffsets)}")
   }
 
+  //Called when restoring the state
   override def initializeState(context: FunctionInitializationContext): Unit = {
     //context.getOperatorStateStore.getUnionListState(
     // new ListStateDescriptor[Tuple2[KafkaTopicPartition, Long]]("topic-partition-offset", TypeInformation.of(new TypeHint[Tuple2[KafkaTopicPartition, Long]]() {})))
   }
 
+  //Called when starting a new checkpoint
   override def snapshotState(context: FunctionSnapshotContext): Unit = {
     logger.debug(s"${getLabel()} snapshotting offsets for epoch ${context.getCheckpointId}")
     shouldCommit += context.getCheckpointId -> currentOffsets
@@ -284,6 +287,7 @@ abstract class KafkaSource[T](subjectType: SubjectType)
   /**
     * Perform a poll on the kafka consumer and collect data on the given method
     * Should be  under checkpoint lock because all of this method depends on the dataConsumer, which is not built for multi-threaded access
+
     */
   def poll(ctx: SourceFunction.SourceContext[T]): Unit = {
     ctx.getCheckpointLock.synchronized {
@@ -299,6 +303,23 @@ abstract class KafkaSource[T](subjectType: SubjectType)
         cancelOnOffsets()
       }
     }
+  }
+
+  /**
+    * When synchronizing, we must make sure to read all data up to the desired offsets, before releasing the checkpoint lock
+    * When the desired offset has been reached, it should no longer pull any data
+    * @param ctx context to lock on and emit data to
+    * @return
+    */
+  def synchronizedPoll(ctx: SourceFunction.SourceContext[T],
+                       offsets: Map[TopicPartition, Long]): Unit = {}
+
+  /**
+    * Called at the start of a synchronized epoch
+    * Determines the endOffsets for the current epoch
+    */
+  def startSynchronizedEpoch(): Unit = {
+    subjectNode.getEpochs()
   }
 
   override def run(ctx: SourceFunction.SourceContext[T]): Unit = {
@@ -322,6 +343,12 @@ abstract class KafkaSource[T](subjectType: SubjectType)
     }
 
   }
+
+  /**
+    *
+    * @param id
+    */
+  def awaitCheckpoint(id: Long): Unit = {}
 
   /**
     * Get typeinformation of the returned type

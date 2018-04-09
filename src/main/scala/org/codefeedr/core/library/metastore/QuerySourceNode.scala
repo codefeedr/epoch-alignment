@@ -16,6 +16,12 @@ class QuerySourceNode(name: String, parent: ZkNodeBase)
 
   def getConsumers(): ConsumerCollection = new ConsumerCollection("consumers", this)
 
+  /**
+    * Retrieve the epochs of the source
+    * @return
+    */
+  def getEpochs(): SourceEpochCollection = new SourceEpochCollection(this)
+
   override def typeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
   override def initialState(): Boolean = true
 

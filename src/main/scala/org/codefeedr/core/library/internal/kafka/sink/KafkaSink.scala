@@ -197,6 +197,8 @@ abstract class KafkaSink[TSink]()
     logger.debug(
       s"${getLabel()} committing transaction ${transaction.checkPointId}.\r\n${transaction.displayOffsets()}")
     producerPool(transaction.producerIndex).commitTransaction()
+    Await.ready(new EpochState(transaction, subjectNode.getEpochs()).commit(),
+                Duration(5, SECONDS))
     getUserContext.get().availableProducers(transaction.producerIndex) = true
   }
 
@@ -209,7 +211,10 @@ abstract class KafkaSink[TSink]()
     blocking {
       producerPool(transaction.producerIndex).flush()
       logger.debug(s"${getLabel()} flushed and is awaiting events to commit")
+      //Perform precommit on the epochState
       Await.ready(transaction.awaitCommit(), Duration(5, SECONDS))
+      Await.ready(new EpochState(transaction, subjectNode.getEpochs()).preCommit(),
+                  Duration(5, SECONDS))
     }
   }
 
