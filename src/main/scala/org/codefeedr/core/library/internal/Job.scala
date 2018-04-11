@@ -22,9 +22,9 @@ import com.typesafe.scalalogging.Logger
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
-import org.codefeedr.core.library.SubjectFactory
+import org.codefeedr.core.library.{LibraryServices, SubjectFactory}
 import org.codefeedr.core.library.internal.kafka.source.{KafkaGenericSource, KafkaRowSource}
-import org.codefeedr.core.library.metastore.SubjectLibrary
+import org.codefeedr.core.library.metastore.{SubjectLibrary, SubjectNode}
 import org.codefeedr.model.SubjectType
 
 import scala.concurrent._
@@ -36,13 +36,14 @@ import async.Async.{async, await}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.TypeTag: ClassTag](
-    name: String) {
+abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.TypeTag: ClassTag] (
+    name: String) extends LibraryServices {
 
   lazy val logger: Logger =
     Logger(LoggerFactory.getLogger(getClass.getName))
 
   var subjectType: SubjectType = _
+  lazy val subjectNode = subjectLibrary.getSubject(subjectType.name)
 
   var source: RichSourceFunction[Input] = _
 
@@ -76,7 +77,7 @@ abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.Type
   }
 
   def setSource(job: Job[_, Input]) = {
-    source = new KafkaGenericSource[Input](job.subjectType, job.subjectType.uuid)
+    source = new KafkaGenericSource[Input](job.subjectNode, job.subjectType.uuid)
   }
 
   def startJob(subjectLibrary: SubjectLibrary) = async {

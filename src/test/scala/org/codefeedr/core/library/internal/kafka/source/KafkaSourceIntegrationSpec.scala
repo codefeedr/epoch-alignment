@@ -19,27 +19,20 @@
  *
  */
 
-package org.codefeedr.core.library.internal.kafka
+package org.codefeedr.core.library.internal.kafka.source
 
-import org.apache.flink.streaming.api.functions.source.SourceFunction.SourceContext
 import org.codefeedr.core.FullIntegrationSpec
 import org.codefeedr.core.library.internal.SubjectTypeFactory
-import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkNodeBase}
-import org.codefeedr.core.library.LibraryServices
-import org.codefeedr.model.TrailedRecord
-import org.scalatest.time.Seconds
-import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, BeforeAndAfterEach}
+import org.codefeedr.core.library.internal.kafka.KafkaTrailedRecordSource
 
 import scala.async.Async.{async, await}
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration._
 
 case class TestKafkaSourceSubject(prop1: String)
 
 /**
   * Test for [[KafkaTrailedRecordSource]]
   */
-class KafkaSourceSpec extends FullIntegrationSpec  {
+class KafkaSourceIntegrationSpec extends FullIntegrationSpec  {
   val testSubjectName = "TestKafkaSourceSubject"
 
   "A KafkaSource" should "Register and remove itself in the SubjectLibrary" in async {
@@ -52,7 +45,7 @@ class KafkaSourceSpec extends FullIntegrationSpec  {
 
     val subject = await(subjectNode.getOrCreateType[TestKafkaSourceSubject]())
 
-    val source = new KafkaTrailedRecordSource(subject, sourceName)
+    val source = new KafkaTrailedRecordSource(subjectNode, sourceName)
     val sourceNode = subjectNode.getSources().getChild(sourceName)
 
     assert(!await(sourceNode.exists()))

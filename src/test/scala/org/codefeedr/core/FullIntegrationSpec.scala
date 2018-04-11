@@ -60,7 +60,7 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     */
   def awaitAllData(subject:SubjectType): Future[Array[TrailedRecord]] = async {
     await(subjectLibrary.getSubject(subject.name).assertExists())
-    val source = new KafkaTrailedRecordSource(subject, "testsource")
+    val source = new KafkaTrailedRecordSource(subjectLibrary.getSubject(subject.name), "testsource")
     val result = new mutable.ArrayBuffer[TrailedRecord]()
     source.run(new SourceContext[TrailedRecord] {
       override def collectWithTimestamp(element: TrailedRecord, timestamp: Long): Unit = ???

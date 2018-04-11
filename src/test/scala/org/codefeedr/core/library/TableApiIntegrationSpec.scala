@@ -73,12 +73,13 @@ class TableApiIntegrationSpec extends FullIntegrationSpec{
 
       //Execute the query environment, and obtain the typeDefinition of the result of the query
       val resultType = await(runQueryEnvironment(query))
+      val resultNode = subjectLibrary.getSubject(resultType.name)
 
       //Construct Flinks tableEnvironment
       val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
       val tableEnv = TableEnvironment.getTableEnvironment(env)
       //Register a custom implemented tableSource based on the output from the previous query
-      tableEnv.registerTableSource("my_table", new KafkaTableSource(resultType, "testSource"))
+      tableEnv.registerTableSource("my_table", new KafkaTableSource(resultNode, "testSource"))
 
 
       //Perform a Flink SQL Query

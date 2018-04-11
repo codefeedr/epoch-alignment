@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.core.LibraryServiceSpec
 import org.codefeedr.core.library.MyOwnIntegerObject
 import org.codefeedr.core.library.internal.SubjectTypeFactory
-import org.codefeedr.core.library.internal.kafka.TestKafkaSourceSubject
+import org.codefeedr.core.library.internal.kafka.source.TestKafkaSourceSubject
 import org.codefeedr.model.SubjectType
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
 

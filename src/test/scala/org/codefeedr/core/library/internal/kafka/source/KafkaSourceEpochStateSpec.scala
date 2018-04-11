@@ -24,8 +24,6 @@ class KafkaSourceEpochStateSpec extends AsyncFlatSpec with MockitoSugar with Bef
 
   private var kafkaSourceEpochState: KafkaSourceEpochState = _
 
-
-
   "nextSourceEpoch" should "return an existing value if already created in zookeeper" in async {
     //Arrange
     val sourceEpochNode = mock[SourceEpochNode]
@@ -59,6 +57,7 @@ class KafkaSourceEpochStateSpec extends AsyncFlatSpec with MockitoSugar with Bef
     when(children(0).getEpoch()) thenReturn 0
     when(children(1).getEpoch()) thenReturn 1
     when(epochCollection.getChild("1")) thenReturn children(1)
+    when(epochCollection.getLatestEpochId()) thenReturn (Future successful 1)
 
     when(children(1).getPartitionData()) thenReturn Future.successful(partitions)
     when(epochCollection.getChildren()) thenReturn Future.successful(children)

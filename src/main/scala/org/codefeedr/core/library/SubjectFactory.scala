@@ -24,14 +24,11 @@ import java.util.UUID
 import org.apache.flink.streaming.api.functions.sink.{RichSinkFunction, SinkFunction}
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.types.Row
-import org.codefeedr.core.library.internal.kafka.sink.{
-  KafkaGenericSink,
-  RowSink,
-  TrailedRecordSink
-}
+import org.codefeedr.core.library.internal.kafka.sink.{KafkaGenericSink, RowSink, TrailedRecordSink}
 import org.codefeedr.core.library.internal.kafka.source.KafkaRowSource
 import org.codefeedr.core.library.internal.kafka._
 import org.codefeedr.core.library.internal.{KeyFactory, RecordTransformer, SubjectTypeFactory}
+import org.codefeedr.core.library.metastore.SubjectNode
 import org.codefeedr.model.{ActionType, SubjectType, TrailedRecord}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -104,12 +101,12 @@ class SubjectFactoryController { this: LibraryServices =>
     }
   }
 
-  def getRowSource(subjectType: SubjectType, sourceId: String): SourceFunction[Row] = {
-    new KafkaRowSource(subjectType, sourceId)
+  def getRowSource(subjectNode: SubjectNode, sourceId: String): SourceFunction[Row] = {
+    new KafkaRowSource(subjectNode, sourceId)
   }
 
-  def getSource(subjectType: SubjectType, sinkId: String): SourceFunction[TrailedRecord] = {
-    new KafkaTrailedRecordSource(subjectType, sinkId)
+  def getSource(subjectNode: SubjectNode, sinkId: String): SourceFunction[TrailedRecord] = {
+    new KafkaTrailedRecordSource(subjectNode, sinkId)
   }
 
 }

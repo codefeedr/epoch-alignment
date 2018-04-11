@@ -22,16 +22,19 @@ package org.codefeedr.core.engine.query
 import org.apache.flink.api.scala._
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.codefeedr.model.{SubjectType, TrailedRecord}
-import org.codefeedr.core.library.SubjectFactory
+import org.codefeedr.core.library.{LibraryServices, SubjectFactory}
+
+import scala.tools.fusesource_embedded.hawtjni.runtime.Library
 
 /**
   * Created by Niels on 31/07/2017.
   */
-class SourceStreamComposer(subjectType: SubjectType) extends StreamComposer {
+class SourceStreamComposer(subjectType: SubjectType)
+  extends StreamComposer with LibraryServices {
 
   //HACK: hard coded id
   override def compose(env: StreamExecutionEnvironment): DataStream[TrailedRecord] = {
-    env.addSource(SubjectFactory.getSource(subjectType, s"composedsink_${subjectType.name}"))
+    env.addSource(SubjectFactory.getSource(subjectLibrary.getSubject(subjectType.name), s"composedsink_${subjectType.name}"))
   }
 
   /**

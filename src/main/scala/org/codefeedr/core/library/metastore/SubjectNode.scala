@@ -29,6 +29,7 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
   override def postCreate(): Future[Unit] = async {
     await(getSinks().create())
     await(getSources().create())
+    await(getEpochs().create())
     await(super.postCreate())
   }
 
@@ -174,6 +175,7 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
     */
   def awaitClose(): Future[Unit] =
     getStateNode().awaitCondition(o => !o).map(_ => ())
+
 
   /**
     * The base class needs to expose the typeTag, no typeTag constraints can be put on traits

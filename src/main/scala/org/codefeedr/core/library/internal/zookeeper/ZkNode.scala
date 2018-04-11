@@ -24,9 +24,10 @@ import org.apache.zookeeper.KeeperException.NodeExistsException
 import rx.lang.scala.Observable
 
 import scala.async.Async.{async, await}
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.reflect.ClassTag
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 /**
   * ZkNode, represents a node on zookeeper
@@ -89,6 +90,13 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)
     */
   def getData(): Future[Option[TData]] =
     zkClient.getData[TData](path())
+
+  /**
+    * Retrieve the data with a blocking wait
+    * @return
+    */
+  def getDataSync(): Option[TData] =
+    Await.result(getData(),Duration(5, MILLISECONDS))
 
   /**
     * Set data of the node

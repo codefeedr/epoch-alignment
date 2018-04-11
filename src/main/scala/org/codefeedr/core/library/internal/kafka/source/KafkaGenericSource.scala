@@ -23,13 +23,13 @@ import org.apache.flink.api.java.typeutils.TypeExtractor
 import org.codefeedr.core.library.{SubjectFactory, TypeInformationServices}
 import org.codefeedr.model.{SubjectType, TrailedRecord}
 import org.apache.flink.streaming.api.scala._
+import org.codefeedr.core.library.metastore.SubjectNode
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-class KafkaGenericSource[T: ru.TypeTag: ClassTag: TypeInformation](subjectType: SubjectType,
-                                                                   override val sourceUuid: String)
-    extends KafkaSource[T](subjectType: SubjectType) {
+class KafkaGenericSource[T: ru.TypeTag: ClassTag: TypeInformation](subjectNode: SubjectNode,                                                                   override val sourceUuid: String)
+    extends KafkaSource[T](subjectNode: SubjectNode) {
   @transient private lazy val Transformer = SubjectFactory.getUnTransformer[T](subjectType)
 
   override def mapToT(record: TrailedRecord): T = Transformer.apply(record)

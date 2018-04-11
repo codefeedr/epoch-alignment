@@ -196,9 +196,10 @@ class MyOwnSourceQuery(nr: Int, parallelism: Int) extends Runnable with LazyLogg
 
   def createTopology(env: StreamExecutionEnvironment, nr: Int): Future[Unit] = async {
 
-    val subjectType = await(Library.subjectLibrary.getSubject[MyOwnIntegerObject]().getOrCreateType[MyOwnIntegerObject]())
+    val subjectNode = Library.subjectLibrary.getSubject[MyOwnIntegerObject]()
+    val subjectType = await(subjectNode.getOrCreateType[MyOwnIntegerObject]())
     val transformer = SubjectFactory.getUnTransformer[MyOwnIntegerObject](subjectType)
-    val source = SubjectFactory.getSource(subjectType, "testSource")
+    val source = SubjectFactory.getSource(subjectNode, "testSource")
     val r =() => {
       val num = nr
       env
