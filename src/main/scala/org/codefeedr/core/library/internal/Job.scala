@@ -36,8 +36,9 @@ import async.Async.{async, await}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.TypeTag: ClassTag] (
-    name: String) extends LibraryServices {
+abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.TypeTag: ClassTag](
+    name: String)
+    extends LibraryServices {
 
   lazy val logger: Logger =
     Logger(LoggerFactory.getLogger(getClass.getName))

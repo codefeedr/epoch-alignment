@@ -244,7 +244,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
     when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
     when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(-1)
-    when(consumer.getCurrentOffsets()) thenReturn mutable.Map(3 -> 1339L)
+    when(consumer.getEndOffsets()) thenReturn Map(3 -> 1339L)
 
     //Act
     testKafkaSource.cancel()
@@ -271,7 +271,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
     when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
     when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(-1)
-    when(consumer.getCurrentOffsets()) thenReturn mutable.Map(3 -> 1339L)
+    when(consumer.getEndOffsets()) thenReturn Map(3 -> 1339L)
 
     //Act
     testKafkaSource.cancel()
@@ -305,7 +305,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
     when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
     when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(-1)
-    when(consumer.getCurrentOffsets()) thenReturn mutable.Map(3 -> 1339L)
+    when(consumer.getEndOffsets()) thenReturn Map(3 -> 1339L)
 
     //Act
     testKafkaSource.cancel()

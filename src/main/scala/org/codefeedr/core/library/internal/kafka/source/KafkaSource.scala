@@ -27,7 +27,11 @@ import org.apache.flink.api.common.state.{ListState, ListStateDescriptor, ValueS
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
 import org.apache.flink.api.java.tuple.Tuple2
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable
-import org.apache.flink.runtime.state.{CheckpointListener, FunctionInitializationContext, FunctionSnapshotContext}
+import org.apache.flink.runtime.state.{
+  CheckpointListener,
+  FunctionInitializationContext,
+  FunctionSnapshotContext
+}
 import org.apache.flink.streaming.api.checkpoint.{CheckpointedFunction, ListCheckpointed}
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
@@ -69,12 +73,12 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
     with Serializable
     with LibraryServices {
 
-
   @transient protected lazy val consumer = {
     val kafkaConsumer = KafkaConsumerFactory.create[RecordSourceTrail, Row](instanceUuid.toString)
     kafkaConsumer.subscribe(Iterable(topic).asJavaCollection)
-    logger.debug(s"Source $instanceUuid of consumer $sourceUuid subscribed on topic $topic as group $instanceUuid")
-    new KafkaSourceConsumer[T](s"Consumer ${getLabel}",kafkaConsumer,mapToT)
+    logger.debug(
+      s"Source $instanceUuid of consumer $sourceUuid subscribed on topic $topic as group $instanceUuid")
+    new KafkaSourceConsumer[T](s"Consumer ${getLabel}", kafkaConsumer, mapToT)
   }
 
   @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
@@ -99,7 +103,8 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
       .getChild(instanceUuid)
 
   //Running state
-  @transient @volatile private var state: KafkaSourceState.Value = KafkaSourceState.UnSynchronized
+  @transient
+  @volatile private var state: KafkaSourceState.Value = KafkaSourceState.UnSynchronized
   //Node in zookeeper representing state of the subject this consumer is subscribed on
   @volatile private[kafka] var running = true
   @volatile private[kafka] var intitialized = false
@@ -110,12 +115,11 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
   //TODO: Can we somehow perform this async?
   @transient private[kafka] lazy val finalSourceEpochOffsets = getEpochOffsets(finalSourceEpoch)
 
-
   //State of the source. We use the mutable map in operation,
   // and when a snapshot is performed we update the liststate. The liststate contains the offsets of the last comitted checkpoint
   @transient private[kafka] lazy val currentOffsets = consumer.getCurrentOffsets()
-  @transient private[kafka] lazy val checkpointOffsets = mutable.Map[Long,Map[Int, Long]]()
-  @transient private var listState:ListState[(Int, Long)] = _
+  @transient private[kafka] lazy val checkpointOffsets = mutable.Map[Long, Map[Int, Long]]()
+  @transient private var listState: ListState[(Int, Long)] = _
 
   /**
     * Get a display label for this source
@@ -139,13 +143,14 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
       .map(tp => s"p: ${tp._1.topic()}_${tp._1.partition()}, o: ${tp._2}")
       .mkString(", ")
 
-
   /**
     * Cancels this source on the final epoch of the source it is subscribed on
     */
   override def cancel(): Unit = {
-    finalSourceEpoch = Await.result(subjectNode.getEpochs().getLatestEpochId(),Duration(1, SECONDS))
-    logger.debug(s"Cancelling ${getLabel()} after final source epoch ${finalSourceEpoch} has been reached ${finalSourceEpochOffsets}.")
+    finalSourceEpoch =
+      Await.result(subjectNode.getEpochs().getLatestEpochId(), Duration(1, SECONDS))
+    logger.debug(
+      s"Cancelling ${getLabel()} after final source epoch ${finalSourceEpoch} has been reached ${finalSourceEpochOffsets}.")
   }
 
   def readableOffsets(offsetMap: Map[TopicPartition, Long]): String = {
@@ -156,9 +161,11 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
 
   //Called when restoring the state
   override def initializeState(context: FunctionInitializationContext): Unit = {
-    if(!getRuntimeContext().asInstanceOf[StreamingRuntimeContext].isCheckpointingEnabled) {
-      logger.error("Started a custom source without checkpointing enabled. The custom source is designed to work with checkpoints only.")
-      throw new Error("Started a custom source without checkpointing enabled. The custom source is designed to work with checkpoints only.")
+    if (!getRuntimeContext().asInstanceOf[StreamingRuntimeContext].isCheckpointingEnabled) {
+      logger.error(
+        "Started a custom source without checkpointing enabled. The custom source is designed to work with checkpoints only.")
+      throw new Error(
+        "Started a custom source without checkpointing enabled. The custom source is designed to work with checkpoints only.")
     }
     val descriptor = new ListStateDescriptor[(Int, Long)](
       "collected offsets",
@@ -167,7 +174,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
     //On restore, we only need to restore the current offsets. We won't need the checkpoint offsets any more
     listState = context.getOperatorStateStore.getListState(descriptor)
     //If the state was nonempty, initialize the offsets with the recieved data
-    if(listState.get().asScala.nonEmpty) {
+    if (listState.get().asScala.nonEmpty) {
       currentOffsets.clear()
       listState.get().asScala.foreach(o => currentOffsets(o._1) = o._2)
     } else {
@@ -178,8 +185,10 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
 
   //Called when starting a new checkpoint
   override def snapshotState(context: FunctionSnapshotContext): Unit = {
+    logger.debug(s"Snapshotting epoch ${context.getCheckpointId} on ${getLabel()}")
     checkpointOffsets(context.getCheckpointId) = currentOffsets.toMap
     cancelIfNeeded(context.getCheckpointId)
+    logger.debug(s"Done snapshotting epoch ${context.getCheckpointId} on ${getLabel()}")
   }
 
   /**
@@ -188,11 +197,14 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
     */
   private def getEpochOffsets(epoch: Int): Map[Int, Long] = {
     logger.debug(s"Obtaining offsets for epoch $epoch")
-    if(epoch == -1) {
-      consumer.getCurrentOffsets().toMap
+    if (epoch == -1) {
+      consumer.getEndOffsets().toMap
     } else {
-      Await.result(subjectNode.getEpochs().getChild(s"$finalSourceEpoch").getPartitionData(), Duration(1, SECONDS))
-        .map(o => o.nr -> o.offset).toMap
+      Await
+        .result(subjectNode.getEpochs().getChild(s"$finalSourceEpoch").getPartitionData(),
+                Duration(1, SECONDS))
+        .map(o => o.nr -> o.offset)
+        .toMap
     }
   }
 
@@ -200,11 +212,11 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
     * Checks if a cancel is required
     */
   private def cancelIfNeeded(currentCheckpoint: Long): Unit = {
-    if(finalSourceEpoch > -2) {
+    if (finalSourceEpoch > -2) {
       logger.debug(s"Attempting to finish on source epoch $finalSourceEpoch")
       logger.debug(s"Current offsets: ${currentOffsets.toMap} (${getLabel()})")
-      logger.debug(s"Final offsets: ${finalSourceEpochOffsets.toMap} (${getLabel()})")
-      if(OffsetUtils.HigherOrEqual(currentOffsets.toMap,finalSourceEpochOffsets)) {
+      logger.debug(s"Final offsets: ${finalSourceEpochOffsets} (${getLabel()})")
+      if (OffsetUtils.HigherOrEqual(currentOffsets.toMap, finalSourceEpochOffsets)) {
         logger.debug(s"${getLabel()} is cancelling after checkpoint $currentCheckpoint completed.")
         finalCheckpointId = currentCheckpoint
       }
@@ -222,7 +234,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
     checkpointOffsets(checkpointId).foreach(o => listState.add(o._1, o._2))
 
     //Check if the final checkpoint completed
-    if(checkpointId == finalCheckpointId) {
+    if (checkpointId == finalCheckpointId) {
       logger.debug(s"${getLabel()} is stopping, final checkpoint ${checkpointId} completed")
       running = false
     }
@@ -269,7 +281,6 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
     */
   private[kafka] def awaitClose(): Future[Unit] = closePromise.future
 
-
   /**
     * Perform a poll on the kafka consumer and collect data on the given method
     * Should be  under checkpoint lock because all of this method depends on the dataConsumer, which is not built for multi-threaded access
@@ -279,6 +290,8 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
       val offsets = consumer.poll(ctx)
       offsets.foreach(o => currentOffsets(o._1) = o._2)
     }
+    //HACK: Find some way to perform some operations outside the checkpoint lock
+    Thread.sleep(10)
   }
 
   /**
@@ -314,7 +327,6 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
     }
 
   }
-
 
   /**
     *

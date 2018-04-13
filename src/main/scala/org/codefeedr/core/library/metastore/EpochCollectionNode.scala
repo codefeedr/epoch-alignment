@@ -2,7 +2,7 @@ package org.codefeedr.core.library.metastore
 
 import org.codefeedr.core.library.internal.zookeeper.{ZkCollectionNode, ZkNodeBase}
 
-import scala.async.Async.{async,await}
+import scala.async.Async.{async, await}
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -21,7 +21,7 @@ class EpochCollectionNode(parent: ZkNodeBase)
     */
   def getLatestEpochId(): Future[Int] = async {
     val epochs = await(getChildren())
-    if(epochs.nonEmpty) {
+    if (epochs.nonEmpty) {
       epochs.map(o => o.getEpoch()).max
     } else {
       -1

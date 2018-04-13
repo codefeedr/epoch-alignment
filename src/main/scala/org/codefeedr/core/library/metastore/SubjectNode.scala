@@ -176,7 +176,6 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
   def awaitClose(): Future[Unit] =
     getStateNode().awaitCondition(o => !o).map(_ => ())
 
-
   /**
     * The base class needs to expose the typeTag, no typeTag constraints can be put on traits
     *

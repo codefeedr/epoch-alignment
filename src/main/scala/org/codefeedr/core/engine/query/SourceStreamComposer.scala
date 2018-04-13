@@ -29,12 +29,13 @@ import scala.tools.fusesource_embedded.hawtjni.runtime.Library
 /**
   * Created by Niels on 31/07/2017.
   */
-class SourceStreamComposer(subjectType: SubjectType)
-  extends StreamComposer with LibraryServices {
+class SourceStreamComposer(subjectType: SubjectType) extends StreamComposer with LibraryServices {
 
   //HACK: hard coded id
   override def compose(env: StreamExecutionEnvironment): DataStream[TrailedRecord] = {
-    env.addSource(SubjectFactory.getSource(subjectLibrary.getSubject(subjectType.name), s"composedsink_${subjectType.name}"))
+    env.addSource(
+      SubjectFactory.getSource(subjectLibrary.getSubject(subjectType.name),
+                               s"composedsink_${subjectType.name}"))
   }
 
   /**

@@ -24,7 +24,11 @@ import java.util.UUID
 import org.apache.flink.streaming.api.functions.sink.{RichSinkFunction, SinkFunction}
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.types.Row
-import org.codefeedr.core.library.internal.kafka.sink.{KafkaGenericSink, RowSink, TrailedRecordSink}
+import org.codefeedr.core.library.internal.kafka.sink.{
+  KafkaGenericSink,
+  RowSink,
+  TrailedRecordSink
+}
 import org.codefeedr.core.library.internal.kafka.source.KafkaRowSource
 import org.codefeedr.core.library.internal.kafka._
 import org.codefeedr.core.library.internal.{KeyFactory, RecordTransformer, SubjectTypeFactory}

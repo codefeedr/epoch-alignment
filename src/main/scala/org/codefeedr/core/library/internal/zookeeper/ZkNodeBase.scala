@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * Non-generic base class for all ZkNodes
   * @param name
   */
-abstract class ZkNodeBase(val name: String) extends Serializable with LazyLogging{
+abstract class ZkNodeBase(val name: String) extends Serializable with LazyLogging {
   @transient lazy val zkClient: ZkClient = LibraryServices.zkClient
 
   def parent(): ZkNodeBase

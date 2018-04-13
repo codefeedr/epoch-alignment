@@ -28,7 +28,8 @@ import org.codefeedr.core.library.metastore.SubjectNode
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-class KafkaGenericSource[T: ru.TypeTag: ClassTag: TypeInformation](subjectNode: SubjectNode,                                                                   override val sourceUuid: String)
+class KafkaGenericSource[T: ru.TypeTag: ClassTag: TypeInformation](subjectNode: SubjectNode,
+                                                                   override val sourceUuid: String)
     extends KafkaSource[T](subjectNode: SubjectNode) {
   @transient private lazy val Transformer = SubjectFactory.getUnTransformer[T](subjectType)
 

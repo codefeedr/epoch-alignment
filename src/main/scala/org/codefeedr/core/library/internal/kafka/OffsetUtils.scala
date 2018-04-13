@@ -1,6 +1,7 @@
 package org.codefeedr.core.library.internal.kafka
 
 object OffsetUtils {
+
   /**
     * Compares the source with the reference
     * @param source

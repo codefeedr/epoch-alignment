@@ -110,25 +110,8 @@ abstract class KafkaSink[TSink]()
       TransactionContext(mutable.Map() ++ (0 until producerPoolSize).map(id => id -> true)))
 
   override def close(): Unit = {
-
     logger.debug(s"Closing producer ${getLabel()}")
-
-    //HACK: Comitting current transaction should not happen here!!!
-    //This is a must to support the current sources, this should be removed ASAP
-    if (currentTransaction() != null) {
-      logger.debug(s"Committing current transaction")
-      commit(currentTransaction())
-    }
-    //HACK: When ran from unit test this context is null
-    //Somehow need to mock this away
-    if (getUserContext != null) {
-      if (getUserContext.get().availableProducers.exists(o => !o._2)) {
-        logger.error(
-          s"Error while closing producer ${getLabel()}. There are still uncommitted transactions")
-        //throw new Exception()
-      }
-    }
-    Await.ready(producerNode.setState(false), Duration.Inf)
+    Await.ready(producerNode.setState(false), Duration(5, SECONDS))
     logger.debug(s"Closed producer ${getLabel()}")
   }
 

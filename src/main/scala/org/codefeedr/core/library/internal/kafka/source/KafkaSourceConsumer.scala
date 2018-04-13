@@ -17,10 +17,10 @@ import scala.collection.mutable
   * Class performing the polling of kafka for a KafkaSource
   * Converting (java)types we use on Kafka back to (scala) types we use in Flink
   */
-class KafkaSourceConsumer[T](
-                              name:String,
-                              consumer: KafkaConsumer[RecordSourceTrail,Row],
-                              mapper: TrailedRecord => T) extends LazyLogging{
+class KafkaSourceConsumer[T](name: String,
+                             consumer: KafkaConsumer[RecordSourceTrail, Row],
+                             mapper: TrailedRecord => T)
+    extends LazyLogging {
 
   //Timeout when polling kafka
   @transient private lazy val pollTimeout = 1000
@@ -30,7 +30,7 @@ class KafkaSourceConsumer[T](
     * @param ctx
     * @return the last offsets for each partition of the consumer that has been collected in the poll
     */
-  def poll(ctx: SourceFunction.SourceContext[T]):Map[Int, Long] = {
+  def poll(ctx: SourceFunction.SourceContext[T]): Map[Int, Long] = {
     logger.debug(s"$name started polling")
     val data = consumer.poll(pollTimeout).iterator().asScala
     logger.debug(s"$name completed polling")
@@ -61,7 +61,7 @@ class KafkaSourceConsumer[T](
         }
       }
     )
-    */
+   */
   }
 
   /**
@@ -70,11 +70,21 @@ class KafkaSourceConsumer[T](
     * @return
     */
   def getCurrentOffsets(): mutable.Map[Int, Long] =
-    mutable.Map[Int, Long]() ++= consumer.assignment().asScala.map(o => o.partition() -> consumer.position(o))
+    mutable.Map[Int, Long]() ++= consumer
+      .assignment()
+      .asScala
+      .map(o => o.partition() -> consumer.position(o))
 
-
+  /**
+    * Retrieves kafka endoffsets -1. (Kafka returns last avalaible message + 1)
+    * @return
+    */
   def getEndOffsets(): Map[Int, Long] =
-    consumer.endOffsets(consumer.assignment()).asScala.map(o => o._1.partition() -> o._2.toLong).toMap
+    consumer
+      .endOffsets(consumer.assignment())
+      .asScala
+      .map(o => o._1.partition() -> (o._2.toLong - 1))
+      .toMap
 
   /**
     * Closes the kafka consumer

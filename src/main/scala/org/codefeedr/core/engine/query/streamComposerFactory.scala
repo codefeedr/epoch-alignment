@@ -43,7 +43,7 @@ trait StreamComposerFactoryFacade { this: LibraryServices =>
           val childNode = await(subjectLibrary.getSubjects().awaitChildNode(subjectName))
           logger.debug(s"Got subject $subjectName. Retrieving data")
           val subject = await(childNode.getData()).get
-          new SourceStreamComposer( subject)
+          new SourceStreamComposer(subject)
         }
       case Join(left, right, keysLeft, keysRight, selectLeft, selectRight, alias) =>
         logger.debug(s"Creating composer for join $alias")
