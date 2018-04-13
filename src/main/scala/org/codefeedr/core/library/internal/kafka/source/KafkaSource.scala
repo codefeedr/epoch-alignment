@@ -40,6 +40,7 @@ import org.codefeedr.core.library.internal.kafka.OffsetUtils
 import org.codefeedr.core.library.metastore.{ConsumerNode, QuerySourceNode, SubjectNode}
 import org.codefeedr.model.zookeeper.{Consumer, QuerySource}
 import org.codefeedr.model.{RecordSourceTrail, SubjectType, TrailedRecord}
+import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -100,20 +101,14 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
   //Running state
   @transient @volatile private var state: KafkaSourceState.Value = KafkaSourceState.UnSynchronized
   //Node in zookeeper representing state of the subject this consumer is subscribed on
-  @transient
   @volatile private[kafka] var running = true
-  @volatile
-  @transient private[kafka] var intitialized = false
+  @volatile private[kafka] var intitialized = false
 
   //CheckpointId after which the source should start shutting down.
-  @transient private[kafka] var finalCheckpointId: Long = Long.MaxValue
-  @transient private[kafka] var finalSourceEpoch: Int = -1
+  @volatile private[kafka] var finalCheckpointId: Long = Long.MaxValue
+  @volatile private[kafka] var finalSourceEpoch: Int = -2
   //TODO: Can we somehow perform this async?
-  @transient private lazy val finalSourceEpochOffsets =
-    Await.result(subjectNode.getEpochs().getChild(s"$finalSourceEpoch").getPartitionData(),Duration(1, SECONDS))
-            .map(o => o.nr -> o.offset).toMap
-
-
+  @transient private[kafka] lazy val finalSourceEpochOffsets = getEpochOffsets(finalSourceEpoch)
 
 
   //State of the source. We use the mutable map in operation,
@@ -150,6 +145,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
     */
   override def cancel(): Unit = {
     finalSourceEpoch = Await.result(subjectNode.getEpochs().getLatestEpochId(),Duration(1, SECONDS))
+    logger.debug(s"Cancelling ${getLabel()} after final source epoch ${finalSourceEpoch} has been reached ${finalSourceEpochOffsets}.")
   }
 
   def readableOffsets(offsetMap: Map[TopicPartition, Long]): String = {
@@ -160,14 +156,24 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
 
   //Called when restoring the state
   override def initializeState(context: FunctionInitializationContext): Unit = {
+    if(!getRuntimeContext().asInstanceOf[StreamingRuntimeContext].isCheckpointingEnabled) {
+      logger.error("Started a custom source without checkpointing enabled. The custom source is designed to work with checkpoints only.")
+      throw new Error("Started a custom source without checkpointing enabled. The custom source is designed to work with checkpoints only.")
+    }
     val descriptor = new ListStateDescriptor[(Int, Long)](
       "collected offsets",
       TypeInformation.of(new TypeHint[(Int, Long)]() {})
     )
     //On restore, we only need to restore the current offsets. We won't need the checkpoint offsets any more
     listState = context.getOperatorStateStore.getListState(descriptor)
-    currentOffsets.clear()
-    listState.get().asScala.foreach(o => currentOffsets(o._1) = o._2)
+    //If the state was nonempty, initialize the offsets with the recieved data
+    if(listState.get().asScala.nonEmpty) {
+      currentOffsets.clear()
+      listState.get().asScala.foreach(o => currentOffsets(o._1) = o._2)
+    } else {
+      //Otherwise just initialize with the default value
+      currentOffsets
+    }
   }
 
   //Called when starting a new checkpoint
@@ -177,10 +183,27 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
   }
 
   /**
+    * Obtains offsets for the subscribed subject of the given epoch
+    * If -1 is passed, obtains the current latest offsets
+    */
+  private def getEpochOffsets(epoch: Int): Map[Int, Long] = {
+    logger.debug(s"Obtaining offsets for epoch $epoch")
+    if(epoch == -1) {
+      consumer.getCurrentOffsets().toMap
+    } else {
+      Await.result(subjectNode.getEpochs().getChild(s"$finalSourceEpoch").getPartitionData(), Duration(1, SECONDS))
+        .map(o => o.nr -> o.offset).toMap
+    }
+  }
+
+  /**
     * Checks if a cancel is required
     */
   private def cancelIfNeeded(currentCheckpoint: Long): Unit = {
-    if(finalSourceEpoch > -1) {
+    if(finalSourceEpoch > -2) {
+      logger.debug(s"Attempting to finish on source epoch $finalSourceEpoch")
+      logger.debug(s"Current offsets: ${currentOffsets.toMap} (${getLabel()})")
+      logger.debug(s"Final offsets: ${finalSourceEpochOffsets.toMap} (${getLabel()})")
       if(OffsetUtils.HigherOrEqual(currentOffsets.toMap,finalSourceEpochOffsets)) {
         logger.debug(s"${getLabel()} is cancelling after checkpoint $currentCheckpoint completed.")
         finalCheckpointId = currentCheckpoint

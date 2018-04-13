@@ -73,6 +73,9 @@ class KafkaSourceConsumer[T](
     mutable.Map[Int, Long]() ++= consumer.assignment().asScala.map(o => o.partition() -> consumer.position(o))
 
 
+  def getEndOffsets(): Map[Int, Long] =
+    consumer.endOffsets(consumer.assignment()).asScala.map(o => o._1.partition() -> o._2.toLong).toMap
+
   /**
     * Closes the kafka consumer
     */

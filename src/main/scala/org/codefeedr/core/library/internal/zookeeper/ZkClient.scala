@@ -225,6 +225,7 @@ class ZkClient extends LazyLogging {
     */
   def create(path: String, data: Array[Byte] = null, ctx: Option[Any] = None): Future[Unit] =
     async {
+      logger.debug(s"Creating zknode on $path")
       val p = path.lastIndexOf("/")
       if (p > 0) { //Both 0 and -1 should continue
         //Create child nodes if needed

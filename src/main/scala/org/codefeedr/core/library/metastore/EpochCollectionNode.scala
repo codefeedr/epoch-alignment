@@ -15,11 +15,20 @@ class EpochCollectionNode(parent: ZkNodeBase)
     extends ZkCollectionNode[EpochNode]("epochs", parent, (n, p) => new EpochNode(n.toInt, p)) {
 
   /**
-    * Retrieves the latest known completed checkpoint for this subject
+    * Retrieves the latest known completed checkpoint for this subject.
+    * returns -1 if the subject has no checkpoints.
     * @return
     */
   def getLatestEpochId(): Future[Int] = async {
     val epochs = await(getChildren())
-    epochs.map(o => o.getEpoch()).max
+    if(epochs.nonEmpty) {
+      epochs.map(o => o.getEpoch()).max
+    } else {
+      -1
+    }
+  }
+
+  def getChild(epoch: Int): EpochNode = {
+    super.getChild(s"$epoch")
   }
 }

@@ -4,10 +4,11 @@ import org.apache.flink.api.common.state.{ListState, OperatorStateStore}
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.runtime.state.{FunctionInitializationContext, FunctionSnapshotContext}
 import org.apache.flink.streaming.api.functions.source.SourceFunction
+import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.codefeedr.core.library.metastore._
 
 import scala.collection.JavaConverters._
-import org.codefeedr.model.zookeeper.QuerySource
+import org.codefeedr.model.zookeeper.{Partition, QuerySource}
 import org.codefeedr.model.{RecordProperty, SubjectType, TrailedRecord}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach}
 import org.mockito.ArgumentMatchers
@@ -39,6 +40,8 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   private var operatorStore: OperatorStateStore = _
   private var listState:ListState[(Int, Long)] = _
 
+  private var runtimeContext:StreamingRuntimeContext = _
+
   private var cpLock:Object = _
 
   private var thread:Thread = _
@@ -60,6 +63,8 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     initCtx = mock[FunctionInitializationContext]
     operatorStore = mock[OperatorStateStore]
     listState = mock[ListState[(Int, Long)]]
+
+    runtimeContext = mock[StreamingRuntimeContext]
 
     cpLock = new Object()
 
@@ -85,6 +90,8 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     when(consumer.getCurrentOffsets()) thenReturn mutable.Map[Int,Long]()
     when(consumer.poll(ArgumentMatchers.any())) thenReturn Map[Int, Long]()
 
+    when(runtimeContext.isCheckpointingEnabled) thenReturn true
+
     when(ctx.getCheckpointLock()).thenReturn (cpLock,cpLock)
   }
 
@@ -103,7 +110,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     verify(consumerNode, times(1)).create(ArgumentMatchers.any())
 
 
-    assert(thread.getState().toString == "RUNNABLE")
+    assert(testKafkaSource.running)
   }
 
   it should "initialize with startoffsets from the consumer" in async {
@@ -121,7 +128,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
     assert(testKafkaSource.currentOffsets(2) == 13L)
     assert(testKafkaSource.currentOffsets(1) == 10L)
-    assert(thread.getState().toString == "RUNNABLE")
+    assert(testKafkaSource.running)
   }
 
 
@@ -137,7 +144,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
     //Assert
     assert(testKafkaSource.currentOffsets(2) == 10)
-    assert(thread.getState().toString == "RUNNABLE")
+    assert(testKafkaSource.running)
   }
 
   it should "increment the offsets when multiple polls are perfomed" in async {
@@ -157,7 +164,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     //Assert
     assert(testKafkaSource.currentOffsets(2) == 12L)
     assert(testKafkaSource.currentOffsets(1) == 2L)
-    assert(thread.getState().toString == "RUNNABLE")
+    assert(testKafkaSource.running)
   }
 
 
@@ -177,12 +184,13 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
     //Assert
     assert(testKafkaSource.checkpointOffsets(1)(2) == 10L)
-    assert(thread.getState().toString == "RUNNABLE")
+    assert(testKafkaSource.running)
   }
 
   it should "commit offsets and update liststate stored for a checkpoint when notify complete is called" in async {
     //Arrange
     val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
+    testKafkaSource.setRuntimeContext(runtimeContext)
     testKafkaSource.initializeState(initCtx)
     val p = Promise[Unit]()
     when(consumer.poll(ctx)).thenAnswer(awaitAndReturn(p, Map(2 -> 10L),2))
@@ -202,11 +210,116 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     verify(listState, times(1)).clear()
     verify(listState, times(1)).add((2,10L))
     verify(consumer, times(1)).commit(Map(2->10L))
-    assert(thread.getState().toString == "RUNNABLE")
+    assert(testKafkaSource.running)
   }
 
   it should "mark the latest epoch and offsets when cancel is called" in async {
-      assert(true)
+    //Arrange
+    val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
+    testKafkaSource.setRuntimeContext(runtimeContext)
+    testKafkaSource.initializeState(initCtx)
+    val epochCollectionNodeMock = mock[EpochCollectionNode]
+    val finalEpochMock = mock[EpochNode]
+
+    when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
+    when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(1337)
+    when(epochCollectionNodeMock.getChild("1337")) thenReturn finalEpochMock
+    when(finalEpochMock.getPartitionData()) thenReturn Future.successful(List(Partition(2,1338)))
+
+    //Act
+    testKafkaSource.cancel()
+
+    //Assert
+    assert(testKafkaSource.finalSourceEpoch == 1337)
+    assert(testKafkaSource.finalSourceEpochOffsets(2) == 1338)
+  }
+
+  it should "Use the current offsets of a subject when cancel is called on a subject that has no epochs" in async {
+    //Arrange
+    val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
+    testKafkaSource.setRuntimeContext(runtimeContext)
+    testKafkaSource.initializeState(initCtx)
+    val epochCollectionNodeMock = mock[EpochCollectionNode]
+    val finalEpochMock = mock[EpochNode]
+
+    when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
+    when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(-1)
+    when(consumer.getCurrentOffsets()) thenReturn mutable.Map(3 -> 1339L)
+
+    //Act
+    testKafkaSource.cancel()
+
+    //Assert
+    assert(testKafkaSource.finalSourceEpoch == -1)
+    assert(testKafkaSource.finalSourceEpochOffsets(3) == 1339)
+  }
+
+
+  it should "Close the source when a poll obtained all data of the final offsets" in async {
+    //Arrange
+    val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
+    testKafkaSource.setRuntimeContext(runtimeContext)
+    testKafkaSource.initializeState(initCtx)
+    val epochCollectionNodeMock = mock[EpochCollectionNode]
+    val finalEpochMock = mock[EpochNode]
+    val p = Promise[Unit]()
+    when(consumer.poll(ctx)).thenAnswer(awaitAndReturn(p, Map(3 -> 1339L),2))
+
+    val context = mock[FunctionSnapshotContext]
+    when(context.getCheckpointId) thenReturn 1
+
+
+    when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
+    when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(-1)
+    when(consumer.getCurrentOffsets()) thenReturn mutable.Map(3 -> 1339L)
+
+    //Act
+    testKafkaSource.cancel()
+    testKafkaSource.snapshotState(context)
+    val before = testKafkaSource.running
+    testKafkaSource.poll(ctx)
+    testKafkaSource.notifyCheckpointComplete(1)
+    val after =testKafkaSource.running
+
+
+    //Assert
+    assert(before)
+    assert(!after)
+    assert(testKafkaSource.currentOffsets(3) == 1339)
+  }
+
+  it should "not close if the offsets had not been reached" in async {
+    //Arrange
+    val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
+    testKafkaSource.setRuntimeContext(runtimeContext)
+    val epochCollectionNodeMock = mock[EpochCollectionNode]
+    val finalEpochMock = mock[EpochNode]
+    val p = Promise[Unit]()
+    when(consumer.poll(ctx)).thenAnswer(awaitAndReturn(p, Map(3 -> 1338L),2))
+    when(consumer.getCurrentOffsets()) thenReturn mutable.Map(3 -> 0L)
+    //Initialize with empty collection
+    testKafkaSource.initializeState(initCtx)
+
+    val context = mock[FunctionSnapshotContext]
+    when(context.getCheckpointId) thenReturn 1
+
+    when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
+    when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(-1)
+    when(consumer.getCurrentOffsets()) thenReturn mutable.Map(3 -> 1339L)
+
+    //Act
+    testKafkaSource.cancel()
+    testKafkaSource.snapshotState(context)
+    val before = testKafkaSource.running
+    testKafkaSource.poll(ctx)
+    testKafkaSource.notifyCheckpointComplete(1)
+    val after =testKafkaSource.running
+
+
+    //Assert
+    assert(before)
+    assert(after)
+    assert(testKafkaSource.currentOffsets(3) == 1338)
   }
 
   /**
