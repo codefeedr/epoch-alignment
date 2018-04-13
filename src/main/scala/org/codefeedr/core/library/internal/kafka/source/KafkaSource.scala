@@ -120,6 +120,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
   @transient private[kafka] lazy val currentOffsets = consumer.getCurrentOffsets()
   @transient private[kafka] lazy val checkpointOffsets = mutable.Map[Long, Map[Int, Long]]()
   @transient private var listState: ListState[(Int, Long)] = _
+  @volatile private var initialized = false
 
   /**
     * Get a display label for this source
@@ -161,6 +162,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
 
   //Called when restoring the state
   override def initializeState(context: FunctionInitializationContext): Unit = {
+    logger.info(s"Initializing state of ${getLabel()}")
     if (!getRuntimeContext().asInstanceOf[StreamingRuntimeContext].isCheckpointingEnabled) {
       logger.error(
         "Started a custom source without checkpointing enabled. The custom source is designed to work with checkpoints only.")
@@ -179,8 +181,9 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
       listState.get().asScala.foreach(o => currentOffsets(o._1) = o._2)
     } else {
       //Otherwise just initialize with the default value
-      currentOffsets
+      currentOffsets.values
     }
+    initialized = true
   }
 
   //Called when starting a new checkpoint
@@ -198,7 +201,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
   private def getEpochOffsets(epoch: Int): Map[Int, Long] = {
     logger.debug(s"Obtaining offsets for epoch $epoch")
     if (epoch == -1) {
-      consumer.getEndOffsets().toMap
+      consumer.getEndOffsets()
     } else {
       Await
         .result(subjectNode.getEpochs().getChild(s"$finalSourceEpoch").getPartitionData(),
@@ -247,6 +250,10 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
     * Blocks on the creation of zookeeper state
     */
   private[kafka] def initRun(): Unit = {
+    if(!initialized) {
+      throw new Exception(s"Cannot run ${getLabel()} before calling initialize.")
+    }
+
     //Create self on zookeeper
     val initialConsumer = Consumer(instanceUuid, null, System.currentTimeMillis())
 
