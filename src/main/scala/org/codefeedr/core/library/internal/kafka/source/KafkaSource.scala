@@ -334,7 +334,8 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
       poll(ctx)
 
       //HACK: Workaround to support running the source without checkpoints enabled. Currently just performs a checkpoint every loop. Need a proper solution for this!
-      if (checkpointingMode.nonEmpty) {
+      if (checkpointingMode.isEmpty) {
+        logger.info(s"Performing fake checkpoint in ${getLabel()}")
         increment += 1
         val context = new FunctionSnapshotContext {
           override def getCheckpointId: Long = increment

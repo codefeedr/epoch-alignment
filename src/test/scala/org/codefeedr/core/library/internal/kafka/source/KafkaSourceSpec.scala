@@ -100,7 +100,6 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     //Arrange
     val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
 
-
     //Act
     runAsync(testKafkaSource)
     while(!testKafkaSource.intitialized){}
@@ -190,11 +189,8 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   it should "commit offsets and update liststate stored for a checkpoint when notify complete is called" in async {
     //Arrange
     val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
-    testKafkaSource.setRuntimeContext(runtimeContext)
-    testKafkaSource.initializeState(initCtx)
     val p = Promise[Unit]()
     when(consumer.poll(ctx)).thenAnswer(awaitAndReturn(p, Map(2 -> 10L),2))
-
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn 1
 
@@ -216,8 +212,6 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   it should "mark the latest epoch and offsets when cancel is called" in async {
     //Arrange
     val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
-    testKafkaSource.setRuntimeContext(runtimeContext)
-    testKafkaSource.initializeState(initCtx)
     val epochCollectionNodeMock = mock[EpochCollectionNode]
     val finalEpochMock = mock[EpochNode]
 
@@ -237,8 +231,6 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   it should "Use the current offsets of a subject when cancel is called on a subject that has no epochs" in async {
     //Arrange
     val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
-    testKafkaSource.setRuntimeContext(runtimeContext)
-    testKafkaSource.initializeState(initCtx)
     val epochCollectionNodeMock = mock[EpochCollectionNode]
     val finalEpochMock = mock[EpochNode]
 
@@ -258,8 +250,6 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   it should "Close the source when a poll obtained all data of the final offsets" in async {
     //Arrange
     val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
-    testKafkaSource.setRuntimeContext(runtimeContext)
-    testKafkaSource.initializeState(initCtx)
     val epochCollectionNodeMock = mock[EpochCollectionNode]
     val finalEpochMock = mock[EpochNode]
     val p = Promise[Unit]()
@@ -272,6 +262,9 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
     when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(-1)
     when(consumer.getEndOffsets()) thenReturn Map(3 -> 1339L)
+
+    testKafkaSource.setRuntimeContext(runtimeContext)
+    testKafkaSource.initializeState(initCtx)
 
     //Act
     testKafkaSource.cancel()
@@ -291,14 +284,15 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   it should "not close if the offsets had not been reached" in async {
     //Arrange
     val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
-    testKafkaSource.setRuntimeContext(runtimeContext)
     val epochCollectionNodeMock = mock[EpochCollectionNode]
     val finalEpochMock = mock[EpochNode]
     val p = Promise[Unit]()
     when(consumer.poll(ctx)).thenAnswer(awaitAndReturn(p, Map(3 -> 1338L),2))
     when(consumer.getCurrentOffsets()) thenReturn mutable.Map(3 -> 0L)
     //Initialize with empty collection
+    testKafkaSource.setRuntimeContext(runtimeContext)
     testKafkaSource.initializeState(initCtx)
+
 
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn 1
@@ -330,6 +324,8 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   def runAsync(source: TestKafkaSource): Unit = {
     thread = new Thread {
       override def run {
+        source.setRuntimeContext(runtimeContext)
+        source.initializeState(initCtx)
         source.run(ctx)
       }
     }
