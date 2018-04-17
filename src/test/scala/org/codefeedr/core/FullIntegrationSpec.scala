@@ -20,9 +20,12 @@
 package org.codefeedr.core
 
 import com.typesafe.scalalogging.LazyLogging
+import org.apache.flink.api.common.state.{ListState, OperatorStateStore}
 import org.apache.flink.api.common.typeinfo.TypeInformation
+import org.apache.flink.runtime.state.FunctionInitializationContext
 import org.apache.flink.streaming.api.CheckpointingMode
 import org.apache.flink.streaming.api.functions.source.SourceFunction.SourceContext
+import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.streaming.api.watermark.Watermark
 import org.apache.flink.table.api.StreamTableEnvironment
@@ -33,6 +36,15 @@ import org.codefeedr.core.plugin.CollectionPlugin
 import org.codefeedr.model.{SubjectType, TrailedRecord}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach, FutureOutcome, Matchers}
 
+import scala.collection.JavaConverters._
+
+//Mockito
+import org.mockito.ArgumentMatchers
+import org.mockito.Mockito._
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
+import org.scalatest.mockito.MockitoSugar
+
 import scala.async.Async.{async, await}
 import scala.collection.mutable
 import scala.concurrent.{Await, Future}
@@ -40,7 +52,7 @@ import scala.concurrent.duration.{Duration, SECONDS}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogging with LibraryServices with BeforeAndAfterEach {
+class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogging with LibraryServices with BeforeAndAfterEach with MockitoSugar {
   val parallelism: Int = 2
 
   override def beforeEach(): Unit = {
@@ -62,6 +74,21 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     await(subjectLibrary.getSubject(subject.name).assertExists())
     val source = new KafkaTrailedRecordSource(subjectLibrary.getSubject(subject.name), "testsource")
     val result = new mutable.ArrayBuffer[TrailedRecord]()
+
+
+    val initContext = mock[FunctionInitializationContext]
+    val operatorStore = mock[OperatorStateStore]
+    val listState = mock[ListState[(Int,Long)]]
+    when(initContext.getOperatorStateStore) thenReturn operatorStore
+    when(operatorStore.getListState[(Int, Long)](ArgumentMatchers.any())) thenReturn listState
+    when(listState.get()) thenReturn List[(Int, Long)]().asJava
+
+    val runtimeContext = mock[StreamingRuntimeContext]
+    when(runtimeContext.isCheckpointingEnabled) thenReturn true
+
+    //Initialize the source with a mocked sourcecontext
+    source.setRuntimeContext(runtimeContext)
+    source.initializeState(initContext)
     source.run(new SourceContext[TrailedRecord] {
       override def collectWithTimestamp(element: TrailedRecord, timestamp: Long): Unit = ???
 

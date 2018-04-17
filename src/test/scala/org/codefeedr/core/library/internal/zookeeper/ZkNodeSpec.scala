@@ -147,6 +147,14 @@ class ZkNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEa
     assert(await(f.failed.map(_ => true)))
   }
 
+  it should "resolve immediately if the condition was true from the beginning" in async {
+    val root = new TestRoot()
+    val config = new TestConfigNode("testc", root)
+    await(config.create(MyConfig("initialString")))
+    val f = config.awaitCondition(o => o.s == "initialString").map(_ => true)
+    assert(await(f))
+  }
+
   "ZkNode.ObserveData()" should "return an observable that fires when the data is modified" in async {
     val root = new TestRoot()
     val config = new TestConfigNode("testc", root)

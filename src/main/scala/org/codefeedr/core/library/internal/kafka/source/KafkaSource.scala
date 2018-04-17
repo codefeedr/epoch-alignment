@@ -32,6 +32,7 @@ import org.apache.flink.runtime.state.{
   FunctionInitializationContext,
   FunctionSnapshotContext
 }
+import org.apache.flink.streaming.api.CheckpointingMode
 import org.apache.flink.streaming.api.checkpoint.{CheckpointedFunction, ListCheckpointed}
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
@@ -114,6 +115,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
   @volatile private[kafka] var finalSourceEpoch: Int = -2
   //TODO: Can we somehow perform this async?
   @transient private[kafka] lazy val finalSourceEpochOffsets = getEpochOffsets(finalSourceEpoch)
+  @transient private[kafka] var checkpointingMode: Option[CheckpointingMode] = _
 
   //State of the source. We use the mutable map in operation,
   // and when a snapshot is performed we update the liststate. The liststate contains the offsets of the last comitted checkpoint
@@ -164,10 +166,14 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
   override def initializeState(context: FunctionInitializationContext): Unit = {
     logger.info(s"Initializing state of ${getLabel()}")
     if (!getRuntimeContext().asInstanceOf[StreamingRuntimeContext].isCheckpointingEnabled) {
-      logger.error(
+      logger.warn(
         "Started a custom source without checkpointing enabled. The custom source is designed to work with checkpoints only.")
-      throw new Error(
-        "Started a custom source without checkpointing enabled. The custom source is designed to work with checkpoints only.")
+      checkpointingMode = None
+      // throw new Error(
+      // "Started a custom source without checkpointing enabled. The custom source is designed to work with checkpoints only.")
+
+    } else {
+      checkpointingMode = Some(CheckpointingMode.EXACTLY_ONCE)
     }
     val descriptor = new ListStateDescriptor[(Int, Long)](
       "collected offsets",
@@ -250,7 +256,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
     * Blocks on the creation of zookeeper state
     */
   private[kafka] def initRun(): Unit = {
-    if(!initialized) {
+    if (!initialized) {
       throw new Exception(s"Cannot run ${getLabel()} before calling initialize.")
     }
 
@@ -322,8 +328,24 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
     logger.debug(s"Source ${getLabel()} started running.")
     initRun()
     intitialized = true
+
+    var increment = 0
+
     while (running) {
       poll(ctx)
+
+      //HACK: Workaround to support running the source without checkpoints enabled. Currently just performs a checkpoint every loop. Need a proper solution for this!
+      if (checkpointingMode.nonEmpty) {
+        increment += 1
+        val context = new FunctionSnapshotContext {
+          override def getCheckpointId: Long = increment
+          override def getCheckpointTimestamp: Long = 0
+        }
+        //Snapshot the current state
+        snapshotState(context)
+        //And directly complete checkpoint
+        notifyCheckpointComplete(increment)
+      }
     }
     logger.debug(s"Source reach endOffsets ${getLabel()}")
 
