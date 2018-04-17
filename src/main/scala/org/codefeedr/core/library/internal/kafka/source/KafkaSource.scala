@@ -152,8 +152,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
   override def cancel(): Unit = {
     finalSourceEpoch =
       Await.result(subjectNode.getEpochs().getLatestEpochId(), Duration(1, SECONDS))
-    logger.debug(
-      s"Cancelling ${getLabel()} after final source epoch ${finalSourceEpoch} has been reached ${finalSourceEpochOffsets}.")
+    logger.debug(s"Cancelling ${getLabel()} after final source epoch ${finalSourceEpoch}.")
   }
 
   def readableOffsets(offsetMap: Map[TopicPartition, Long]): String = {
@@ -269,7 +268,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
       Await.ready(consumerNode.create(initialConsumer), Duration(5, SECONDS))
     }
     //Call cancel when the subject has closed
-    subjectNode.awaitClose().map(_ => cancel())
+    subjectNode.awaitClose().onComplete(_ => cancel())
   }
 
   /**

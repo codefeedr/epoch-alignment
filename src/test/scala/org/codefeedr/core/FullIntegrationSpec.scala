@@ -114,7 +114,7 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
   def runQueryEnvironment(query: QueryTree): Future[SubjectType] = async {
 
     val queryEnv = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
-    queryEnv.getCheckpointingMode
+    queryEnv.enableCheckpointing(1000)
     logger.debug("Creating query Composer")
     val composer = await(streamComposerFactory.getComposer(query))
     logger.debug("Composing queryEnv")

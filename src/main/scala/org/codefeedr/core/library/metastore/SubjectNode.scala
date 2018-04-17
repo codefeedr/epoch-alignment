@@ -143,7 +143,7 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
     * @return
     */
   def updateState(): Future[Unit] =
-    this.asyncReadLock(() =>
+    this.asyncWriteLock(() =>
       async {
         val shouldClose = await(for {
           isOpen <- getState().map(o => o.get)
@@ -174,8 +174,10 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
     *
     * @return A future that resolves when the type is closed
     */
-  def awaitClose(): Future[Unit] =
+  def awaitClose(): Future[Unit] = {
+    logger.info(s"Waiting for $name to close.")
     getStateNode().awaitCondition(o => !o).map(_ => ())
+  }
 
   /**
     * The base class needs to expose the typeTag, no typeTag constraints can be put on traits

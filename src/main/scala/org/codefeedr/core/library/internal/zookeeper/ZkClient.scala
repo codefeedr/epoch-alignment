@@ -615,12 +615,15 @@ class ZkClient extends LazyLogging {
   private def placeAwaitConditionWatch[T: ClassTag](p: Promise[T],
                                                     path: String,
                                                     condition: T => Boolean): Unit = {
+    logger.debug(s"Placing watch on $path")
     zk.getData(
       prependPath(path),
       new Watcher {
         override def process(event: WatchedEvent): Unit =
           if (!p.isCompleted) {
             placeAwaitConditionWatch(p, path, condition)
+          } else {
+            logger.debug(s"Not placing new watch on $path. Promise completed.")
           }
       },
       new DataCallback {
@@ -634,8 +637,12 @@ class ZkClient extends LazyLogging {
             Code.get(rc) match {
               case Code.OK => {
                 val serialised = GenericDeserialiser[T](data)
+                logger.debug(s"Comparing $serialised")
                 if (condition(serialised)) {
+                  logger.debug(s"$serialised matches condition")
                   p.success(serialised)
+                } else {
+                  logger.debug(s"$serialised does not match condition")
                 }
               }
               case error if path == null =>
@@ -651,6 +658,8 @@ class ZkClient extends LazyLogging {
                                     Option(stat),
                                     Some(ctx)))
             }
+          } else {
+            logger.debug(s"Not handling callback on $path. Promise completed.")
           }
         }
       },
