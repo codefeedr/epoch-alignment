@@ -84,7 +84,7 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     when(listState.get()) thenReturn List[(Int, Long)]().asJava
 
     val runtimeContext = mock[StreamingRuntimeContext]
-    when(runtimeContext.isCheckpointingEnabled) thenReturn true
+    when(runtimeContext.isCheckpointingEnabled) thenReturn false
 
     //Initialize the source with a mocked sourcecontext
     source.setRuntimeContext(runtimeContext)

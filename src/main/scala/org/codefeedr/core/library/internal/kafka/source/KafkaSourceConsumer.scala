@@ -83,7 +83,7 @@ class KafkaSourceConsumer[T](name: String,
     consumer
       .endOffsets(consumer.assignment())
       .asScala
-      .map(o => o._1.partition() -> (o._2.toLong - 1))
+      .map(o => o._1.partition() -> (o._2.toLong - 2)) //TODO: Figure out why -2 is needed instead of -1
       .toMap
 
   /**

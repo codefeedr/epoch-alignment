@@ -300,7 +300,11 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
   def poll(ctx: SourceFunction.SourceContext[T]): Unit = {
     ctx.getCheckpointLock.synchronized {
       val offsets = consumer.poll(ctx)
-      offsets.foreach(o => currentOffsets(o._1) = o._2)
+      offsets.foreach(o => {
+        if (!currentOffsets.contains(o._1) || currentOffsets(o._1) < o._2) {
+          currentOffsets(o._1) = o._2
+        }
+      })
     }
     //HACK: Find some way to perform some operations outside the checkpoint lock
     Thread.sleep(10)
