@@ -55,21 +55,20 @@ import scala.util.{Failure, Success}
   * Serializable (with lazy initialisation)
   * Created by Niels on 11/07/2017.
   */
-abstract class KafkaSink[TSink]()
+abstract class KafkaSink[TSink](subjectNode: SubjectNode,
+                                kafkaProducerFactory: KafkaProducerFactory)
     extends TwoPhaseCommitSinkFunction[TSink, TransactionState, TransactionContext](
       transactionStateSerializer,
       transactionContextSerializer)
     with LazyLogging
-    with Serializable
-    with LibraryServices {
+    with Serializable {
 
-  protected var subjectType: SubjectType
   protected val sinkUuid: String
 
   protected var opened: Boolean = false
 
-  @transient protected lazy val subjectNode: SubjectNode =
-    subjectLibrary.getSubject(subjectType.name)
+  @transient protected lazy val subjectType: SubjectType =
+    subjectNode.getDataSync().get
 
   @transient protected lazy val sinkNode: QuerySinkNode = subjectNode.getSinks().getChild(sinkUuid)
 
@@ -90,7 +89,7 @@ abstract class KafkaSink[TSink]()
   //Current set of available kafka producers
   @transient protected lazy val producerPool: List[KafkaProducer[RecordSourceTrail, Row]] =
     (1 to producerPoolSize)
-      .map(i => KafkaProducerFactory.create[RecordSourceTrail, Row](s"${instanceUuid}_$i"))
+      .map(i => kafkaProducerFactory.create[RecordSourceTrail, Row](s"${instanceUuid}_$i"))
       .toList
 
   /**
@@ -121,8 +120,10 @@ abstract class KafkaSink[TSink]()
       opened = true
       logger.debug(s"Opening producer ${getLabel()} for ${subjectType.name}")
       //Create zookeeper nodes synchronous
-      //TODO: Validate created subject type actually matches the expected type.
-      subjectType = Await.result(subjectNode.getOrCreate(() => subjectType), Duration(5, SECONDS))
+      if (!Await.result(subjectNode.exists(), Duration(5, SECONDS))) {
+        throw new Exception(
+          s"Cannot open source ${getLabel()} because its subject does not exist.")
+      }
       Await.ready(sinkNode.create(QuerySink(sinkUuid)), Duration(5, SECONDS))
       Await.ready(producerNode.create(Producer(instanceUuid, null, System.currentTimeMillis())),
                   Duration(5, SECONDS))

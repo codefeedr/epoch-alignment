@@ -20,7 +20,11 @@ package org.codefeedr.core.library.internal.kafka.source
 
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
 import org.apache.flink.api.java.typeutils.TypeExtractor
-import org.codefeedr.core.library.{SubjectFactory, TypeInformationServices}
+import org.codefeedr.core.library.{
+  LibraryServices,
+  SubjectFactoryComponent,
+  TypeInformationServices
+}
 import org.codefeedr.model.{SubjectType, TrailedRecord}
 import org.apache.flink.streaming.api.scala._
 import org.codefeedr.core.library.metastore.SubjectNode
@@ -28,12 +32,14 @@ import org.codefeedr.core.library.metastore.SubjectNode
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-class KafkaGenericSource[T: ru.TypeTag: ClassTag: TypeInformation](subjectNode: SubjectNode,
-                                                                   override val sourceUuid: String)
-    extends KafkaSource[T](subjectNode: SubjectNode) {
-  @transient private lazy val Transformer = SubjectFactory.getUnTransformer[T](subjectType)
+class KafkaGenericSource[T: ru.TypeTag: ClassTag: TypeInformation](
+    subjectNode: SubjectNode,
+    kafkaConsumerFactory: KafkaConsumerFactory,
+    transformer: TrailedRecord => T,
+    override val sourceUuid: String)
+    extends KafkaSource[T](subjectNode, kafkaConsumerFactory) {
 
-  override def mapToT(record: TrailedRecord): T = Transformer.apply(record)
+  override def mapToT(record: TrailedRecord): T = transformer.apply(record)
 
   /**
     * Get typeinformation of the returned type

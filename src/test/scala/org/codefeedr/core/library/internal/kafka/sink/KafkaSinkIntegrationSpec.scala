@@ -19,26 +19,21 @@
  *
  */
 
-package org.codefeedr.core.library.internal.kafka
+package org.codefeedr.core.library.internal.kafka.sink
 
-import org.apache.flink.api.common.state.{KeyedStateStore, OperatorStateStore}
-import org.apache.flink.runtime.state.FunctionInitializationContext
-import org.codefeedr.core.library.internal.kafka.sink.KafkaGenericSink
-import org.codefeedr.core.library.internal.zookeeper.ZkClient
-import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.LibraryServiceSpec
-import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
 import scala.async.Async.{async, await}
+import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContextExecutor, Future, TimeoutException}
 
 case class TestKafkaSinkSubject(prop1: String)
 
 /**
   * Test for [[KafkaGenericSink]]
   */
-class KafkaSinkSpec extends LibraryServiceSpec with BeforeAndAfterEach with BeforeAndAfterAll {
+class KafkaSinkIntegrationSpec extends LibraryServiceSpec with BeforeAndAfterEach with BeforeAndAfterAll {
 
 
   val testSubjectName = "TestKafkaSinkSubject"
@@ -50,7 +45,7 @@ class KafkaSinkSpec extends LibraryServiceSpec with BeforeAndAfterEach with Befo
     val subjectNode = subjectLibrary.getSubject[TestKafkaSinkSubject]()
     val subject = await(subjectNode.getOrCreateType[TestKafkaSinkSubject]())
 
-    val sink = new KafkaGenericSink[TestKafkaSinkSubject](subject,sinkId)
+    val sink = new KafkaGenericSink[TestKafkaSinkSubject](subjectNode,kafkaProducerFactory,sinkId,subjectFactory.getTransformer[TestKafkaSinkSubject](subject))
     val sinkNode = subjectNode.getSinks().getChild(sinkId)
 
     assert(!await(sinkNode.exists()))

@@ -26,10 +26,14 @@ import org.codefeedr.core.library.internal.kafka.{KafkaConfig, KafkaDeserialiser
 
 import scala.reflect.ClassTag
 
+trait KafkaConsumerFactoryComponent {
+  val kafkaConsumerFactory: KafkaConsumerFactory
+}
+
 /**
   * Created by Niels on 14/07/2017.
   */
-object KafkaConsumerFactory {
+class KafkaConsumerFactory {
 
   /**
     * Create a new kafka consumer

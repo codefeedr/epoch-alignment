@@ -5,11 +5,13 @@ import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.runtime.state.{FunctionInitializationContext, FunctionSnapshotContext}
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
+import org.apache.flink.types.Row
+import org.codefeedr.core.MockedLibraryServices
 import org.codefeedr.core.library.metastore._
 
 import scala.collection.JavaConverters._
 import org.codefeedr.model.zookeeper.{Partition, QuerySource}
-import org.codefeedr.model.{RecordProperty, SubjectType, TrailedRecord}
+import org.codefeedr.model.{RecordProperty, RecordSourceTrail, SubjectType, TrailedRecord}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
@@ -21,7 +23,7 @@ import scala.async.Async.{async, await}
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
 
-class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfterEach {
+class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfterEach with MockedLibraryServices{
 
   private var subjectNode: SubjectNode = _
   private var ctx: SourceFunction.SourceContext[SampleObject] = _
@@ -41,6 +43,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   private var listState:ListState[(Int, Long)] = _
 
   private var runtimeContext:StreamingRuntimeContext = _
+  private var consumerFactory:KafkaConsumerFactory = _
 
   private var cpLock:Object = _
 
@@ -65,6 +68,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     listState = mock[ListState[(Int, Long)]]
 
     runtimeContext = mock[StreamingRuntimeContext]
+    consumerFactory = mock[KafkaConsumerFactory]
 
     cpLock = new Object()
 
@@ -93,12 +97,13 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     when(runtimeContext.isCheckpointingEnabled) thenReturn true
 
     when(ctx.getCheckpointLock()).thenReturn (cpLock,cpLock)
+    when(consumerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.any())) thenReturn null
   }
 
 
   "KafkaSource.Run" should "Create consumer and source nodes" in async {
     //Arrange
-    val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
+    val testKafkaSource = constructSource()
 
     //Act
     runAsync(testKafkaSource)
@@ -114,7 +119,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
   it should "initialize with startoffsets from the consumer" in async {
     //Arrange
-    val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
+    val testKafkaSource = constructSource()
     when(consumer.getCurrentOffsets()) thenReturn mutable.Map[Int, Long](1 -> 10,2->13)
 
     //Act
@@ -133,7 +138,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
   it should "store the current offsets when snapshotState is called" in async {
     //Arrange
-    val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
+    val testKafkaSource = constructSource()
     val p = Promise[Unit]()
     when(consumer.poll(ctx)).thenAnswer(awaitAndReturn(p, Map(2 -> 10L),2))
 
@@ -148,7 +153,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
   it should "increment the offsets when multiple polls are perfomed" in async {
     //Arrange
-    val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
+    val testKafkaSource = constructSource()
 
     //Act
     val p = Promise[Unit]()
@@ -169,7 +174,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
   it should "store the offsets when snapshotState is called" in async {
     //Arrange
-    val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
+    val testKafkaSource = constructSource()
     val p = Promise[Unit]()
     when(consumer.poll(ctx)).thenAnswer(awaitAndReturn(p, Map(2 -> 10L),2))
 
@@ -188,7 +193,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
   it should "commit offsets and update liststate stored for a checkpoint when notify complete is called" in async {
     //Arrange
-    val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
+    val testKafkaSource = constructSource()
     val p = Promise[Unit]()
     when(consumer.poll(ctx)).thenAnswer(awaitAndReturn(p, Map(2 -> 10L),2))
     val context = mock[FunctionSnapshotContext]
@@ -211,7 +216,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
   it should "mark the latest epoch and offsets when cancel is called" in async {
     //Arrange
-    val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
+    val testKafkaSource = constructSource()
     val epochCollectionNodeMock = mock[EpochCollectionNode]
     val finalEpochMock = mock[EpochNode]
 
@@ -230,7 +235,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
   it should "Use the current offsets of a subject when cancel is called on a subject that has no epochs" in async {
     //Arrange
-    val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
+    val testKafkaSource = constructSource()
     val epochCollectionNodeMock = mock[EpochCollectionNode]
     val finalEpochMock = mock[EpochNode]
 
@@ -249,7 +254,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
   it should "Close the source when a poll obtained all data of the final offsets" in async {
     //Arrange
-    val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
+    val testKafkaSource = constructSource()
     val epochCollectionNodeMock = mock[EpochCollectionNode]
     val finalEpochMock = mock[EpochNode]
     val p = Promise[Unit]()
@@ -283,7 +288,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
   it should "not close if the offsets had not been reached" in async {
     //Arrange
-    val testKafkaSource = new TestKafkaSource(subjectNode,consumer)
+    val testKafkaSource = constructSource()
     val epochCollectionNodeMock = mock[EpochCollectionNode]
     val finalEpochMock = mock[EpochNode]
     val p = Promise[Unit]()
@@ -315,6 +320,8 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     assert(after)
     assert(testKafkaSource.currentOffsets(3) == 1338)
   }
+
+  def constructSource(): TestKafkaSource = new TestKafkaSource(subjectNode,consumerFactory,consumer)
 
   /**
     * Runs the kafkaSource in a seperate thread and returns the thread that it is using
@@ -375,12 +382,13 @@ class SampleObject {
 
 }
 
-class TestKafkaSource(node: SubjectNode, mockedConsumer: KafkaSourceConsumer[SampleObject]) extends KafkaSource[SampleObject](node) {
+class TestKafkaSource(node: SubjectNode,kafkaConsumerFactory: KafkaConsumerFactory, mockedConsumer:KafkaSourceConsumer[SampleObject]) extends KafkaSource[SampleObject](node,kafkaConsumerFactory) {
+
   override val sourceUuid: String = "testuuid"
 
-  @transient override lazy val consumer = mockedConsumer
-
   override def mapToT(record: TrailedRecord): SampleObject = new SampleObject
+
+  @transient override lazy val consumer = mockedConsumer
 
   /**
     * Get typeinformation of the returned type

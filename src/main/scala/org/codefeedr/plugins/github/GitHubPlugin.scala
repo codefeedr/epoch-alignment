@@ -25,7 +25,7 @@ import org.apache.flink.api.scala._
 import org.apache.flink.streaming.api.datastream.{AsyncDataStream => JavaAsyncDataStream}
 import org.apache.flink.streaming.api.functions.async.{AsyncFunction => JavaAsyncFunction}
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
-import org.codefeedr.core.library.SubjectFactory
+import org.codefeedr.core.library.SubjectFactoryComponent
 import org.codefeedr.core.library.internal.{AbstractPlugin, SubjectTypeFactory}
 import org.codefeedr.model.SubjectType
 import org.codefeedr.plugins.github.clients.GitHubProtocol
@@ -42,7 +42,7 @@ import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
 class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
-    extends AbstractPlugin {
+    extends AbstractPlugin { this: SubjectFactoryComponent =>
 
   /**
     * Creates a new SubjectType.
@@ -81,7 +81,7 @@ class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
   override def compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit] =
     Async.async {
       val sinkName = s"composedsink_${queryId}"
-      val sink = await(SubjectFactory.GetSink[GitHubProtocol.PushEvent](sinkName))
+      val sink = await(subjectFactory.GetSink[GitHubProtocol.PushEvent](sinkName))
       val stream = getStream(env)
       stream.addSink(sink)
       //stream.addSink(new MongoSink[GitHubProtocol.PushEvent](PUSH_EVENT, "id"))

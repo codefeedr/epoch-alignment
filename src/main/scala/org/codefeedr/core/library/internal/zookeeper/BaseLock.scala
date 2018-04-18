@@ -9,8 +9,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * Base class for read and write locks
   */
 abstract class BaseLock {
+  @transient protected lazy val zkClient = new ZkClient
   protected val promise = Promise[Unit]()
-  @transient protected val zkClient: ZkClient = LibraryServices.zkClient
   protected val connector = zkClient.getConnector()
   var isOpen: Boolean = false
   //Make sure to put open on true

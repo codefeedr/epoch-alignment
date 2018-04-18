@@ -22,7 +22,7 @@ import com.typesafe.scalalogging.Logger
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
-import org.codefeedr.core.library.{LibraryServices, SubjectFactory}
+import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.library.internal.kafka.source.{KafkaGenericSource, KafkaRowSource}
 import org.codefeedr.core.library.metastore.{SubjectLibrary, SubjectNode}
 import org.codefeedr.model.SubjectType
@@ -37,14 +37,14 @@ import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
 abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.TypeTag: ClassTag](
-    name: String)
-    extends LibraryServices {
+    name: String) {
 
   lazy val logger: Logger =
     Logger(LoggerFactory.getLogger(getClass.getName))
 
   var subjectType: SubjectType = _
-  lazy val subjectNode = subjectLibrary.getSubject(subjectType.name)
+  //HACK: Direct call to libraryServices
+  lazy val subjectNode = LibraryServices.subjectLibrary.getSubject(subjectType.name)
 
   var source: RichSourceFunction[Input] = _
 
@@ -68,7 +68,8 @@ abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.Type
     */
   def compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit] = async {
     val sinkName = s"composedsink_${queryId}"
-    val sink = await(SubjectFactory.GetSink[Output](sinkName))
+    //HACK: Direct call to libraryServices
+    val sink = await(LibraryServices.subjectFactory.GetSink[Output](sinkName))
     val stream = getStream(env)
     stream.addSink(sink)
   }
@@ -78,7 +79,12 @@ abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.Type
   }
 
   def setSource(job: Job[_, Input]) = {
-    source = new KafkaGenericSource[Input](job.subjectNode, job.subjectType.uuid)
+    //HACK: Direct call to libraryServices
+    source = new KafkaGenericSource[Input](
+      job.subjectNode,
+      LibraryServices.kafkaConsumerFactory,
+      LibraryServices.subjectFactory.getUnTransformer[Input](subjectType),
+      job.subjectType.uuid)
   }
 
   def startJob(subjectLibrary: SubjectLibrary) = async {

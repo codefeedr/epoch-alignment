@@ -27,17 +27,15 @@ import org.apache.flink.table.api.TableSchema
 import org.apache.flink.table.sources.StreamTableSource
 import org.apache.flink.types.Row
 import org.codefeedr.core.library.metastore.SubjectNode
-import org.codefeedr.core.library.{SubjectFactory, TypeInformationServices}
+import org.codefeedr.core.library.{TypeInformationServices}
 import org.codefeedr.model.SubjectType
 
 /**
   * Kafka source that exposes codefeedr subjects to flink's table api
   * @param subjectNode
   */
-class KafkaTableSource(subjectNode: SubjectNode, sourceId: String) extends StreamTableSource[Row] {
-  @transient lazy val source: SourceFunction[Row] =
-    SubjectFactory.getRowSource(subjectNode, sourceId)
-
+class KafkaTableSource(subjectNode: SubjectNode, sourceId: String, source: SourceFunction[Row])
+    extends StreamTableSource[Row] {
   //Map the TrailedRecord provided by the source to a row
   override def getDataStream(execEnv: StreamExecutionEnvironment): DataStream[Row] =
     execEnv

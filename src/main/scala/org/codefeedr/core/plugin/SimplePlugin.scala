@@ -20,8 +20,8 @@
 package org.codefeedr.core.plugin
 
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
+import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.library.internal.{AbstractPlugin, SubjectTypeFactory}
-import org.codefeedr.core.library.SubjectFactory
 import org.codefeedr.model.SubjectType
 
 import scala.async.Async.{async, await}
@@ -56,7 +56,8 @@ abstract class SimplePlugin[TData: ru.TypeTag: ClassTag] extends AbstractPlugin 
     */
   override def compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit] = async {
     val sinkName = s"composedsink_${queryId}"
-    val sink = await(SubjectFactory.GetSink[TData](sinkName))
+    //HACK: Direct call to libraryServices
+    val sink = await(LibraryServices.subjectFactory.GetSink[TData](sinkName))
     val stream = getStream(env)
     stream.addSink(sink)
   }

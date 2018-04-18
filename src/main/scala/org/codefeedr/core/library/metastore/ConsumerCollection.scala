@@ -1,6 +1,7 @@
 package org.codefeedr.core.library.metastore
 
 import org.codefeedr.core.library.internal.zookeeper.{
+  ZkClientComponent,
   ZkCollectionNode,
   ZkCollectionStateNode,
   ZkNodeBase

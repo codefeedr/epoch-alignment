@@ -7,11 +7,15 @@ import org.apache.flink.api.java.tuple
 import org.apache.flink.streaming.api.functions.sink.SinkFunction
 import org.apache.flink.types.Row
 import org.apache.kafka.clients.producer.ProducerRecord
+import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.library.internal.KeyFactory
+import org.codefeedr.core.library.metastore.SubjectNode
 import org.codefeedr.model._
 
-class RowSink(override var subjectType: SubjectType, override val sinkUuid: String)
-    extends KafkaSink[tuple.Tuple2[lang.Boolean, Row]] {
+class RowSink(subjectNode: SubjectNode,
+              kafkaProducerFactory: KafkaProducerFactory,
+              override val sinkUuid: String)
+    extends KafkaSink[tuple.Tuple2[lang.Boolean, Row]](subjectNode, kafkaProducerFactory) {
   @transient lazy val keyFactory = new KeyFactory(subjectType, UUID.randomUUID())
 
   override def transform(value: tuple.Tuple2[lang.Boolean, Row]): (RecordSourceTrail, Row) = {

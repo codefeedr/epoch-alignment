@@ -3,7 +3,7 @@ package org.codefeedr.core.library.metastore
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.calcite.plan.RelOptUtil.Exists
 import org.codefeedr.core.library.internal.SubjectTypeFactory
-import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkNode, ZkNodeBase, ZkStateNode}
+import org.codefeedr.core.library.internal.zookeeper._
 import org.codefeedr.exceptions._
 import org.codefeedr.model.SubjectType
 

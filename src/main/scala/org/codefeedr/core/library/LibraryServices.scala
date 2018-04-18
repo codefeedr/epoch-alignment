@@ -20,17 +20,32 @@
 package org.codefeedr.core.library
 
 import com.typesafe.config.{Config, ConfigFactory}
-import org.codefeedr.core.library.internal.zookeeper.ZkClient
-import org.codefeedr.core.library.metastore.SubjectLibrary
-
-trait LibraryServices {
-  @transient lazy val zkClient: ZkClient = LibraryServices.zkClient
-  @transient lazy val subjectLibrary: SubjectLibrary = LibraryServices.subjectLibrary
-  @transient lazy val conf: Config = ConfigFactory.load
+import org.codefeedr.core.engine.query.StreamComposerFactoryComponent
+import org.codefeedr.core.library.internal.kafka.sink.{
+  KafkaProducerFactory,
+  KafkaProducerFactoryComponent
 }
+import org.codefeedr.core.library.internal.kafka.source.{
+  KafkaConsumerFactory,
+  KafkaConsumerFactoryComponent
+}
+import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkClientComponent}
+import org.codefeedr.core.library.metastore.{SubjectLibrary, SubjectLibraryComponent}
 
-object LibraryServices {
-  @transient lazy val zkClient: ZkClient = new ZkClient()
-  @transient lazy val subjectLibrary: SubjectLibrary = new SubjectLibrary
-  @transient lazy val conf: Config = ConfigFactory.load
+//HACK: To make libraryServices available in the static context
+object LibraryServices
+    extends ZkClientComponent
+    with SubjectLibraryComponent
+    with ConfigFactoryComponent
+    with KafkaConsumerFactoryComponent
+    with KafkaProducerFactoryComponent
+    with SubjectFactoryComponent
+    with StreamComposerFactoryComponent {
+  lazy override val zkClient = new ZkClient()
+  lazy override val subjectLibrary = new SubjectLibrary()
+  lazy override val conf: Config = ConfigFactory.load
+  lazy override val kafkaConsumerFactory = new KafkaConsumerFactory()
+  lazy override val kafkaProducerFactory = new KafkaProducerFactory()
+  lazy override val subjectFactory = new SubjectFactoryController()
+  lazy override val streamComposerFactory = new StreamComposerFactory()
 }

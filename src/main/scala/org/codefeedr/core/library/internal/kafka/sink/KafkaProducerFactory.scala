@@ -25,10 +25,14 @@ import org.codefeedr.core.library.internal.kafka.{KafkaConfig, KafkaSerialiser}
 
 import scala.reflect.ClassTag
 
+trait KafkaProducerFactoryComponent {
+  val kafkaProducerFactory: KafkaProducerFactory
+}
+
 /**
   * Created by Niels on 11/07/2017.
   */
-object KafkaProducerFactory extends LazyLogging {
+class KafkaProducerFactory extends LazyLogging {
 
   /**
     * Create a kafka producer for a specific data and key type

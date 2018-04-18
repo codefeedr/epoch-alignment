@@ -27,7 +27,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.streaming.api.CheckpointingMode
 import org.scalatest._
 import org.apache.flink.streaming.api.scala._
-import org.codefeedr.core.{FullIntegrationSpec, KafkaTest}
+import org.codefeedr.core.{FullIntegrationSpec, IntegrationTestLibraryServices, KafkaTest}
 import org.codefeedr.core.library.internal.zookeeper.ZkClient
 import org.codefeedr.model.TrailedRecord
 import org.scalatest.tagobjects.Slow
@@ -169,7 +169,7 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
 
 class MyOwnSourceQuery(nr: Int, parallelism: Int) extends Runnable with LazyLogging {
 
-  @transient private object Library extends LibraryServices
+  @transient private object Library extends IntegrationTestLibraryServices
 
   override def run(): Unit = {
     val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
@@ -198,8 +198,8 @@ class MyOwnSourceQuery(nr: Int, parallelism: Int) extends Runnable with LazyLogg
 
     val subjectNode = Library.subjectLibrary.getSubject[MyOwnIntegerObject]()
     val subjectType = await(subjectNode.getOrCreateType[MyOwnIntegerObject]())
-    val transformer = SubjectFactory.getUnTransformer[MyOwnIntegerObject](subjectType)
-    val source = SubjectFactory.getSource(subjectNode, "testSource")
+    val transformer = Library.subjectFactory.getUnTransformer[MyOwnIntegerObject](subjectType)
+    val source = Library.subjectFactory.getSource(subjectNode, "testSource")
     val r =() => {
       val num = nr
       env

@@ -38,7 +38,12 @@ class KafkaSourceConsumer[T](name: String,
 
     data.foreach(o => {
       ctx.collect(mapper(TrailedRecord(o.value())))
-      r(o.partition()) = o.offset()
+      val partition = o.partition()
+      val offset = o.offset()
+      logger.debug(s"Processing $partition -> $offset ")
+      if (!r.contains(partition) || r(partition) < offset) {
+        r(partition) = offset
+      }
     })
     r.toMap
   }
@@ -83,7 +88,7 @@ class KafkaSourceConsumer[T](name: String,
     consumer
       .endOffsets(consumer.assignment())
       .asScala
-      .map(o => o._1.partition() -> (o._2.toLong - 2)) //TODO: Figure out why -2 is needed instead of -1
+      .map(o => o._1.partition() -> (o._2.toLong - 1))
       .toMap
 
   /**

@@ -20,7 +20,7 @@
 package org.codefeedr.core.library.internal.kafka.source
 
 import org.apache.flink.types.Row
-import org.codefeedr.core.library.TypeInformationServices
+import org.codefeedr.core.library.{LibraryServices, TypeInformationServices}
 import org.codefeedr.core.library.metastore.SubjectNode
 import org.codefeedr.model.{SubjectType, TrailedRecord}
 
@@ -28,8 +28,10 @@ import org.codefeedr.model.{SubjectType, TrailedRecord}
   * KafkaSource that exposes a subject as stream of table API rows
   * @param subjectNode
   */
-class KafkaRowSource(subjectNode: SubjectNode, override val sourceUuid: String)
-    extends KafkaSource[Row](subjectNode) {
+class KafkaRowSource(subjectNode: SubjectNode,
+                     kafkaConsumerFactory: KafkaConsumerFactory,
+                     override val sourceUuid: String)
+    extends KafkaSource[Row](subjectNode, kafkaConsumerFactory) {
   override def mapToT(record: TrailedRecord) = record.row
 
   /**

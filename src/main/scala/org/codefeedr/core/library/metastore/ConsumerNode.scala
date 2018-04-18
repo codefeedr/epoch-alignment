@@ -1,6 +1,11 @@
 package org.codefeedr.core.library.metastore
 
-import org.codefeedr.core.library.internal.zookeeper.{ZkStateNode, ZkNode, ZkNodeBase}
+import org.codefeedr.core.library.internal.zookeeper.{
+  ZkClientComponent,
+  ZkNode,
+  ZkNodeBase,
+  ZkStateNode
+}
 import org.codefeedr.model.zookeeper.Consumer
 
 import scala.async.Async.{async, await}

@@ -21,6 +21,7 @@ package org.codefeedr.core.library.internal.zookeeper
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.zookeeper.KeeperException.NodeExistsException
+import org.codefeedr.core.library.LibraryServices
 import rx.lang.scala.Observable
 
 import scala.async.Async.{async, await}

@@ -18,17 +18,19 @@
  */
 package org.codefeedr.core.plugin
 
+import org.codefeedr.core.library.internal.zookeeper.ZkClientComponent
 import org.codefeedr.core.library.internal.{Job, Plugin}
+import org.codefeedr.core.library.metastore.SubjectLibraryComponent
 
 import scala.concurrent.Future
 import scala.concurrent._
 import ExecutionContext.Implicits.global
 import async.Async._
 
-class GPlugin extends Plugin {
-
+class GPlugin extends Plugin { this: SubjectLibraryComponent with ZkClientComponent =>
   override def setupJobs: Future[List[Job[_, _]]] = async {
     //setup events job
+
     val eventsJob = new EventsJob(1)
     await(eventsJob.setupType(subjectLibrary))
 

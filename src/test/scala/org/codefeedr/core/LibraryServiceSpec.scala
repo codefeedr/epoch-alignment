@@ -25,7 +25,7 @@ import org.scalatest.AsyncFlatSpec
 /**
   * Base spec class that has asyncflatspec with libraryServices
   */
-class LibraryServiceSpec extends AsyncFlatSpec with LibraryServices {
-  this: LibraryServices =>
+class LibraryServiceSpec extends AsyncFlatSpec with IntegrationTestLibraryServices {
+
 
 }

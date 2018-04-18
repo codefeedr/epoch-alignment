@@ -26,13 +26,17 @@ import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.types.Row
 import org.codefeedr.core.library.internal.kafka.sink.{
   KafkaGenericSink,
+  KafkaProducerFactoryComponent,
   RowSink,
   TrailedRecordSink
 }
-import org.codefeedr.core.library.internal.kafka.source.KafkaRowSource
+import org.codefeedr.core.library.internal.kafka.source.{
+  KafkaConsumerFactoryComponent,
+  KafkaRowSource
+}
 import org.codefeedr.core.library.internal.kafka._
 import org.codefeedr.core.library.internal.{KeyFactory, RecordTransformer, SubjectTypeFactory}
-import org.codefeedr.core.library.metastore.SubjectNode
+import org.codefeedr.core.library.metastore.{SubjectLibraryComponent, SubjectNode}
 import org.codefeedr.model.{ActionType, SubjectType, TrailedRecord}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -40,79 +44,101 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-/**
-  * ThreadSafe
-  * Created by Niels on 18/07/2017.
-  */
-class SubjectFactoryController { this: LibraryServices =>
-  def GetSink[TData: ru.TypeTag: ClassTag](sinkId: String): Future[SinkFunction[TData]] = {
-    val subjectType = SubjectTypeFactory.getSubjectType[TData]
-    subjectLibrary
-      .getSubject(subjectType.name)
-      .getOrCreate(() => subjectType)
-      .flatMap(
-        o =>
-          KafkaController
-            .guaranteeTopic(s"${o.name}_${o.uuid}",
-                            conf.getInt("codefeedr.kafka.custom.partition.count"))
-            .map(_ => new KafkaGenericSink(o, sinkId)))
-  }
+trait SubjectFactoryComponent {
+  this: SubjectLibraryComponent
+    with ConfigFactoryComponent
+    with KafkaProducerFactoryComponent
+    with KafkaConsumerFactoryComponent =>
+  val subjectFactory: SubjectFactoryController
 
   /**
-    * Get a generic sink for the given type
-    * @param subjectType
-    * @return
+    * ThreadSafe
+    * Created by Niels on 18/07/2017.
     */
-  def getSink(subjectType: SubjectType, sinkId: String): SinkFunction[TrailedRecord] =
-    new TrailedRecordSink(subjectType, sinkId)
-
-  /**
-    * Return a sink for the tableApi
-    * @param subjectType
-    * @return
-    */
-  def getRowSink(subjectType: SubjectType, sinkId: String) = new RowSink(subjectType, sinkId)
-
-  /**
-    * Construct a serializable and distributable mapper function from any source type to a TrailedRecord
-    * @tparam TData Type of the source object to get a mapper for
-    * @return A function that can convert the object into a trailed record
-    */
-  def getTransformer[TData: ru.TypeTag: ClassTag](
-      subjectType: SubjectType): TData => TrailedRecord = {
-    @transient lazy val transformer = new RecordTransformer[TData](subjectType)
-    @transient lazy val keyFactory = new KeyFactory(subjectType, UUID.randomUUID())
-    (d: TData) =>
-      {
-        val record = transformer.bag(d, ActionType.Add)
-        val trail = keyFactory.getKey(record)
-        TrailedRecord(record, trail)
-      }
-  }
-
-  /**
-    * Construct a deserializer to transform a TrailedRecord back into some object
-    * Meant to use for development & testing, not very safe
-    * @param subjectType The type of the record expected
-    * @tparam TData Type of the object to transform to
-    * @return The object
-    */
-  def getUnTransformer[TData: ru.TypeTag: ClassTag](
-      subjectType: SubjectType): TrailedRecord => TData = { (r: TrailedRecord) =>
-    {
-      val transformer = new RecordTransformer[TData](subjectType)
-      transformer.unbag(r)
+  class SubjectFactoryController {
+    def GetSink[TData: ru.TypeTag: ClassTag](sinkId: String): Future[SinkFunction[TData]] = {
+      val subjectType = SubjectTypeFactory.getSubjectType[TData]
+      val subjectNode = subjectLibrary
+        .getSubject(subjectType.name)
+      subjectNode
+        .getOrCreate(() => subjectType)
+        .flatMap(
+          o =>
+            KafkaController
+              .guaranteeTopic(s"${o.name}_${o.uuid}",
+                              conf.getInt("codefeedr.kafka.custom.partition.count"))
+              .map(
+                _ =>
+                  new KafkaGenericSink(subjectNode,
+                                       kafkaProducerFactory,
+                                       sinkId,
+                                       subjectFactory.getTransformer[TData](subjectType))))
     }
-  }
 
-  def getRowSource(subjectNode: SubjectNode, sourceId: String): SourceFunction[Row] = {
-    new KafkaRowSource(subjectNode, sourceId)
-  }
+    /**
+      * Get a generic sink for the given type
+      *
+      * @param subjectType
+      * @return
+      */
+    def getSink(subjectType: SubjectType, sinkId: String): SinkFunction[TrailedRecord] = {
+      val subjectNode = subjectLibrary.getSubject(subjectType.name)
+      new TrailedRecordSink(subjectNode, kafkaProducerFactory, sinkId)
+    }
 
-  def getSource(subjectNode: SubjectNode, sinkId: String): SourceFunction[TrailedRecord] = {
-    new KafkaTrailedRecordSource(subjectNode, sinkId)
+    /**
+      * Return a sink for the tableApi
+      *
+      * @param subjectType
+      * @return
+      */
+    def getRowSink(subjectType: SubjectType, sinkId: String) = {
+      val subjectNode = subjectLibrary.getSubject(subjectType.name)
+      new RowSink(subjectNode, kafkaProducerFactory, sinkId)
+    }
+
+    /**
+      * Construct a serializable and distributable mapper function from any source type to a TrailedRecord
+      *
+      * @tparam TData Type of the source object to get a mapper for
+      * @return A function that can convert the object into a trailed record
+      */
+    def getTransformer[TData: ru.TypeTag: ClassTag](
+        subjectType: SubjectType): TData => TrailedRecord = {
+      @transient lazy val transformer = new RecordTransformer[TData](subjectType)
+      @transient lazy val keyFactory = new KeyFactory(subjectType, UUID.randomUUID())
+      (d: TData) =>
+        {
+          val record = transformer.bag(d, ActionType.Add)
+          val trail = keyFactory.getKey(record)
+          TrailedRecord(record, trail)
+        }
+    }
+
+    /**
+      * Construct a deserializer to transform a TrailedRecord back into some object
+      * Meant to use for development & testing, not very safe
+      *
+      * @param subjectType The type of the record expected
+      * @tparam TData Type of the object to transform to
+      * @return The object
+      */
+    def getUnTransformer[TData: ru.TypeTag: ClassTag](
+        subjectType: SubjectType): TrailedRecord => TData = { (r: TrailedRecord) =>
+      {
+        val transformer = new RecordTransformer[TData](subjectType)
+        transformer.unbag(r)
+      }
+    }
+
+    def getRowSource(subjectNode: SubjectNode, sourceId: String): SourceFunction[Row] = {
+      new KafkaRowSource(subjectNode, kafkaConsumerFactory, sourceId)
+    }
+
+    def getSource(subjectNode: SubjectNode, sinkId: String): SourceFunction[TrailedRecord] = {
+      new KafkaTrailedRecordSource(subjectNode, kafkaConsumerFactory, sinkId)
+    }
+
   }
 
 }
-// with LibraryServices
-object SubjectFactory extends SubjectFactoryController with LibraryServices {}

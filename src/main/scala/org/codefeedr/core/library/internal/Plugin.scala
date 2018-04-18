@@ -19,6 +19,8 @@
 package org.codefeedr.core.library.internal
 
 import org.codefeedr.core.library.LibraryServices
+import org.codefeedr.core.library.internal.zookeeper.ZkClientComponent
+import org.codefeedr.core.library.metastore.SubjectLibraryComponent
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent._
@@ -26,10 +28,7 @@ import ExecutionContext.Implicits.global
 import async.Async._
 import scala.concurrent.duration.{Duration, SECONDS}
 
-abstract class Plugin {
-
-  lazy val subjectLibrary = LibraryServices.subjectLibrary
-  lazy val zkClient = LibraryServices.zkClient
+abstract class Plugin { this: ZkClientComponent with SubjectLibraryComponent =>
 
   var jobs: List[Job[_, _]] = List()
 

@@ -29,9 +29,9 @@ import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.streaming.api.watermark.Watermark
 import org.apache.flink.table.api.StreamTableEnvironment
-import org.codefeedr.core.engine.query.{QueryTree, streamComposerFactory}
+import org.codefeedr.core.engine.query.{QueryTree}
 import org.codefeedr.core.library.internal.kafka.KafkaTrailedRecordSource
-import org.codefeedr.core.library.{LibraryServices, SubjectFactory}
+import org.codefeedr.core.library.{LibraryServices}
 import org.codefeedr.core.plugin.CollectionPlugin
 import org.codefeedr.model.{SubjectType, TrailedRecord}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach, FutureOutcome, Matchers}
@@ -52,12 +52,12 @@ import scala.concurrent.duration.{Duration, SECONDS}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogging with LibraryServices with BeforeAndAfterEach with MockitoSugar {
+class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogging with IntegrationTestLibraryServices with BeforeAndAfterEach with MockitoSugar {
   val parallelism: Int = 2
 
   override def beforeEach(): Unit = {
-    Await.ready(subjectLibrary.initialize(), Duration(1, SECONDS))
-    Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(subjectLibrary.initialize(), Duration(5, SECONDS))
+    Await.ready(zkClient.deleteRecursive("/"), Duration(5, SECONDS))
   }
 
   override def afterEach(): Unit = {
@@ -72,7 +72,7 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     */
   def awaitAllData(subject:SubjectType): Future[Array[TrailedRecord]] = async {
     await(subjectLibrary.getSubject(subject.name).assertExists())
-    val source = new KafkaTrailedRecordSource(subjectLibrary.getSubject(subject.name), "testsource")
+    val source = new KafkaTrailedRecordSource(subjectLibrary.getSubject(subject.name), kafkaConsumerFactory,"testsource")
     val result = new mutable.ArrayBuffer[TrailedRecord]()
 
 
@@ -121,7 +121,7 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     val resultStream = composer.compose(queryEnv)
     val resultType = composer.getExposedType()
     logger.debug(s"Composing sink for ${resultType.name}.")
-    val sink = SubjectFactory.getSink(resultType, "testsink")
+    val sink = subjectFactory.getSink(resultType, "testsink")
     resultStream.addSink(sink)
     logger.debug("Starting queryEnv")
     queryEnv.execute()

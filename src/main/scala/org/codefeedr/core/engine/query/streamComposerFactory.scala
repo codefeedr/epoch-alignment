@@ -19,8 +19,12 @@
 
 package org.codefeedr.core.engine.query
 
-import com.typesafe.scalalogging.Logger
-import org.codefeedr.core.library.LibraryServices
+import com.typesafe.scalalogging.{LazyLogging, Logger}
+import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
+import org.codefeedr.core.library.{LibraryServices, SubjectFactoryComponent}
+import org.codefeedr.core.library.metastore.SubjectLibraryComponent
+import org.codefeedr.model.{SubjectType, TrailedRecord}
+import org.apache.flink.streaming.api.scala._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -29,44 +33,70 @@ import scala.async.Async.{async, await}
 /**
   * Created by Niels on 31/07/2017.
   */
-trait StreamComposerFactoryFacade { this: LibraryServices =>
+trait StreamComposerFactoryComponent {
+  this: SubjectLibraryComponent with SubjectFactoryComponent =>
 
-  @transient private lazy val logger = Logger(classOf[StreamComposerFactoryFacade])
+  val streamComposerFactory: StreamComposerFactory
 
-  def getComposer(query: QueryTree): Future[StreamComposer] = {
+  class StreamComposerFactory extends LazyLogging {
 
-    query match {
-      case SubjectSource(subjectName) =>
-        logger.debug(s"Creating composer for subjectsource $subjectName")
-        async {
-          logger.debug(s"Waiting registration of subject $subjectName")
-          val childNode = await(subjectLibrary.getSubjects().awaitChildNode(subjectName))
-          logger.debug(s"Got subject $subjectName. Retrieving data")
-          val subject = await(childNode.getData()).get
-          new SourceStreamComposer(subject)
+    def getComposer(query: QueryTree): Future[StreamComposer] = {
+
+      query match {
+        case SubjectSource(subjectName) =>
+          logger.debug(s"Creating composer for subjectsource $subjectName")
+          async {
+            logger.debug(s"Waiting registration of subject $subjectName")
+            val childNode = await(subjectLibrary.getSubjects().awaitChildNode(subjectName))
+            logger.debug(s"Got subject $subjectName. Retrieving data")
+            val subject = await(childNode.getData()).get
+            new SourceStreamComposer(subject)
+          }
+        case Join(left, right, keysLeft, keysRight, selectLeft, selectRight, alias) =>
+          logger.debug(s"Creating composer for join $alias")
+          for {
+            leftComposer <- getComposer(left)
+            rightComposer <- getComposer(right)
+            joinedType <- subjectLibrary
+              .getSubject(alias)
+              .getOrCreate(
+                () =>
+                  JoinQueryComposer.buildComposedType(leftComposer.getExposedType(),
+                                                      rightComposer.getExposedType(),
+                                                      selectLeft,
+                                                      selectRight,
+                                                      alias))
+          } yield
+            new JoinQueryComposer(leftComposer,
+                                  rightComposer,
+                                  joinedType,
+                                  query.asInstanceOf[Join])
+        case _ => {
+          val error = new NotImplementedError("not implemented query subtree")
+          throw error
         }
-      case Join(left, right, keysLeft, keysRight, selectLeft, selectRight, alias) =>
-        logger.debug(s"Creating composer for join $alias")
-        for {
-          leftComposer <- getComposer(left)
-          rightComposer <- getComposer(right)
-          joinedType <- subjectLibrary
-            .getSubject(alias)
-            .getOrCreate(
-              () =>
-                JoinQueryComposer.buildComposedType(leftComposer.getExposedType(),
-                                                    rightComposer.getExposedType(),
-                                                    selectLeft,
-                                                    selectRight,
-                                                    alias))
-        } yield
-          new JoinQueryComposer(leftComposer, rightComposer, joinedType, query.asInstanceOf[Join])
-      case _ => {
-        val error = new NotImplementedError("not implemented query subtree")
-        throw error
       }
     }
-  }
-}
 
-object streamComposerFactory extends StreamComposerFactoryFacade with LibraryServices
+    /**
+      * Created by Niels on 31/07/2017.
+      */
+    class SourceStreamComposer(subjectType: SubjectType) extends StreamComposer {
+
+      //HACK: hard coded id
+      override def compose(env: StreamExecutionEnvironment): DataStream[TrailedRecord] = {
+        env.addSource(
+          subjectFactory.getSource(subjectLibrary.getSubject(subjectType.name),
+                                   s"composedsink_${subjectType.name}"))
+      }
+
+      /**
+        * Retrieve typeinformation of the type that is exposed by the Streamcomposer (Note that these types are not necessarily registered on kafka, as it might be an intermediate type)
+        *
+        * @return Typeinformation of the type exposed by the stream
+        */
+      override def getExposedType(): SubjectType = subjectType
+    }
+  }
+
+}

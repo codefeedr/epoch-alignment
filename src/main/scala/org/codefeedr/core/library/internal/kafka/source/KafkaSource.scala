@@ -64,18 +64,17 @@ import scala.util.Try
   * Because this class needs to be serializable and the LibraryServices are not, no dependency injection structure can be used here :(
   * Created by Niels on 18/07/2017.
   */
-abstract class KafkaSource[T](subjectNode: SubjectNode)
+abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: KafkaConsumerFactory)
     extends RichSourceFunction[T]
     with ResultTypeQueryable[T]
     with CheckpointedFunction
     with CheckpointListener
     //Internal services
     with LazyLogging
-    with Serializable
-    with LibraryServices {
+    with Serializable {
 
   @transient protected lazy val consumer = {
-    val kafkaConsumer = KafkaConsumerFactory.create[RecordSourceTrail, Row](instanceUuid.toString)
+    val kafkaConsumer = kafkaConsumerFactory.create[RecordSourceTrail, Row](instanceUuid.toString)
     kafkaConsumer.subscribe(Iterable(topic).asJavaCollection)
     logger.debug(
       s"Source $instanceUuid of consumer $sourceUuid subscribed on topic $topic as group $instanceUuid")
@@ -301,9 +300,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode)
     ctx.getCheckpointLock.synchronized {
       val offsets = consumer.poll(ctx)
       offsets.foreach(o => {
-        if (!currentOffsets.contains(o._1) || currentOffsets(o._1) < o._2) {
-          currentOffsets(o._1) = o._2
-        }
+        currentOffsets(o._1) = o._2
       })
     }
     //HACK: Find some way to perform some operations outside the checkpoint lock
