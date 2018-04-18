@@ -6,6 +6,7 @@ import org.apache.flink.runtime.state.{FunctionInitializationContext, FunctionSn
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.apache.flink.types.Row
+import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.codefeedr.core.MockedLibraryServices
 import org.codefeedr.core.library.metastore._
 
@@ -97,7 +98,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     when(runtimeContext.isCheckpointingEnabled) thenReturn true
 
     when(ctx.getCheckpointLock()).thenReturn (cpLock,cpLock)
-    when(consumerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.any())) thenReturn null
+    when(consumerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.any[String]())(ArgumentMatchers.any(),ArgumentMatchers.any())).thenReturn (mock[KafkaConsumer[RecordSourceTrail,Row]])
   }
 
 

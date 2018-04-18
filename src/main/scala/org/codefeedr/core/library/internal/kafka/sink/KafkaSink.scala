@@ -55,13 +55,14 @@ import scala.util.{Failure, Success}
   * Serializable (with lazy initialisation)
   * Created by Niels on 11/07/2017.
   */
-abstract class KafkaSink[TSink](subjectNode: SubjectNode,
-                                kafkaProducerFactory: KafkaProducerFactory)
+abstract class KafkaSink[TSink](subjectNode: SubjectNode, kafkaProducerFactory: KafkaProducerFactory)
     extends TwoPhaseCommitSinkFunction[TSink, TransactionState, TransactionContext](
       transactionStateSerializer,
       transactionContextSerializer)
     with LazyLogging
-    with Serializable {
+    with Serializable
+     {
+
 
   protected val sinkUuid: String
 
@@ -120,9 +121,8 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
       opened = true
       logger.debug(s"Opening producer ${getLabel()} for ${subjectType.name}")
       //Create zookeeper nodes synchronous
-      if (!Await.result(subjectNode.exists(), Duration(5, SECONDS))) {
-        throw new Exception(
-          s"Cannot open source ${getLabel()} because its subject does not exist.")
+      if(!Await.result(subjectNode.exists(), Duration(5, SECONDS))) {
+        throw new Exception(s"Cannot open source ${getLabel()} because its subject does not exist.")
       }
       Await.ready(sinkNode.create(QuerySink(sinkUuid)), Duration(5, SECONDS))
       Await.ready(producerNode.create(Producer(instanceUuid, null, System.currentTimeMillis())),

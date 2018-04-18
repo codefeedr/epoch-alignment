@@ -21,7 +21,7 @@ package org.codefeedr.core.library.internal.kafka.sink
 
 import org.apache.flink.types.Row
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.codefeedr.core.library.SubjectFactoryComponent
+import org.codefeedr.core.library.{LibraryServices, SubjectFactoryComponent}
 import org.codefeedr.core.library.metastore.SubjectNode
 import org.codefeedr.model.{RecordSourceTrail, SubjectType, TrailedRecord}
 
@@ -33,11 +33,14 @@ import scala.reflect.runtime.{universe => ru}
   */
 class KafkaGenericSink[TData: ru.TypeTag: ClassTag](val subjectNode: SubjectNode,
                                                     kafkaProducerFactory: KafkaProducerFactory,
-                                                    override val sinkUuid: String,
-                                                    val transformer: TData => TrailedRecord)
+                                                    override val sinkUuid: String
+                                                   // val transformer: TData => TrailedRecord
+                                                   )
     extends KafkaSink[TData](subjectNode, kafkaProducerFactory) {
 
-  //@transient private lazy val Transformer: TData => TrailedRecord = subjectFactory.getTransformer[TData](subjectType)
+
+
+  @transient private lazy val transformer: TData => TrailedRecord = LibraryServices.subjectFactory.getTransformer[TData](subjectType)
 
   override def transform(value: TData): (RecordSourceTrail, Row) = {
     val data = transformer.apply(value)

@@ -33,7 +33,7 @@ trait KafkaConsumerFactoryComponent {
 /**
   * Created by Niels on 14/07/2017.
   */
-class KafkaConsumerFactory {
+class KafkaConsumerFactory extends Serializable {
 
   /**
     * Create a new kafka consumer

@@ -32,7 +32,7 @@ trait KafkaProducerFactoryComponent {
 /**
   * Created by Niels on 11/07/2017.
   */
-class KafkaProducerFactory extends LazyLogging {
+class KafkaProducerFactory extends LazyLogging with Serializable {
 
   /**
     * Create a kafka producer for a specific data and key type

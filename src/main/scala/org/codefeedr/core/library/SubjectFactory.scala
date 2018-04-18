@@ -71,8 +71,9 @@ trait SubjectFactoryComponent {
                 _ =>
                   new KafkaGenericSink(subjectNode,
                                        kafkaProducerFactory,
-                                       sinkId,
-                                       subjectFactory.getTransformer[TData](subjectType))))
+                                       sinkId
+                                       //subjectFactory.getTransformer[TData](subjectType)
+                  )))
     }
 
     /**
