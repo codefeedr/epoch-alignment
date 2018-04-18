@@ -28,11 +28,13 @@ import org.apache.flink.api.common.typeutils.TypeSerializer
 import org.apache.flink.api.java.tuple
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.runtime.state.{FunctionInitializationContext, FunctionSnapshotContext}
+import org.apache.flink.streaming.api.CheckpointingMode
 import org.apache.flink.streaming.api.functions.sink.{
   RichSinkFunction,
   SinkFunction,
   TwoPhaseCommitSinkFunction
 }
+import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.apache.flink.types.Row
 import org.apache.kafka.clients.producer.{Callback, KafkaProducer, ProducerRecord, RecordMetadata}
 import org.codefeedr.core.library.internal.KeyFactory
@@ -55,16 +57,17 @@ import scala.util.{Failure, Success}
   * Serializable (with lazy initialisation)
   * Created by Niels on 11/07/2017.
   */
-abstract class KafkaSink[TSink](subjectNode: SubjectNode, kafkaProducerFactory: KafkaProducerFactory)
+abstract class KafkaSink[TSink](subjectNode: SubjectNode,
+                                kafkaProducerFactory: KafkaProducerFactory)
     extends TwoPhaseCommitSinkFunction[TSink, TransactionState, TransactionContext](
       transactionStateSerializer,
       transactionContextSerializer)
     with LazyLogging
-    with Serializable
-     {
-
+    with Serializable {
 
   protected val sinkUuid: String
+
+  @transient private[kafka] var checkpointingMode: Option[CheckpointingMode] = _
 
   protected var opened: Boolean = false
 
@@ -88,7 +91,7 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode, kafkaProducerFactory: 
     ConfigFactory.load.getInt("codefeedr.kafka.custom.producer.count")
 
   //Current set of available kafka producers
-  @transient protected lazy val producerPool: List[KafkaProducer[RecordSourceTrail, Row]] =
+  @transient protected[sink] lazy val producerPool: List[KafkaProducer[RecordSourceTrail, Row]] =
     (1 to producerPoolSize)
       .map(i => kafkaProducerFactory.create[RecordSourceTrail, Row](s"${instanceUuid}_$i"))
       .toList
@@ -103,7 +106,7 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode, kafkaProducerFactory: 
   def getLabel(): String = s"KafkaSink ${subjectType.name}($sinkUuid-$instanceUuid)"
 
   def getFirstFreeProducerIndex() =
-    getUserContext.get().availableProducers.zipWithIndex.filter(_._1._2).values.head
+    getUserContext.get().availableProducers.filter(o => o._2).keys.head
 
   override def initializeUserContext(): Optional[TransactionContext] =
     Optional.of(
@@ -116,29 +119,43 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode, kafkaProducerFactory: 
   }
 
   override def open(parameters: Configuration): Unit = {
-    //Temporary check if opened
-    if (!opened) {
-      opened = true
-      logger.debug(s"Opening producer ${getLabel()} for ${subjectType.name}")
-      //Create zookeeper nodes synchronous
-      if(!Await.result(subjectNode.exists(), Duration(5, SECONDS))) {
-        throw new Exception(s"Cannot open source ${getLabel()} because its subject does not exist.")
-      }
-      Await.ready(sinkNode.create(QuerySink(sinkUuid)), Duration(5, SECONDS))
-      Await.ready(producerNode.create(Producer(instanceUuid, null, System.currentTimeMillis())),
-                  Duration(5, SECONDS))
-      Await.ready(producerNode.setState(true), Duration.Inf)
-      logger.debug(s"Producer ${getLabel()} created for topic $topic")
+    if (opened) {
+      throw new Exception(s"Open on sink called twice: ${getLabel()}")
     }
+
+    if (!getRuntimeContext().asInstanceOf[StreamingRuntimeContext].isCheckpointingEnabled) {
+      logger.warn(
+        "Started a custom sink without checkpointing enabled. The custom source is designed to work with checkpoints only.")
+      checkpointingMode = None
+    } else {
+      checkpointingMode = Some(CheckpointingMode.EXACTLY_ONCE)
+    }
+
+    //Temporary check if opened
+    opened = true
+    logger.debug(s"Opening producer ${getLabel()} for ${subjectType.name}")
+    //Create zookeeper nodes synchronous
+    if (!Await.result(subjectNode.exists(), Duration(5, SECONDS))) {
+      throw new Exception(s"Cannot open source ${getLabel()} because its subject does not exist.")
+    }
+    Await.ready(sinkNode.create(QuerySink(sinkUuid)), Duration(5, SECONDS))
+    Await.ready(producerNode.create(Producer(instanceUuid, null, System.currentTimeMillis())),
+                Duration(5, SECONDS))
+    Await.ready(producerNode.setState(true), Duration.Inf)
+    logger.debug(s"Producer ${getLabel()} created for topic $topic")
   }
+  //Used for test
+  override protected[sink] def currentTransaction() = super.currentTransaction()
 
   override def snapshotState(context: FunctionSnapshotContext): Unit = {
-    super.snapshotState(context)
-    logger.debug(s"snapshot State called on ${getLabel()}")
+    logger.debug(
+      s"snapshot State called on ${getLabel()} with checkpoint ${context.getCheckpointId}")
     //Save the checkpointId on the transaction, so it can be tracked to the right epoch
+    //Perform this operation before calling snapshotState on the parent, because it will start a new transaction
     currentTransaction().checkPointId = context.getCheckpointId
     logger.debug(
       s"${getLabel()} assigned transaction on producer ${currentTransaction().producerIndex} to checkpoint ${context.getCheckpointId}")
+    super.snapshotState(context)
   }
 
   override def invoke(transaction: TransactionState,
@@ -204,7 +221,6 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode, kafkaProducerFactory: 
 
   override def beginTransaction(): TransactionState = {
     logger.debug(s"beginTransaction called on ${getLabel()}. Opened: $opened")
-    open(null)
     val producerIndex = getFirstFreeProducerIndex()
     getUserContext.get().availableProducers(producerIndex) = false
     producerPool(producerIndex).beginTransaction()

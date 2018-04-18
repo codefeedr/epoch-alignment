@@ -73,7 +73,7 @@ trait SubjectFactoryComponent {
                                        kafkaProducerFactory,
                                        sinkId
                                        //subjectFactory.getTransformer[TData](subjectType)
-                  )))
+                )))
     }
 
     /**
