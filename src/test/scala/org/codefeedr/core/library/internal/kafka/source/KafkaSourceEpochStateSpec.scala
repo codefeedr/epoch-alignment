@@ -3,6 +3,7 @@ package org.codefeedr.core.library.internal.kafka.source
 import org.codefeedr.core.library.internal.kafka.meta.SourceEpoch
 import org.codefeedr.core.library.metastore._
 import org.codefeedr.model.zookeeper.Partition
+import org.codefeedr.util.MockitoExtensions
 import org.mockito.Mockito.{verify, when}
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
@@ -14,7 +15,7 @@ import scala.async.Async.{async, await}
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class KafkaSourceEpochStateSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfterEach {
+class KafkaSourceEpochStateSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfterEach with MockitoExtensions {
 
 
   private var sourceEpochCollection: SourceEpochCollection = _
@@ -171,14 +172,6 @@ class KafkaSourceEpochStateSpec extends AsyncFlatSpec with MockitoSugar with Bef
     when(sourceNode.getEpochs()) thenReturn sourceEpochCollection
 
     kafkaSourceEpochState = new KafkaSourceEpochState(subjectNode = subjectNode, querySourceNode = sourceNode)
-  }
-
-
-  def answer[T](f: InvocationOnMock => T): Answer[T] = {
-    //Ignore the warning, compiler needs it
-    new Answer[T] {
-      override def answer(invocation: InvocationOnMock): T = f(invocation)
-    }
   }
 
 }

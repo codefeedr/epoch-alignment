@@ -166,7 +166,7 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
     val event = transform(value)
     val record = new ProducerRecord[RecordSourceTrail, Row](topic, event._1, event._2)
 
-    //Wrap the callback into a proper scala future
+    //Wrap the callback into a proper scala promise
     val p = Promise[RecordMetadata]
     //Notify state an event has been sent
     transaction.sent()
@@ -192,6 +192,8 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
 
   /**
     * Await result from all pending events, and perform the actual commit
+    * TODO: Validate this does not block processing new events
+    * Otherwise we might just perform this task on the background. We are not allowed to throw exceptions from the commit method anyway
     * @param transaction
     */
   override def commit(transaction: TransactionState): Unit = {

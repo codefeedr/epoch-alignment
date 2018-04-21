@@ -13,6 +13,7 @@ import org.codefeedr.core.library.metastore._
 import scala.collection.JavaConverters._
 import org.codefeedr.model.zookeeper.{Partition, QuerySource}
 import org.codefeedr.model.{RecordProperty, RecordSourceTrail, SubjectType, TrailedRecord}
+import org.codefeedr.util.MockitoExtensions
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
@@ -24,7 +25,7 @@ import scala.async.Async.{async, await}
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
 
-class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfterEach with MockedLibraryServices{
+class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfterEach with MockedLibraryServices with MockitoExtensions {
 
   private var subjectNode: SubjectNode = _
   private var ctx: SourceFunction.SourceContext[SampleObject] = _
@@ -353,28 +354,8 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   }
 
 
-  def answer[T](f: InvocationOnMock => T): Answer[T] = {
-    //Ignore the warning, compiler needs it
-    new Answer[T] {
-      override def answer(invocation: InvocationOnMock): T = f(invocation)
-    }
-  }
 
-  def awaitAndReturn[T](p:Promise[Unit], a: T,times:Int) = awaitAndAnswer(p,_=>a,times)
 
-  def awaitAndAnswer[T](p:Promise[Unit], f: InvocationOnMock => T,times:Int): Answer[T] = {
-    var i = times
-
-    new Answer[T] {
-      override def answer(invocation: InvocationOnMock): T = {
-        i = i-1
-        if(i == 0) {
-          p.success()
-        }
-        f(invocation)
-      }
-    }
-  }
 }
 
 

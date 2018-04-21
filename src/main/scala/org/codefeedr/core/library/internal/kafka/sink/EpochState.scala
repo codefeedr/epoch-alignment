@@ -23,7 +23,7 @@ class EpochState(transactionState: TransactionState, epochCollectionNode: EpochC
     await(
       Future.sequence(
         transactionState.offsetMap.map(a => {
-          val partition = a._1._2
+          val partition = a._1
           val offset = a._2
           epochNode
             .getPartitions()
@@ -43,7 +43,7 @@ class EpochState(transactionState: TransactionState, epochCollectionNode: EpochC
     await(
       Future.sequence(
         transactionState.offsetMap.map(a => {
-          val partition = a._1._2
+          val partition = a._1
           epochNode.getPartitions().getChild(partition.toString).setState(true)
         })
       ))

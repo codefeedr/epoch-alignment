@@ -7,7 +7,8 @@ import org.apache.flink.streaming.api.CheckpointingMode
 import org.apache.flink.streaming.api.functions.sink.SinkFunction
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.apache.flink.types.Row
-import org.apache.kafka.clients.producer.KafkaProducer
+import org.apache.kafka.clients.producer.{Callback, KafkaProducer, RecordMetadata}
+import org.apache.kafka.common.TopicPartition
 import org.codefeedr.core.MockedLibraryServices
 import org.codefeedr.core.library.metastore._
 import org.codefeedr.model.zookeeper.QuerySink
@@ -15,6 +16,8 @@ import org.codefeedr.model.{Record, RecordSourceTrail, SubjectType, TrailedRecor
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach}
 
 import scala.collection.JavaConverters._
+import org.codefeedr.util
+import org.codefeedr.util.MockitoExtensions
 
 //Mockito
 import org.mockito.ArgumentMatchers
@@ -29,7 +32,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
 
-class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfterEach with MockedLibraryServices {
+class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfterEach with MockedLibraryServices with MockitoExtensions {
   var subjectType: SubjectType = _
   var subjectNode: SubjectNode = _
   var sinkCollectionNode: QuerySinkCollection = _
@@ -151,6 +154,49 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
   }
 
   it should "Update the transaction state with new offsets" in async {
+    //Arrange
+    val snapshotContext = mock[FunctionSnapshotContext]
+    val sink = getTestSink()
+    val o = new SampleObject()
+    val transaction1 = sink.currentTransaction()
+    val producer1 = sink.producerPool(transaction1.producerIndex)
+    var cb: Callback = null
+
+    val mockedMetadata = new RecordMetadata(new TopicPartition("",2),0L,1337L,0L,0L,0,0)
+    when(producer1.send(ArgumentMatchers.any(),ArgumentMatchers.any())) thenAnswer answer[java.util.concurrent.Future[RecordMetadata]](r => {
+      cb = r.getArgument[Callback](1)
+      null
+    })
+
+    //Act
+    sink.invoke(transaction1,o,context)
+    val pendingBefore = transaction1.pendingEvents
+    cb.onCompletion(mockedMetadata, null)
+    //Need to await, because this gets completed asynchronous
+    await(transaction1.awaitCommit())
+    val pendingAfter = transaction1.pendingEvents
+
+    //Assert
+    assert(cb != null)
+    assert(pendingBefore == 1)
+    assert(pendingAfter == 0)
+    assert(transaction1.offsetMap(2) == 1337)
+  }
+
+  "KafkaSink.PreCommit()" should "Create the transaction with corresponding offsets in zookeeper" in async {
+
+    assert(false)
+  }
+
+  it should "Flush the transaction to kafka" in async {
+    assert(false)
+  }
+
+  "KafkaSink.Commit()" should "Flag the created transaction in zookeeper as committed" in async {
+    assert(false)
+  }
+
+  it should "Commit the transaction to kafka" in async {
     assert(false)
   }
 
@@ -217,7 +263,6 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("4"))(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p3
     when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("5"))(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p4
   }
-
 
 }
 

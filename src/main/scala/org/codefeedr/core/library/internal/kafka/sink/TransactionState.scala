@@ -19,6 +19,7 @@ import scala.concurrent.{Future, Promise}
   * Mutable class maintaining the state of a running transaction to Kafka
   * TODO: Expand this with the size of the pool to support reconfiguration after a restore
   * TODO: Use immutable class (but Flink's API was mainly built for mutable scala classes)
+  * TODO: Unit test this class!
   * @param producerIndex index of the used producer
   * @param checkPointId Identification of the checkpoint that belongs to the transaction
   * @param pendingEvents Counter observing pending events
@@ -30,7 +31,7 @@ class TransactionState(
     var checkPointId: Long = 0,
     @volatile var pendingEvents: Int = 0,
     var awaitingCommit: Boolean = false,
-    var offsetMap: mutable.Map[(String, Int), Long] = mutable.Map[(String, Int), Long]()
+    var offsetMap: mutable.Map[Int, Long] = mutable.Map[Int, Long]()
 ) {
   //Promise that is true when a commit can be done
   @transient private lazy val awaitCommitPromise = Promise[Unit]
@@ -53,7 +54,7 @@ class TransactionState(
   def confirmed(recordMetadata: RecordMetadata): Unit = synchronized {
     pendingEvents -= 1
 
-    val tp = (recordMetadata.topic(), recordMetadata.partition())
+    val tp = recordMetadata.partition()
 
     //Only update the offset if the new offset is new or higher
     offsetMap.get(tp) match {
@@ -86,7 +87,7 @@ class TransactionState(
     * @return
     */
   def displayOffsets(): String =
-    offsetMap.map(tpo => s"(${tpo._1._1}_${tpo._1._2} -> ${tpo._2})").mkString("\r\n")
+    offsetMap.map(tpo => s"(${tpo._1} -> ${tpo._2})").mkString("\r\n")
 
 }
 
@@ -102,8 +103,7 @@ object transactionStateSerializer extends TypeSerializerSingleton[TransactionSta
     target.writeBoolean(record.awaitingCommit)
     target.writeInt(record.offsetMap.size)
     record.offsetMap.foreach((tpo) => {
-      target.writeUTF(tpo._1._1)
-      target.writeInt(tpo._1._2)
+      target.writeInt(tpo._1)
       target.writeLong(tpo._2)
     })
 
@@ -120,7 +120,7 @@ object transactionStateSerializer extends TypeSerializerSingleton[TransactionSta
     reuse.checkPointId = from.checkPointId
     reuse.pendingEvents = from.pendingEvents
     reuse.awaitingCommit = from.awaitingCommit
-    reuse.offsetMap = from.offsetMap.clone().asInstanceOf[mutable.Map[(String, Int), Long]]
+    reuse.offsetMap = from.offsetMap.clone().asInstanceOf[mutable.Map[Int, Long]]
     reuse
   }
 
@@ -160,10 +160,9 @@ object transactionStateSerializer extends TypeSerializerSingleton[TransactionSta
     val size = source.readInt()
 
     reuse.offsetMap = mutable.Map() ++ (1 to size).map(_ => {
-      val t = source.readUTF()
       val p = source.readInt()
       val o = source.readLong()
-      (t, p) -> o
+      p -> o
     })
     reuse
   }
