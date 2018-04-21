@@ -202,8 +202,7 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
       s"${getLabel()} committing transaction ${transaction.checkPointId}.\r\n${transaction.displayOffsets()}")
     producerPool(transaction.producerIndex).commitTransaction()
     val epochState = EpochState(transaction, subjectNode.getEpochs())
-    Await.ready(epochStateManager.commit(epochState),
-                Duration(5, SECONDS))
+    Await.ready(epochStateManager.commit(epochState), Duration(5, SECONDS))
     getUserContext.get().availableProducers(transaction.producerIndex) = true
   }
 
@@ -219,8 +218,7 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
       //Perform precommit on the epochState
       Await.ready(transaction.awaitCommit(), Duration(5, SECONDS))
       val epochState = EpochState(transaction, subjectNode.getEpochs())
-      Await.ready(epochStateManager.preCommit(epochState),
-                  Duration(5, SECONDS))
+      Await.ready(epochStateManager.preCommit(epochState), Duration(5, SECONDS))
     }
   }
 

@@ -21,8 +21,16 @@ package org.codefeedr.core.library
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.codefeedr.core.engine.query.StreamComposerFactoryComponent
-import org.codefeedr.core.library.internal.kafka.sink.{EpochStateManager, EpochStateManagerComponent, KafkaProducerFactory, KafkaProducerFactoryComponent}
-import org.codefeedr.core.library.internal.kafka.source.{KafkaConsumerFactory, KafkaConsumerFactoryComponent}
+import org.codefeedr.core.library.internal.kafka.sink.{
+  EpochStateManager,
+  EpochStateManagerComponent,
+  KafkaProducerFactory,
+  KafkaProducerFactoryComponent
+}
+import org.codefeedr.core.library.internal.kafka.source.{
+  KafkaConsumerFactory,
+  KafkaConsumerFactoryComponent
+}
 import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkClientComponent}
 import org.codefeedr.core.library.metastore.{SubjectLibrary, SubjectLibraryComponent}
 
@@ -35,8 +43,7 @@ object LibraryServices
     with KafkaProducerFactoryComponent
     with SubjectFactoryComponent
     with StreamComposerFactoryComponent
-    with EpochStateManagerComponent
-{
+    with EpochStateManagerComponent {
   lazy override val zkClient = new ZkClient()
   lazy override val subjectLibrary = new SubjectLibrary()
   lazy override val conf: Config = ConfigFactory.load

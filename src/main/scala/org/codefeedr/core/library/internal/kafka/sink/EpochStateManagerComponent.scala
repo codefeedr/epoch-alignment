@@ -10,7 +10,6 @@ trait EpochStateManagerComponent {
 
   val epochStateManager: EpochStateManager
 
-
 }
 
 /**

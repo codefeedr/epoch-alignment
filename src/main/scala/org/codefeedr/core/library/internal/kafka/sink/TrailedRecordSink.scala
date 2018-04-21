@@ -9,7 +9,7 @@ class TrailedRecordSink(subjectNode: SubjectNode,
                         kafkaProducerFactory: KafkaProducerFactory,
                         epochStateManager: EpochStateManager,
                         override val sinkUuid: String)
-    extends KafkaSink[TrailedRecord](subjectNode, kafkaProducerFactory,epochStateManager) {
+    extends KafkaSink[TrailedRecord](subjectNode, kafkaProducerFactory, epochStateManager) {
 
   override def transform(value: TrailedRecord): (RecordSourceTrail, Row) = (value.trail, value.row)
 }

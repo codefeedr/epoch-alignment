@@ -36,7 +36,7 @@ class KafkaGenericSink[TData: ru.TypeTag: ClassTag](val subjectNode: SubjectNode
                                                     epochStateManager: EpochStateManager,
                                                     override val sinkUuid: String
                                                     // val transformer: TData => TrailedRecord
-) extends KafkaSink[TData](subjectNode, kafkaProducerFactory,epochStateManager) {
+) extends KafkaSink[TData](subjectNode, kafkaProducerFactory, epochStateManager) {
 
   @transient private lazy val transformer: TData => TrailedRecord =
     LibraryServices.subjectFactory.getTransformer[TData](subjectType)

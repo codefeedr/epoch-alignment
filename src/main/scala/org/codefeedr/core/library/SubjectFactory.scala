@@ -25,7 +25,10 @@ import org.apache.flink.streaming.api.functions.sink.{RichSinkFunction, SinkFunc
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.types.Row
 import org.codefeedr.core.library.internal.kafka.sink._
-import org.codefeedr.core.library.internal.kafka.source.{KafkaConsumerFactoryComponent, KafkaRowSource}
+import org.codefeedr.core.library.internal.kafka.source.{
+  KafkaConsumerFactoryComponent,
+  KafkaRowSource
+}
 import org.codefeedr.core.library.internal.kafka._
 import org.codefeedr.core.library.internal.{KeyFactory, RecordTransformer, SubjectTypeFactory}
 import org.codefeedr.core.library.metastore.{SubjectLibraryComponent, SubjectNode}
@@ -64,7 +67,7 @@ trait SubjectFactoryComponent {
                 _ =>
                   new KafkaGenericSink(subjectNode,
                                        kafkaProducerFactory,
-                                        epochStateManager,
+                                       epochStateManager,
                                        sinkId
                                        //subjectFactory.getTransformer[TData](subjectType)
                 )))
@@ -89,7 +92,7 @@ trait SubjectFactoryComponent {
       */
     def getRowSink(subjectType: SubjectType, sinkId: String) = {
       val subjectNode = subjectLibrary.getSubject(subjectType.name)
-      new RowSink(subjectNode, kafkaProducerFactory, epochStateManager,sinkId)
+      new RowSink(subjectNode, kafkaProducerFactory, epochStateManager, sinkId)
     }
 
     /**
