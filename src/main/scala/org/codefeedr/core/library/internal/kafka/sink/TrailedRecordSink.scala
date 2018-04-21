@@ -7,8 +7,9 @@ import org.codefeedr.model.{RecordSourceTrail, SubjectType, TrailedRecord}
 
 class TrailedRecordSink(subjectNode: SubjectNode,
                         kafkaProducerFactory: KafkaProducerFactory,
+                        epochStateManager: EpochStateManager,
                         override val sinkUuid: String)
-    extends KafkaSink[TrailedRecord](subjectNode, kafkaProducerFactory) {
+    extends KafkaSink[TrailedRecord](subjectNode, kafkaProducerFactory,epochStateManager) {
 
   override def transform(value: TrailedRecord): (RecordSourceTrail, Row) = (value.trail, value.row)
 }

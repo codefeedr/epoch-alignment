@@ -58,7 +58,8 @@ import scala.util.{Failure, Success}
   * Created by Niels on 11/07/2017.
   */
 abstract class KafkaSink[TSink](subjectNode: SubjectNode,
-                                kafkaProducerFactory: KafkaProducerFactory)
+                                kafkaProducerFactory: KafkaProducerFactory,
+                                epochStateManager: EpochStateManager)
     extends TwoPhaseCommitSinkFunction[TSink, TransactionState, TransactionContext](
       transactionStateSerializer,
       transactionContextSerializer)
@@ -200,7 +201,8 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
     logger.debug(
       s"${getLabel()} committing transaction ${transaction.checkPointId}.\r\n${transaction.displayOffsets()}")
     producerPool(transaction.producerIndex).commitTransaction()
-    Await.ready(new EpochState(transaction, subjectNode.getEpochs()).commit(),
+    val epochState = EpochState(transaction, subjectNode.getEpochs())
+    Await.ready(epochStateManager.commit(epochState),
                 Duration(5, SECONDS))
     getUserContext.get().availableProducers(transaction.producerIndex) = true
   }
@@ -216,7 +218,8 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
       logger.debug(s"${getLabel()} flushed and is awaiting events to commit")
       //Perform precommit on the epochState
       Await.ready(transaction.awaitCommit(), Duration(5, SECONDS))
-      Await.ready(new EpochState(transaction, subjectNode.getEpochs()).preCommit(),
+      val epochState = EpochState(transaction, subjectNode.getEpochs())
+      Await.ready(epochStateManager.preCommit(epochState),
                   Duration(5, SECONDS))
     }
   }

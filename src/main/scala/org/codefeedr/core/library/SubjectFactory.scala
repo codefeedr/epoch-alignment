@@ -24,16 +24,8 @@ import java.util.UUID
 import org.apache.flink.streaming.api.functions.sink.{RichSinkFunction, SinkFunction}
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.types.Row
-import org.codefeedr.core.library.internal.kafka.sink.{
-  KafkaGenericSink,
-  KafkaProducerFactoryComponent,
-  RowSink,
-  TrailedRecordSink
-}
-import org.codefeedr.core.library.internal.kafka.source.{
-  KafkaConsumerFactoryComponent,
-  KafkaRowSource
-}
+import org.codefeedr.core.library.internal.kafka.sink._
+import org.codefeedr.core.library.internal.kafka.source.{KafkaConsumerFactoryComponent, KafkaRowSource}
 import org.codefeedr.core.library.internal.kafka._
 import org.codefeedr.core.library.internal.{KeyFactory, RecordTransformer, SubjectTypeFactory}
 import org.codefeedr.core.library.metastore.{SubjectLibraryComponent, SubjectNode}
@@ -48,7 +40,8 @@ trait SubjectFactoryComponent {
   this: SubjectLibraryComponent
     with ConfigFactoryComponent
     with KafkaProducerFactoryComponent
-    with KafkaConsumerFactoryComponent =>
+    with KafkaConsumerFactoryComponent
+    with EpochStateManagerComponent =>
   val subjectFactory: SubjectFactoryController
 
   /**
@@ -71,6 +64,7 @@ trait SubjectFactoryComponent {
                 _ =>
                   new KafkaGenericSink(subjectNode,
                                        kafkaProducerFactory,
+                                        epochStateManager,
                                        sinkId
                                        //subjectFactory.getTransformer[TData](subjectType)
                 )))
@@ -84,7 +78,7 @@ trait SubjectFactoryComponent {
       */
     def getSink(subjectType: SubjectType, sinkId: String): SinkFunction[TrailedRecord] = {
       val subjectNode = subjectLibrary.getSubject(subjectType.name)
-      new TrailedRecordSink(subjectNode, kafkaProducerFactory, sinkId)
+      new TrailedRecordSink(subjectNode, kafkaProducerFactory, epochStateManager, sinkId)
     }
 
     /**
@@ -95,7 +89,7 @@ trait SubjectFactoryComponent {
       */
     def getRowSink(subjectType: SubjectType, sinkId: String) = {
       val subjectNode = subjectLibrary.getSubject(subjectType.name)
-      new RowSink(subjectNode, kafkaProducerFactory, sinkId)
+      new RowSink(subjectNode, kafkaProducerFactory, epochStateManager,sinkId)
     }
 
     /**

@@ -50,6 +50,8 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
   private var operatorStore: OperatorStateStore = _
   private var listState:ListState[(Int, Long)] = _
 
+  private var epochStateManager:EpochStateManager = _
+
   private var context : SinkFunction.Context[_] = _
 
 
@@ -183,21 +185,113 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     assert(transaction1.offsetMap(2) == 1337)
   }
 
-  "KafkaSink.PreCommit()" should "Create the transaction with corresponding offsets in zookeeper" in async {
+  "KafkaSink.PreCommit()" should "call preCommit on the epochStateManager" in async {
+    //Arrange
+    val sink = getTestSink()
+    val o = new SampleObject()
+    val transaction1 = sink.currentTransaction()
+    val producer1 = sink.producerPool(transaction1.producerIndex)
+    var cb: Callback = null
 
-    assert(false)
+    val mockedMetadata = new RecordMetadata(new TopicPartition("",2),0L,1337L,0L,0L,0,0)
+    when(producer1.send(ArgumentMatchers.any(),ArgumentMatchers.any())) thenAnswer answer[java.util.concurrent.Future[RecordMetadata]](r => {
+      cb = r.getArgument[Callback](1)
+      null
+    })
+
+
+    //Act
+    sink.invoke(transaction1,o,context)
+    cb.onCompletion(mockedMetadata,null)
+    sink.preCommit(transaction1)
+
+
+    //Assert
+    verify(epochStateManager, times(1)).preCommit(ArgumentMatchers.any())
+    verify(epochStateManager, times(0)).commit(ArgumentMatchers.any())
+    assert(true)
+
   }
 
   it should "Flush the transaction to kafka" in async {
-    assert(false)
+    //Arrange
+    val sink = getTestSink()
+    val o = new SampleObject()
+    val transaction1 = sink.currentTransaction()
+    val producer1 = sink.producerPool(transaction1.producerIndex)
+    var cb: Callback = null
+
+    val mockedMetadata = new RecordMetadata(new TopicPartition("",2),0L,1337L,0L,0L,0,0)
+    when(producer1.send(ArgumentMatchers.any(),ArgumentMatchers.any())) thenAnswer answer[java.util.concurrent.Future[RecordMetadata]](r => {
+      cb = r.getArgument[Callback](1)
+      null
+    })
+
+
+
+    //Act
+    sink.invoke(transaction1,o,context)
+    cb.onCompletion(mockedMetadata,null)
+    sink.preCommit(transaction1)
+
+    //Assert
+    verify(producer1, times(1)).flush()
+    verify(producer1, times(0)).commitTransaction()
+    assert(true)
   }
 
   "KafkaSink.Commit()" should "Flag the created transaction in zookeeper as committed" in async {
-    assert(false)
+    //Arrange
+    val sink = getTestSink()
+    val o = new SampleObject()
+    val transaction1 = sink.currentTransaction()
+    val producer1 = sink.producerPool(transaction1.producerIndex)
+    var cb: Callback = null
+
+    val mockedMetadata = new RecordMetadata(new TopicPartition("",2),0L,1337L,0L,0L,0,0)
+    when(producer1.send(ArgumentMatchers.any(),ArgumentMatchers.any())) thenAnswer answer[java.util.concurrent.Future[RecordMetadata]](r => {
+      cb = r.getArgument[Callback](1)
+      null
+    })
+
+
+    //Act
+    sink.invoke(transaction1,o,context)
+    cb.onCompletion(mockedMetadata,null)
+    sink.preCommit(transaction1)
+    sink.commit(transaction1)
+
+    //Assert
+    verify(producer1, times(1)).flush()
+    verify(producer1, times(1)).commitTransaction()
+    assert(true)
   }
 
   it should "Commit the transaction to kafka" in async {
-    assert(false)
+    //Arrange
+    val sink = getTestSink()
+    val o = new SampleObject()
+    val transaction1 = sink.currentTransaction()
+    val producer1 = sink.producerPool(transaction1.producerIndex)
+    var cb: Callback = null
+
+    val mockedMetadata = new RecordMetadata(new TopicPartition("",2),0L,1337L,0L,0L,0,0)
+    when(producer1.send(ArgumentMatchers.any(),ArgumentMatchers.any())) thenAnswer answer[java.util.concurrent.Future[RecordMetadata]](r => {
+      cb = r.getArgument[Callback](1)
+      null
+    })
+
+
+    //Act
+    sink.invoke(transaction1,o,context)
+    cb.onCompletion(mockedMetadata,null)
+    sink.preCommit(transaction1)
+    sink.commit(transaction1)
+
+    //Assert
+    verify(epochStateManager, times(1)).preCommit(ArgumentMatchers.any())
+    verify(epochStateManager, times(1)).commit(ArgumentMatchers.any())
+    assert(true)
   }
 
   /**
@@ -205,7 +299,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     * @return
     */
   private def getTestSink(): TestKafkaSink = {
-    val sink = new TestKafkaSink(subjectNode,producerFactory)
+    val sink = new TestKafkaSink(subjectNode,producerFactory,epochStateManager)
     sink.setRuntimeContext(runtimeContext)
     sink.initializeState(initCtx)
     sink
@@ -231,6 +325,8 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     listState = mock[ListState[(Int, Long)]]
 
     context = mock[SinkFunction.Context[_]]
+
+    epochStateManager = mock[EpochStateManager]
 
     p0 = mock[KafkaProducer[RecordSourceTrail, Row]]
     p1 = mock[KafkaProducer[RecordSourceTrail, Row]]
@@ -262,6 +358,9 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("3"))(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p2
     when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("4"))(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p3
     when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("5"))(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p4
+
+    when(epochStateManager.commit(ArgumentMatchers.any())) thenReturn Future.successful()
+    when(epochStateManager.preCommit(ArgumentMatchers.any())) thenReturn Future.successful()
   }
 
 }
@@ -271,7 +370,7 @@ class SampleObject {
 
 }
 
-class TestKafkaSink(node:SubjectNode, kafkaProducerFactory: KafkaProducerFactory) extends KafkaSink[SampleObject](node,kafkaProducerFactory)  {
+class TestKafkaSink(node:SubjectNode, kafkaProducerFactory: KafkaProducerFactory,epochStateManager:EpochStateManager) extends KafkaSink[SampleObject](node,kafkaProducerFactory,epochStateManager)  {
 
   override protected val sinkUuid: String = "testsink"
 

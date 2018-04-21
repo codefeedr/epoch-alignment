@@ -15,11 +15,12 @@ import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach}
 import scala.collection.mutable
 import scala.concurrent.Future
 
-class EpochStateSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfterEach with MockitoExtensions{
+class EpochStateManagerSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfterEach with MockitoExtensions{
 
   var epochCollectionNode : EpochCollectionNode = _
   var epochNode : EpochNode = _
   var epochPartitions : EpochPartitionCollection = _
+  var epochStateManager: EpochStateManager = new EpochStateManager()
 
   override def beforeEach(): Unit = {
     epochCollectionNode = mock[EpochCollectionNode]
@@ -42,11 +43,11 @@ class EpochStateSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     when(p1.create(Partition(1,10l))) thenReturn Future.successful(Partition(1,10l))
     when(p2.create(Partition(2,12l))) thenReturn Future.successful(Partition(2,12l))
 
-    val EpochState = new EpochState(transactionState,epochCollectionNode)
+    val epochState = new EpochState(transactionState,epochCollectionNode)
 
 
     //Act
-    await(EpochState.preCommit())
+    await(epochStateManager.preCommit(epochState))
 
 
     //Assert
@@ -79,11 +80,11 @@ class EpochStateSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     when(p1.create(Partition(1,10l))) thenReturn Future.successful(Partition(1,10l))
     when(p2.create(Partition(2,12l))) thenReturn Future.successful(Partition(2,12l))
 
-    val EpochState = new EpochState(transactionState,epochCollectionNode)
+    val epochState = new EpochState(transactionState,epochCollectionNode)
 
 
     //Act
-    await(EpochState.preCommit())
+    await(epochStateManager.preCommit(epochState))
 
     //Assert
     verify(p1).create(Partition(1,10l))
@@ -111,11 +112,11 @@ class EpochStateSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     when(p1.setState(true)) thenReturn Future.successful()
     when(p2.setState(true)) thenReturn Future.successful()
 
-    val EpochState = new EpochState(transactionState,epochCollectionNode)
+    val epochState = new EpochState(transactionState,epochCollectionNode)
 
     //Act
-    await(EpochState.preCommit())
-    await(EpochState.commit())
+    await(epochStateManager.preCommit(epochState))
+    await(epochStateManager.commit(epochState))
 
     //Assert
     verify(p1, times(1)).setState(true)

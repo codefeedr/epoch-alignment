@@ -33,9 +33,10 @@ import scala.reflect.runtime.{universe => ru}
   */
 class KafkaGenericSink[TData: ru.TypeTag: ClassTag](val subjectNode: SubjectNode,
                                                     kafkaProducerFactory: KafkaProducerFactory,
+                                                    epochStateManager: EpochStateManager,
                                                     override val sinkUuid: String
                                                     // val transformer: TData => TrailedRecord
-) extends KafkaSink[TData](subjectNode, kafkaProducerFactory) {
+) extends KafkaSink[TData](subjectNode, kafkaProducerFactory,epochStateManager) {
 
   @transient private lazy val transformer: TData => TrailedRecord =
     LibraryServices.subjectFactory.getTransformer[TData](subjectType)
