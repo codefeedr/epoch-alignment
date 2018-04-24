@@ -24,7 +24,6 @@ class EpochCollectionNode(parent: ZkNodeBase)
     if (epochs.nonEmpty) {
       logger.info(s"TODO: Implement epoch")
       epochs.map(o => o.getEpoch()).max
-      -1
     } else {
       -1
     }

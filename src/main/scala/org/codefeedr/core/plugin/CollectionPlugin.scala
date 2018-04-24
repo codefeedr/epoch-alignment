@@ -19,7 +19,10 @@
 
 package org.codefeedr.core.plugin
 
+import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.api.common.typeinfo.TypeInformation
+import org.apache.flink.streaming.api.scala._
+import org.apache.flink.streaming.api.datastream.DataStreamSource
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 
 import scala.reflect.ClassTag
@@ -41,6 +44,10 @@ class CollectionPlugin[TData: ru.TypeTag: ClassTag: TypeInformation](data: Array
     * @return The datastream itself
     */
   override def getStream(env: StreamExecutionEnvironment): DataStream[TData] = {
+    val typeInfo = createTypeInformation[TData]
+    val serializer = typeInfo.createSerializer(new ExecutionConfig())
+    val function = new WaitingFromElementsFunction[TData](serializer,data)
+    env.addSource(function)
     env.fromCollection[TData](data)
   }
 }

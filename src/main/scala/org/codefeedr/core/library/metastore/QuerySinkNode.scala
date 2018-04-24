@@ -21,6 +21,14 @@ class QuerySinkNode(name: String, parent: ZkNodeBase)
   override def typeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
   override def initialState(): Boolean = true
 
+  override def postCreate(): Future[Unit] =
+    for {
+      //Make sure to also create the epoch collection node when the sink node is constructed
+      f1 <- getEpochs().create()
+      f2 <- super.postCreate()
+    } yield (f1, f2)
+
+
   override def setState(state: Boolean): Future[Unit] = async {
     await(super.setState(state))
     //Call subjectNode to update, because the state of the sink might influence the subjects node
