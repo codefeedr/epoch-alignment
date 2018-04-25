@@ -97,6 +97,9 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
       .map(i => kafkaProducerFactory.create[RecordSourceTrail, Row](s"${instanceUuid}_$i"))
       .toList
 
+  /** The index of this parallel subtask */
+  @transient private lazy val parallelIndex = getRuntimeContext.getIndexOfThisSubtask
+
   /**
     * Transform the sink type into the type that is actually sent to kafka
     * @param value
@@ -123,6 +126,8 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
     if (opened) {
       throw new Exception(s"Open on sink called twice: ${getLabel()}")
     }
+
+    getRuntimeContext().getNumberOfParallelSubtasks
 
     if (!getRuntimeContext().asInstanceOf[StreamingRuntimeContext].isCheckpointingEnabled) {
       logger.warn(
@@ -165,7 +170,8 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
     logger.debug(
       s"${getLabel()} sending event on transaction ${transaction.checkPointId} producer ${transaction.producerIndex}")
     val event = transform(value)
-    val record = new ProducerRecord[RecordSourceTrail, Row](topic, event._1, event._2)
+    val record =
+      new ProducerRecord[RecordSourceTrail, Row](topic, parallelIndex, event._1, event._2)
 
     //Wrap the callback into a proper scala promise
     val p = Promise[RecordMetadata]
@@ -204,6 +210,8 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
     val epochState = EpochState(transaction, subjectNode.getEpochs())
     Await.ready(epochStateManager.commit(epochState), Duration(5, SECONDS))
     getUserContext.get().availableProducers(transaction.producerIndex) = true
+    logger.debug(
+      s"${getLabel()} done committing transaction ${transaction.checkPointId}.\r\n${transaction.displayOffsets()}")
   }
 
   /**
@@ -228,7 +236,14 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
     getUserContext.get().availableProducers(producerIndex) = false
     producerPool(producerIndex).beginTransaction()
     logger.debug(s"${getLabel()} started new transaction on producer ${producerIndex}")
-    new TransactionState(producerIndex)
+
+    val nt = new TransactionState(producerIndex)
+    val ct = currentTransaction()
+    //Update new transaction with the offsets of the previous transaction
+    if (ct != null) {
+      nt.offsetMap = ct.offsetMap.clone()
+    }
+    nt
   }
 
   override def abort(transaction: TransactionState): Unit = {

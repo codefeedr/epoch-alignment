@@ -46,8 +46,8 @@ class CollectionPlugin[TData: ru.TypeTag: ClassTag: TypeInformation](data: Array
   override def getStream(env: StreamExecutionEnvironment): DataStream[TData] = {
     val typeInfo = createTypeInformation[TData]
     val serializer = typeInfo.createSerializer(new ExecutionConfig())
-    val function = new WaitingFromElementsFunction[TData](serializer,data)
+    val function = new WaitingFromElementsFunction[TData](serializer, data)
     env.addSource(function)
-    env.fromCollection[TData](data)
+    //env.fromCollection[TData](data)
   }
 }

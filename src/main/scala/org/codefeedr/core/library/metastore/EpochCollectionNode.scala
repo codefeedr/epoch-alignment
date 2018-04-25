@@ -17,14 +17,26 @@ class EpochCollectionNode(parent: ZkNodeBase)
   /**
     * Retrieves the latest known completed checkpoint for this subject.
     * returns -1 if the subject has no checkpoints.
+    * If the subject is still active, this method might return different values upon each call
+    * TODO: This methods needs to be optimized to not retrieve the state of all epochs so far
     * @return
     */
   def getLatestEpochId(): Future[Int] = async {
     val epochs = await(getChildren())
-    if (epochs.nonEmpty) {
-      logger.info(s"TODO: Implement epoch")
-      epochs.map(o => o.getEpoch()).max
+    //TODO: Optimize this sorting and filtering with alot of futures
+    val sorted = epochs.toList.sortBy(o => o.getEpoch()).reverse
+    val filtered = await(Future.sequence(sorted.map(o =>
+      async {
+        o.getEpoch() -> await(o.getState()).get
+    }))).filter(o => o._2)
+    if (filtered.nonEmpty) {
+      val head = filtered.head._1
+      logger.info(s"Latest epoch was: $head")
+      head
     } else {
+      if (epochs.nonEmpty) {
+        logger.warn(s"Return -1 as latest epoch because none of the epochs known were completed")
+      }
       -1
     }
   }

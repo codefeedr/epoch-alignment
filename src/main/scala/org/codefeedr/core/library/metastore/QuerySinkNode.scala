@@ -28,11 +28,12 @@ class QuerySinkNode(name: String, parent: ZkNodeBase)
       f2 <- super.postCreate()
     } yield (f1, f2)
 
-
   override def setState(state: Boolean): Future[Unit] = async {
     await(super.setState(state))
     //Call subjectNode to update, because the state of the sink might influence the subjects node
-    await(parent.parent().asInstanceOf[SubjectNode].updateState())
+    if (state == false) {
+      await(parent.parent().asInstanceOf[SubjectNode].updateState())
+    }
   }
 
   /**
@@ -42,10 +43,15 @@ class QuerySinkNode(name: String, parent: ZkNodeBase)
     */
   def updateState(): Future[Unit] = async {
     val currentState = await(getState()).get
+    logger.debug(s"Updating sinkNode state of $name")
     //Only perform update if the source nod was not active.
     if (currentState) {
       val childState = await(getProducers().getState())
-      await(setState(childState))
+      logger.debug(s"Childstate of sinkNode $name is $childState")
+      if (currentState != childState) {
+        logger.debug(s"Updating state of sinkNode $name")
+        await(setState(childState))
+      }
     }
   }
 }

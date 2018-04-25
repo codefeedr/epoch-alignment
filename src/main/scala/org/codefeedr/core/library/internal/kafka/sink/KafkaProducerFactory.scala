@@ -49,8 +49,8 @@ class KafkaProducerFactory extends LazyLogging with Serializable {
     val producer = new KafkaProducer[TKey, TData](properties,
                                                   new KafkaSerialiser[TKey],
                                                   new KafkaSerialiser[TData])
+
     producer.initTransactions()
     producer
   }
-
 }

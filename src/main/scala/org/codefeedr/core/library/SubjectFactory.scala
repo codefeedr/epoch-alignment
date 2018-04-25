@@ -35,7 +35,9 @@ import org.codefeedr.core.library.metastore.{SubjectLibraryComponent, SubjectNod
 import org.codefeedr.model.{ActionType, SubjectType, TrailedRecord}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
+import scala.async.Async.{async, await}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
@@ -60,9 +62,7 @@ trait SubjectFactoryComponent {
         .getOrCreate(() => subjectType)
         .flatMap(
           o =>
-            KafkaController
-              .guaranteeTopic(s"${o.name}_${o.uuid}",
-                              conf.getInt("codefeedr.kafka.custom.partition.count"))
+            guaranteeTopic(o)
               .map(
                 _ =>
                   new KafkaGenericSink(subjectNode,
@@ -79,10 +79,12 @@ trait SubjectFactoryComponent {
       * @param subjectType
       * @return
       */
-    def getSink(subjectType: SubjectType, sinkId: String): SinkFunction[TrailedRecord] = {
-      val subjectNode = subjectLibrary.getSubject(subjectType.name)
-      new TrailedRecordSink(subjectNode, kafkaProducerFactory, epochStateManager, sinkId)
-    }
+    def getSink(subjectType: SubjectType, sinkId: String): Future[SinkFunction[TrailedRecord]] =
+      async {
+        val subjectNode = subjectLibrary.getSubject(subjectType.name)
+        await(guaranteeTopic(subjectType))
+        new TrailedRecordSink(subjectNode, kafkaProducerFactory, epochStateManager, sinkId)
+      }
 
     /**
       * Return a sink for the tableApi
@@ -92,6 +94,7 @@ trait SubjectFactoryComponent {
       */
     def getRowSink(subjectType: SubjectType, sinkId: String) = {
       val subjectNode = subjectLibrary.getSubject(subjectType.name)
+      guaranteeTopicBlocking(subjectType)
       new RowSink(subjectNode, kafkaProducerFactory, epochStateManager, sinkId)
     }
 
@@ -137,6 +140,22 @@ trait SubjectFactoryComponent {
       new KafkaTrailedRecordSource(subjectNode, kafkaConsumerFactory, sinkId)
     }
 
+    /***
+      * Guarantees a topic for the given subject is created on Kafka
+      */
+    private def guaranteeTopic(st: SubjectType): Future[Unit] = {
+      KafkaController
+        .guaranteeTopic(s"${st.name}_${st.uuid}",
+                        conf.getInt("codefeedr.kafka.custom.partition.count"))
+    }
+
+    /**
+      * Waits blocking for the kafkaTopic to be created
+      * @param st
+      */
+    private def guaranteeTopicBlocking(st: SubjectType): Unit = {
+      Await.ready(guaranteeTopic(st), Duration(5, SECONDS))
+    }
   }
 
 }

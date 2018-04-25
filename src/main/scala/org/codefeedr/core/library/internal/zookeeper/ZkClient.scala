@@ -69,6 +69,7 @@ class ZkClient extends LazyLogging {
     * @return a future that resolves when a connection has been made
     */
   private def connect(): Future[Unit] = {
+    logger.info(s"Connecting to zookeeper")
     //If zookeeper already assigned first close existing connection
     if (zk != null) {
       close()

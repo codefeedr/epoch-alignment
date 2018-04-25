@@ -30,7 +30,9 @@ class ZkWriteLock(path: String) extends BaseLock with LazyLogging {
     * If not, places a recursive watch until it is open again
     */
   private def checkIfLocked(): Unit = {
+    logger.debug(s"$label obtaining lock children")
     val children = connector.getChildren(lockCollectionNode, false).asScala
+    logger.debug(s"$label obtained lock children")
     val locks = children.filter(isLock)
     if (!locks.exists(getSequence(_) < sequence)) {
       logger.debug(s"$label obtained lock")

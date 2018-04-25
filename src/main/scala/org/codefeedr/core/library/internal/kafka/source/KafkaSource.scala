@@ -211,10 +211,10 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
         .result(subjectNode.getEpochs().getChild(s"$finalSourceEpoch").getPartitionData(),
                 Duration(1, SECONDS))
         .map(o => o.nr -> o.offset)
-          .map(o => {
-            logger.debug(s"Obtained final offsets from zookeeper: $o")
-            o
-          })
+        .map(o => {
+          logger.debug(s"Obtained final offsets from zookeeper: $o")
+          o
+        })
         .toMap
     }
   }

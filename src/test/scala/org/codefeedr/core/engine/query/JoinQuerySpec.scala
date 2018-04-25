@@ -19,25 +19,32 @@
 
 package org.codefeedr.core.engine.query
 
-import org.apache.flink.api.scala._
-import org.codefeedr.core.{FullIntegrationSpec, KafkaTest}
+import java.util.concurrent.Executors
+
+import com.typesafe.scalalogging.LazyLogging
+import org.apache.flink.streaming.api.CheckpointingMode
+import org.scalatest._
+import org.apache.flink.streaming.api.scala._
+import org.codefeedr.core.{FullIntegrationSpec, IntegrationTestLibraryServices, KafkaTest}
+import org.codefeedr.core.library.internal.zookeeper.ZkClient
+import org.codefeedr.model.TrailedRecord
 import org.scalatest.tagobjects.Slow
 
-
-case class TestJoinObject(id: Long, group: Long, message: String)
-
-case class TestJoinGroup(id: Long, name: String)
-
+import scala.collection.mutable
+import scala.concurrent.{TimeoutException, _}
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.async.Async.{async, await}
+import scala.util.{Failure, Success}
 
 
 /**
   * Integration test for a join
   * Created by Niels on 04/08/2017.
   */
-class JoinQuerySpec extends FullIntegrationSpec {
+class JoinQuerySpec extends FullIntegrationSpec with BeforeAndAfterEach {
 
-  "An InnerJoinQuery" should " produce a record for each join candidate" taggedAs (Slow, KafkaTest) in {
+  "InnerJoinQuery" should "produce a record for each join candidate" taggedAs(Slow, KafkaTest) in async {
       val objects = Array(
         TestJoinObject(1, 1, "Message 1"),
         TestJoinObject(2, 1, "Message 2"),
@@ -53,7 +60,7 @@ class JoinQuerySpec extends FullIntegrationSpec {
         Array("name"),
         "groupedMessage")
 
-    async {
+
       val objectType = await(runSourceEnvironment(objects))
       val groupType = await(runSourceEnvironment(groups))
       //Validate that the data is actually sent
@@ -63,11 +70,12 @@ class JoinQuerySpec extends FullIntegrationSpec {
       val resultType = await(runQueryEnvironment(query))
       val result = await(awaitAllData(resultType))
       assert(result.size == 3)
-    }
+
   }
 
 
-  it should " produce no records if no join candidates are found" taggedAs (Slow, KafkaTest) in {
+
+  it should "produce no records if no join candidates are found" taggedAs(Slow, KafkaTest) in async {
     val objects = Array(
       TestJoinObject(1, 1, "Message 1"),
       TestJoinObject(2, 1, "Message 2"),
@@ -77,28 +85,27 @@ class JoinQuerySpec extends FullIntegrationSpec {
     val groups = Array(TestJoinGroup(2, "Group 2"), TestJoinGroup(3, "Group 3"))
 
     val query = Join(SubjectSource("TestJoinObject"),
-                     SubjectSource("TestJoinGroup"),
-                     Array("group"),
-                     Array("id"),
-                     Array("id", "message"),
-                     Array("name"),
-                     "groupedMessage")
+      SubjectSource("TestJoinGroup"),
+      Array("group"),
+      Array("id"),
+      Array("id", "message"),
+      Array("name"),
+      "groupedMessage")
 
-    async {
-      //Add sources and wait for them to finish
-      val objectType = await(runSourceEnvironment(objects))
-      val groupType = await(runSourceEnvironment(groups))
-      //Validate that the data is actually sent
-      assert(await(awaitAllData(objectType)).size == 3)
-      assert(await(awaitAllData(groupType)).size == 2)
-      //Perform the query and assert
-      val resultType = await(runQueryEnvironment(query))
-      val result = await(awaitAllData(resultType))
-      assert(result.isEmpty)
-    }
+    //Add sources and wait for them to finish
+    val objectType = await(runSourceEnvironment(objects))
+    val groupType = await(runSourceEnvironment(groups))
+    //Validate that the data is actually sent
+    assert(await(awaitAllData(objectType)).size == 3)
+    assert(await(awaitAllData(groupType)).size == 2)
+    //Perform the query and assert
+    val resultType = await(runQueryEnvironment(query))
+    val result = await(awaitAllData(resultType))
+    assert(result.isEmpty)
+
   }
 
-  it should " Only produce events for new combinations" taggedAs (Slow, KafkaTest) in async {
+  it should "Only produce events for new combinations" taggedAs(Slow, KafkaTest) in async {
     //Create a set of objects
     val objects = Array(
       TestJoinObject(1, 1, "Message 1"),
@@ -108,31 +115,39 @@ class JoinQuerySpec extends FullIntegrationSpec {
 
     //Create a set of groups to join with
     val groups = Array(TestJoinGroup(1, "Group 1"),
-                       TestJoinGroup(1, "Group 1 duplicate 1"),
-                       TestJoinGroup(1, "Group 1 duplicate 2"))
+      TestJoinGroup(1, "Group 1 duplicate 1"),
+      TestJoinGroup(1, "Group 1 duplicate 2"))
 
     //Create the query
     val query = Join(SubjectSource("TestJoinObject"),
-                     SubjectSource("TestJoinGroup"),
-                     Array("group"),
-                     Array("id"),
-                     Array("id", "message"),
-                     Array("name"),
-                     "groupedMessage")
+      SubjectSource("TestJoinGroup"),
+      Array("group"),
+      Array("id"),
+      Array("id", "message"),
+      Array("name"),
+      "groupedMessage")
 
-      //Run all environments
+    //Run all environments
 
-      //Add sources and wait for them to finish
-      val objectType = await(runSourceEnvironment(objects))
-      val groupType = await(runSourceEnvironment(groups))
+    //Add sources and wait for them to finish
+    val objectType = await(runSourceEnvironment(objects))
+    val groupType = await(runSourceEnvironment(groups))
 
-      //Validate that the data is actually sent
-      assert(await(awaitAllData(objectType)).size == 3)
-      assert(await(awaitAllData(groupType)).size == 3)
-      //Perform the query and assert
-      val queryResultType = await(runQueryEnvironment(query))
-      val result = await(awaitAllData(queryResultType))
-      assert(result.size == 9)
+    //Validate that the data is actually sent
+    assert(await(awaitAllData(objectType)).size == 3)
+    assert(await(awaitAllData(groupType)).size == 3)
+    //Perform the query and assert
+    val queryResultType = await(runQueryEnvironment(query))
+    val result = await(awaitAllData(queryResultType))
+    assert(result.size == 9)
 
   }
+
 }
+
+
+case class TestJoinObject(id: Long, group: Long, message: String)
+
+case class TestJoinGroup(id: Long, name: String)
+
+

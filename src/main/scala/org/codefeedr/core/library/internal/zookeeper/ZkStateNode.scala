@@ -46,14 +46,23 @@ trait ZkStateNode[TNode, TState] extends ZkNode[TNode] {
     * Retrieves the state
     * @return
     */
-  def getState(): Future[Option[TState]] = getChild[TState]("state")(typeT()).getData()
+  def getState(): Future[Option[TState]] = {
+    asyncReadLock(() => {
+      getChild[TState]("state")(typeT()).getData()
+    })
+  }
 
   /**
     * Close the current subject
     * TODO: Implement hooks
     * @return
     */
-  def setState(state: TState): Future[Unit] = getChild[TState]("state")(typeT()).setData(state)
+  def setState(state: TState): Future[Unit] = {
+    asyncWriteLock(() => {
+      getChild[TState]("state")(typeT()).setData(state)
+    })
+
+  }
 
   /**
     * Places a watch on the state that returns when the given condition evaluates to true

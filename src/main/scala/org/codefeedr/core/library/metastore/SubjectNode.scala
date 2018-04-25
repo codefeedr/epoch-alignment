@@ -142,24 +142,27 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
     * Reads the sinks. If all sinks are closed the subject will also be closed
     * @return
     */
-  def updateState(): Future[Unit] =
-    this.asyncWriteLock(() =>
-      async {
-        val shouldClose = await(for {
-          isOpen <- getState().map(o => o.get)
-          persistent <- getData().map(o => o.get.persistent)
-          hasSinks <- getSinks().getState()
-        } yield (persistent, hasSinks, isOpen))
+  def updateState(): Future[Unit] = async {
+    logger.debug(s"Updating subject state of $name")
 
-        if (!shouldClose._1 && !shouldClose._2 && shouldClose._3) {
-          logger.info(
-            s"Closing subject $name because no more sinks are active and subject is not persistent.")
-          await(setState(false))
-        } else {
-          logger.debug(
-            s"Not closing subject $name. persistent: ${shouldClose._1},  hasSinks: ${shouldClose._2},  isOpen: ${shouldClose._3}")
-        }
-    })
+    val shouldClose = await(for {
+      isOpen <- getState().map(o => o.get)
+      persistent <- getData().map(o => o.get.persistent)
+      hasSinks <- getSinks().getState()
+    } yield (persistent, hasSinks, isOpen))
+
+    if (!shouldClose._1 && !shouldClose._2 && shouldClose._3) {
+      logger.info(
+        s"Closing subject $name because no more sinks are active and subject is not persistent.")
+      await(setState(false))
+    } else {
+      logger.debug(
+        s"Not closing subject $name. persistent: ${shouldClose._1},  hasSinks: ${shouldClose._2},  isOpen: ${shouldClose._3}")
+    }
+
+    logger.debug(s"Updated subject state of $name")
+
+  }
 
   /**
     * Returns a future if the subject is still open

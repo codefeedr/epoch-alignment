@@ -1,17 +1,20 @@
 package org.codefeedr.core.library.metastore
 
-import org.codefeedr.core.library.internal.zookeeper.{ZkNode, ZkNodeBase}
+import org.codefeedr.core.library.internal.zookeeper.{ZkNode, ZkNodeBase, ZkStateNode}
 import org.codefeedr.model.zookeeper.Partition
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.reflect.ClassTag
 
 /**
   * Node representing a single epoch under a source
   * @param epoch
   * @param parent
   */
-class EpochNode(epoch: Int, parent: ZkNodeBase) extends ZkNode[String](s"$epoch", parent) {
+class EpochNode(epoch: Int, parent: ZkNodeBase)
+    extends ZkNode[String](s"$epoch", parent)
+    with ZkStateNode[String, Boolean] {
 
   /**
     * Retrieves the partitions that belong to this epoch
@@ -35,4 +38,18 @@ class EpochNode(epoch: Int, parent: ZkNodeBase) extends ZkNode[String](s"$epoch"
   }
 
   def getEpoch(): Int = epoch
+
+  /**
+    * The base class needs to expose the typeTag, no typeTag constraints can be put on traits
+    *
+    * @return
+    */
+  override def typeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
+
+  /**
+    * The initial state of the node. State is not allowed to be empty
+    *
+    * @return
+    */
+  override def initialState(): Boolean = false
 }
