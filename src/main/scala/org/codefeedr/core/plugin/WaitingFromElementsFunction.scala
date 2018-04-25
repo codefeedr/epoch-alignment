@@ -89,10 +89,10 @@ object WaitingFromElementsFunction {
 }
 
 @SerialVersionUID(1L)
-class WaitingFromElementsFunction[T] @throws[IOException](
-    /** The (de)serializer to be used for the data elements. */
-    val serializer: TypeSerializer[T],
-    val elements: Iterable[T])
+class WaitingFromElementsFunction[T](
+                                     /** The (de)serializer to be used for the data elements. */
+                                     val serializer: TypeSerializer[T],
+                                     val elements: Iterable[T])
     extends RichSourceFunction[T]
     with CheckpointedFunction
     with LazyLogging
