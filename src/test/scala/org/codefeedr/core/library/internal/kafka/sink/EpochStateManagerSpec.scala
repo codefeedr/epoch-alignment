@@ -27,9 +27,13 @@ class EpochStateManagerSpec extends AsyncFlatSpec with MockitoSugar with BeforeA
     epochNode = mock[EpochNode]
     epochPartitions = mock[EpochPartitionCollection]
 
-    when(epochCollectionNode.getChild("10")) thenReturn epochNode
+    when(epochCollectionNode.getChild(10)) thenReturn epochNode
     when(epochNode.exists()) thenReturn Future(true)
     when(epochNode.getPartitions()) thenReturn epochPartitions
+    when(epochNode.getEpoch()) thenReturn(10)
+
+    when(epochNode.asyncWriteLock(ArgumentMatchers.any[() => Future[Unit]]()))
+      .thenAnswer(answer(a => a.getArgument[() => Future[Unit]](0)()))
   }
 
   "EpochState.PreCommit()" should "Create the partition nodes and dependencies in zookeeper" in async {
@@ -72,8 +76,6 @@ class EpochStateManagerSpec extends AsyncFlatSpec with MockitoSugar with BeforeA
     when(epochPartitions.getChild("1")) thenReturn p1
     when(epochPartitions.getChild("2")) thenReturn p2
 
-
-
     when(epochCollectionNode.asyncWriteLock(ArgumentMatchers.any[() => Future[Unit]]()))
       .thenAnswer(answer(a => a.getArgument[() => Future[Unit]](0)()))
 
@@ -111,8 +113,10 @@ class EpochStateManagerSpec extends AsyncFlatSpec with MockitoSugar with BeforeA
     when(p2.create(Partition(2,12l))) thenReturn Future.successful(Partition(2,12l))
     when(p1.setState(true)) thenReturn Future.successful()
     when(p2.setState(true)) thenReturn Future.successful()
+    when(epochNode.setState(true)) thenReturn(Future.successful())
 
     val epochState = new EpochState(transactionState,epochCollectionNode)
+    when(epochPartitions.getState()) thenReturn Future.successful(true)
 
     //Act
     await(epochStateManager.preCommit(epochState))

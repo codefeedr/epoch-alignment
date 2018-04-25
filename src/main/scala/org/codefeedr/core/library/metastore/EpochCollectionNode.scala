@@ -41,7 +41,7 @@ class EpochCollectionNode(parent: ZkNodeBase)
     }
   }
 
-  def getChild(epoch: Int): EpochNode = {
+  def getChild(epoch: Long): EpochNode = {
     super.getChild(s"$epoch")
   }
 }

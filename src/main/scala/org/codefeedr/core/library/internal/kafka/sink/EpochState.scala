@@ -7,9 +7,9 @@ import scala.async.Async.{async, await}
 
 import scala.concurrent.Future
 
-case class EpochState(transactionState: TransactionState, epochCollectionNode: EpochCollectionNode) {
+case class EpochState (transactionState: TransactionState, epochCollectionNode: EpochCollectionNode) {
 
   lazy val epochNode: EpochNode =
-    epochCollectionNode.getChild(transactionState.checkPointId.toString)
+    epochCollectionNode.getChild(transactionState.checkPointId)
 
 }
