@@ -9,7 +9,7 @@ import scala.collection.immutable
 import scala.concurrent.Future
 
 class SubjectCollectionNode(parent: ZkNodeBase)
-    extends ZkCollectionNode[SubjectNode]("Subjects",
+    extends ZkCollectionNode[SubjectNode, Unit]("Subjects",
                                           parent,
                                           (name, parent) => new SubjectNode(name, parent)) {
 

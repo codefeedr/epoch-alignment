@@ -11,10 +11,10 @@ import org.codefeedr.model.zookeeper.Producer
 import scala.concurrent.Future
 
 class ProducerCollection(subjectName: String, parent: ZkNodeBase)
-    extends ZkCollectionNode[ProducerNode]("producers",
+    extends ZkCollectionNode[ProducerNode,Unit]("producers",
                                            parent,
                                            (name, parent) => new ProducerNode(name, parent))
-    with ZkCollectionStateNode[ProducerNode, Producer, Boolean, Boolean] {
+    with ZkCollectionStateNode[ProducerNode, Unit,Producer, Boolean, Boolean] {
 
   override def initial(): Boolean = false
   override def mapChild(child: Boolean): Boolean = child

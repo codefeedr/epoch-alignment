@@ -3,6 +3,7 @@ package org.codefeedr.core.library.internal.kafka.sink
 import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.core.library.metastore.EpochNode
 import org.codefeedr.model.zookeeper.Partition
+import org.codefeedr.util.Stopwatch
 
 import scala.async.Async.{async, await}
 import scala.concurrent.Future
@@ -24,8 +25,8 @@ class EpochStateManager extends Serializable with LazyLogging {
     * Creates the relevant nodes in zookeeper
     */
   def preCommit(epochState: EpochState): Future[Unit] = async {
+    val sw = Stopwatch.start()
     val epochNode = await(guaranteeEpochNode(epochState))
-
     await(epochNode.asyncWriteLock(() =>
       async {
         //Create all partition offsets of the current transaction
@@ -57,6 +58,7 @@ class EpochStateManager extends Serializable with LazyLogging {
             })
           ))
     }))
+    logger.debug(s"Precommit completed in ${sw.elapsed()} of epoch ${epochState.transactionState.checkPointId}: ${epochState.transactionState.offsetMap}")
   }
 
   /**
@@ -64,6 +66,7 @@ class EpochStateManager extends Serializable with LazyLogging {
     * Flags the node as committed
     */
   def commit(epochState: EpochState): Future[Unit] = async {
+    val sw = Stopwatch.start()
     //Perform await to convert return type to unit
     await(
       Future.sequence(
@@ -79,6 +82,7 @@ class EpochStateManager extends Serializable with LazyLogging {
       await(epochState.epochNode.setState(true))
       logger.debug(s"Completed epoch ${epochState.epochNode.getEpoch()}")
     }
+    logger.debug(s"Commit completed in ${sw.elapsed()} of epoch ${epochState.transactionState.checkPointId}: ${epochState.transactionState.offsetMap}")
   }
 
   /**

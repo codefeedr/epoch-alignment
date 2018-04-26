@@ -13,8 +13,8 @@ import scala.concurrent.{Future, Promise}
   * Class managing scala collection state
   */
 trait ZkCollectionStateNode[
-    TChildNode <: ZkStateNode[TChild, TChildState], TChild, TChildState, TAggregateState]
-    extends ZkCollectionNode[TChildNode]
+    TChildNode <: ZkStateNode[TChild, TChildState], TData,TChild, TChildState, TAggregateState]
+    extends ZkCollectionNode[TChildNode,TData]
     with LazyLogging {
   def getChildren(): Future[Iterable[TChildNode]]
 

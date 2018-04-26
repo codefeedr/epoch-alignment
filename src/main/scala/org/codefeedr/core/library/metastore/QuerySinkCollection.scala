@@ -10,10 +10,10 @@ import org.codefeedr.model.zookeeper.QuerySink
 import scala.concurrent.Future
 
 class QuerySinkCollection(parent: ZkNodeBase)
-    extends ZkCollectionNode[QuerySinkNode]("sinks",
+    extends ZkCollectionNode[QuerySinkNode,Unit]("sinks",
                                             parent,
                                             (name, parent) => new QuerySinkNode(name, parent))
-    with ZkCollectionStateNode[QuerySinkNode, QuerySink, Boolean, Boolean] {
+    with ZkCollectionStateNode[QuerySinkNode,Unit, QuerySink, Boolean, Boolean] {
 
   override def initial(): Boolean = false
   override def mapChild(child: Boolean): Boolean = child

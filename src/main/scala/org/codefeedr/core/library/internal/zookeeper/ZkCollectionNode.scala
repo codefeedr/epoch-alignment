@@ -6,11 +6,12 @@ import rx.lang.scala.Observable
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.reflect.ClassTag
 
-class ZkCollectionNode[TNode <: ZkNodeBase](name: String,
-                                            val p: ZkNodeBase,
+class ZkCollectionNode[TNode <: ZkNodeBase,TData: ClassTag](name: String,
+                                            p: ZkNodeBase,
                                             childConstructor: (String, ZkNodeBase) => TNode)
-    extends ZkNodeBase(name)
+    extends ZkNode[TData](name,p)
     with LazyLogging {
 
   override def parent(): ZkNodeBase = p

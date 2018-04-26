@@ -170,8 +170,8 @@ class ZkCollectionStateNodeSpec  extends LibraryServiceSpec with Matchers with B
 
 
 class TestCollectionStateNode(name: String, parent: ZkNodeBase)
-  extends ZkCollectionNode[TestCollectionStateChildNode](name, parent, (n, p) => new TestCollectionStateChildNode(n,p))
-  with ZkCollectionStateNode[TestCollectionStateChildNode,String, String,String] {
+  extends ZkCollectionNode[TestCollectionStateChildNode,Unit](name, parent, (n, p) => new TestCollectionStateChildNode(n,p))
+  with ZkCollectionStateNode[TestCollectionStateChildNode,Unit,String, String,String] {
   /**
     * Initial value of the aggreagate state before the fold
     *

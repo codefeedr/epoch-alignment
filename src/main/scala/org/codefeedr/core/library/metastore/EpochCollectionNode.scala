@@ -1,6 +1,7 @@
 package org.codefeedr.core.library.metastore
 
-import org.codefeedr.core.library.internal.zookeeper.{ZkCollectionNode, ZkNodeBase}
+import org.codefeedr.core.library.internal.zookeeper.{ZkCollectionNode, ZkNode, ZkNodeBase}
+import org.codefeedr.model.zookeeper.EpochCollection
 
 import scala.async.Async.{async, await}
 import scala.concurrent.Future
@@ -12,7 +13,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * @param parent
   */
 class EpochCollectionNode(parent: ZkNodeBase)
-    extends ZkCollectionNode[EpochNode]("epochs", parent, (n, p) => new EpochNode(n.toInt, p)) {
+    extends ZkCollectionNode[EpochNode,EpochNode]("epochs", parent, (n, p) => new EpochNode(n.toInt, p)) {
 
   /**
     * Retrieves the latest known completed checkpoint for this subject.
