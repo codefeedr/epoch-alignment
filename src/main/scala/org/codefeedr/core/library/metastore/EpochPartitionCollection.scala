@@ -8,10 +8,10 @@ import org.codefeedr.core.library.internal.zookeeper.{
 import org.codefeedr.model.zookeeper.Partition
 
 class EpochPartitionCollection(parent: ZkNodeBase)
-    extends ZkCollectionNode[EpochPartition,Unit]("partitions",
-                                             parent,
-                                             (n, p) => new EpochPartition(n, p))
-    with ZkCollectionStateNode[EpochPartition,Unit, Partition, Boolean, Boolean] {
+    extends ZkCollectionNode[EpochPartition, Unit]("partitions",
+                                                   parent,
+                                                   (n, p) => new EpochPartition(n, p))
+    with ZkCollectionStateNode[EpochPartition, Unit, Partition, Boolean, Boolean] {
 
   /**
     * Initial value of the aggreagate state before the fold

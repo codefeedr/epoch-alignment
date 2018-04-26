@@ -9,10 +9,10 @@ import org.codefeedr.core.library.internal.zookeeper.{
 import org.codefeedr.model.zookeeper.Consumer
 
 class ConsumerCollection(subjectName: String, parent: ZkNodeBase)
-    extends ZkCollectionNode[ConsumerNode,Unit]("consumers",
-                                           parent,
-                                           (name, parent) => new ConsumerNode(name, parent))
-    with ZkCollectionStateNode[ConsumerNode,Unit, Consumer, Boolean, Boolean] {
+    extends ZkCollectionNode[ConsumerNode, Unit]("consumers",
+                                                 parent,
+                                                 (name, parent) => new ConsumerNode(name, parent))
+    with ZkCollectionStateNode[ConsumerNode, Unit, Consumer, Boolean, Boolean] {
 
   override def initial(): Boolean = false
   override def mapChild(child: Boolean): Boolean = child

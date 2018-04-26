@@ -8,7 +8,7 @@ class Stopwatch {
   /**
     * @return elapsed time since object creation
     */
-  def elapsed() :Duration = {
+  def elapsed(): Duration = {
     (System.nanoTime() - startedAtNanos).nanos
   }
 

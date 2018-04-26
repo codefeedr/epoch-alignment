@@ -111,7 +111,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
 
   //CheckpointId after which the source should start shutting down.
   @volatile private[kafka] var finalCheckpointId: Long = Long.MaxValue
-  @volatile private[kafka] var finalSourceEpoch: Int = -2
+  @volatile private[kafka] var finalSourceEpoch: Long = -2
   //TODO: Can we somehow perform this async?
   @transient private[kafka] lazy val finalSourceEpochOffsets = getEpochOffsets(finalSourceEpoch)
   @transient private[kafka] var checkpointingMode: Option[CheckpointingMode] = _
@@ -202,9 +202,11 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
     * Obtains offsets for the subscribed subject of the given epoch
     * If -1 is passed, obtains the current latest offsets
     */
-  private def getEpochOffsets(epoch: Int): Map[Int, Long] = {
+  private def getEpochOffsets(epoch: Long): Map[Int, Long] = {
     logger.debug(s"Obtaining offsets for epoch $epoch")
     if (epoch == -1) {
+      throw new Exception(
+        s"Attempting to obtain endoffsets for epoch -1 in ${getLabel()}. Did you run the job with checkpointing enabled?")
       consumer.getEndOffsets()
     } else {
       Await

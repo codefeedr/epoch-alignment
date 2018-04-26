@@ -223,7 +223,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     val finalEpochMock = mock[EpochNode]
 
     when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
-    when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(1337)
+    when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(1337L)
     when(epochCollectionNodeMock.getChild("1337")) thenReturn finalEpochMock
     when(finalEpochMock.getPartitionData()) thenReturn Future.successful(List(Partition(2,1338)))
 
@@ -242,7 +242,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     val finalEpochMock = mock[EpochNode]
 
     when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
-    when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(-1)
+    when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(-1L)
     when(consumer.getEndOffsets()) thenReturn Map(3 -> 1339L)
 
     //Act
@@ -267,7 +267,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
 
     when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
-    when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(-1)
+    when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(-1L)
     when(consumer.getEndOffsets()) thenReturn Map(3 -> 1339L)
 
     testKafkaSource.setRuntimeContext(runtimeContext)
@@ -305,7 +305,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     when(context.getCheckpointId) thenReturn 1
 
     when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
-    when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(-1)
+    when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(-1L)
     when(consumer.getEndOffsets()) thenReturn Map(3 -> 1339L)
 
     //Act

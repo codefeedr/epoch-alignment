@@ -6,6 +6,7 @@ import org.codefeedr.core.library.internal.SubjectTypeFactory
 import org.codefeedr.core.library.internal.zookeeper._
 import org.codefeedr.exceptions._
 import org.codefeedr.model.SubjectType
+import org.codefeedr.model.zookeeper.EpochCollection
 
 import scala.reflect.runtime.{universe => ru}
 import scala.async.Async.{async, await}
@@ -29,7 +30,8 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
   override def postCreate(): Future[Unit] = async {
     await(getSinks().create())
     await(getSources().create())
-    await(getEpochs().create())
+    //Create epochCollection with -1 as default latest epoch id
+    await(getEpochs().create(EpochCollection(-1)))
     await(super.postCreate())
   }
 

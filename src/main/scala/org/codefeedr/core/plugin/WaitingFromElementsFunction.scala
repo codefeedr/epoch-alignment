@@ -252,8 +252,9 @@ class WaitingFromElementsFunction[T](
     checkpointedState.add(numElementsEmitted)
     if (finalCheckpointId.isEmpty && numElementsEmitted == numElements) {
       logger.info(
-        s"From elements function setting final checkpoint id to ${context.getCheckpointId}")
-      finalCheckpointId = Some(context.getCheckpointId)
+        s"From elements function setting final checkpoint id to ${context.getCheckpointId + 1}")
+      //Set final checkpoint to 1 higher, because if we close directly the sink might actually be closed before the commit() gets called.
+      finalCheckpointId = Some(context.getCheckpointId + 1)
     }
   }
 

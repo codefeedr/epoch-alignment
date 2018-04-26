@@ -42,6 +42,7 @@ import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.library.metastore.{ProducerNode, QuerySinkNode, SubjectNode}
 import org.codefeedr.model.zookeeper.{Producer, QuerySink}
 import org.codefeedr.model.{RecordSourceTrail, _}
+import org.codefeedr.util.Stopwatch
 
 import scala.collection.mutable
 import scala.concurrent.duration._
@@ -204,14 +205,19 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
     * @param transaction
     */
   override def commit(transaction: TransactionState): Unit = {
+    val sw = Stopwatch.start()
     logger.debug(
-      s"${getLabel()} committing transaction ${transaction.checkPointId}.\r\n${transaction.displayOffsets()}")
+      s"${getLabel()} committing transaction ${transaction.checkPointId}.\r\n${transaction
+        .displayOffsets()}\r\n${getLabel()}")
     producerPool(transaction.producerIndex).commitTransaction()
     val epochState = EpochState(transaction, subjectNode.getEpochs())
     Await.ready(epochStateManager.commit(epochState), Duration(5, SECONDS))
     getUserContext.get().availableProducers(transaction.producerIndex) = true
     logger.debug(
       s"${getLabel()} done committing transaction ${transaction.checkPointId}.\r\n${transaction.displayOffsets()}")
+    logger.debug(
+      s"Commit completed in ${sw.elapsed().toMillis} transaction ${transaction.checkPointId}.\r\n${transaction
+        .displayOffsets()}\r\n${getLabel()}")
   }
 
   /**
@@ -220,14 +226,22 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
     * @param transaction
     */
   override def preCommit(transaction: TransactionState): Unit = {
+    val sw = Stopwatch.start()
+    logger.debug(
+      s"${getLabel()} Precomitting transaction ${transaction.checkPointId}.\r\n${transaction
+        .displayOffsets()}\r\n${getLabel()}")
     blocking {
       producerPool(transaction.producerIndex).flush()
-      logger.debug(s"${getLabel()} flushed and is awaiting events to commit")
+      logger.debug(
+        s"flushed and is awaiting events to commit in ${sw.elapsed().toMillis}\r\n${getLabel()}")
       //Perform precommit on the epochState
       Await.ready(transaction.awaitCommit(), Duration(5, SECONDS))
       val epochState = EpochState(transaction, subjectNode.getEpochs())
       Await.ready(epochStateManager.preCommit(epochState), Duration(5, SECONDS))
     }
+    logger.debug(
+      s"Precommit completed in ${sw.elapsed().toMillis} transaction ${transaction.checkPointId}.\r\n${transaction
+        .displayOffsets()}\r\n${getLabel()}")
   }
 
   override def beginTransaction(): TransactionState = {

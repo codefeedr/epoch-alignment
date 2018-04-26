@@ -7,8 +7,8 @@ import org.codefeedr.core.library.internal.zookeeper.{
 }
 
 class ConsumerPartitionCollection(parent: ZkNodeBase)
-    extends ZkCollectionNode[ConsumerPartitionNode,Unit]("partitions",
-                                                    parent,
-                                                    (n, p) => new ConsumerPartitionNode(n, p)) {
-  this: ZkClientComponent =>
+    extends ZkCollectionNode[ConsumerPartitionNode, Unit](
+      "partitions",
+      parent,
+      (n, p) => new ConsumerPartitionNode(n, p)) { this: ZkClientComponent =>
 }

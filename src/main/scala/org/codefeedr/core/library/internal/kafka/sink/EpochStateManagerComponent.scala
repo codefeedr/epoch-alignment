@@ -2,7 +2,7 @@ package org.codefeedr.core.library.internal.kafka.sink
 
 import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.core.library.metastore.EpochNode
-import org.codefeedr.model.zookeeper.Partition
+import org.codefeedr.model.zookeeper.{EpochCollection, Partition}
 import org.codefeedr.util.Stopwatch
 
 import scala.async.Async.{async, await}
@@ -25,7 +25,6 @@ class EpochStateManager extends Serializable with LazyLogging {
     * Creates the relevant nodes in zookeeper
     */
   def preCommit(epochState: EpochState): Future[Unit] = async {
-    val sw = Stopwatch.start()
     val epochNode = await(guaranteeEpochNode(epochState))
     await(epochNode.asyncWriteLock(() =>
       async {
@@ -58,7 +57,6 @@ class EpochStateManager extends Serializable with LazyLogging {
             })
           ))
     }))
-    logger.debug(s"Precommit completed in ${sw.elapsed()} of epoch ${epochState.transactionState.checkPointId}: ${epochState.transactionState.offsetMap}")
   }
 
   /**
@@ -66,7 +64,6 @@ class EpochStateManager extends Serializable with LazyLogging {
     * Flags the node as committed
     */
   def commit(epochState: EpochState): Future[Unit] = async {
-    val sw = Stopwatch.start()
     //Perform await to convert return type to unit
     await(
       Future.sequence(
@@ -78,11 +75,15 @@ class EpochStateManager extends Serializable with LazyLogging {
 
     //TODO: Unit test this behavior
     if (await(epochState.epochNode.getPartitions().getState())) {
-      logger.debug(s"Completing epoch ${epochState.epochNode.getEpoch()}")
+      logger.debug(
+        s"Completing epoch ${epochState.epochNode.getEpoch()}(${epochState.transactionState.checkPointId}) for subject ${epochState.epochCollectionNode.parent().name}")
       await(epochState.epochNode.setState(true))
-      logger.debug(s"Completed epoch ${epochState.epochNode.getEpoch()}")
+      await(
+        epochState.epochCollectionNode.setData(
+          EpochCollection(epochState.transactionState.checkPointId)))
+      logger.debug(
+        s"Completed epoch ${epochState.epochNode.getEpoch()}(${epochState.transactionState.checkPointId}) for subject ${epochState.epochCollectionNode.parent().name}")
     }
-    logger.debug(s"Commit completed in ${sw.elapsed()} of epoch ${epochState.transactionState.checkPointId}: ${epochState.transactionState.offsetMap}")
   }
 
   /**

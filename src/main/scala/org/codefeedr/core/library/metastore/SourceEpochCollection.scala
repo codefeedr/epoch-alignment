@@ -2,6 +2,6 @@ package org.codefeedr.core.library.metastore
 import org.codefeedr.core.library.internal.zookeeper.{ZkCollectionNode, ZkNodeBase}
 
 class SourceEpochCollection(parent: ZkNodeBase)
-    extends ZkCollectionNode[SourceEpochNode,Unit]("epochs",
-                                              parent,
-                                              (n, p) => new SourceEpochNode(n.toInt, p)) {}
+    extends ZkCollectionNode[SourceEpochNode, Unit]("epochs",
+                                                    parent,
+                                                    (n, p) => new SourceEpochNode(n.toInt, p)) {}

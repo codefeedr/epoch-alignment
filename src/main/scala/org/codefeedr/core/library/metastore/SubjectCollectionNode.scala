@@ -10,8 +10,8 @@ import scala.concurrent.Future
 
 class SubjectCollectionNode(parent: ZkNodeBase)
     extends ZkCollectionNode[SubjectNode, Unit]("Subjects",
-                                          parent,
-                                          (name, parent) => new SubjectNode(name, parent)) {
+                                                parent,
+                                                (name, parent) => new SubjectNode(name, parent)) {
 
   /**
     * Retrieves the current set of registered subject names

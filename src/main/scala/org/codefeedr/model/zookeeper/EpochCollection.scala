@@ -1,3 +1,3 @@
 package org.codefeedr.model.zookeeper
 
-case class EpochCollection (latestEpoch: Int)
+case class EpochCollection(latestEpoch: Long)
