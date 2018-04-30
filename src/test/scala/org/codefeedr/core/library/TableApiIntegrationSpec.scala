@@ -39,7 +39,7 @@ case class TestJoinGroup(id: Long, name: String)
 
 class TableApiIntegrationSpec extends FullIntegrationSpec{
 
-  "A TableApiSink " should " Output data that can be consumed by a TableApiSource to use Flink's table api" taggedAs (Slow, KafkaTest) in {
+  "A TableApiSink" should "Output data that can be consumed by a TableApiSource to use Flink's table api" taggedAs (Slow, KafkaTest) in {
 
     //Setup some TestData
     val objects = Array(
@@ -77,6 +77,7 @@ class TableApiIntegrationSpec extends FullIntegrationSpec{
 
       //Construct Flinks tableEnvironment
       val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
+      env.enableCheckpointing(100)
       val tableEnv = TableEnvironment.getTableEnvironment(env)
       //Register a custom implemented tableSource based on the output from the previous query
       tableEnv.registerTableSource("my_table", new KafkaTableSource(resultNode, "testSource",subjectFactory.getRowSource(resultNode,"mysource")))

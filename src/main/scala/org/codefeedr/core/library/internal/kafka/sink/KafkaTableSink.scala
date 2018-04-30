@@ -86,8 +86,8 @@ object KafkaTableSink {
 
   def apply(subjectName: String, sinkId: String): KafkaTableSink = {
     val subjectNode = LibraryServices.subjectLibrary.getSubject(subjectName)
-    val subjectType = subjectNode.getDataSync().get
-    val rowSink = LibraryServices.subjectFactory.getRowSink(subjectType, sinkId)
-    new KafkaTableSink(subjectNode, sinkId, rowSink)
+    //val subjectType = subjectNode.getDataSync().get
+    //val rowSink = LibraryServices.subjectFactory.getRowSink(subjectType, sinkId)
+    new KafkaTableSink(subjectNode, sinkId, null)
   }
 }

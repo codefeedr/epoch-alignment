@@ -21,8 +21,15 @@
 
 package org.codefeedr.core.library.internal.kafka.sink
 
+import org.apache.flink.api.common.functions.RuntimeContext
+import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.codefeedr.core.LibraryServiceSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.mockito.ArgumentMatchers
+import org.mockito.Mockito._
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
+import org.scalatest.mockito.MockitoSugar
 
 import scala.async.Async.{async, await}
 import scala.concurrent.Await
@@ -33,7 +40,7 @@ case class TestKafkaSinkSubject(prop1: String)
 /**
   * Test for [[KafkaGenericSink]]
   */
-class KafkaSinkIntegrationSpec extends LibraryServiceSpec with BeforeAndAfterEach with BeforeAndAfterAll {
+class KafkaSinkIntegrationSpec extends LibraryServiceSpec with BeforeAndAfterEach with BeforeAndAfterAll with MockitoSugar {
 
 
   val testSubjectName = "TestKafkaSinkSubject"
@@ -47,6 +54,9 @@ class KafkaSinkIntegrationSpec extends LibraryServiceSpec with BeforeAndAfterEac
     //,subjectFactory.getTransformer[TestKafkaSinkSubject](subject)
     val sink = new KafkaGenericSink[TestKafkaSinkSubject](subjectNode,kafkaProducerFactory,epochStateManager,sinkId)
     val sinkNode = subjectNode.getSinks().getChild(sinkId)
+    val runtimeContext = mock[StreamingRuntimeContext]
+    sink.setRuntimeContext(runtimeContext)
+
 
     assert(!await(sinkNode.exists()))
 
