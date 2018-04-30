@@ -70,6 +70,45 @@ class ZkQueueSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEa
     assert(true)
   }
 
+  it should "fire commands only once" in async {
+    //Arrange
+    val root = new TestRoot()
+    await(root.create())
+
+    val d1 = Array[Byte](1.toByte)
+    val d2 = Array[Byte](2.toByte)
+    val d3 = Array[Byte](3.toByte)
+
+    val l = ListBuffer[Array[Byte]]()
+    val queue = new ZkQueue(zkClient, zkClient.prependPath(root.path()))
+    val subscription = queue.observe().subscribe(l += _)
+
+
+    //Act
+    val f1 = Future {
+      while (l.size < 1) {
+        Thread.sleep(1)
+      }
+    }
+    val f2 = Future {
+      while (l.size < 3) {
+        Thread.sleep(1)
+      }
+    }
+
+    //Act
+    queue.push(d1)
+    await(f1)
+    l.clear()
+    queue.push(d2)
+    queue.push(d3)
+    await(f2)
+
+
+
+    //Assert
+    assert(l.size == 2)
+  }
 
 
   /**
