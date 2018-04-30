@@ -45,6 +45,7 @@ import scala.util.{Failure, Success}
 class JoinQuerySpec extends FullIntegrationSpec with BeforeAndAfterEach {
 
   "InnerJoinQuery" should "produce a record for each join candidate" taggedAs(Slow, KafkaTest) in async {
+    logger.debug("Started InnerJoinQuery.eachjoincandidate")
       val objects = Array(
         TestJoinObject(1, 1, "Message 1"),
         TestJoinObject(2, 1, "Message 2"),
@@ -69,6 +70,7 @@ class JoinQuerySpec extends FullIntegrationSpec with BeforeAndAfterEach {
       //Perform the query and assert
       val resultType = await(runQueryEnvironment(query))
       val result = await(awaitAllData(resultType))
+      logger.debug("Done with InnerJoinQuery.eachjoincandidate")
       assert(result.size == 3)
 
   }
@@ -76,6 +78,7 @@ class JoinQuerySpec extends FullIntegrationSpec with BeforeAndAfterEach {
 
 
   it should "produce no records if no join candidates are found" taggedAs(Slow, KafkaTest) in async {
+    logger.debug("Started InnerJoinQuery.NoRecords")
     val objects = Array(
       TestJoinObject(1, 1, "Message 1"),
       TestJoinObject(2, 1, "Message 2"),
@@ -101,11 +104,13 @@ class JoinQuerySpec extends FullIntegrationSpec with BeforeAndAfterEach {
     //Perform the query and assert
     val resultType = await(runQueryEnvironment(query))
     val result = await(awaitAllData(resultType))
+    logger.debug("Done with InnerJoinQuery.NoRecords")
     assert(result.isEmpty)
 
   }
 
   it should "Only produce events for new combinations" taggedAs(Slow, KafkaTest) in async {
+    logger.debug("Started InnerJoinQuery.newcombinations")
     //Create a set of objects
     val objects = Array(
       TestJoinObject(1, 1, "Message 1"),
@@ -139,6 +144,7 @@ class JoinQuerySpec extends FullIntegrationSpec with BeforeAndAfterEach {
     //Perform the query and assert
     val queryResultType = await(runQueryEnvironment(query))
     val result = await(awaitAllData(queryResultType))
+    logger.debug("Done with InnerJoinQuery.newcombinations")
     assert(result.size == 9)
 
   }

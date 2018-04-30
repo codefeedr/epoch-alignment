@@ -150,7 +150,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
     */
   override def cancel(): Unit = {
     finalSourceEpoch =
-      Await.result(subjectNode.getEpochs().getLatestEpochId(), Duration(1, SECONDS))
+      Await.result(subjectNode.getEpochs().getLatestEpochId(), Duration(5, SECONDS))
     logger.debug(s"Cancelling ${getLabel()} after final source epoch ${finalSourceEpoch}.")
   }
 
