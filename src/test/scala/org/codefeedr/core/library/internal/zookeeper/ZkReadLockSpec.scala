@@ -7,7 +7,6 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
 import scala.async.Async.{async, await}
 import scala.concurrent.{Await, Future}
 import org.codefeedr.util.futureExtensions._
-import org.codefeedr.util.futureExtensions._
 
 import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, SECONDS}

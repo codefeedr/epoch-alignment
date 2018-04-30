@@ -107,10 +107,11 @@ class ZkClient extends LazyLogging {
 
   /**
     * Prepends codefeedr to the zookeeper path so that no actual data outside the codefeedr path can be mutated (for example to destroy kafka)
+    * Only meant for implementations that directly call zookeeper
     * @param s string to prepend
     * @return
     */
-  private def prependPath(s: String) = s"/CodeFeedr$s"
+  def prependPath(s: String) = s"/CodeFeedr$s"
 
   /**
     * Closes the connection to the zkClient
@@ -667,4 +668,5 @@ class ZkClient extends LazyLogging {
       None
     )
   }
+
 }

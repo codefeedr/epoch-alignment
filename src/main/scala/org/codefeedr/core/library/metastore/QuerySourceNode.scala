@@ -22,6 +22,9 @@ class QuerySourceNode(name: String, parent: ZkNodeBase)
     */
   def getEpochs(): SourceEpochCollection = new SourceEpochCollection(this)
 
+  /** Retrieve the node that can be used to give instructions to this node */
+  def getCommandNode(): QuerySourceCommandNode = new QuerySourceCommandNode(this)
+
   override def typeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
   override def initialState(): Boolean = true
 
