@@ -14,7 +14,8 @@ object OffsetUtils extends LazyLogging {
   def HigherOrEqual(source: Map[Int, Long], reference: Map[Int, Long]): Boolean = {
 
     if (source.isEmpty) {
-      logger.warn(s"HigherOrEqual for offset comparison called with empty source. Returning false (Under the assumption each consumer should at least get one partition)")
+      logger.warn(
+        s"HigherOrEqual for offset comparison called with empty source. Returning false (Under the assumption each consumer should at least get one partition)")
       false
     } else {
       source.forall(o => reference(o._1) <= o._2)
