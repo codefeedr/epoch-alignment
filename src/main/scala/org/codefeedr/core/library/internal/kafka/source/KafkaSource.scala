@@ -194,7 +194,10 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
   override def snapshotState(context: FunctionSnapshotContext): Unit = {
     logger.debug(s"Snapshotting epoch ${context.getCheckpointId} on ${getLabel()}")
     checkpointOffsets(context.getCheckpointId) = currentOffsets.toMap
-    cancelIfNeeded(context.getCheckpointId)
+    //HACK: Sometimes cancelling on first checkpoint will cause incorrect offsets to be obtained (because no assignment happened yet)
+    if(context.getCheckpointId > 1) {
+      cancelIfNeeded(context.getCheckpointId)
+    }
     logger.debug(s"Done snapshotting epoch ${context.getCheckpointId} on ${getLabel()}")
   }
 

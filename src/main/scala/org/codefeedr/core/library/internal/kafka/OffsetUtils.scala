@@ -15,8 +15,8 @@ object OffsetUtils extends LazyLogging {
 
     if (source.isEmpty) {
       logger.warn(
-        s"HigherOrEqual for offset comparison called with empty source. Returning false (Under the assumption each consumer should at least get one partition)")
-      false
+        s"HigherOrEqual for offset comparison called with empty source. Returning true")
+      true
     } else {
       source.forall(o => reference(o._1) <= o._2)
     }
