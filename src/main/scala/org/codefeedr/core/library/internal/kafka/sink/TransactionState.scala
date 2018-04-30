@@ -52,8 +52,6 @@ class TransactionState(
     * Used to save offsets in the
     */
   def confirmed(recordMetadata: RecordMetadata): Unit = synchronized {
-    pendingEvents -= 1
-
     val tp = recordMetadata.partition()
 
     //Only update the offset if the new offset is new or higher
@@ -62,11 +60,13 @@ class TransactionState(
       case Some(v) => if (v < recordMetadata.offset()) { offsetMap(tp) = recordMetadata.offset() }
     }
 
-    if (awaitingCommit) {
-      if (pendingEvents == 0) {
+    this.synchronized {
+      pendingEvents -= 1
+      if (awaitingCommit && pendingEvents == 0) {
         awaitCommitPromise.success()
       }
     }
+
   }
 
   /**
@@ -76,8 +76,10 @@ class TransactionState(
   def awaitCommit(): Future[Unit] = {
     awaitingCommit = true
     //Check if the promise should be completed
-    if (awaitingCommit && pendingEvents == 0 && !awaitCommitPromise.isCompleted) {
-      awaitCommitPromise.success()
+    this.synchronized {
+      if (pendingEvents == 0 && !awaitCommitPromise.isCompleted) {
+        awaitCommitPromise.success()
+      }
     }
     awaitCommitPromise.future
   }
