@@ -264,7 +264,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     when(consumer.poll(ctx)).thenAnswer(awaitAndReturn(p, Map(3 -> 1339L),2))
 
     val context = mock[FunctionSnapshotContext]
-    when(context.getCheckpointId) thenReturn 1
+    when(context.getCheckpointId) thenReturn 2
 
 
     when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
@@ -281,7 +281,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     testKafkaSource.snapshotState(context)
     val before = testKafkaSource.running
     testKafkaSource.poll(ctx)
-    testKafkaSource.notifyCheckpointComplete(1)
+    testKafkaSource.notifyCheckpointComplete(2)
     val after =testKafkaSource.running
 
 
