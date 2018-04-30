@@ -30,7 +30,7 @@ class TransactionState(
     var producerIndex: Int = 0,
     var checkPointId: Long = 0,
     @volatile var pendingEvents: Int = 0,
-    var awaitingCommit: Boolean = false,
+    @volatile var awaitingCommit: Boolean = false,
     var offsetMap: mutable.Map[Int, Long] = mutable.Map[Int, Long]()
 ) {
   //Promise that is true when a commit can be done
