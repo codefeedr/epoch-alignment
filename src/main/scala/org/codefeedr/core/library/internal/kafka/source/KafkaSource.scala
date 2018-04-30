@@ -210,7 +210,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
       consumer.getEndOffsets()
     } else {
       Await
-        .result(subjectNode.getEpochs().getChild(s"$finalSourceEpoch").getPartitionData(),
+        .result(subjectNode.getEpochs().getChild(finalSourceEpoch).getPartitionData(),
                 Duration(1, SECONDS))
         .map(o => o.nr -> o.offset)
         .map(o => {
