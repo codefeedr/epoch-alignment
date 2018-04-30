@@ -73,7 +73,6 @@ class EpochStateManager extends Serializable with LazyLogging {
         })
       ))
 
-    //TODO: Unit test this behavior
     if (await(epochState.epochNode.getPartitions().getState())) {
       logger.debug(
         s"Completing epoch ${epochState.epochNode.getEpoch()}(${epochState.transactionState.checkPointId}) for subject ${epochState.epochCollectionNode.parent().name}")

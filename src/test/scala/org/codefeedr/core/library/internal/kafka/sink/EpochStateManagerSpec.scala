@@ -2,7 +2,7 @@ package org.codefeedr.core.library.internal.kafka.sink
 
 import org.codefeedr.core.library.internal.zookeeper.ZkNode
 import org.codefeedr.core.library.metastore._
-import org.codefeedr.model.zookeeper.Partition
+import org.codefeedr.model.zookeeper.{EpochCollection, Partition}
 import org.codefeedr.util.MockitoExtensions
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
@@ -117,6 +117,7 @@ class EpochStateManagerSpec extends AsyncFlatSpec with MockitoSugar with BeforeA
     when(epochNode.setState(true)) thenReturn(Future.successful())
 
     when(epochCollectionNode.parent()) thenReturn new ZkNode("testparent",null)
+    when(epochCollectionNode.setData(ArgumentMatchers.any())) thenReturn Future.successful()
 
     val epochState = new EpochState(transactionState,epochCollectionNode)
     when(epochPartitions.getState()) thenReturn Future.successful(true)
@@ -128,6 +129,7 @@ class EpochStateManagerSpec extends AsyncFlatSpec with MockitoSugar with BeforeA
     //Assert
     verify(p1, times(1)).setState(true)
     verify(p2, times(1)).setState(true)
+    verify(epochCollectionNode, times(1)).setData(EpochCollection(10))
 
     assert(true)
   }
