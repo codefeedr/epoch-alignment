@@ -82,15 +82,20 @@ class EpochStateManager extends Serializable with LazyLogging {
   /** Checks if the epoch can be completed, and if so, completes it */
   def completeEpoch(epochState: EpochState): Future[Unit] = async {
     if (await(epochState.epochNode.getPartitions().getState())) {
-      logger.debug(
-        s"Completing epoch ${epochState.epochNode.getEpoch()}(${epochState.transactionState.checkPointId}) for subject ${epochState.epochCollectionNode.parent().name}")
 
-      await(
-        epochState.epochCollectionNode.setData(
-          EpochCollection(epochState.transactionState.checkPointId)))
-      await(epochState.epochNode.setState(true))
-      logger.debug(
-        s"Completed epoch ${epochState.epochNode.getEpoch()}(${epochState.transactionState.checkPointId}) for subject ${epochState.epochCollectionNode.parent().name}")
+      await(epochState.epochNode.asyncWriteLock(() =>
+        async {
+          if (!await(epochState.epochNode.getState()).get) { //Validate we don't perform the complete operation twice
+            logger.debug(
+              s"Completing epoch ${epochState.epochNode.getEpoch()}(${epochState.transactionState.checkPointId}) for subject ${epochState.epochCollectionNode.parent().name}")
+            await(
+              epochState.epochCollectionNode.setData(
+                EpochCollection(epochState.transactionState.checkPointId)))
+            await(epochState.epochNode.setState(true))
+            logger.debug(
+              s"Completed epoch ${epochState.epochNode.getEpoch()}(${epochState.transactionState.checkPointId}) for subject ${epochState.epochCollectionNode.parent().name}")
+          }
+      }))
     }
   }
 
