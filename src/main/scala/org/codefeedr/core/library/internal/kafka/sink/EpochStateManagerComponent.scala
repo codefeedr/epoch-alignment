@@ -1,7 +1,7 @@
 package org.codefeedr.core.library.internal.kafka.sink
 
 import com.typesafe.scalalogging.LazyLogging
-import org.codefeedr.core.library.metastore.EpochNode
+import org.codefeedr.core.library.metastore.{Epoch, EpochNode}
 import org.codefeedr.model.zookeeper.{EpochCollection, Partition}
 import org.codefeedr.util.Stopwatch
 
@@ -87,9 +87,15 @@ class EpochStateManager extends Serializable with LazyLogging {
           if (!await(epochState.epochNode.getState()).get) { //Validate we don't perform the complete operation twice
             logger.debug(
               s"Completing epoch ${epochState.epochNode.getEpoch()}(${epochState.transactionState.checkPointId}) for subject ${epochState.epochCollectionNode.parent().name}")
+            //Update offset data
             await(
               epochState.epochCollectionNode.setData(
                 EpochCollection(epochState.transactionState.checkPointId)))
+            //Calculate all combined partitions
+            val epoch = Epoch(epochState.transactionState.checkPointId,
+                              await(epochState.epochNode.getPartitionData()))
+            //Update the epochNode itself
+            await(epochState.epochNode.setData(epoch))
             await(epochState.epochNode.setState(true))
             logger.debug(
               s"Completed epoch ${epochState.epochNode.getEpoch()}(${epochState.transactionState.checkPointId}) for subject ${epochState.epochCollectionNode.parent().name}")
