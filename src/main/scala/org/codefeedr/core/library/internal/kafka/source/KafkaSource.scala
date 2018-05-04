@@ -49,7 +49,6 @@ import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future, Promise, blocking}
 import scala.util.Try
@@ -65,11 +64,13 @@ import scala.util.Try
   * Created by Niels on 18/07/2017.
   */
 abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: KafkaConsumerFactory)
+//Flink interfaces
     extends RichSourceFunction[T]
     with ResultTypeQueryable[T]
     with CheckpointedFunction
     with CheckpointListener
     //Internal services
+    with GenericKafkaSource
     with LazyLogging
     with Serializable {
 
@@ -81,37 +82,29 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
     new KafkaSourceConsumer[T](s"Consumer ${getLabel}", kafkaConsumer, mapToT)
   }
 
-  @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
-  @transient private[kafka] lazy val instanceUuid = UUID.randomUUID().toString
-  @transient private lazy val closePromise: Promise[Unit] = Promise[Unit]()
-
   //Unique id of the source the instance of this kafka source belongs to
   val sourceUuid: String
 
+  @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
+  @transient private[kafka] lazy val instanceUuid = UUID.randomUUID().toString
+  //@transient private lazy val closePromise: Promise[Unit] = Promise[Unit]()
   @transient protected lazy val subjectType: SubjectType =
     subjectNode.getDataSync().get
 
-  @transient protected lazy val sourceNode: QuerySourceNode =
-    subjectNode
-      .getSources()
-      .getChild(sourceUuid)
-
-  //Node in zookeeper representing state of the instance of the consumer
-  @transient protected lazy val consumerNode: ConsumerNode =
-    sourceNode
-      .getConsumers()
-      .getChild(instanceUuid)
+  //Manager of this source. This should "cleanly" be done by composition, but we cannot do so because this source is "constructed" by Flink
+  @transient private[kafka] var manager: KafkaSourceManager = _
 
   //Running state
   @transient
   @volatile private var state: KafkaSourceState.Value = KafkaSourceState.UnSynchronized
   //Node in zookeeper representing state of the subject this consumer is subscribed on
   @volatile private[kafka] var running = true
-  @volatile private[kafka] var intitialized = false
+  @volatile private[kafka] var inititialized = false
 
   //CheckpointId after which the source should start shutting down.
   @volatile private[kafka] var finalCheckpointId: Long = Long.MaxValue
   @volatile private[kafka] var finalSourceEpoch: Long = -2
+
   //TODO: Can we somehow perform this async?
   @transient private[kafka] lazy val finalSourceEpochOffsets = getEpochOffsets(finalSourceEpoch)
   @transient private[kafka] var checkpointingMode: Option[CheckpointingMode] = _
@@ -162,6 +155,10 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
 
   //Called when restoring the state
   override def initializeState(context: FunctionInitializationContext): Unit = {
+    //This construction would normally be done by composition, but because flink constructs the source we cannot do so here
+    if (manager == null) {
+      new KafkaSourceManager(this, subjectNode, sourceUuid, instanceUuid)
+    }
     logger.info(s"Initializing state of ${getLabel()}")
     if (!getRuntimeContext().asInstanceOf[StreamingRuntimeContext].isCheckpointingEnabled) {
       logger.warn(
@@ -267,16 +264,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
       throw new Exception(s"Cannot run ${getLabel()} before calling initialize.")
     }
 
-    //Create self on zookeeper
-    val initialConsumer = Consumer(instanceUuid, null, System.currentTimeMillis())
-
-    blocking {
-      //Update zookeeper state blocking, because the source cannot start until the proper zookeeper state has been configured
-      Await.ready(sourceNode.create(QuerySource(sourceUuid)), Duration(5, SECONDS))
-      Await.ready(consumerNode.create(initialConsumer), Duration(5, SECONDS))
-    }
-    //Call cancel when the subject has closed
-    subjectNode.awaitClose().onComplete(_ => cancel())
+    manager.initializeRun()
   }
 
   /**
@@ -284,14 +272,12 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
     * Called form the notifyCheckpointComplete, because the cleanup cannot occur until the last checkpoint has been completed
     */
   private[kafka] def finalizeRun(): Unit = {
-    //Finally unsubscribe from the library
     logger.debug(s"${getLabel()} performing finalization step")
-    blocking {
-      Await.ready(consumerNode.setState(false), Duration(5, SECONDS))
-    }
+    //First close the kafkaconsumer
     consumer.close()
+    manager.finalizeRun() //Notify manager for distributed state update
     //Notify of the closing, to whoever is interested
-    closePromise.success()
+    //closePromise.success()
   }
 
   def mapToT(record: TrailedRecord): T
@@ -299,7 +285,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
   /**
     * @return A future that resolves when the source has been close
     */
-  private[kafka] def awaitClose(): Future[Unit] = closePromise.future
+  //private[kafka] def awaitClose(): Future[Unit] = closePromise.future
 
   /**
     * Perform a poll on the kafka consumer and collect data on the given method
@@ -312,6 +298,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
         currentOffsets(o._1) = o._2
       })
     }
+
     //HACK: Find some way to perform some operations outside the checkpoint lock
     Thread.sleep(10)
   }
@@ -336,7 +323,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
   override def run(ctx: SourceFunction.SourceContext[T]): Unit = {
     logger.debug(s"Source ${getLabel()} started running.")
     initRun()
-    intitialized = true
+    inititialized = true
 
     var increment = 0
 
@@ -357,6 +344,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
         notifyCheckpointComplete(increment)
       }
     }
+
     logger.debug(s"Source reach endOffsets ${getLabel()}")
 
     //Perform cleanup under checkpoint lock

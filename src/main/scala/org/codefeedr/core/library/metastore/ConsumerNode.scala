@@ -20,6 +20,8 @@ class ConsumerNode(name: String, parent: ZkNodeBase)
     await(getStateNode().create(true))
   }
 
+  def consumerCollection(): ConsumerCollection = parent().asInstanceOf[ConsumerCollection]
+
   override def typeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
 
   /**

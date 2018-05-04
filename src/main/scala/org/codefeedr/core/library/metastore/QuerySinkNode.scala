@@ -14,6 +14,8 @@ class QuerySinkNode(name: String, parent: ZkNodeBase)
     with ZkStateNode[QuerySink, Boolean]
     with LazyLogging {
 
+  def querySinkCollection(): QuerySinkCollection = parent().asInstanceOf[QuerySinkCollection]
+
   def getProducers(): ProducerCollection = new ProducerCollection("producers", this)
 
   def getEpochs(): EpochCollectionNode = new EpochCollectionNode(this)

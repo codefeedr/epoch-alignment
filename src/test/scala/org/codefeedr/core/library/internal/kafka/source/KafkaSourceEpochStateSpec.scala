@@ -164,7 +164,6 @@ class KafkaSourceEpochStateSpec extends AsyncFlatSpec with MockitoSugar with Bef
     subjectNode = mock[SubjectNode]
     sourceNode = mock[QuerySourceNode]
 
-
     when(sourceEpochCollection.asyncWriteLock(ArgumentMatchers.any[() => Future[Unit]]()))
       .thenAnswer(answer(a => a.getArgument[() => Future[Unit]](0)()))
 

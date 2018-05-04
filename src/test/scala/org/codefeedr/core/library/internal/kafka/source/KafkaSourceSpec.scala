@@ -31,14 +31,9 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   private var ctx: SourceFunction.SourceContext[SampleObject] = _
   private var closePromise: Promise[Unit] = _
   private var sampleObject: SampleObject = _
+  private var manager: KafkaSourceManager = _
 
   private var consumer: KafkaSourceConsumer[SampleObject] = _
-
-  private var sourceCollectionNode : QuerySourceCollection= _
-  private var sourceNode: QuerySourceNode = _
-
-  private var consumerCollection: ConsumerCollection = _
-  private var consumerNode: ConsumerNode = _
 
   private var initCtx : FunctionInitializationContext  = _
   private var operatorStore: OperatorStateStore = _
@@ -56,14 +51,9 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     subjectNode = mock[SubjectNode]
     ctx = mock[SourceFunction.SourceContext[SampleObject]]
     sampleObject = new SampleObject()
+    manager = mock[KafkaSourceManager]
 
     consumer = mock[KafkaSourceConsumer[SampleObject]]
-
-    sourceCollectionNode = mock[QuerySourceCollection]
-    sourceNode = mock[QuerySourceNode]
-
-    consumerCollection = mock[ConsumerCollection]
-    consumerNode = mock[ConsumerNode]
 
     initCtx = mock[FunctionInitializationContext]
     operatorStore = mock[OperatorStateStore]
@@ -76,14 +66,6 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
     when(subjectNode.getDataSync()) thenReturn
       Some(SubjectType("subjectuuid", "SampleObject",false, new Array[RecordProperty[_]](0)))
-
-    when(subjectNode.getSources()) thenReturn sourceCollectionNode
-    when(sourceCollectionNode.getChild("testuuid")) thenReturn sourceNode
-    when(sourceNode.create(ArgumentMatchers.any())) thenReturn Future.successful(null)
-
-    when(sourceNode.getConsumers()) thenReturn consumerCollection
-    when(consumerCollection.getChild(ArgumentMatchers.any[String]())) thenReturn consumerNode
-    when(consumerNode.create(ArgumentMatchers.any())) thenReturn Future.successful(null)
 
     closePromise = Promise[Unit]()
     when(subjectNode.awaitClose()) thenReturn closePromise.future
@@ -103,18 +85,16 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   }
 
 
-  "KafkaSource.Run" should "Create consumer and source nodes" in async {
+  "KafkaSource.Run" should "Call initializeRun on the manager" in async {
     //Arrange
     val testKafkaSource = constructSource()
 
     //Act
     runAsync(testKafkaSource)
-    while(!testKafkaSource.intitialized){}
+    while(!testKafkaSource.inititialized){}
 
     //Assert
-    verify(sourceNode, times(1)).create(ArgumentMatchers.any())
-    verify(consumerNode, times(1)).create(ArgumentMatchers.any())
-
+    verify(manager, times(1)).initializeRun()
 
     assert(testKafkaSource.running)
   }
@@ -126,11 +106,10 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
     //Act
     runAsync(testKafkaSource)
-    while(!testKafkaSource.intitialized){}
+    while(!testKafkaSource.inititialized){}
 
     //Assert
-    verify(sourceNode, times(1)).create(ArgumentMatchers.any())
-    verify(consumerNode, times(1)).create(ArgumentMatchers.any())
+    verify(manager, times(1)).initializeRun()
 
     assert(testKafkaSource.currentOffsets(2) == 13L)
     assert(testKafkaSource.currentOffsets(1) == 10L)
@@ -235,25 +214,6 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     assert(testKafkaSource.finalSourceEpochOffsets(2) == 1338)
   }
 
-  /*
-  it should "Use the current offsets of a subject when cancel is called on a subject that has no epochs" in async {
-    //Arrange
-    val testKafkaSource = constructSource()
-    val epochCollectionNodeMock = mock[EpochCollectionNode]
-    val finalEpochMock = mock[EpochNode]
-
-    when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
-    when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(-1L)
-    when(consumer.getEndOffsets()) thenReturn Map(3 -> 1339L)
-
-    //Act
-    testKafkaSource.cancel()
-
-    //Assert
-    assert(testKafkaSource.finalSourceEpoch == -1)
-    assert(testKafkaSource.finalSourceEpochOffsets(3) == 1339)
-  }
-*/
 
   it should "Close the source when a poll obtained all data of the final offsets" in async {
     //Arrange
@@ -327,7 +287,12 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     assert(testKafkaSource.currentOffsets(3) == 1338)
   }
 
-  def constructSource(): TestKafkaSource = new TestKafkaSource(subjectNode,consumerFactory,consumer)
+  def constructSource(): TestKafkaSource = {
+    val source = new TestKafkaSource(subjectNode,consumerFactory,consumer)
+    //Override the default manager
+    source.manager = manager
+    source
+  }
 
   /**
     * Runs the kafkaSource in a seperate thread and returns the thread that it is using

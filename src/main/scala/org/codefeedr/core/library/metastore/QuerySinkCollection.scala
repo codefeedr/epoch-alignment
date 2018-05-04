@@ -16,6 +16,7 @@ class QuerySinkCollection(parent: ZkNodeBase)
       (name, parent) => new QuerySinkNode(name, parent))
     with ZkCollectionStateNode[QuerySinkNode, Unit, QuerySink, Boolean, Boolean] {
 
+  def subject(): SubjectNode = parent().asInstanceOf[SubjectNode]
   override def initial(): Boolean = false
   override def mapChild(child: Boolean): Boolean = child
   override def reduceAggregate(left: Boolean, right: Boolean): Boolean = left || right

@@ -17,4 +17,5 @@ class ConsumerCollection(subjectName: String, parent: ZkNodeBase)
   override def initial(): Boolean = false
   override def mapChild(child: Boolean): Boolean = child
   override def reduceAggregate(left: Boolean, right: Boolean): Boolean = left || right
+  def querySource(): QuerySourceNode = parent().asInstanceOf[QuerySourceNode]
 }
