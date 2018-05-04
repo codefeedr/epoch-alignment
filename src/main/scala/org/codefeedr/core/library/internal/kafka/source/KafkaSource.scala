@@ -27,7 +27,11 @@ import org.apache.flink.api.common.state.{ListState, ListStateDescriptor, ValueS
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
 import org.apache.flink.api.java.tuple.Tuple2
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable
-import org.apache.flink.runtime.state.{CheckpointListener, FunctionInitializationContext, FunctionSnapshotContext}
+import org.apache.flink.runtime.state.{
+  CheckpointListener,
+  FunctionInitializationContext,
+  FunctionSnapshotContext
+}
 import org.apache.flink.streaming.api.CheckpointingMode
 import org.apache.flink.streaming.api.checkpoint.{CheckpointedFunction, ListCheckpointed}
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks
@@ -149,9 +153,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
     * Apply a command to perform a (state) transition
     * @param command
     */
-  def apply(command: SourceCommand):Unit = {
-
-  }
+  def apply(command: SourceCommand): Unit = {}
 
   def readableOffsets(offsetMap: Map[TopicPartition, Long]): String = {
     offsetMap

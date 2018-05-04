@@ -3,7 +3,7 @@ package org.codefeedr.core.library.metastore
 import org.codefeedr.core.library.internal.zookeeper.{ZkNode, ZkNodeBase, ZkStateNode}
 import org.codefeedr.model.zookeeper.Partition
 
-import scala.async.Async.{await,async}
+import scala.async.Async.{await, async}
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.reflect.ClassTag

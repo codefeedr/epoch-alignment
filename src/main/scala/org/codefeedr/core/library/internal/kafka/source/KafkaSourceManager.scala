@@ -37,8 +37,6 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     }
   }
 
-
-
   def finalizeRun(): Unit = {
     //Finally unsubscribe from the library
     blocking {
