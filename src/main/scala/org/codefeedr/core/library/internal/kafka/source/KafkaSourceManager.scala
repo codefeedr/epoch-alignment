@@ -43,4 +43,5 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
       Await.ready(consumerNode.setState(false), Duration(5, SECONDS))
     }
   }
+
 }

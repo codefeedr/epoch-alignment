@@ -235,9 +235,9 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     sink.preCommit(transaction1)
 
     //Assert
-    verify(producer1, times(1)).flush()
+    //verify(producer1, times(1)).flush()
     verify(producer1, times(0)).commitTransaction()
-    assert(true)
+    assert(transaction1.awaitCommit().isCompleted)
   }
 
   "KafkaSink.Commit()" should "Flag the created transaction in zookeeper as committed" in async {
@@ -262,7 +262,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     sink.commit(transaction1)
 
     //Assert
-    verify(producer1, times(1)).flush()
+    //verify(producer1, times(1)).flush()
     verify(producer1, times(1)).commitTransaction()
     assert(true)
   }
