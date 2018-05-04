@@ -231,11 +231,12 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
       s"${getLabel()} Precomitting transaction ${transaction.checkPointId} on producer ${transaction.producerIndex}.\r\n${transaction
         .displayOffsets()}\r\n${getLabel()}")
     blocking {
-      producerPool(transaction.producerIndex).flush()
+      //TODO: Validate if this should/can be replaced by just a flush
+      Await.ready(transaction.awaitCommit(), Duration(5, SECONDS))
+      //producerPool(transaction.producerIndex).flush()
       logger.debug(
         s"flushed and is awaiting events to commit in ${sw.elapsed().toMillis}\r\n${getLabel()}")
       //Perform precommit on the epochState
-      Await.ready(transaction.awaitCommit(), Duration(5, SECONDS))
       val epochState = EpochState(transaction, subjectNode.getEpochs())
       Await.ready(epochStateManager.preCommit(epochState), Duration(5, SECONDS))
     }
