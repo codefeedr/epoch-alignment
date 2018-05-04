@@ -56,7 +56,7 @@ trait ZkStateNode[TNode, TState] extends ZkNode[TNode] {
     * @return
     */
   def setState(state: TState): Future[Unit] = {
-      getChild[TState]("state")(typeT()).setData(state)
+    getChild[TState]("state")(typeT()).setData(state)
   }
 
   /**

@@ -42,10 +42,12 @@ class EpochNode(epoch: Int, parent: ZkNodeBase)
 
   def getEpoch(): Int = epoch
 
-  override def postCreate(): Future[Unit] = async {
-    await(getMappings().create())
-    await(getPartitions().create())
-  }
+  override def postCreate(): Future[Unit] =
+    for {
+      _ <- getMappings().create()
+      _ <- getPartitions().create()
+      _ <- super.postCreate()
+    } yield {}
 
   /**
     * The base class needs to expose the typeTag, no typeTag constraints can be put on traits

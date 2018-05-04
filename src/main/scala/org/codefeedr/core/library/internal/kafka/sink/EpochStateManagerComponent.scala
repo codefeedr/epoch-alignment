@@ -82,7 +82,6 @@ class EpochStateManager extends Serializable with LazyLogging {
   /** Checks if the epoch can be completed, and if so, completes it */
   def completeEpoch(epochState: EpochState): Future[Unit] = async {
     if (await(epochState.epochNode.getPartitions().getState())) {
-
       await(epochState.epochNode.asyncWriteLock(() =>
         async {
           if (!await(epochState.epochNode.getState()).get) { //Validate we don't perform the complete operation twice
