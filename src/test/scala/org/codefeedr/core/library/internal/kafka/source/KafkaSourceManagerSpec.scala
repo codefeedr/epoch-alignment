@@ -9,7 +9,9 @@ import org.mockito.Mockito.{times, verify, when}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach}
 import org.scalatest.mockito.MockitoSugar
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
+import scala.async.Async.{async,await}
 
 class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfterEach with MockedLibraryServices with MockitoExtensions {
 
@@ -62,8 +64,8 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     assert(true)
   }
 
-  /*
-  "KafkaSourceManager" should "invoke cancel on a kafkaSource when a subject completes" in {
+
+  "KafkaSourceManager" should "invoke cancel on a kafkaSource when a subject completes" in async {
     //Arrange
     val manager = constructManager()
     //Manager is the class passing events to the kafka source
@@ -73,8 +75,8 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     completePromise.success()
 
     //Assert
-    verify(source,times(1)).cancel()
-    assert(true)
+    await(manager.cancel)
+    assert(manager.cancel.isCompleted)
   }
-  */
+
 }

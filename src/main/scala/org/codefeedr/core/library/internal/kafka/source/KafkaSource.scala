@@ -47,6 +47,7 @@ import org.codefeedr.model.zookeeper.{Consumer, QuerySource}
 import org.codefeedr.model.{RecordSourceTrail, SubjectType, TrailedRecord}
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.duration._
@@ -263,8 +264,8 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
     if (!initialized) {
       throw new Exception(s"Cannot run ${getLabel()} before calling initialize.")
     }
-
     manager.initializeRun()
+    manager.cancel.onComplete(o => cancel())
   }
 
   /**

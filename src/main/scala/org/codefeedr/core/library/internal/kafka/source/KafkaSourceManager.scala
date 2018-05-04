@@ -5,7 +5,7 @@ import org.codefeedr.core.library.metastore.{ConsumerNode, SubjectNode}
 import org.codefeedr.model.zookeeper.{Consumer, QuerySource}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Await, blocking}
+import scala.concurrent.{Await, Future, blocking}
 import scala.concurrent.duration.{Duration, SECONDS}
 
 /**
@@ -21,6 +21,8 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
   private val sourceNode = subjectNode.getSources().getChild(sourceUuid)
   private val consumerNode = sourceNode.getConsumers().getChild(instanceUuid)
 
+  lazy val cancel: Future[Unit] = subjectNode.awaitClose()
+
   /**
     * Called from the kafkaSource when a run is initialized
     */
@@ -33,8 +35,6 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
       Await.ready(sourceNode.create(QuerySource(sourceUuid)), Duration(5, SECONDS))
       Await.ready(consumerNode.create(initialConsumer), Duration(5, SECONDS))
     }
-    //Call cancel when the subject has closed
-    subjectNode.awaitClose().onComplete(_ => kafkaSource.cancel())
   }
 
   def finalizeRun(): Unit = {
