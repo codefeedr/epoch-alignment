@@ -54,7 +54,7 @@ object SubjectTypeFactory extends LazyLogging {
         .mkString(", ")}"
       val e = new Exception(msg)
       logger.error(msg, e)
-      //throw e
+      throw e
     }
     r
   }
