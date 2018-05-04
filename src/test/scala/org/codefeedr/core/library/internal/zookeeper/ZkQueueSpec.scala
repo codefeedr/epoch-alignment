@@ -9,6 +9,7 @@ import scala.concurrent.{Await, Future}
 import org.codefeedr.util.futureExtensions._
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.blocking
 import scala.async.Async.await
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -27,17 +28,23 @@ class ZkQueueSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEa
 
     val l = ListBuffer[Array[Byte]]()
     val queue = new ZkQueue(zkClient, zkClient.prependPath(root.path()))
-    val subscription = queue.observe().subscribe(l += _)
-    val f = Future {
-      while (l.size < 3) {
-        Thread.sleep(1)
-      }
-    }
+
+    val subscription = queue.observe().subscribe(l+=_)
 
     //Act
     queue.push(d1)
     queue.push(d2)
     queue.push(d3)
+
+
+    val f = Future {
+      blocking {
+        while (l.size < 3) {
+          Thread.sleep(1)
+        }
+      }
+    }
+
 
     await(f)
 
@@ -58,8 +65,10 @@ class ZkQueueSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEa
     val obs = queue.observe()
     @volatile var end = false
     val f = Future {
-      while (!end) {
-        Thread.sleep(1)
+      blocking {
+        while (!end) {
+          Thread.sleep(1)
+        }
       }
     }
     val s =obs.subscribe(_ => {}, _ => {}, () => end = true)
@@ -86,13 +95,18 @@ class ZkQueueSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEa
 
     //Act
     val f1 = Future {
-      while (l.size < 1) {
-        Thread.sleep(1)
+      blocking {
+        while (l.size < 1) {
+          Thread.sleep(1)
+        }
       }
     }
     val f2 = Future {
-      while (l.size < 3) {
-        Thread.sleep(1)
+      blocking {
+        while (l.size < 2) {
+
+          Thread.sleep(1)
+        }
       }
     }
 
