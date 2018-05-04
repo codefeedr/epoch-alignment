@@ -14,8 +14,8 @@ import scala.reflect.ClassTag
   * @param parent
   */
 class EpochNode(epoch: Int, parent: ZkNodeBase)
-    extends ZkNode[String](s"$epoch", parent)
-    with ZkStateNode[String, Boolean] {
+    extends ZkNode[Epoch](s"$epoch", parent)
+    with ZkStateNode[Epoch, Boolean] {
 
   /**
     * Retrieves the partitions that belong to this epoch
