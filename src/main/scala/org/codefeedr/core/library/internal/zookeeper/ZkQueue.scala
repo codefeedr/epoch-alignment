@@ -39,13 +39,15 @@ class ZkQueue(zkClient: ZkClient, path: String) {
                                    path: String,
                                    ctx: scala.Any,
                                    children: util.List[String]): Unit = {
-          children.asScala.sortBy(getIndex).foreach(o => {
-            val index = getIndex(o)
-            if (lastChild < index) {
-              lastChild = index
-              subscriber.onNext(getChildData(o))
-            }
-          })
+          children.asScala
+            .sortBy(getIndex)
+            .foreach(o => {
+              val index = getIndex(o)
+              if (lastChild < index) {
+                lastChild = index
+                subscriber.onNext(getChildData(o))
+              }
+            })
         }
       }
       val deleteCb = () => subscriber.onCompleted()
