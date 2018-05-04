@@ -27,11 +27,7 @@ import org.apache.flink.api.common.state.{ListState, ListStateDescriptor, ValueS
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
 import org.apache.flink.api.java.tuple.Tuple2
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable
-import org.apache.flink.runtime.state.{
-  CheckpointListener,
-  FunctionInitializationContext,
-  FunctionSnapshotContext
-}
+import org.apache.flink.runtime.state.{CheckpointListener, FunctionInitializationContext, FunctionSnapshotContext}
 import org.apache.flink.streaming.api.CheckpointingMode
 import org.apache.flink.streaming.api.checkpoint.{CheckpointedFunction, ListCheckpointed}
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks
@@ -46,6 +42,7 @@ import org.codefeedr.core.library.metastore.{ConsumerNode, QuerySourceNode, Subj
 import org.codefeedr.model.zookeeper.{Consumer, QuerySource}
 import org.codefeedr.model.{RecordSourceTrail, SubjectType, TrailedRecord}
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
+import org.codefeedr.core.library.metastore.sourcecommand.SourceCommand
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.JavaConverters._
@@ -146,6 +143,14 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
     finalSourceEpoch =
       Await.result(subjectNode.getEpochs().getLatestEpochId(), Duration(5, SECONDS))
     logger.debug(s"Cancelling ${getLabel()} after final source epoch ${finalSourceEpoch}.")
+  }
+
+  /**
+    * Apply a command to perform a (state) transition
+    * @param command
+    */
+  def apply(command: SourceCommand):Unit = {
+
   }
 
   def readableOffsets(offsetMap: Map[TopicPartition, Long]): String = {

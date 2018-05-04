@@ -3,6 +3,7 @@ package org.codefeedr.core.library.metastore
 import org.codefeedr.core.library.internal.zookeeper.{ZkNode, ZkNodeBase, ZkStateNode}
 import org.codefeedr.model.zookeeper.Partition
 
+import scala.async.Async.{await,async}
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.reflect.ClassTag
@@ -22,6 +23,8 @@ class EpochNode(epoch: Int, parent: ZkNodeBase)
     */
   def getPartitions(): EpochPartitionCollection = new EpochPartitionCollection(this)
 
+  def getMappings(): EpochMappingCollection = new EpochMappingCollection(this)
+
   /**
     * Retrieves all partition data of the epoch
     * @return
@@ -38,6 +41,11 @@ class EpochNode(epoch: Int, parent: ZkNodeBase)
   }
 
   def getEpoch(): Int = epoch
+
+  override def postCreate(): Future[Unit] = async {
+    await(getMappings().create())
+    await(getPartitions().create())
+  }
 
   /**
     * The base class needs to expose the typeTag, no typeTag constraints can be put on traits

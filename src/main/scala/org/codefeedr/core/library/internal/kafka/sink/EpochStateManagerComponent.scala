@@ -104,7 +104,6 @@ class EpochStateManager extends Serializable with LazyLogging {
   private def createEpochNode(epochState: EpochState): Future[Unit] = async {
     if (!await(epochState.epochNode.exists())) {
       await(epochState.epochNode.create())
-      await(epochState.epochNode.getPartitions().create())
     }
   }
 
