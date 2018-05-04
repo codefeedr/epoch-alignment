@@ -47,9 +47,7 @@ trait ZkStateNode[TNode, TState] extends ZkNode[TNode] {
     * @return
     */
   def getState(): Future[Option[TState]] = {
-    asyncReadLock(() => {
-      getChild[TState]("state")(typeT()).getData()
-    })
+    getChild[TState]("state")(typeT()).getData()
   }
 
   /**
@@ -58,10 +56,7 @@ trait ZkStateNode[TNode, TState] extends ZkNode[TNode] {
     * @return
     */
   def setState(state: TState): Future[Unit] = {
-    asyncWriteLock(() => {
       getChild[TState]("state")(typeT()).setData(state)
-    })
-
   }
 
   /**
