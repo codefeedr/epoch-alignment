@@ -9,19 +9,16 @@ import org.apache.flink.types.Row
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.codefeedr.core.MockedLibraryServices
 import org.codefeedr.core.library.metastore._
-
-import scala.collection.JavaConverters._
-import org.codefeedr.model.zookeeper.{Partition, QuerySource}
+import org.codefeedr.model.zookeeper.Partition
 import org.codefeedr.model.{RecordProperty, RecordSourceTrail, SubjectType, TrailedRecord}
 import org.codefeedr.util.MockitoExtensions
-import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
 import org.scalatest.mockito.MockitoSugar
+import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach}
 
 import scala.async.Async.{async, await}
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
 
@@ -65,10 +62,10 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     cpLock = new Object()
 
     when(subjectNode.getDataSync()) thenReturn
-      Some(SubjectType("subjectuuid", "SampleObject",false, new Array[RecordProperty[_]](0)))
+      Some(SubjectType("subjectuuid", "SampleObject",persistent = false, new Array[RecordProperty[_]](0)))
 
     closePromise = Promise[Unit]()
-    when(subjectNode.awaitClose()) thenReturn closePromise.future
+    when(manager.cancel) thenReturn closePromise.future
 
 
     when(initCtx.getOperatorStateStore) thenReturn operatorStore
@@ -80,8 +77,9 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
     when(runtimeContext.isCheckpointingEnabled) thenReturn true
 
-    when(ctx.getCheckpointLock()).thenReturn (cpLock,cpLock)
+    when(ctx.getCheckpointLock).thenReturn (cpLock,cpLock)
     when(consumerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.any[String]())(ArgumentMatchers.any(),ArgumentMatchers.any())).thenReturn (mock[KafkaConsumer[RecordSourceTrail,Row]])
+
   }
 
 
@@ -296,12 +294,12 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
   /**
     * Runs the kafkaSource in a seperate thread and returns the thread that it is using
-    * @param source
+    * @param source source to run
     * @return
     */
   def runAsync(source: TestKafkaSource): Unit = {
     thread = new Thread {
-      override def run {
+      override def run() {
         source.setRuntimeContext(runtimeContext)
         source.initializeState(initCtx)
         source.run(ctx)
@@ -339,14 +337,14 @@ class TestKafkaSource(node: SubjectNode,kafkaConsumerFactory: KafkaConsumerFacto
 
   override def mapToT(record: TrailedRecord): SampleObject = new SampleObject
 
-  @transient override lazy val consumer = mockedConsumer
+  @transient override lazy val consumer: KafkaSourceConsumer[SampleObject] = mockedConsumer
 
   /**
     * Get typeinformation of the returned type
     *
     * @return
     */
-  override def getProducedType: TypeInformation[SampleObject] = ???
+  override def getProducedType: TypeInformation[SampleObject] = null
 }
 
 
