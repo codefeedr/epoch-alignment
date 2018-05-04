@@ -207,7 +207,7 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
   override def commit(transaction: TransactionState): Unit = {
     val sw = Stopwatch.start()
     logger.debug(
-      s"${getLabel()} committing transaction ${transaction.checkPointId}.\r\n${transaction
+      s"${getLabel()} committing transaction ${transaction.checkPointId} on producer ${transaction.producerIndex}.\r\n${transaction
         .displayOffsets()}\r\n${getLabel()}")
     producerPool(transaction.producerIndex).commitTransaction()
     val epochState = EpochState(transaction, subjectNode.getEpochs())
@@ -228,7 +228,7 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
   override def preCommit(transaction: TransactionState): Unit = {
     val sw = Stopwatch.start()
     logger.debug(
-      s"${getLabel()} Precomitting transaction ${transaction.checkPointId}.\r\n${transaction
+      s"${getLabel()} Precomitting transaction ${transaction.checkPointId} on producer ${transaction.producerIndex}.\r\n${transaction
         .displayOffsets()}\r\n${getLabel()}")
     blocking {
       producerPool(transaction.producerIndex).flush()
