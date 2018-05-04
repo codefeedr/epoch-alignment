@@ -47,9 +47,11 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     when(consumerNode.create(ArgumentMatchers.any())) thenReturn Future.successful(null)
   }
 
+  def constructManager(): KafkaSourceManager = new KafkaSourceManager(source,subjectNode,"sourceuuid", "instanceuuid")
+
   "KafkaSourceManager.InitalizeRun" should "construct source and consumer if needed" in {
     //Arrange
-    val manager = new KafkaSourceManager(source,subjectNode,"sourceuuid", "instanceuuid")
+    val manager = constructManager()
 
     //Act
     manager.initializeRun()
@@ -59,4 +61,20 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     verify(consumerNode, times(1)).create(ArgumentMatchers.any())
     assert(true)
   }
+
+  /*
+  "KafkaSourceManager" should "invoke cancel on a kafkaSource when a subject completes" in {
+    //Arrange
+    val manager = constructManager()
+    //Manager is the class passing events to the kafka source
+    manager.initializeRun()
+
+    //Act
+    completePromise.success()
+
+    //Assert
+    verify(source,times(1)).cancel()
+    assert(true)
+  }
+  */
 }

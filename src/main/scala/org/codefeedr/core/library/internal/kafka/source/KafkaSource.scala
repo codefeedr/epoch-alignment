@@ -157,7 +157,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
   override def initializeState(context: FunctionInitializationContext): Unit = {
     //This construction would normally be done by composition, but because flink constructs the source we cannot do so here
     if (manager == null) {
-      new KafkaSourceManager(this, subjectNode, sourceUuid, instanceUuid)
+      manager = new KafkaSourceManager(this, subjectNode, sourceUuid, instanceUuid)
     }
     logger.info(s"Initializing state of ${getLabel()}")
     if (!getRuntimeContext().asInstanceOf[StreamingRuntimeContext].isCheckpointingEnabled) {

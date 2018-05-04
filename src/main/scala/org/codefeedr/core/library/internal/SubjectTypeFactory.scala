@@ -49,12 +49,12 @@ object SubjectTypeFactory extends LazyLogging {
                         persistent = persistent,
                         properties = properties.map(getRecordProperty(idFields)).toArray)
     if (r.properties.count(o => o.id) != idFields.length) {
-      val msg = s"Some idfields given to getSubjectType did not exist: ${idFields
+      val msg = s"Some idfields on ${name} given to getSubjectType did not exist: ${idFields
         .filter(o => !r.properties.map(o => o.name).contains(o))
         .mkString(", ")}"
       val e = new Exception(msg)
       logger.error(msg, e)
-      throw e
+      //throw e
     }
     r
   }
