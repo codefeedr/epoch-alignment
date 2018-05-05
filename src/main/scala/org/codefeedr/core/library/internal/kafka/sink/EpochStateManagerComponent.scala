@@ -75,7 +75,6 @@ class EpochStateManager extends Serializable with LazyLogging {
 
     //If this task is the last one, we can complete the epoch in parallel
     await(completeEpoch(epochState))
-
   }
 
   //TODO: Perform operaiton under lock on the epoch
@@ -87,16 +86,18 @@ class EpochStateManager extends Serializable with LazyLogging {
           if (!await(epochState.epochNode.getState()).get) { //Validate we don't perform the complete operation twice
             logger.debug(
               s"Completing epoch ${epochState.epochNode.getEpoch()}(${epochState.transactionState.checkPointId}) for subject ${epochState.epochCollectionNode.parent().name}")
-            //Update offset data
-            await(
-              epochState.epochCollectionNode.setData(
-                EpochCollection(epochState.transactionState.checkPointId)))
+
             //Calculate all combined partitions
             val epoch = Epoch(epochState.transactionState.checkPointId,
                               await(epochState.epochNode.getPartitionData()))
             //Update the epochNode itself
             await(epochState.epochNode.setData(epoch))
+            //Flag the epoch as completed
             await(epochState.epochNode.setState(true))
+            //Mark the epoch as latest epoch
+            await(
+              epochState.epochCollectionNode.setData(
+                EpochCollection(epochState.transactionState.checkPointId)))
             logger.debug(
               s"Completed epoch ${epochState.epochNode.getEpoch()}(${epochState.transactionState.checkPointId}) for subject ${epochState.epochCollectionNode.parent().name}")
           }
