@@ -3,6 +3,7 @@ package org.codefeedr.core.library.internal.kafka.source
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.codefeedr.core.MockedLibraryServices
 import org.codefeedr.core.library.metastore._
+import org.codefeedr.model.zookeeper.Partition
 import org.codefeedr.util.MockitoExtensions
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{times, verify, when}
@@ -24,6 +25,8 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
   private var consumerCollection: ConsumerCollection = _
   private var consumerNode: ConsumerNode = _
 
+  private var epochCollection: EpochCollectionNode = _
+
   private var source: KafkaSource[String] = _
 
   private var completePromise = Promise[Unit]()
@@ -39,6 +42,8 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     consumerCollection = mock[ConsumerCollection]
     consumerNode = mock[ConsumerNode]
 
+    epochCollection = mock[EpochCollectionNode]
+
     source = mock[KafkaSource[String]]
 
     when(subjectNode.getSources()) thenReturn sourceCollectionNode
@@ -50,6 +55,8 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     when(sourceNode.getConsumers()) thenReturn consumerCollection
     when(consumerCollection.getChild(ArgumentMatchers.any[String]())) thenReturn consumerNode
     when(consumerNode.create(ArgumentMatchers.any())) thenReturn Future.successful(null)
+
+    when(subjectNode.getEpochs()) thenReturn epochCollection
   }
 
   def constructManager(): KafkaSourceManager = new KafkaSourceManager(source,subjectNode,"sourceuuid", "instanceuuid")
@@ -92,6 +99,55 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     //Assert
     verify(sourceSyncStateNode, times(1)).setData(SynchronizationState(1))
     assert(true)
+  }
+
+
+  "KafkaSourceManager.isCatchedUp" should "Return true if the passed offsets are all past the second-last epoch" in async {
+    //Arrange
+    val manager = constructManager()
+    when(epochCollection.getLatestEpochId()) thenReturn Future.successful(3L)
+    val epoch = mock[EpochNode]
+    when(epochCollection.getChild(2)) thenReturn epoch
+    when(epoch.getData()) thenReturn Future.successful(Some(Epoch(2,Seq(Partition(1,2L),Partition(2,2L),Partition(3,3L)))))
+
+    val comparison = Map(1-> 2L, 2->2L)
+
+    //Act
+    val r = await(manager.isCatchedUp(comparison))
+
+    //Assert
+    assert(r)
+  }
+
+  it should "Return true if the pre-last epoch does not exist" in async {
+    //Arrange
+    val manager = constructManager()
+    when(epochCollection.getLatestEpochId()) thenReturn Future.successful(0L)
+
+    val comparison = Map(1-> 2L, 2->2L)
+
+    //Act
+    val r = await(manager.isCatchedUp(comparison))
+
+    //Assert
+    assert(r)
+  }
+
+  it should "Return false if for some partition the offset is not past the pre-last epoch" in async {
+    //Arrange
+    val manager = constructManager()
+    when(epochCollection.getLatestEpochId()) thenReturn Future.successful(3L)
+    val epoch = mock[EpochNode]
+    when(epochCollection.getChild(2)) thenReturn epoch
+    when(epoch.getData()) thenReturn Future.successful(Some(Epoch(2,Seq(Partition(1,2L),Partition(2,3L),Partition(3,3L)))))
+
+    val comparison = Map(1-> 2L, 2->2L)
+
+    //Act
+    val r = await(manager.isCatchedUp(comparison))
+
+    //Assert
+    assert(!r)
   }
 
 }

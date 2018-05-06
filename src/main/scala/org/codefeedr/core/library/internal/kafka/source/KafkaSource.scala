@@ -210,7 +210,18 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
       cancelIfNeeded(context.getCheckpointId)
     }
 
+    checkIfCatchedUp()
     logger.debug(s"Done snapshotting epoch ${context.getCheckpointId} on $getLabel")
+  }
+
+  private def checkIfCatchedUp(): Unit = {
+    if (state == KafkaSourceState.CatchingUp) {
+      if (Await.result(manager.isCatchedUp(currentOffsets.toMap), Duration(1, SECONDS))) {
+        state = KafkaSourceState.Ready
+        logger.info(s"Transitioned to ready state in $getLabel")
+        manager.notifyCatchedUp()
+      }
+    }
   }
 
   /**

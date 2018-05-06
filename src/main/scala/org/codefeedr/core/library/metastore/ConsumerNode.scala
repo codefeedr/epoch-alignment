@@ -16,9 +16,13 @@ import scala.reflect.ClassTag
 class ConsumerNode(name: String, parent: ZkNodeBase)
     extends ZkNode[Consumer](name, parent)
     with ZkStateNode[Consumer, Boolean] {
-  override def postCreate(): Future[Unit] = async {
-    await(getStateNode().create(true))
-  }
+  override def postCreate(): Future[Unit] =
+    for {
+      _ <- super.postCreate()
+      _ <- getSyncState().create()
+    } yield {}
+
+  def getSyncState(): SourceSynchronizationStateNode = new SourceSynchronizationStateNode(this)
 
   def consumerCollection(): ConsumerCollection = parent().asInstanceOf[ConsumerCollection]
 

@@ -1,6 +1,7 @@
 package org.codefeedr.core.library.internal.kafka.source
 
 import com.typesafe.scalalogging.LazyLogging
+import org.codefeedr.core.library.internal.kafka.OffsetUtils
 import org.codefeedr.core.library.metastore.{SubjectNode, SynchronizationState}
 import org.codefeedr.model.zookeeper.{Consumer, Partition, QuerySource}
 
@@ -21,7 +22,7 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
 
   private val sourceNode = subjectNode.getSources().getChild(sourceUuid)
   private val consumerNode = sourceNode.getConsumers().getChild(instanceUuid)
-  private val syncStateNode = sourceNode.getSyncState()
+  private val syncStateNode = consumerNode.getSyncState()
 
   lazy val cancel: Future[Unit] = subjectNode.awaitClose()
 
@@ -48,6 +49,54 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
 
   def startedCatchingUp(): Future[Unit] = {
     syncStateNode.setData(SynchronizationState(1))
+  }
+
+  /**
+    * Notify the manager that the consumer is catched up
+    * If all consumers are catched up, the entire source will me marked as catched up (and ready to synchronize)
+    */
+  def notifyCatchedUp(): Future[Unit] = async {
+    await(syncStateNode.setData(SynchronizationState(2)))
+    await(sourceNode.asyncWriteLock(() =>
+      async {
+        if (await(sourceNode.getSyncState().getData()).get.state < 2)
+          if (await(allSourcesCatchedUp())) {
+            logger.debug(
+              s"All sources on ${subjectNode.name} are catched up and ready to synchronize")
+            sourceNode.getSyncState().setData(SynchronizationState(2))
+          }
+    }))
+  }
+
+  /** Checks if all sources are in the catched up state **/
+  private def allSourcesCatchedUp(): Future[Boolean] =
+    sourceNode
+      .getConsumers()
+      .getChildren()
+      .flatMap(
+        o =>
+          Future
+            .sequence(
+              o.map(
+                o => o.getSyncState().getData().map(o => o.get)
+              )
+            )
+            .map(o => o.forall(o => o.state == 2))
+      )
+
+  /** Checks if the given offset is considered to be catched up with the source
+    * Offsets are considered catched up if all offsets are past the second last epoch of the source
+    * @param offset the offsets to check
+    */
+  def isCatchedUp(offset: Map[Int, Long]): Future[Boolean] = async {
+    val comparedEpoch = await(subjectNode.getEpochs().getLatestEpochId()) - 1
+    if (comparedEpoch < 0) {
+      //If compared epoch is in the history, we just consider to be "up to date"
+      true
+    } else {
+      val comparison = await(getEpochOffsets(comparedEpoch)).map(o => o.nr -> o.offset).toMap
+      OffsetUtils.HigherOrEqual(offset, comparison)
+    }
   }
 
   /**

@@ -11,7 +11,7 @@ object OffsetUtils extends LazyLogging {
     * @return true if the source has equal or higher values for every index
     * @throws NoSuchElementException when source contains an index that is not present in the target
     */
-  def HigherOrEqual(source: Map[Int, Long], reference: Map[Int, Long]): Boolean = {
+  def HigherOrEqual(source: Map[Int, Long], reference: PartialFunction[Int, Long]): Boolean = {
 
     if (source.isEmpty) {
       logger.warn(s"HigherOrEqual for offset comparison called with empty source. Returning true")
