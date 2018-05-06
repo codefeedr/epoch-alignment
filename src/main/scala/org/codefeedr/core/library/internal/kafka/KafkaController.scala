@@ -19,7 +19,6 @@
 
 package org.codefeedr.core.library.internal.kafka
 
-import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.admin.{AdminClient, NewTopic}
 import resource.managed

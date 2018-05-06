@@ -1,5 +1,6 @@
 package org.codefeedr.util
 
+import org.mockito.{ArgumentMatcher, ArgumentMatchers}
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatest.AsyncFlatSpec
@@ -32,5 +33,11 @@ trait MockitoExtensions {
     }
   }
 
+  def Matches[T](matcher: T => Boolean): T = {
+    ArgumentMatchers.argThat(
+    new ArgumentMatcher[T] {
+      override def matches(argument: T): Boolean = matcher(argument)
+    })
+  }
 
 }

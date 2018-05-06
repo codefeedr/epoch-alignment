@@ -1,23 +1,22 @@
 package org.codefeedr.core.library.internal.kafka.source
 
-import java.util
-
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.flink.runtime.state.FunctionSnapshotContext
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.types.Row
-import org.apache.kafka.clients.consumer.{KafkaConsumer, OffsetAndMetadata, OffsetCommitCallback}
+import org.apache.kafka.clients.consumer.{ConsumerRecord, KafkaConsumer}
 import org.apache.kafka.common.TopicPartition
 import org.codefeedr.model.{RecordSourceTrail, TrailedRecord}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 /**
   * Class performing the polling of kafka for a KafkaSource
   * Converting (java)types we use on Kafka back to (scala) types we use in Flink
   */
 class KafkaSourceConsumer[T](name: String,
+                             topic: String,
                              consumer: KafkaConsumer[RecordSourceTrail, Row],
                              mapper: TrailedRecord => T)
     extends LazyLogging {
@@ -27,30 +26,61 @@ class KafkaSourceConsumer[T](name: String,
 
   /**
     * Performs a poll on kafka
-    * @param ctx
+    * @param ctx context to perform the poll on
     * @return the last offsets for each partition of the consumer that has been collected in the poll
     */
-  def poll(ctx: SourceFunction.SourceContext[T]): Map[Int, Long] = {
+  def poll(ctx: SourceFunction.SourceContext[T]): Map[Int, Long] = poll(ctx, Map[Int, Long]())
+
+  def poll(ctx: SourceFunction.SourceContext[T],
+           seekOffsets: PartialFunction[Int, Long]): Map[Int, Long] = {
+    val shouldInclude = (r: ConsumerRecord[RecordSourceTrail, Row]) =>
+      seekOffsets.lift(r.partition()).forall(_ >= r.offset())
+    poll(ctx, shouldInclude, seekOffsets)
+  }
+
+  private def poll(ctx: SourceFunction.SourceContext[T],
+                   shouldInclude: ConsumerRecord[RecordSourceTrail, Row] => Boolean,
+                   seekOffsets: PartialFunction[Int, Long]): Map[Int, Long] = {
     logger.debug(s"$name started polling")
     val data = consumer.poll(pollTimeout).iterator().asScala
     logger.debug(s"$name completed polling")
     val r = mutable.Map[Int, Long]()
-
+    val resetSet = ArrayBuffer[Int]()
     data.foreach(o => {
-      ctx.collect(mapper(TrailedRecord(o.value())))
-      val partition = o.partition()
-      val offset = o.offset()
-      logger.debug(s"Processing $partition -> $offset ")
-      if (!r.contains(partition) || r(partition) < offset) {
-        r(partition) = offset
+      if (shouldInclude(o)) {
+        ctx.collect(mapper(TrailedRecord(o.value())))
+        val partition = o.partition()
+        val offset = o.offset()
+        logger.debug(s"Processing $partition -> $offset ")
+        if (!r.contains(partition) || r(partition) < offset) {
+          r(partition) = offset
+        }
+      } else {
+        //If we should not include it, we need to reset the consumer after this poll
+        val partition = o.partition()
+        if (!resetSet.contains(partition)) {
+          resetSet += partition
+        }
       }
     })
+    resetConsumer(resetSet, seekOffsets)
+
     r.toMap
+  }
+
+  private def resetConsumer(partitions: Seq[Int], offsets: PartialFunction[Int, Long]): Unit = {
+    if (partitions.nonEmpty) {
+      logger.debug(s"Perfoming a seek on $name")
+      partitions.foreach(partition => {
+        val offset = offsets(partition)
+        consumer.seek(new TopicPartition(topic, partition), offset)
+      })
+    }
   }
 
   /**
     * Commits the passed offsets
-    * @param offsets
+    * @param offsets the offsets to commit
     */
   def commit(offsets: Map[Int, Long]): Unit = {
     //TODO: Implement
@@ -74,7 +104,7 @@ class KafkaSourceConsumer[T](name: String,
     * Used to initialize a kafkaSource
     * @return
     */
-  def getCurrentOffsets(): mutable.Map[Int, Long] =
+  def getCurrentOffsets: mutable.Map[Int, Long] =
     mutable.Map[Int, Long]() ++= consumer
       .assignment()
       .asScala
@@ -84,7 +114,7 @@ class KafkaSourceConsumer[T](name: String,
     * Retrieves kafka endoffsets -1. (Kafka returns last avalaible message + 1)
     * @return
     */
-  def getEndOffsets(): Map[Int, Long] =
+  def getEndOffsets: Map[Int, Long] =
     consumer
       .endOffsets(consumer.assignment())
       .asScala

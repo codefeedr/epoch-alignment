@@ -73,7 +73,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
     kafkaConsumer.subscribe(Iterable(topic).asJavaCollection)
     logger.debug(
       s"Source $instanceUuid of consumer $sourceUuid subscribed on topic $topic as group $instanceUuid")
-    new KafkaSourceConsumer[T](s"Consumer $getLabel", kafkaConsumer, mapToT)
+    new KafkaSourceConsumer[T](s"Consumer $getLabel", topic, kafkaConsumer, mapToT)
   }
 
   //Unique id of the source the instance of this kafka source belongs to
@@ -106,7 +106,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
 
   //State of the source. We use the mutable map in operation,
   // and when a snapshot is performed we update the liststate. The liststate contains the offsets of the last comitted checkpoint
-  @transient private[kafka] lazy val currentOffsets = consumer.getCurrentOffsets()
+  @transient private[kafka] lazy val currentOffsets = consumer.getCurrentOffsets
   @transient private[kafka] lazy val checkpointOffsets = mutable.Map[Long, Map[Int, Long]]()
   @transient private var listState: ListState[(Int, Long)] = _
   @volatile private var initialized = false
