@@ -46,6 +46,7 @@ import scala.collection.mutable
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.async.Async.{async, await}
 
 /**
   * Use a single thread to perform all polling operations on kafka
@@ -110,6 +111,9 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
   @transient private[kafka] lazy val checkpointOffsets = mutable.Map[Long, Map[Int, Long]]()
   @transient private var listState: ListState[(Int, Long)] = _
   @volatile private var initialized = false
+
+  @volatile
+  @transient private var alignmentOffsets: Map[Int, Long] = _
 
   /**
     * Get a display label for this source
@@ -209,12 +213,16 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
     if (context.getCheckpointId > 1) {
       cancelIfNeeded(context.getCheckpointId)
     }
-
-    checkIfCatchedUp()
+    //Handle state specific code
+    state match {
+      case KafkaSourceState.CatchingUp => snapshotCatchingUpState()
+      case KafkaSourceState.Ready => snapshotReadyState()
+      case _ =>
+    }
     logger.debug(s"Done snapshotting epoch ${context.getCheckpointId} on $getLabel")
   }
 
-  private def checkIfCatchedUp(): Unit = {
+  private def snapshotCatchingUpState(): Unit = {
     if (state == KafkaSourceState.CatchingUp) {
       if (Await.result(manager.isCatchedUp(currentOffsets.toMap), Duration(1, SECONDS))) {
         state = KafkaSourceState.Ready
@@ -222,6 +230,17 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
         manager.notifyCatchedUp()
       }
     }
+  }
+
+  /** If th source is in "ready" state, obtain the maximum partition to read up to*/
+  private def snapshotReadyState(): Unit = {
+    Await.ready(
+      async {
+        val epoch = await(subjectNode.getEpochs().getLatestEpochId())
+        alignmentOffsets = await(manager.getEpochOffsets(epoch)).map(o => o.nr -> o.offset).toMap
+      },
+      Duration(1, SECONDS)
+    )
   }
 
   /**
@@ -297,14 +316,18 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
     */
   def poll(ctx: SourceFunction.SourceContext[T]): Unit = {
     ctx.getCheckpointLock.synchronized {
-      val offsets = consumer.poll(ctx)
+      val offsets =
+        if (state == KafkaSourceState.Ready || state == KafkaSourceState.Synchronized) {
+          //If synchronized, poll up to the maximum offsets
+          consumer.poll(ctx, alignmentOffsets)
+        } else {
+          //Otherwise, just poll
+          consumer.poll(ctx)
+        }
       offsets.foreach(o => {
         currentOffsets(o._1) = o._2
       })
     }
-
-    //HACK: Find some way to perform some operations outside the checkpoint lock
-    Thread.sleep(10)
   }
 
   /**
