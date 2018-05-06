@@ -9,6 +9,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
+/** Creating a querySourceNode will create its "skeleton" */
 class QuerySourceNode(name: String, parent: ZkNodeBase)
     extends ZkNode[QuerySource](name, parent)
     with ZkStateNode[QuerySource, Boolean]
@@ -22,8 +23,20 @@ class QuerySourceNode(name: String, parent: ZkNodeBase)
     */
   def getEpochs(): SourceEpochCollection = new SourceEpochCollection(this)
 
+  def getSyncState(): SourceSynchronizationStateNode = new SourceSynchronizationStateNode(this)
+
   /** Retrieve the node that can be used to give instructions to this node */
   def getCommandNode(): QuerySourceCommandNode = new QuerySourceCommandNode(this)
+
+  override def postCreate(): Future[Unit] = {
+    for {
+      _ <- super.postCreate()
+      _ <- getEpochs().create()
+      _ <- getSyncState().create()
+      _ <- getCommandNode().create()
+      _ <- getConsumers().create()
+    } yield {}
+  }
 
   override def typeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
   override def initialState(): Boolean = true

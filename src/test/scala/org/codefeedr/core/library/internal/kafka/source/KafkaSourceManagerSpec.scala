@@ -6,12 +6,12 @@ import org.codefeedr.core.library.metastore._
 import org.codefeedr.util.MockitoExtensions
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{times, verify, when}
-import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach}
+import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach, FlatSpec}
 import org.scalatest.mockito.MockitoSugar
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
-import scala.async.Async.{async,await}
+import scala.async.Async.{async, await}
 
 class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfterEach with MockedLibraryServices with MockitoExtensions {
 
@@ -19,6 +19,7 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
 
   private var sourceCollectionNode : QuerySourceCollection= _
   private var sourceNode: QuerySourceNode = _
+  private var sourceSyncStateNode: SourceSynchronizationStateNode = _
 
   private var consumerCollection: ConsumerCollection = _
   private var consumerNode: ConsumerNode = _
@@ -33,6 +34,7 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
 
     sourceCollectionNode = mock[QuerySourceCollection]
     sourceNode = mock[QuerySourceNode]
+    sourceSyncStateNode = mock[SourceSynchronizationStateNode]
 
     consumerCollection = mock[ConsumerCollection]
     consumerNode = mock[ConsumerNode]
@@ -43,6 +45,7 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     when(subjectNode.awaitClose()) thenReturn completePromise.future
     when(sourceCollectionNode.getChild(ArgumentMatchers.any[String]())) thenReturn sourceNode
     when(sourceNode.create(ArgumentMatchers.any())) thenReturn Future.successful(null)
+    when(sourceNode.getSyncState()) thenReturn sourceSyncStateNode
 
     when(sourceNode.getConsumers()) thenReturn consumerCollection
     when(consumerCollection.getChild(ArgumentMatchers.any[String]())) thenReturn consumerNode
@@ -77,6 +80,18 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     //Assert
     await(manager.cancel)
     assert(manager.cancel.isCompleted)
+  }
+
+  "KafkaSourceManager.startedCatchingUp" should "set the sourceNode to catchingUp" in {
+    //Arrange
+    val manager = constructManager()
+
+    //Act
+    manager.startedCatchingUp()
+
+    //Assert
+    verify(sourceSyncStateNode, times(1)).setData(SynchronizationState(1))
+    assert(true)
   }
 
 }

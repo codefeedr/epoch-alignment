@@ -9,6 +9,7 @@ import org.apache.flink.types.Row
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.codefeedr.core.MockedLibraryServices
 import org.codefeedr.core.library.metastore._
+import org.codefeedr.core.library.metastore.sourcecommand.SourceCommand
 import org.codefeedr.model.zookeeper.Partition
 import org.codefeedr.model.{RecordProperty, RecordSourceTrail, SubjectType, TrailedRecord}
 import org.codefeedr.util.MockitoExtensions
@@ -197,19 +198,17 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     //Arrange
     val testKafkaSource = constructSource()
     val epochCollectionNodeMock = mock[EpochCollectionNode]
-    val finalEpochMock = mock[EpochNode]
 
     when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
     when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(1337L)
-    when(epochCollectionNodeMock.getChild(1337L)) thenReturn finalEpochMock
-    when(finalEpochMock.getPartitionData()) thenReturn Future.successful(List(Partition(2,1338)))
+    when(manager.getEpochOffsets(1337L)) thenReturn Future.successful(Iterable(Partition(2,1338)))
 
     //Act
     testKafkaSource.cancel()
 
     //Assert
     assert(testKafkaSource.finalSourceEpoch == 1337)
-    assert(testKafkaSource.finalSourceEpochOffsets(2) == 1338)
+    assert(testKafkaSource.finalSourceEpochOffsets.exists(o => o.nr == 2 && o.offset == 1338))
   }
 
 
@@ -217,7 +216,6 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     //Arrange
     val testKafkaSource = constructSource()
     val epochCollectionNodeMock = mock[EpochCollectionNode]
-    val finalEpochMock = mock[EpochNode]
     val p = Promise[Unit]()
     when(consumer.poll(ctx)).thenAnswer(awaitAndReturn(p, Map(3 -> 1339L),2))
 
@@ -227,9 +225,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
     when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
     when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(1L)
-    when(epochCollectionNodeMock.getChild(1L)) thenReturn finalEpochMock
-    when(finalEpochMock.getPartitionData()) thenReturn Future.successful(List(Partition(3,1339L)))
-
+    when(manager.getEpochOffsets(1L)) thenReturn Future.successful(Iterable(Partition(3,1339)))
 
     testKafkaSource.setRuntimeContext(runtimeContext)
     testKafkaSource.initializeState(initCtx)
@@ -253,7 +249,6 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     //Arrange
     val testKafkaSource = constructSource()
     val epochCollectionNodeMock = mock[EpochCollectionNode]
-    val finalEpochMock = mock[EpochNode]
     val p = Promise[Unit]()
     when(consumer.poll(ctx)).thenAnswer(awaitAndReturn(p, Map(3 -> 1338L),2))
     when(consumer.getCurrentOffsets()) thenReturn mutable.Map(3 -> 0L)
@@ -267,8 +262,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
     when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
     when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(1L)
-    when(epochCollectionNodeMock.getChild(1L)) thenReturn finalEpochMock
-    when(finalEpochMock.getPartitionData()) thenReturn Future.successful(List(Partition(3,1339L)))
+    when(manager.getEpochOffsets(1L)) thenReturn Future.successful(Iterable(Partition(3,1339)))
 
     //Act
     testKafkaSource.cancel()
@@ -283,6 +277,18 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     assert(before)
     assert(after)
     assert(testKafkaSource.currentOffsets(3) == 1338)
+  }
+
+  it should "Swich to catchingUp state when receiving prepareSynchronize command" in async {
+    //Arrange
+    val testKafkaSource = constructSource()
+
+    //Act
+    testKafkaSource.apply(SourceCommand("prepareSynchronize"))
+
+    //Assert
+    verify(manager,times(1)).startedCatchingUp()
+    assert(testKafkaSource.getState == KafkaSourceState.CatchingUp)
   }
 
   def constructSource(): TestKafkaSource = {

@@ -39,6 +39,7 @@ import scala.concurrent.duration._
   */
 class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)
     extends ZkNodeBase(name)
+    with PartialFunction[Unit, Future[TData]]
     with LazyLogging {
 
   override def parent(): ZkNodeBase = p
@@ -133,6 +134,10 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)
     * @return
     */
   def observeData(): Observable[TData] = zkClient.observeData[TData](path())
+
+  override def isDefinedAt(x: Unit): Boolean = true
+
+  override def apply(v1: Unit): Future[TData] = getData().map(o => o.get)
 }
 
 object ZkNode {

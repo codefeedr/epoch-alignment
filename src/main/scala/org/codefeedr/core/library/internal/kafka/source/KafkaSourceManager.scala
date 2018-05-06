@@ -1,12 +1,13 @@
 package org.codefeedr.core.library.internal.kafka.source
 
 import com.typesafe.scalalogging.LazyLogging
-import org.codefeedr.core.library.metastore.{ConsumerNode, SubjectNode}
-import org.codefeedr.model.zookeeper.{Consumer, QuerySource}
+import org.codefeedr.core.library.metastore.{SubjectNode, SynchronizationState}
+import org.codefeedr.model.zookeeper.{Consumer, Partition, QuerySource}
 
+import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Await, Future, blocking}
 import scala.concurrent.duration.{Duration, SECONDS}
+import scala.concurrent.{Await, Future, blocking}
 
 /**
   * Class responsible for observing and modifying zookeeper state and notifying the kafkasource of events/state changes
@@ -20,6 +21,7 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
 
   private val sourceNode = subjectNode.getSources().getChild(sourceUuid)
   private val consumerNode = sourceNode.getConsumers().getChild(instanceUuid)
+  private val syncStateNode = sourceNode.getSyncState()
 
   lazy val cancel: Future[Unit] = subjectNode.awaitClose()
 
@@ -44,4 +46,21 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     }
   }
 
+  def startedCatchingUp(): Future[Unit] = {
+    syncStateNode.setData(SynchronizationState(1))
+  }
+
+  /**
+    * Obtains offsets for the subscribed subject of the given epoch
+    * If -1 is passed, obtains the current latest offsets
+    */
+  def getEpochOffsets(epoch: Long): Future[Iterable[Partition]] = async {
+    logger.debug(s"Obtaining offsets for epoch $epoch")
+    if (epoch == -1) {
+      throw new Exception(
+        s"Attempting to obtain endoffsets for epoch -1 in source of ${subjectNode.name}. Did you run the job with checkpointing enabled?")
+    } else {
+      await(subjectNode.getEpochs().getChild(epoch).getData()).get.partitions
+    }
+  }
 }
