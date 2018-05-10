@@ -223,13 +223,12 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
   }
 
   private def snapshotCatchingUpState(): Unit = {
-    if (state == KafkaSourceState.CatchingUp) {
-      if (Await.result(manager.isCatchedUp(currentOffsets.toMap), Duration(1, SECONDS))) {
-        state = KafkaSourceState.Ready
-        logger.info(s"Transitioned to ready state in $getLabel")
-        manager.notifyCatchedUp()
-      }
+    if (Await.result(manager.isCatchedUp(currentOffsets.toMap), Duration(1, SECONDS))) {
+      state = KafkaSourceState.Ready
+      logger.info(s"Transitioned to ready state in $getLabel")
+      manager.notifyCatchedUp()
     }
+
   }
 
   /** If th source is in "ready" state, obtain the maximum partition to read up to*/
@@ -370,6 +369,9 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
         //And directly complete checkpoint
         notifyCheckpointComplete(increment)
       }
+      //Give the checkpoint algorithm a chance to obtain the checkpoint lock
+      //TODO: Find a way to perform most of the "poll" operations outside the checkpoint lock
+      Thread.sleep(1)
     }
 
     logger.debug(s"Source reach endOffsets $getLabel")
