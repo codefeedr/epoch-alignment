@@ -173,7 +173,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
             logger.error(msg)
             throw new Error(msg)
         }
-          case _ => throw new Error("Unknown command")
+      case _ => throw new Error("Unknown command")
     }
   }
 
