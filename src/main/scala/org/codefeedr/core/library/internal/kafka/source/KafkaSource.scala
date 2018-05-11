@@ -114,7 +114,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
   @volatile private var initialized = false
 
   @volatile
-  @transient private var alignmentOffsets: Map[Int, Long] = _
+  @transient private[kafka] var alignmentOffsets: Map[Int, Long] = _
 
   /**
     * Get a display label for this source
@@ -268,7 +268,19 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
     )
   }
 
-  private def snapshotSynchronizedState(epochId: Long): Unit = {}
+  /** If the source is in "synchronized" state, call a specific method on the manager to obtain offsets to synchronize on */
+  private def snapshotSynchronizedState(epochId: Long): Unit = {
+    Await.result(
+      for {
+        _ <- manager.notifyStartedOnEpoch(epochId)
+        _ <- async {
+          alignmentOffsets =
+            await(manager.getOffsetsForSynchronizedEpoch(epochId)).map(o => o.nr -> o.offset).toMap
+        }
+      } yield Unit,
+      Duration(1, SECONDS)
+    )
+  }
 
   /** Hanlde the state transition to synchronized */
   private def transitionToSynchronized(): Unit = {

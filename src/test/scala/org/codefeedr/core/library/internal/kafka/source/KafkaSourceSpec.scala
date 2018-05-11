@@ -356,9 +356,47 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     assert(testKafkaSource.getState == KafkaSourceState.Ready)
   }
 
+  it should "request offsets for a specific epoch when in synchronized mode" in async {
+    //Arrange
+    val testKafkaSource = constructSourceSynchronized()
+    val context = mock[FunctionSnapshotContext]
+    when(context.getCheckpointId) thenReturn 1337L
+    when(manager.notifyStartedOnEpoch(ArgumentMatchers.any())) thenReturn Future.successful()
+    when(manager.getOffsetsForSynchronizedEpoch(1337L)) thenReturn Future.successful(Iterable(Partition(1,10)))
+
+    //Act
+    testKafkaSource.snapshotState(context)
+
+    //Assert
+    verify(manager, times(1)).notifyStartedOnEpoch(1337L)
+    verify(manager, times(1)).getOffsetsForSynchronizedEpoch(1337L)
+    assert(testKafkaSource.alignmentOffsets(1) == 10L)
+  }
+
+
+  /**
+    * Construct a kafkasource in the Synchronized state
+    * Used an epoch: -100
+    * @return
+    */
+  def constructSourceSynchronized(): TestKafkaSource = {
+    //Arrange
+    val source = constructSourceReady()
+    val context = mock[FunctionSnapshotContext]
+    when(context.getCheckpointId) thenReturn -100
+    when(manager.notifyStartedOnEpoch(ArgumentMatchers.any())) thenReturn Future.successful()
+    when(manager.getOffsetsForSynchronizedEpoch(-100)) thenReturn Future.successful(Iterable.empty[Partition])
+
+
+    source.apply(SourceCommand(KafkaSourceCommand.synchronize, Some("-100")))
+    source.snapshotState(context)
+    source
+  }
+
 
   /**
     * Constructs a kafkaSource in the ready state
+    * Used epoch: -100
     */
   def constructSourceReady(): TestKafkaSource = {
     val source = constructSourceCatchingUp()
