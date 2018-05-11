@@ -1,3 +1,7 @@
 package org.codefeedr.core.library.metastore.sourcecommand
 
-case class SourceCommand(command: String)
+object KafkaSourceCommand extends Enumeration {
+  val startSynchronize: KafkaSourceCommand.Value = Value
+}
+
+case class SourceCommand(command: KafkaSourceCommand.Value)

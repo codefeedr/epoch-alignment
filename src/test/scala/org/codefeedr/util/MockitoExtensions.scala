@@ -1,12 +1,14 @@
 package org.codefeedr.util
 
+import org.codefeedr.core.library.internal.zookeeper.ZkNodeBase
+import org.mockito.Mockito.when
 import org.mockito.{ArgumentMatcher, ArgumentMatchers}
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatest.AsyncFlatSpec
 import org.scalatest.mockito.MockitoSugar
 
-import scala.concurrent.Promise
+import scala.concurrent.{Future, Promise}
 
 trait MockitoExtensions {
 
@@ -38,6 +40,17 @@ trait MockitoExtensions {
     new ArgumentMatcher[T] {
       override def matches(argument: T): Boolean = matcher(argument)
     })
+  }
+
+
+  /**
+    * Mocks the lock on the given node
+    * @param zkNodeBase
+    */
+  def mockLock(zkNodeBase: ZkNodeBase): Unit = {
+    when(zkNodeBase.asyncWriteLock(ArgumentMatchers.any[() => Future[Unit]]()))
+      .thenAnswer(answer(a => a.getArgument[() => Future[Unit]](0)()))
+
   }
 
 }

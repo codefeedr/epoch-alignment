@@ -9,7 +9,7 @@ import org.apache.flink.types.Row
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.codefeedr.core.MockedLibraryServices
 import org.codefeedr.core.library.metastore._
-import org.codefeedr.core.library.metastore.sourcecommand.SourceCommand
+import org.codefeedr.core.library.metastore.sourcecommand.{KafkaSourceCommand, SourceCommand}
 import org.codefeedr.model.zookeeper.Partition
 import org.codefeedr.model.{RecordProperty, RecordSourceTrail, SubjectType, TrailedRecord}
 import org.codefeedr.util.MockitoExtensions
@@ -284,7 +284,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     val testKafkaSource = constructSource()
 
     //Act
-    testKafkaSource.apply(SourceCommand("prepareSynchronize"))
+    testKafkaSource.apply(SourceCommand(KafkaSourceCommand.startSynchronize))
 
     //Assert
     verify(manager,times(1)).startedCatchingUp()

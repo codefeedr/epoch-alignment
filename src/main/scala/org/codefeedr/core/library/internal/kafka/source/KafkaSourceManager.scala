@@ -48,7 +48,7 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
   }
 
   def startedCatchingUp(): Future[Unit] = {
-    syncStateNode.setData(SynchronizationState(1))
+    syncStateNode.setData(SynchronizationState(KafkaSourceState.CatchingUp))
   }
 
   /**
@@ -56,14 +56,14 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     * If all consumers are catched up, the entire source will me marked as catched up (and ready to synchronize)
     */
   def notifyCatchedUp(): Future[Unit] = async {
-    await(syncStateNode.setData(SynchronizationState(2)))
+    await(syncStateNode.setData(SynchronizationState(KafkaSourceState.Ready)))
     await(sourceNode.asyncWriteLock(() =>
       async {
-        if (await(sourceNode.getSyncState().getData()).get.state < 2)
+        if (await(sourceNode.getSyncState().getData()).get.state == KafkaSourceState.Ready)
           if (await(allSourcesCatchedUp())) {
             logger.debug(
               s"All sources on ${subjectNode.name} are catched up and ready to synchronize")
-            sourceNode.getSyncState().setData(SynchronizationState(2))
+            sourceNode.getSyncState().setData(SynchronizationState(KafkaSourceState.Ready))
           }
     }))
   }
