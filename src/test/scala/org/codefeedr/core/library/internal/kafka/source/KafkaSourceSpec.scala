@@ -285,7 +285,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     val testKafkaSource = constructSource()
 
     //Act
-    testKafkaSource.apply(SourceCommand(KafkaSourceCommand.startSynchronize,None))
+    testKafkaSource.apply(SourceCommand(KafkaSourceCommand.catchUp,None))
 
     //Assert
     verify(manager,times(1)).startedCatchingUp()
@@ -343,7 +343,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     */
   def constructSourceCatchingUp(): TestKafkaSource = {
     val source = constructSource()
-    source.apply(SourceCommand(KafkaSourceCommand.startSynchronize,None))
+    source.apply(SourceCommand(KafkaSourceCommand.catchUp,None))
     source
   }
 

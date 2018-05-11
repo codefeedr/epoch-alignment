@@ -42,7 +42,7 @@ class SourceAlignment(sourceNode: QuerySourceNode, configFactory: ConfigFactoryC
   /** Performs the operations to start synchronization. Does not perform any checks*/
   private def triggerStartAlignment(): Future[Unit] = async {
     await(syncState.setData(SynchronizationState(KafkaSourceState.CatchingUp)))
-    commandNode.push(SourceCommand(KafkaSourceCommand.startSynchronize, None))
+    commandNode.push(SourceCommand(KafkaSourceCommand.catchUp, None))
   }
 
   /**
@@ -69,7 +69,9 @@ class SourceAlignment(sourceNode: QuerySourceNode, configFactory: ConfigFactoryC
     * @return
     */
   private def triggerStartSynchronized(): Future[Unit] = async {
-    sourceNode.getEpochs()
+    val syncEpoch = await(sourceNode.getEpochs().getLatestEpochId()) + synchronizeAfter
+    val command = SourceCommand(KafkaSourceCommand.synchronize, Some(syncEpoch.toString))
+    commandNode.push(command)
   }
 
 }

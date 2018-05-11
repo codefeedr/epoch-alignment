@@ -152,7 +152,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
   def apply(command: SourceCommand): Unit = {
 
     //Handle the synchronize command
-    if (command.command == KafkaSourceCommand.startSynchronize) {
+    if (command.command == KafkaSourceCommand.catchUp) {
       if (state == KafkaSourceState.UnSynchronized) {
         state = KafkaSourceState.CatchingUp
         manager.startedCatchingUp()
