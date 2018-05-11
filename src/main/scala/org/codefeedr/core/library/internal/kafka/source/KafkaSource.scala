@@ -99,6 +99,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
   //CheckpointId after which the source should start shutting down.
   @volatile private[kafka] var finalCheckpointId: Long = Long.MaxValue
   @volatile private[kafka] var finalSourceEpoch: Long = -2
+  @volatile private[kafka] var synchronizeEpochId: Long = -2
 
   //TODO: Can we somehow perform this async?
   @transient private[kafka] lazy val finalSourceEpochOffsets =
@@ -150,17 +151,29 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
     * @param command the command
     */
   def apply(command: SourceCommand): Unit = {
-
-    //Handle the synchronize command
-    if (command.command == KafkaSourceCommand.catchUp) {
-      if (state == KafkaSourceState.UnSynchronized) {
-        state = KafkaSourceState.CatchingUp
-        manager.startedCatchingUp()
-      } else {
-        val msg = s"Invalid state transition from $state to catchingUp"
-        logger.error(msg)
-        throw new Error(msg)
-      }
+    command.command match {
+      //Handle the synchronize command
+      case KafkaSourceCommand.catchUp =>
+        state match {
+          case KafkaSourceState.UnSynchronized =>
+            state = KafkaSourceState.CatchingUp
+            manager.startedCatchingUp()
+          case _ =>
+            val msg = s"Invalid state transition from $state to catchingUp"
+            logger.error(msg)
+            throw new Error(msg)
+        }
+      case KafkaSourceCommand.synchronize =>
+        state match {
+          case KafkaSourceState.Ready =>
+            synchronizeEpochId = command.context.get.toInt
+            logger.debug(s"Synchronizing on epoch $synchronizeEpochId in $getLabel")
+          case _ =>
+            val msg = s"Invalid state transition from $state to synchronized"
+            logger.error(msg)
+            throw new Error(msg)
+          case _ => throw new Error("Unknown command")
+        }
     }
   }
 
@@ -213,6 +226,13 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
     if (epochId > 1) {
       cancelIfNeeded(epochId)
     }
+    if (epochId == synchronizeEpochId) {
+      if (state == KafkaSourceState.Ready) {
+        transitionToSynchronized()
+      } else {
+        logger.warn(s"Source reached synchronize epoch, but state was $state in source $getLabel")
+      }
+    }
     //Handle state specific code
     state match {
       case KafkaSourceState.CatchingUp => snapshotCatchingUpState(epochId)
@@ -230,7 +250,6 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
       manager.notifyStartedOnEpoch(epochId)
       manager.notifyCatchedUp()
     }
-
   }
 
   /** If th source is in "ready" state, obtain the maximum partition to read up to. We must not read ahead of the latest known epoch*/
@@ -250,6 +269,13 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
   }
 
   private def snapshotSynchronizedState(epochId: Long): Unit = {}
+
+  /** Hanlde the state transition to synchronized */
+  private def transitionToSynchronized(): Unit = {
+    logger.debug(s"Source is now running synchronized in $getLabel")
+    state = KafkaSourceState.Synchronized
+    manager.notifyCatchedUp()
+  }
 
   /**
     * Checks if a cancel is required

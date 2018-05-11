@@ -64,15 +64,23 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     * Notify the manager that the consumer is catched up
     * If all consumers are catched up, the entire source will me marked as catched up (and ready to synchronize)
     */
-  def notifyCatchedUp(): Future[Unit] = async {
-    await(syncStateNode.setData(SynchronizationState(KafkaSourceState.Ready)))
+  def notifyCatchedUp(): Future[Unit] = notifyAggregateState(KafkaSourceState.Ready)
+
+  /**
+    * Notify the manager that the consumer is now running snchronized
+    * If all consumers are running synchronized, the entire source will be synchronized
+    */
+  def notifySynchronized(): Future[Unit] = notifyAggregateState(KafkaSourceState.Synchronized)
+
+  /** Internal function, handling the aggregated state transition between */
+  private def notifyAggregateState(state: KafkaSourceState.Value): Future[Unit] = async {
+    await(syncStateNode.setData(SynchronizationState(state)))
     await(sourceNode.asyncWriteLock(() =>
       async {
-        if (await(sourceNode.getSyncState().getData()).get.state == KafkaSourceState.Ready)
-          if (await(allSourcesCatchedUp())) {
-            logger.debug(
-              s"All sources on ${subjectNode.name} are catched up and ready to synchronize")
-            sourceNode.getSyncState().setData(SynchronizationState(KafkaSourceState.Ready))
+        if (await(sourceNode.getSyncState().getData()).get.state != state)
+          if (await(allSourcesInState(state))) {
+            logger.debug(s"All sources on ${subjectNode.name} are on state $state")
+            sourceNode.getSyncState().setData(SynchronizationState(state))
           }
     }))
   }
@@ -99,7 +107,7 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
   def getOffsetsForSynchronizedEpoch(sourceEpoch: Long): Future[Iterable[Partition]] = ???
 
   /** Checks if all sources are in the catched up state **/
-  private def allSourcesCatchedUp(): Future[Boolean] =
+  private def allSourcesInState(state: KafkaSourceState.Value): Future[Boolean] =
     sourceNode
       .getConsumers()
       .getChildren()
@@ -111,7 +119,7 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
                 o => o.getSyncState().getData().map(o => o.get)
               )
             )
-            .map(o => o.forall(o => o.state == KafkaSourceState.Ready))
+            .map(o => o.forall(o => o.state == state))
       )
 
   /** Checks if the given offset is considered to be catched up with the source
