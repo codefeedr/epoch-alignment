@@ -324,6 +324,38 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     assert(true)
   }
 
+  it should "Switch to synchronized state when it reaches the synchronization epoch" in async {
+    //Arrange
+    val testKafkaSource = constructSourceReady()
+    val context = mock[FunctionSnapshotContext]
+    when(context.getCheckpointId) thenReturn 1337L
+    when(manager.notifyStartedOnEpoch(ArgumentMatchers.any())) thenReturn Future.successful()
+    testKafkaSource.apply(SourceCommand(KafkaSourceCommand.synchronize, Some("1337")))
+
+    //Act
+    testKafkaSource.snapshotState(context)
+
+    //Assert
+    verify(manager, times(1)).notifySynchronized()
+    assert(testKafkaSource.getState == KafkaSourceState.Synchronized)
+  }
+
+  it should "Switch not to synchronized state when it reaches some other epoch" in async {
+    //Arrange
+    val testKafkaSource = constructSourceReady()
+    val context = mock[FunctionSnapshotContext]
+    when(context.getCheckpointId) thenReturn 1337L
+    when(manager.notifyStartedOnEpoch(ArgumentMatchers.any())) thenReturn Future.successful()
+    testKafkaSource.apply(SourceCommand(KafkaSourceCommand.synchronize, Some("1338")))
+
+    //Act
+    testKafkaSource.snapshotState(context)
+
+    //Assert
+    verify(manager, times(0)).notifySynchronized()
+    assert(testKafkaSource.getState == KafkaSourceState.Ready)
+  }
+
 
   /**
     * Constructs a kafkaSource in the ready state

@@ -166,14 +166,14 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
       case KafkaSourceCommand.synchronize =>
         state match {
           case KafkaSourceState.Ready =>
-            synchronizeEpochId = command.context.get.toInt
+            synchronizeEpochId = command.context.get.toLong
             logger.debug(s"Synchronizing on epoch $synchronizeEpochId in $getLabel")
           case _ =>
             val msg = s"Invalid state transition from $state to synchronized"
             logger.error(msg)
             throw new Error(msg)
-          case _ => throw new Error("Unknown command")
         }
+          case _ => throw new Error("Unknown command")
     }
   }
 
@@ -274,7 +274,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
   private def transitionToSynchronized(): Unit = {
     logger.debug(s"Source is now running synchronized in $getLabel")
     state = KafkaSourceState.Synchronized
-    manager.notifyCatchedUp()
+    manager.notifySynchronized()
   }
 
   /**
