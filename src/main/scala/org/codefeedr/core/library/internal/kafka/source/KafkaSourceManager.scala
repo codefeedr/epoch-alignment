@@ -3,7 +3,7 @@ package org.codefeedr.core.library.internal.kafka.source
 import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.core.library.internal.kafka.OffsetUtils
 import org.codefeedr.core.library.metastore.{SubjectNode, SynchronizationState}
-import org.codefeedr.model.zookeeper.{Consumer, Partition, QuerySource}
+import org.codefeedr.model.zookeeper.{Consumer, EpochCollection, Partition, QuerySource}
 
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -23,6 +23,8 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
   private val sourceNode = subjectNode.getSources().getChild(sourceUuid)
   private val consumerNode = sourceNode.getConsumers().getChild(instanceUuid)
   private val syncStateNode = consumerNode.getSyncState()
+  private lazy val sourceEpochCollections = sourceNode.getEpochs()
+  private lazy val subjectEpochs = subjectNode.getEpochs()
 
   lazy val cancel: Future[Unit] = subjectNode.awaitClose()
 
@@ -40,6 +42,9 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     }
   }
 
+  /**
+    * Notify the zookeeper state this source is shutting down
+    */
   def finalizeRun(): Unit = {
     //Finally unsubscribe from the library
     blocking {
@@ -47,6 +52,10 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     }
   }
 
+  /**
+    * Notify the zookeeper state this source has started catching up
+    * @return
+    */
   def startedCatchingUp(): Future[Unit] = {
     syncStateNode.setData(SynchronizationState(KafkaSourceState.CatchingUp))
   }
@@ -68,6 +77,27 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     }))
   }
 
+  /**
+    * Notify the manager that the consumer has started on the given epoch
+    * Updates the latest epoch id
+    */
+  def notifyStartedOnEpoch(epoch: Long): Future[Unit] = async {
+    val latestSource = await(sourceEpochCollections.getLatestEpochId())
+    //If the latest epoch is higher than the present epoch, overwrite the epoch
+    if (epoch > latestSource) {
+      sourceEpochCollections.asyncWriteLock(() => {
+        sourceEpochCollections.setData(EpochCollection(epoch))
+      })
+    }
+  }
+
+  /**
+    * Obtains the specific partitions that should be used for the passed epoch number
+    * @param sourceEpoch epoch number of the source
+    * @return
+    */
+  def getOffsetsForSynchronizedEpoch(sourceEpoch: Long): Future[Iterable[Partition]] = ???
+
   /** Checks if all sources are in the catched up state **/
   private def allSourcesCatchedUp(): Future[Boolean] =
     sourceNode
@@ -81,7 +111,7 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
                 o => o.getSyncState().getData().map(o => o.get)
               )
             )
-            .map(o => o.forall(o => o.state == 2))
+            .map(o => o.forall(o => o.state == KafkaSourceState.Ready))
       )
 
   /** Checks if the given offset is considered to be catched up with the source
@@ -89,7 +119,7 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     * @param offset the offsets to check
     */
   def isCatchedUp(offset: Map[Int, Long]): Future[Boolean] = async {
-    val comparedEpoch = await(subjectNode.getEpochs().getLatestEpochId()) - 1
+    val comparedEpoch = await(subjectEpochs.getLatestEpochId()) - 1
     if (comparedEpoch < 0) {
       //If compared epoch is in the history, we just consider to be "up to date"
       true
@@ -109,7 +139,9 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
       throw new Exception(
         s"Attempting to obtain endoffsets for epoch -1 in source of ${subjectNode.name}. Did you run the job with checkpointing enabled?")
     } else {
-      await(subjectNode.getEpochs().getChild(epoch).getData()).get.partitions
+      await(subjectEpochs.getChild(epoch).getData()).get.partitions
     }
   }
+
+  def getLatestSubjectEpoch(): Future[Long] = subjectEpochs.getLatestEpochId()
 }

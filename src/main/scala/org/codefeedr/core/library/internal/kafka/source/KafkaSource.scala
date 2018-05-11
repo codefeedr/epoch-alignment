@@ -38,7 +38,7 @@ import org.apache.flink.types.Row
 import org.apache.kafka.common.TopicPartition
 import org.codefeedr.core.library.internal.kafka.OffsetUtils
 import org.codefeedr.core.library.metastore.SubjectNode
-import org.codefeedr.core.library.metastore.sourcecommand.SourceCommand
+import org.codefeedr.core.library.metastore.sourcecommand.{KafkaSourceCommand, SourceCommand}
 import org.codefeedr.model.{RecordSourceTrail, SubjectType, TrailedRecord}
 
 import scala.collection.JavaConverters._
@@ -141,8 +141,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
     * Cancels this source on the final epoch of the source it is subscribed on
     */
   override def cancel(): Unit = {
-    finalSourceEpoch =
-      Await.result(subjectNode.getEpochs().getLatestEpochId(), Duration(5, SECONDS))
+    finalSourceEpoch = Await.result(manager.getLatestSubjectEpoch(), Duration(5, SECONDS))
     logger.debug(s"Cancelling $getLabel after final source epoch $finalSourceEpoch.")
   }
 
@@ -153,7 +152,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
   def apply(command: SourceCommand): Unit = {
 
     //Handle the synchronize command
-    if (command.command == "prepareSynchronize") {
+    if (command.command == KafkaSourceCommand.startSynchronize) {
       if (state == KafkaSourceState.UnSynchronized) {
         state = KafkaSourceState.CatchingUp
         manager.startedCatchingUp()
@@ -207,40 +206,50 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
 
   //Called when starting a new checkpoint
   override def snapshotState(context: FunctionSnapshotContext): Unit = {
-    logger.debug(s"Snapshotting epoch ${context.getCheckpointId} on $getLabel")
-    checkpointOffsets(context.getCheckpointId) = currentOffsets.toMap
+    val epochId = context.getCheckpointId
+    logger.debug(s"Snapshotting epoch ${epochId} on $getLabel")
+    checkpointOffsets(epochId) = currentOffsets.toMap
     //HACK: Sometimes cancelling on first checkpoint will cause incorrect offsets to be obtained (because no assignment happened yet)
-    if (context.getCheckpointId > 1) {
-      cancelIfNeeded(context.getCheckpointId)
+    if (epochId > 1) {
+      cancelIfNeeded(epochId)
     }
     //Handle state specific code
     state match {
-      case KafkaSourceState.CatchingUp => snapshotCatchingUpState()
-      case KafkaSourceState.Ready => snapshotReadyState()
+      case KafkaSourceState.CatchingUp => snapshotCatchingUpState(epochId)
+      case KafkaSourceState.Ready => snapshotReadyState(epochId)
+      case KafkaSourceState.Synchronized => snapshotSynchronizedState(epochId)
       case _ =>
     }
     logger.debug(s"Done snapshotting epoch ${context.getCheckpointId} on $getLabel")
   }
 
-  private def snapshotCatchingUpState(): Unit = {
+  private def snapshotCatchingUpState(epochId: Long): Unit = {
     if (Await.result(manager.isCatchedUp(currentOffsets.toMap), Duration(1, SECONDS))) {
       state = KafkaSourceState.Ready
       logger.info(s"Transitioned to ready state in $getLabel")
+      manager.notifyStartedOnEpoch(epochId)
       manager.notifyCatchedUp()
     }
 
   }
 
-  /** If th source is in "ready" state, obtain the maximum partition to read up to*/
-  private def snapshotReadyState(): Unit = {
-    Await.ready(
-      async {
-        val epoch = await(subjectNode.getEpochs().getLatestEpochId())
-        alignmentOffsets = await(manager.getEpochOffsets(epoch)).map(o => o.nr -> o.offset).toMap
-      },
+  /** If th source is in "ready" state, obtain the maximum partition to read up to. We must not read ahead of the latest known epoch*/
+  private def snapshotReadyState(epochId: Long): Unit = {
+    Await.result(
+      for {
+        _ <- manager.notifyStartedOnEpoch(epochId)
+        _ <- async {
+          val epoch = await(manager.getLatestSubjectEpoch())
+          alignmentOffsets = await(manager.getEpochOffsets(epoch)).map(o => o.nr -> o.offset).toMap
+
+        }
+
+      } yield Unit,
       Duration(1, SECONDS)
     )
   }
+
+  private def snapshotSynchronizedState(epochId: Long): Unit = {}
 
   /**
     * Checks if a cancel is required
@@ -328,15 +337,6 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
       })
     }
   }
-
-  /**
-    * When synchronizing, we must make sure to read all data up to the desired offsets, before releasing the checkpoint lock
-    * When the desired offset has been reached, it should no longer pull any data
-    * @param ctx context to lock on and emit data to
-    * @return
-    */
-  def synchronizedPoll(ctx: SourceFunction.SourceContext[T],
-                       offsets: Map[TopicPartition, Long]): Unit = {}
 
   /**
     * Called at the start of a synchronized epoch

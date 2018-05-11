@@ -2,7 +2,7 @@ package org.codefeedr.core.library.internal.kafka.source
 
 import org.codefeedr.core.MockedLibraryServices
 import org.codefeedr.core.library.metastore._
-import org.codefeedr.model.zookeeper.Partition
+import org.codefeedr.model.zookeeper.{EpochCollection, Partition}
 import org.codefeedr.util.MockitoExtensions
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{times, verify, when}
@@ -20,6 +20,7 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
   private var sourceCollectionNode : QuerySourceCollection= _
   private var sourceNode: QuerySourceNode = _
   private var sourceSyncStateNode: SourceSynchronizationStateNode = _
+  private var sourceEpochCollectionNode: SourceEpochCollection = _
 
   private var consumerCollection: ConsumerCollection = _
   private var consumerNode: ConsumerNode = _
@@ -41,6 +42,7 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     sourceCollectionNode = mock[QuerySourceCollection]
     sourceNode = mock[QuerySourceNode]
     sourceSyncStateNode = mock[SourceSynchronizationStateNode]
+    sourceEpochCollectionNode = mock[SourceEpochCollection]
 
     consumerCollection = mock[ConsumerCollection]
     consumerNode = mock[ConsumerNode]
@@ -58,6 +60,8 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     when(sourceCollectionNode.getChild(ArgumentMatchers.any[String]())) thenReturn sourceNode
     when(sourceNode.create(ArgumentMatchers.any())) thenReturn Future.successful(null)
     when(sourceNode.getSyncState()) thenReturn sourceSyncStateNode
+    when(sourceNode.getEpochs()) thenReturn sourceEpochCollectionNode
+    mockLock(sourceEpochCollectionNode)
     mockLock(sourceNode)
 
     when(sourceNode.getConsumers()) thenReturn consumerCollection
@@ -184,7 +188,7 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
   it should "set the state of the source to ready if all consumers are ready" in async {
     //Arrange
     val manager = constructManager()
-    when(sourceSyncStateNode.getData()) thenReturn  Future.successful(Some(SynchronizationState(KafkaSourceState.Ready)))
+    when(sourceSyncStateNode.getData()) thenReturn  Future.successful(Some(SynchronizationState(KafkaSourceState.CatchingUp)))
     when(consumerSyncState.getData()) thenReturn  Future.successful(Some(SynchronizationState(KafkaSourceState.Ready)))
     when(otherConsumerSyncState.getData()) thenReturn Future.successful(Some(SynchronizationState(KafkaSourceState.Ready)))
 
@@ -208,6 +212,32 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
 
     //Assert
     verify(sourceSyncStateNode,times(0)).setData(SynchronizationState(KafkaSourceState.Ready))
+    assert(true)
+  }
+
+  "NotifyStartedOnEpoch" should "update the latest epoch of the source" in async {
+    //Arrange
+    val manager = constructManager()
+    when(sourceEpochCollectionNode.getLatestEpochId()) thenReturn Future.successful(0L)
+
+    //Act
+    await(manager.notifyStartedOnEpoch(1))
+
+    //Assert
+    verify(sourceEpochCollectionNode, times(1)).setData(EpochCollection(1))
+    assert(true)
+  }
+
+  it should "do nothing if the latest epoch was alreadt set" in async {
+    //Arrange
+    val manager = constructManager()
+    when(sourceEpochCollectionNode.getLatestEpochId()) thenReturn Future.successful(1L)
+
+    //Act
+    await(manager.notifyStartedOnEpoch(1))
+
+    //Assert
+    verify(sourceEpochCollectionNode, times(0)).setData(ArgumentMatchers.any())
     assert(true)
   }
 }

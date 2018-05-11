@@ -1,6 +1,7 @@
 package org.codefeedr.core.library.internal.manager
 
 import com.typesafe.scalalogging.LazyLogging
+import org.codefeedr.core.library.ConfigFactoryComponent
 import org.codefeedr.core.library.internal.kafka.source.KafkaSourceState
 import org.codefeedr.core.library.metastore.sourcecommand.{KafkaSourceCommand, SourceCommand}
 import org.codefeedr.core.library.metastore.{QuerySourceNode, SynchronizationState}
@@ -12,11 +13,14 @@ import scala.concurrent.Future
 /**
   * Class providing logic relevant for the alignment of a source
   */
-class SourceAlignment(sourceNode: QuerySourceNode) extends LazyLogging {
+class SourceAlignment(sourceNode: QuerySourceNode, configFactory: ConfigFactoryComponent)
+    extends LazyLogging {
 
   /** SyncState node of the source*/
   private lazy val syncState = sourceNode.getSyncState()
   private lazy val commandNode = sourceNode.getCommandNode()
+  private lazy val synchronizeAfter: Int =
+    configFactory.conf.getInt("codefeedr.synchronization.synchronizeAfter")
 
   /**
     * Starts the alignment
@@ -29,14 +33,43 @@ class SourceAlignment(sourceNode: QuerySourceNode) extends LazyLogging {
         val state = await(sourceNode.getSyncState().getData()).get.state
         state match {
           case KafkaSourceState.UnSynchronized => await(triggerStartAlignment())
-          case _ => throw new Exception(s"Cannot start alignment when source is in state $state")
+          case _ =>
+            throw new Exception(
+              s"Cannot start alignment when source is in state $state. Source has to be in unsynchronized state")
         }
     })
 
   /** Performs the operations to start synchronization. Does not perform any checks*/
   private def triggerStartAlignment(): Future[Unit] = async {
     await(syncState.setData(SynchronizationState(KafkaSourceState.CatchingUp)))
-    commandNode.push(SourceCommand(KafkaSourceCommand.startSynchronize))
+    commandNode.push(SourceCommand(KafkaSourceCommand.startSynchronize, None))
+  }
+
+  /**
+    * Can be called when all consumers of a source are ready
+    * Picks a future epoch to synchronize on
+    * @return
+    */
+  def startRunningSynchronized(): Future[Unit] = {
+    sourceNode.asyncWriteLock(() =>
+      async {
+        val state = await(sourceNode.getSyncState().getData()).get.state
+        state match {
+          case KafkaSourceState.Ready => await(triggerStartSynchronized())
+          case _ =>
+            throw new Exception(
+              s"Cannot start running synchronized when source is in state $state. Source has to be in ready state")
+        }
+
+    })
+  }
+
+  /**
+    * Performs logic required for the sources to start running synchronized
+    * @return
+    */
+  private def triggerStartSynchronized(): Future[Unit] = async {
+    sourceNode.getEpochs()
   }
 
 }

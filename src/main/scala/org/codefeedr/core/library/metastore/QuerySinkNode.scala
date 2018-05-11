@@ -18,7 +18,7 @@ class QuerySinkNode(name: String, parent: ZkNodeBase)
 
   def getProducers(): ProducerCollection = new ProducerCollection("producers", this)
 
-  def getEpochs(): EpochCollectionNode = new EpochCollectionNode(this)
+  //def getEpochs(): EpochCollectionNode = new EpochCollectionNode(this)
 
   override def typeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
   override def initialState(): Boolean = true
@@ -26,9 +26,9 @@ class QuerySinkNode(name: String, parent: ZkNodeBase)
   override def postCreate(): Future[Unit] =
     for {
       //Make sure to also create the epoch collection node when the sink node is constructed
-      f1 <- getEpochs().create()
+      //f1 <- getEpochs().create()
       f2 <- super.postCreate()
-    } yield (f1, f2)
+    } yield (f2)
 
   override def setState(state: Boolean): Future[Unit] = async {
     await(super.setState(state))

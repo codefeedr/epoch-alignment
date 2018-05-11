@@ -81,6 +81,9 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     when(ctx.getCheckpointLock).thenReturn (cpLock,cpLock)
     when(consumerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.any[String]())(ArgumentMatchers.any(),ArgumentMatchers.any())).thenReturn (mock[KafkaConsumer[RecordSourceTrail,Row]])
 
+    //Some default values
+    when(manager.getLatestSubjectEpoch()) thenReturn Future.successful(0L)
+    when(manager.getEpochOffsets(0L)) thenReturn Future.successful(Iterable.empty[Partition])
   }
 
 
@@ -199,8 +202,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     val testKafkaSource = constructSource()
     val epochCollectionNodeMock = mock[EpochCollectionNode]
 
-    when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
-    when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(1337L)
+    when(manager.getLatestSubjectEpoch()) thenReturn Future.successful(1337L)
     when(manager.getEpochOffsets(1337L)) thenReturn Future.successful(Iterable(Partition(2,1338)))
 
     //Act
@@ -223,8 +225,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     when(context.getCheckpointId) thenReturn 2
 
 
-    when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
-    when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(1L)
+    when(manager.getLatestSubjectEpoch()) thenReturn Future.successful(1L)
     when(manager.getEpochOffsets(1L)) thenReturn Future.successful(Iterable(Partition(3,1339)))
 
     testKafkaSource.setRuntimeContext(runtimeContext)
@@ -284,11 +285,66 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     val testKafkaSource = constructSource()
 
     //Act
-    testKafkaSource.apply(SourceCommand(KafkaSourceCommand.startSynchronize))
+    testKafkaSource.apply(SourceCommand(KafkaSourceCommand.startSynchronize,None))
 
     //Assert
     verify(manager,times(1)).startedCatchingUp()
     assert(testKafkaSource.getState == KafkaSourceState.CatchingUp)
+  }
+
+  it should "switch to the ready state when catched up" in async {
+    //Arrange
+    val testKafkaSource = constructSourceCatchingUp()
+    val context = mock[FunctionSnapshotContext]
+    when(context.getCheckpointId) thenReturn 1337L
+
+    when(manager.isCatchedUp(ArgumentMatchers.any())) thenReturn Future.successful(true)
+
+    //Act
+    testKafkaSource.snapshotState(context)
+
+    //Assert
+    verify(manager, times(1)).notifyCatchedUp()
+    verify(manager, times(1)).notifyStartedOnEpoch(1337L)
+    assert(testKafkaSource.getState == KafkaSourceState.Ready)
+  }
+
+  it should "Notify the manager of starting on offsets when in ready state" in async {
+    //Arrange
+    val testKafkaSource = constructSourceReady()
+    val context = mock[FunctionSnapshotContext]
+    when(context.getCheckpointId) thenReturn 1337L
+    when(manager.notifyStartedOnEpoch(ArgumentMatchers.any())) thenReturn Future.successful()
+
+    //Act
+    testKafkaSource.snapshotState(context)
+
+    //Assert
+    verify(manager, times(1)).notifyStartedOnEpoch(1337L)
+    assert(true)
+  }
+
+
+  /**
+    * Constructs a kafkaSource in the ready state
+    */
+  def constructSourceReady(): TestKafkaSource = {
+    val source = constructSourceCatchingUp()
+    val context = mock[FunctionSnapshotContext]
+    when(context.getCheckpointId) thenReturn -100L
+    when(manager.isCatchedUp(ArgumentMatchers.any())) thenReturn Future.successful(true)
+    source.snapshotState(context)
+    source
+  }
+
+  /**
+    * Constructs a kafkaSource in the catching up state
+    * @return
+    */
+  def constructSourceCatchingUp(): TestKafkaSource = {
+    val source = constructSource()
+    source.apply(SourceCommand(KafkaSourceCommand.startSynchronize,None))
+    source
   }
 
   def constructSource(): TestKafkaSource = {

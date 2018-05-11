@@ -5,7 +5,7 @@ import org.codefeedr.core.library.internal.kafka.source.KafkaSourceState
 import org.codefeedr.core.library.metastore._
 import org.codefeedr.core.library.metastore.sourcecommand.{KafkaSourceCommand, SourceCommand}
 import org.codefeedr.model.zookeeper.Partition
-import org.codefeedr.util.MockitoExtensions
+import org.codefeedr.util.{ConfigFactoryComponentMock, MockitoExtensions}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{times, verify, when}
 import org.scalatest.mockito.MockitoSugar
@@ -19,6 +19,7 @@ import scala.concurrent.{Future, Promise}
 
 class SourceAlignmentSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfterEach with MockedLibraryServices with MockitoExtensions {
 
+  private var configComponent: ConfigFactoryComponentMock = _
   private var sourceNode: QuerySourceNode = _
   private var syncStateNode: SourceSynchronizationStateNode = _
   private var commandNode: QuerySourceCommandNode = _
@@ -57,7 +58,7 @@ class SourceAlignmentSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAn
     await(component.startAlignment())
 
     //Assert
-    verify(commandNode, times(1)).push(SourceCommand(KafkaSourceCommand.startSynchronize))
+    verify(commandNode, times(1)).push(SourceCommand(KafkaSourceCommand.startSynchronize,None))
     assert(true)
   }
 
@@ -81,11 +82,15 @@ class SourceAlignmentSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAn
     sourceNode = mock[QuerySourceNode]
     syncStateNode = mock[SourceSynchronizationStateNode]
     commandNode = mock[QuerySourceCommandNode]
+    configComponent = new ConfigFactoryComponentMock()
 
     mockLock(sourceNode)
 
     when(sourceNode.getSyncState()) thenReturn syncStateNode
     when(sourceNode.getCommandNode()) thenReturn commandNode
+
+    //Configuration for the test
+    configComponent.addConfig("codefeedr.synchronization.synchronizeAfter",2)
 
     //Some default values
     when(syncStateNode.getData()) thenReturn Future.successful(Some(SynchronizationState(KafkaSourceState.UnSynchronized)))
@@ -94,6 +99,6 @@ class SourceAlignmentSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAn
     super.beforeEach()
   }
 
-  private def getComponent(): SourceAlignment = new SourceAlignment(sourceNode)
+  private def getComponent(): SourceAlignment = new SourceAlignment(sourceNode,configComponent)
 
 }
