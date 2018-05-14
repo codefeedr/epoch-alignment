@@ -363,8 +363,8 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
   def poll(ctx: SourceFunction.SourceContext[T]): Unit = {
     ctx.getCheckpointLock.synchronized {
       val offsets =
-        if (state == KafkaSourceState.Ready || state == KafkaSourceState.Synchronized) {
-          //If synchronized, poll up to the maximum offsets
+        if (state == KafkaSourceState.Ready) {
+          //If ready, make sure not to poll past the latest known offsets to zookeeper
           consumer.poll(ctx, alignmentOffsets)
         } else {
           //Otherwise, just poll
@@ -373,6 +373,31 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
       offsets.foreach(o => {
         currentOffsets(o._1) = o._2
       })
+    }
+    //Give the checkpoint algorithm a chance to obtain the checkpoint lock
+    //TODO: Find a way to perform most of the "poll" operations outside the checkpoint lock
+    Thread.sleep(1)
+  }
+
+  /**
+    * Perform a synchronized poll, that runs and does not leave the checkpoint lock until the desired offset was reached
+    * @param ctx the context to perform the synchronized poll on
+    */
+  private def pollSynchronized(ctx: SourceFunction.SourceContext[T]): Unit = {
+    //Do not lock if already reached the offsets
+    if (!OffsetUtils.HigherOrEqual(currentOffsets.toMap, alignmentOffsets)) {
+
+      //Stay within lock until desired offset was reached
+      ctx.getCheckpointLock.synchronized {
+        while (!OffsetUtils.HigherOrEqual(currentOffsets.toMap, alignmentOffsets)) {
+          logger.debug(
+            s"Perfoming synchronized poll loop in $getLabel.\r\n Offsets: ${currentOffsets.toMap}.\r\n Desired: ${alignmentOffsets}")
+          val offsets = consumer.poll(ctx, alignmentOffsets)
+          offsets.foreach(o => {
+            currentOffsets(o._1) = o._2
+          })
+        }
+      }
     }
   }
 
@@ -390,15 +415,16 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
     inititialized = true
 
     while (running) {
-      poll(ctx)
+      if (state == KafkaSourceState.Synchronized) {
+        pollSynchronized(ctx)
+      } else {
+        poll(ctx)
+      }
 
       //HACK: Workaround to support running the source without checkpoints enabled. Currently just performs a checkpoint every loop. Need a proper solution for this!
       if (checkpointingMode.isEmpty) {
         fakeCheckpoint()
       }
-      //Give the checkpoint algorithm a chance to obtain the checkpoint lock
-      //TODO: Find a way to perform most of the "poll" operations outside the checkpoint lock
-      Thread.sleep(1)
     }
 
     logger.debug(s"Source reach endOffsets $getLabel")
