@@ -389,23 +389,12 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
     initRun()
     inititialized = true
 
-    var increment = 0
-
     while (running) {
       poll(ctx)
 
       //HACK: Workaround to support running the source without checkpoints enabled. Currently just performs a checkpoint every loop. Need a proper solution for this!
       if (checkpointingMode.isEmpty) {
-        logger.info(s"Performing fake checkpoint in $getLabel")
-        increment += 1
-        val context = new FunctionSnapshotContext {
-          override def getCheckpointId: Long = increment
-          override def getCheckpointTimestamp: Long = 0
-        }
-        //Snapshot the current state
-        snapshotState(context)
-        //And directly complete checkpoint
-        notifyCheckpointComplete(increment)
+        fakeCheckpoint()
       }
       //Give the checkpoint algorithm a chance to obtain the checkpoint lock
       //TODO: Find a way to perform most of the "poll" operations outside the checkpoint lock
@@ -420,6 +409,24 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
       logger.debug(s"Source $getLabel stopped running.")
     }
 
+  }
+
+  private var increment: Int = 0
+
+  /**
+    * Hacky way to perform a fake checkpoint, because the current proof of concept implementation only supprots running in checkpointed mode
+    */
+  private def fakeCheckpoint(): Unit = {
+    logger.info(s"Performing fake checkpoint in $getLabel")
+    increment += 1
+    val context = new FunctionSnapshotContext {
+      override def getCheckpointId: Long = increment
+      override def getCheckpointTimestamp: Long = 0
+    }
+    //Snapshot the current state
+    snapshotState(context)
+    //And directly complete checkpoint
+    notifyCheckpointComplete(increment)
   }
 
   /**
