@@ -27,17 +27,18 @@ import org.codefeedr.core.library.{
 }
 import org.codefeedr.model.{SubjectType, TrailedRecord}
 import org.apache.flink.streaming.api.scala._
-import org.codefeedr.core.library.metastore.SubjectNode
+import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
 class KafkaGenericSource[T: ru.TypeTag: ClassTag: TypeInformation](
     subjectNode: SubjectNode,
+    jobNode: JobNode,
     kafkaConsumerFactory: KafkaConsumerFactory,
     transformer: TrailedRecord => T,
     override val sourceUuid: String)
-    extends KafkaSource[T](subjectNode, kafkaConsumerFactory) {
+    extends KafkaSource[T](subjectNode, jobNode, kafkaConsumerFactory) {
 
   override def mapToT(record: TrailedRecord): T = transformer.apply(record)
 

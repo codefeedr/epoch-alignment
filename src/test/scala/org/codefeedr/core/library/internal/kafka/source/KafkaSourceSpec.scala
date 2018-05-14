@@ -26,6 +26,7 @@ import scala.concurrent.{Future, Promise}
 class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfterEach with MockedLibraryServices with MockitoExtensions {
 
   private var subjectNode: SubjectNode = _
+  private var jobNode: JobNode = _
   private var ctx: SourceFunction.SourceContext[SampleObject] = _
   private var closePromise: Promise[Unit] = _
   private var sampleObject: SampleObject = _
@@ -47,6 +48,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
   override def beforeEach(): Unit = {
     subjectNode = mock[SubjectNode]
+    jobNode = mock[JobNode]
     ctx = mock[SourceFunction.SourceContext[SampleObject]]
     sampleObject = new SampleObject()
     manager = mock[KafkaSourceManager]
@@ -517,7 +519,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   }
 
   def constructSource(): TestKafkaSource = {
-    val source = new TestKafkaSource(subjectNode,consumerFactory,consumer)
+    val source = new TestKafkaSource(subjectNode,jobNode,consumerFactory,consumer)
     //Override the default manager
     source.manager = manager
     source
@@ -562,8 +564,8 @@ class SampleObject {
 
 }
 
-class TestKafkaSource(node: SubjectNode,kafkaConsumerFactory: KafkaConsumerFactory, mockedConsumer:KafkaSourceConsumer[SampleObject])
-  extends KafkaSource[SampleObject](node,kafkaConsumerFactory) {
+class TestKafkaSource(node: SubjectNode,jobNode: JobNode,kafkaConsumerFactory: KafkaConsumerFactory, mockedConsumer:KafkaSourceConsumer[SampleObject])
+  extends KafkaSource[SampleObject](node,jobNode,kafkaConsumerFactory) {
 
   override val sourceUuid: String = "testuuid"
 

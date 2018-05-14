@@ -37,7 +37,7 @@ import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.apache.flink.types.Row
 import org.apache.kafka.common.TopicPartition
 import org.codefeedr.core.library.internal.kafka.OffsetUtils
-import org.codefeedr.core.library.metastore.SubjectNode
+import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
 import org.codefeedr.core.library.metastore.sourcecommand.{KafkaSourceCommand, SourceCommand}
 import org.codefeedr.model.{RecordSourceTrail, SubjectType, TrailedRecord}
 
@@ -58,7 +58,9 @@ import scala.async.Async.{async, await}
   * Because this class needs to be serializable and the LibraryServices are not, no dependency injection structure can be used here :(
   * Created by Niels on 18/07/2017.
   */
-abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: KafkaConsumerFactory)
+abstract class KafkaSource[T](subjectNode: SubjectNode,
+                              JobNode: JobNode,
+                              kafkaConsumerFactory: KafkaConsumerFactory)
 //Flink interfaces
     extends RichSourceFunction[T]
     with ResultTypeQueryable[T]

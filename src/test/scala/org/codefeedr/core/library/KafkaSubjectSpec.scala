@@ -21,6 +21,7 @@
 
 package org.codefeedr.core.library
 
+import java.util.UUID
 import java.util.concurrent.Executors
 
 import com.typesafe.scalalogging.LazyLogging
@@ -195,11 +196,12 @@ class MyOwnSourceQuery(nr: Int, parallelism: Int) extends Runnable with LazyLogg
     */
 
   def createTopology(env: StreamExecutionEnvironment, nr: Int): Future[Unit] = async {
-
+    val name = UUID.randomUUID().toString
+    val jobNode = Library.subjectLibrary.getJob(name)
     val subjectNode = Library.subjectLibrary.getSubject[MyOwnIntegerObject]()
     val subjectType = await(subjectNode.getOrCreateType[MyOwnIntegerObject]())
     val transformer = Library.subjectFactory.getUnTransformer[MyOwnIntegerObject](subjectType)
-    val source = Library.subjectFactory.getSource(subjectNode, "testSource")
+    val source = Library.subjectFactory.getSource(subjectNode,jobNode, "testSource")
     val r =() => {
       val num = nr
       env

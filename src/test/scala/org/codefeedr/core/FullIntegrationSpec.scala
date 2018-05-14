@@ -19,6 +19,8 @@
 
 package org.codefeedr.core
 
+import java.util.UUID
+
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.state.{ListState, OperatorStateStore}
 import org.apache.flink.api.common.typeinfo.TypeInformation
@@ -28,27 +30,23 @@ import org.apache.flink.streaming.api.functions.source.SourceFunction.SourceCont
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.streaming.api.watermark.Watermark
-import org.apache.flink.table.api.StreamTableEnvironment
-import org.codefeedr.core.engine.query.{QueryTree}
+import org.codefeedr.core.engine.query.QueryTree
 import org.codefeedr.core.library.internal.kafka.KafkaTrailedRecordSource
-import org.codefeedr.core.library.{LibraryServices}
 import org.codefeedr.core.plugin.CollectionPlugin
 import org.codefeedr.model.{SubjectType, TrailedRecord}
-import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach, FutureOutcome, Matchers}
+import org.scalatest.{BeforeAndAfterEach, Matchers}
 
 import scala.collection.JavaConverters._
 
 //Mockito
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
 import org.scalatest.mockito.MockitoSugar
 
 import scala.async.Async.{async, await}
 import scala.collection.mutable
-import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.{Duration, SECONDS}
+import scala.concurrent.{Await, Future}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
@@ -67,12 +65,14 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
 
   /**
     * Awaits all data of the given subject
-    * @param subject
+    * @param subject the subject to await all data for
     * @return
     */
   def awaitAllData(subject:SubjectType): Future[Array[TrailedRecord]] = async {
     await(subjectLibrary.getSubject(subject.name).assertExists())
-    val source = new KafkaTrailedRecordSource(subjectLibrary.getSubject(subject.name), kafkaConsumerFactory,"testsource")
+    val jobName = UUID.randomUUID().toString
+    val job = subjectLibrary.getJob(jobName)
+    val source = new KafkaTrailedRecordSource(subjectLibrary.getSubject(subject.name),job, kafkaConsumerFactory,"testsource")
     val result = new mutable.ArrayBuffer[TrailedRecord]()
 
 
@@ -108,15 +108,16 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
 
   /**
     * Utility function that creates a query environment and executes it
+    * Generates a random name to run the query
     * @param query The query environment
     * @return When the environment is done, the subjectType that was the result of the query
     */
   def runQueryEnvironment(query: QueryTree): Future[SubjectType] = async {
-
     val queryEnv = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
+    val name = UUID.randomUUID().toString
     queryEnv.enableCheckpointing(1000)
     logger.debug("Creating query Composer")
-    val composer = await(streamComposerFactory.getComposer(query))
+    val composer = await(streamComposerFactory.getComposer(query,name))
     logger.debug("Composing queryEnv")
     val resultStream = composer.compose(queryEnv)
     val resultType = composer.getExposedType()

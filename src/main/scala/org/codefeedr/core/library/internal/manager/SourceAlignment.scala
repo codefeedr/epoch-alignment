@@ -66,12 +66,21 @@ class SourceAlignment(sourceNode: QuerySourceNode, configFactory: ConfigFactoryC
 
   /**
     * Performs logic required for the sources to start running synchronized
-    * @return
+    * @return A future with the source epoch on which the job job will synchronize
     */
-  private def triggerStartSynchronized(): Future[Unit] = async {
+  private def triggerStartSynchronized(): Future[Long] = async {
     val syncEpoch = await(sourceNode.getEpochs().getLatestEpochId()) + synchronizeAfter
     val command = SourceCommand(KafkaSourceCommand.synchronize, Some(syncEpoch.toString))
     commandNode.push(command)
+    syncEpoch
   }
+
+  /**
+    * Creates a future that returns true when all sources are synchronized,
+    * or false when the passed epoch has completed.
+    * This method sould be called with the synchronization epoch in most cases
+    * @return The constructed future
+    */
+  def whenSynchronized(epoch: Long): Future[Boolean] = ???
 
 }

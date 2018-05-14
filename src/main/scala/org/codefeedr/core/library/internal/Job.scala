@@ -45,6 +45,7 @@ abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.Type
   var subjectType: SubjectType = _
   //HACK: Direct call to libraryServices
   lazy val subjectNode = LibraryServices.subjectLibrary.getSubject(subjectType.name)
+  lazy val jobNode = LibraryServices.subjectLibrary.getJob(name)
 
   var source: RichSourceFunction[Input] = _
 
@@ -82,9 +83,11 @@ abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.Type
     //HACK: Direct call to libraryServices
     source = new KafkaGenericSource[Input](
       job.subjectNode,
+      job.jobNode,
       LibraryServices.kafkaConsumerFactory,
       LibraryServices.subjectFactory.getUnTransformer[Input](subjectType),
-      job.subjectType.uuid)
+      job.subjectType.uuid
+    )
   }
 
   def startJob(subjectLibrary: SubjectLibrary) = async {

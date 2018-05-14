@@ -19,16 +19,15 @@
 
 package org.codefeedr.core.engine.query
 
-import com.typesafe.scalalogging.{LazyLogging, Logger}
-import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
-import org.codefeedr.core.library.{LibraryServices, SubjectFactoryComponent}
+import com.typesafe.scalalogging.LazyLogging
+import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment, _}
+import org.codefeedr.core.library.SubjectFactoryComponent
 import org.codefeedr.core.library.metastore.SubjectLibraryComponent
 import org.codefeedr.model.{SubjectType, TrailedRecord}
-import org.apache.flink.streaming.api.scala._
 
+import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.async.Async.{async, await}
 
 /**
   * Created by Niels on 31/07/2017.
@@ -40,7 +39,7 @@ trait StreamComposerFactoryComponent {
 
   class StreamComposerFactory extends LazyLogging {
 
-    def getComposer(query: QueryTree): Future[StreamComposer] = {
+    def getComposer(query: QueryTree, jobName: String): Future[StreamComposer] = {
 
       query match {
         case SubjectSource(subjectName) =>
@@ -50,13 +49,13 @@ trait StreamComposerFactoryComponent {
             val childNode = await(subjectLibrary.getSubjects().awaitChildNode(subjectName))
             logger.debug(s"Got subject $subjectName. Retrieving data")
             val subject = await(childNode.getData()).get
-            new SourceStreamComposer(subject)
+            new SourceStreamComposer(subject, jobName)
           }
         case Join(left, right, keysLeft, keysRight, selectLeft, selectRight, alias) =>
           logger.debug(s"Creating composer for join $alias")
           for {
-            leftComposer <- getComposer(left)
-            rightComposer <- getComposer(right)
+            leftComposer <- getComposer(left, jobName)
+            rightComposer <- getComposer(right, jobName)
             joinedType <- subjectLibrary
               .getSubject(alias)
               .getOrCreate(
@@ -71,22 +70,22 @@ trait StreamComposerFactoryComponent {
                                   rightComposer,
                                   joinedType,
                                   query.asInstanceOf[Join])
-        case _ => {
+        case _ =>
           val error = new NotImplementedError("not implemented query subtree")
           throw error
-        }
       }
     }
 
     /**
       * Created by Niels on 31/07/2017.
       */
-    class SourceStreamComposer(subjectType: SubjectType) extends StreamComposer {
+    class SourceStreamComposer(subjectType: SubjectType, jobName: String) extends StreamComposer {
 
       //HACK: hard coded id
       override def compose(env: StreamExecutionEnvironment): DataStream[TrailedRecord] = {
         env.addSource(
           subjectFactory.getSource(subjectLibrary.getSubject(subjectType.name),
+                                   subjectLibrary.getJob(jobName),
                                    s"composedsink_${subjectType.name}"))
       }
 

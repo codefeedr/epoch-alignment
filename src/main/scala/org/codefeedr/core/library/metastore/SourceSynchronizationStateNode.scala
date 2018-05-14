@@ -6,10 +6,8 @@ import org.codefeedr.core.library.internal.zookeeper.{ZkNode, ZkNodeBase}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-/** Synchronization state.
-  * 0: unsyncrhonized
-  * 1: Catching up
-  * 2: Synchronized
+/**
+  * Synchronization state.
   */
 case class SynchronizationState(state: KafkaSourceState.Value)
 

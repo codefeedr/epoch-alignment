@@ -10,4 +10,5 @@ class MetaRootNode extends ZkNodeBase("Metastore") {
   override def path(): String = s"/$name"
 
   def getSubjects() = new SubjectCollectionNode(this)
+  def getJobs() = new JobNodeCollection(this)
 }

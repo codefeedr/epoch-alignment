@@ -26,13 +26,14 @@ import org.codefeedr.core.library.internal.kafka.source.{
   KafkaSource,
   KafkaSourceEpochState
 }
-import org.codefeedr.core.library.metastore.SubjectNode
+import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
 import org.codefeedr.model.TrailedRecord
 
 class KafkaTrailedRecordSource(subjectNode: SubjectNode,
+                               jobNode: JobNode,
                                kafkaConsumerFactory: KafkaConsumerFactory,
                                override val sourceUuid: String)
-    extends KafkaSource[TrailedRecord](subjectNode, kafkaConsumerFactory) {
+    extends KafkaSource[TrailedRecord](subjectNode, jobNode, kafkaConsumerFactory) {
   override def mapToT(record: TrailedRecord) = record
 
   /**

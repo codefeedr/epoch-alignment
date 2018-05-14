@@ -31,7 +31,7 @@ import org.codefeedr.core.library.internal.kafka.source.{
   KafkaRowSource
 }
 import org.codefeedr.core.library.internal.{KeyFactory, RecordTransformer, SubjectTypeFactory}
-import org.codefeedr.core.library.metastore.{SubjectLibraryComponent, SubjectNode}
+import org.codefeedr.core.library.metastore.{JobNode, SubjectLibraryComponent, SubjectNode}
 import org.codefeedr.model.{ActionType, SubjectType, TrailedRecord}
 
 import scala.async.Async.{async, await}
@@ -132,12 +132,16 @@ trait SubjectFactoryComponent {
       }
     }
 
-    def getRowSource(subjectNode: SubjectNode, sourceId: String): SourceFunction[Row] = {
-      new KafkaRowSource(subjectNode, kafkaConsumerFactory, sourceId)
+    def getRowSource(subjectNode: SubjectNode,
+                     jobNode: JobNode,
+                     sourceId: String): SourceFunction[Row] = {
+      new KafkaRowSource(subjectNode, jobNode, kafkaConsumerFactory, sourceId)
     }
 
-    def getSource(subjectNode: SubjectNode, sinkId: String): SourceFunction[TrailedRecord] = {
-      new KafkaTrailedRecordSource(subjectNode, kafkaConsumerFactory, sinkId)
+    def getSource(subjectNode: SubjectNode,
+                  jobNode: JobNode,
+                  sinkId: String): SourceFunction[TrailedRecord] = {
+      new KafkaTrailedRecordSource(subjectNode, jobNode, kafkaConsumerFactory, sinkId)
     }
 
     /***

@@ -33,6 +33,9 @@ import scala.concurrent.Future
   * Created by Niels on 14/07/2017.
   */
 class SubjectLibrary extends LazyLogging {
+  private lazy val root: MetaRootNode = new MetaRootNode()
+  private lazy val subjects: SubjectCollectionNode = root.getSubjects()
+  private lazy val jobs: JobNodeCollection = root.getJobs()
 
   /**
     * Initalisation method
@@ -40,13 +43,13 @@ class SubjectLibrary extends LazyLogging {
     * @return true when initialisation is done
     */
   def initialize(): Future[Boolean] =
-    new MetaRootNode().getSubjects().create().map(_ => true)
+    subjects.create().map(_ => true)
 
   /**
     * Retrieves the nodes representing all registered subjects
     * @return
     */
-  def getSubjects(): SubjectCollectionNode = new MetaRootNode().getSubjects()
+  def getSubjects(): SubjectCollectionNode = subjects
 
   /**
     * Retrieves a node representing a single subject of the given name
@@ -54,7 +57,7 @@ class SubjectLibrary extends LazyLogging {
     * @param subjectName name of the subject
     * @return
     */
-  def getSubject(subjectName: String): SubjectNode = getSubjects().getChild(subjectName)
+  def getSubject(subjectName: String): SubjectNode = subjects.getChild(subjectName)
 
   /**
     * Get the subjectNode based on generic type
@@ -63,4 +66,11 @@ class SubjectLibrary extends LazyLogging {
     * @return
     */
   def getSubject[T: ru.TypeTag](): SubjectNode = getSubject(SubjectTypeFactory.getSubjectName[T])
+
+  /**
+    * Retrieves the jobNode for a job of the given name
+    * @param name name of the job
+    * @return a jobNode
+    */
+  def getJob(name: String): JobNode = jobs.getChild(name)
 }
