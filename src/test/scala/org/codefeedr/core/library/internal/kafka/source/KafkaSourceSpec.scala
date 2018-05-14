@@ -329,6 +329,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     val testKafkaSource = constructSourceReady()
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn 1337L
+    when(manager.getOffsetsForSynchronizedEpoch(1337L)) thenReturn Future.successful(Iterable.empty[Partition])
     when(manager.notifyStartedOnEpoch(ArgumentMatchers.any())) thenReturn Future.successful()
     testKafkaSource.apply(SourceCommand(KafkaSourceCommand.synchronize, Some("1337")))
 
