@@ -20,4 +20,11 @@ class SourceEpochCollection(parent: ZkNodeBase)
   def getLatestEpochId(): Future[Long] = async {
     await(getData()).get.latestEpoch
   }
+
+  /**
+    * Retrieve the epochNode of the given epcoh
+    * @param e
+    * @return
+    */
+  def getEpoch(e: Int): SourceEpochNode = new SourceEpochNode(e, this)
 }

@@ -1,12 +1,12 @@
 package org.codefeedr.core.library.internal.kafka.source
 
 import com.typesafe.scalalogging.LazyLogging
-import org.codefeedr.core.library.internal.kafka.meta.{SourceEpoch, TopicPartitionOffsets}
+import org.codefeedr.core.library.internal.kafka.meta.SourceEpoch
 import org.codefeedr.core.library.metastore._
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.async.Async.{async, await}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 /**
   * Class used when creating a synchronized source
@@ -21,9 +21,9 @@ class KafkaSourceEpochState(subjectNode: SubjectNode, querySourceNode: QuerySour
 
   /**
     * Obtains the next sourceEpoch for the given checkpointId
-    * @param checkpointId
+    * @param checkpointId id the the checkpoint currently starting on
     */
-  def nextSourceEpoch(checkpointId: Int): Future[SourceEpoch] = {
+  def nextSourceEpoch(checkpointId: Long): Future[SourceEpoch] = {
     //Perform all operations within a write lock
     sourceEpochCollection.asyncWriteLock(() =>
       async {
@@ -43,10 +43,10 @@ class KafkaSourceEpochState(subjectNode: SubjectNode, querySourceNode: QuerySour
 
   /**
     * Creates a sequent sourceEpoch node in zookeeper state, and returns its contents
-    * @param checkpointId
+    * @param checkpointId if of the checkpoint currently starting on
     * @return
     */
-  private def createNextSourceEpoch(checkpointId: Int): Future[SourceEpoch] = async {
+  private def createNextSourceEpoch(checkpointId: Long): Future[SourceEpoch] = async {
     val previous =
       await(sourceEpochCollection.getChild(s"${checkpointId - 1}").getData()).get.subjectEpochId
     val sourceEpoch = await(CreateNextSourceEpoch(previous, checkpointId))
@@ -56,12 +56,12 @@ class KafkaSourceEpochState(subjectNode: SubjectNode, querySourceNode: QuerySour
 
   /**
     * Creates a new sourceEpoch based on the information about the subject in zookeeper
-    * @param previousSubjectEpoch
-    * @param checkpointId
+    * @param previousSubjectEpoch id the the previous subject epoch
+    * @param checkpointId id of the epoch of the current task
     * @return
     */
-  private def CreateNextSourceEpoch(previousSubjectEpoch: Int,
-                                    checkpointId: Int): Future[SourceEpoch] = async {
+  private def CreateNextSourceEpoch(previousSubjectEpoch: Long,
+                                    checkpointId: Long): Future[SourceEpoch] = async {
     val nextSourceEpoch = subjectNode.getEpochs().getChild(s"${previousSubjectEpoch + 1}")
     //If the next epoch is available, use it. Otherwise use the previous epoch (Which means this source will not be reading new data)
     if (await(nextSourceEpoch.exists())) {
@@ -76,10 +76,10 @@ class KafkaSourceEpochState(subjectNode: SubjectNode, querySourceNode: QuerySour
 
   /**
     * Creates the first source epoch.
-    * @param checkpointId
+    * @param checkpointId id of the epoch of the current task
     * @return
     */
-  private def createFirstSourceEpoch(checkpointId: Int): Future[SourceEpoch] = async {
+  private def createFirstSourceEpoch(checkpointId: Long): Future[SourceEpoch] = async {
     val maxEpoch = await(subjectNode.getEpochs().getLatestEpochId())
     val sourceEpoch =
       await(CreateSourceEpoch(subjectNode.getEpochs().getChild(s"$maxEpoch"), checkpointId))
@@ -89,10 +89,10 @@ class KafkaSourceEpochState(subjectNode: SubjectNode, querySourceNode: QuerySour
 
   /**
     * Creates a new SourceEpoch based on some Epoch
-    * @param epochNode
+    * @param epochNode epoch (of the subject) to base the new sourceEpoch on
     * @return
     */
-  private def CreateSourceEpoch(epochNode: EpochNode, checkpointId: Int): Future[SourceEpoch] =
+  private def CreateSourceEpoch(epochNode: EpochNode, checkpointId: Long): Future[SourceEpoch] =
     async {
       val partitions = await(epochNode.getPartitionData())
       SourceEpoch(partitions.toList, checkpointId, epochNode.getEpoch())

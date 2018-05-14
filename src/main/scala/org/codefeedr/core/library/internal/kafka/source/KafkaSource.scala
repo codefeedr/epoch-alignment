@@ -220,7 +220,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
   //Called when starting a new checkpoint
   override def snapshotState(context: FunctionSnapshotContext): Unit = {
     val epochId = context.getCheckpointId
-    logger.debug(s"Snapshotting epoch ${epochId} on $getLabel")
+    logger.debug(s"Snapshotting epoch $epochId on $getLabel")
     checkpointOffsets(epochId) = currentOffsets.toMap
     //HACK: Sometimes cancelling on first checkpoint will cause incorrect offsets to be obtained (because no assignment happened yet)
     if (epochId > 1) {
@@ -275,7 +275,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
         _ <- manager.notifyStartedOnEpoch(epochId)
         _ <- async {
           alignmentOffsets =
-            await(manager.getOffsetsForSynchronizedEpoch(epochId)).map(o => o.nr -> o.offset).toMap
+            await(manager.nextSourceEpoch(epochId)).map(o => o.nr -> o.offset).toMap
         }
       } yield Unit,
       Duration(1, SECONDS)

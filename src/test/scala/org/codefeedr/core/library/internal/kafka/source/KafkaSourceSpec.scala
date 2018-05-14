@@ -329,7 +329,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     val testKafkaSource = constructSourceReady()
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn 1337L
-    when(manager.getOffsetsForSynchronizedEpoch(1337L)) thenReturn Future.successful(Iterable.empty[Partition])
+    when(manager.nextSourceEpoch(1337L)) thenReturn Future.successful(Iterable.empty[Partition])
     when(manager.notifyStartedOnEpoch(ArgumentMatchers.any())) thenReturn Future.successful()
     testKafkaSource.apply(SourceCommand(KafkaSourceCommand.synchronize, Some("1337")))
 
@@ -363,14 +363,14 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn 1337L
     when(manager.notifyStartedOnEpoch(ArgumentMatchers.any())) thenReturn Future.successful()
-    when(manager.getOffsetsForSynchronizedEpoch(1337L)) thenReturn Future.successful(Iterable(Partition(1,10)))
+    when(manager.nextSourceEpoch(1337L)) thenReturn Future.successful(Iterable(Partition(1,10)))
 
     //Act
     testKafkaSource.snapshotState(context)
 
     //Assert
     verify(manager, times(1)).notifyStartedOnEpoch(1337L)
-    verify(manager, times(1)).getOffsetsForSynchronizedEpoch(1337L)
+    verify(manager, times(1)).nextSourceEpoch(1337L)
     assert(testKafkaSource.alignmentOffsets(1) == 10L)
   }
 
@@ -386,7 +386,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn -100
     when(manager.notifyStartedOnEpoch(ArgumentMatchers.any())) thenReturn Future.successful()
-    when(manager.getOffsetsForSynchronizedEpoch(-100)) thenReturn Future.successful(Iterable.empty[Partition])
+    when(manager.nextSourceEpoch(-100)) thenReturn Future.successful(Iterable.empty[Partition])
 
 
     source.apply(SourceCommand(KafkaSourceCommand.synchronize, Some("-100")))
@@ -464,7 +464,8 @@ class SampleObject {
 
 }
 
-class TestKafkaSource(node: SubjectNode,kafkaConsumerFactory: KafkaConsumerFactory, mockedConsumer:KafkaSourceConsumer[SampleObject]) extends KafkaSource[SampleObject](node,kafkaConsumerFactory) {
+class TestKafkaSource(node: SubjectNode,kafkaConsumerFactory: KafkaConsumerFactory, mockedConsumer:KafkaSourceConsumer[SampleObject])
+  extends KafkaSource[SampleObject](node,kafkaConsumerFactory) {
 
   override val sourceUuid: String = "testuuid"
 

@@ -21,23 +21,23 @@ package org.codefeedr.core.library
 
 import java.util.UUID
 
-import org.apache.flink.streaming.api.functions.sink.{RichSinkFunction, SinkFunction}
+import org.apache.flink.streaming.api.functions.sink.SinkFunction
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.types.Row
+import org.codefeedr.core.library.internal.kafka._
 import org.codefeedr.core.library.internal.kafka.sink._
 import org.codefeedr.core.library.internal.kafka.source.{
   KafkaConsumerFactoryComponent,
   KafkaRowSource
 }
-import org.codefeedr.core.library.internal.kafka._
 import org.codefeedr.core.library.internal.{KeyFactory, RecordTransformer, SubjectTypeFactory}
 import org.codefeedr.core.library.metastore.{SubjectLibraryComponent, SubjectNode}
 import org.codefeedr.model.{ActionType, SubjectType, TrailedRecord}
 
+import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
-import scala.async.Async.{async, await}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
@@ -76,7 +76,7 @@ trait SubjectFactoryComponent {
     /**
       * Get a generic sink for the given type
       *
-      * @param subjectType
+      * @param subjectType subject to obtain the sink for
       * @return
       */
     def getSink(subjectType: SubjectType, sinkId: String): Future[SinkFunction[TrailedRecord]] =
@@ -89,10 +89,10 @@ trait SubjectFactoryComponent {
     /**
       * Return a sink for the tableApi
       *
-      * @param subjectType
+      * @param subjectType subject to obtain rowsink for
       * @return
       */
-    def getRowSink(subjectType: SubjectType, sinkId: String) = {
+    def getRowSink(subjectType: SubjectType, sinkId: String): RowSink = {
       val subjectNode = subjectLibrary.getSubject(subjectType.name)
       guaranteeTopicBlocking(subjectType)
       new RowSink(subjectNode, kafkaProducerFactory, epochStateManager, sinkId)
@@ -108,7 +108,7 @@ trait SubjectFactoryComponent {
         subjectType: SubjectType): TData => TrailedRecord = {
       @transient lazy val transformer = new RecordTransformer[TData](subjectType)
       @transient lazy val keyFactory = new KeyFactory(subjectType, UUID.randomUUID())
-      (d: TData) =>
+      d: TData =>
         {
           val record = transformer.bag(d, ActionType.Add)
           val trail = keyFactory.getKey(record)
@@ -125,7 +125,7 @@ trait SubjectFactoryComponent {
       * @return The object
       */
     def getUnTransformer[TData: ru.TypeTag: ClassTag](
-        subjectType: SubjectType): TrailedRecord => TData = { (r: TrailedRecord) =>
+        subjectType: SubjectType): TrailedRecord => TData = { r: TrailedRecord =>
       {
         val transformer = new RecordTransformer[TData](subjectType)
         transformer.unbag(r)
@@ -151,7 +151,7 @@ trait SubjectFactoryComponent {
 
     /**
       * Waits blocking for the kafkaTopic to be created
-      * @param st
+      * @param st subject to await topic for
       */
     private def guaranteeTopicBlocking(st: SubjectType): Unit = {
       Await.ready(guaranteeTopic(st), Duration(5, SECONDS))

@@ -25,6 +25,7 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
   private val syncStateNode = consumerNode.getSyncState()
   private lazy val sourceEpochCollections = sourceNode.getEpochs()
   private lazy val subjectEpochs = subjectNode.getEpochs()
+  private lazy val kafkaSourceEpochState = new KafkaSourceEpochState(subjectNode, sourceNode)
 
   lazy val cancel: Future[Unit] = subjectNode.awaitClose()
 
@@ -99,13 +100,6 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     }
   }
 
-  /**
-    * Obtains the specific partitions that should be used for the passed epoch number
-    * @param sourceEpoch epoch number of the source
-    * @return
-    */
-  def getOffsetsForSynchronizedEpoch(sourceEpoch: Long): Future[Iterable[Partition]] = ???
-
   /** Checks if all sources are in the catched up state **/
   private def allSourcesInState(state: KafkaSourceState.Value): Future[Boolean] =
     sourceNode
@@ -152,4 +146,13 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
   }
 
   def getLatestSubjectEpoch(): Future[Long] = subjectEpochs.getLatestEpochId()
+
+  /**
+    * Obtain the partitions belonging to the passed synchronized epcoh
+    * @param epoch epoch to synchronize with
+    * @return the collection of partitions
+    */
+  def nextSourceEpoch(epoch: Long): Future[Iterable[Partition]] = async {
+    await(kafkaSourceEpochState.nextSourceEpoch(epoch)).partitions
+  }
 }
