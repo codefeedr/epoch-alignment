@@ -12,29 +12,28 @@ import org.apache.kafka.common.TopicPartition
 import org.codefeedr.core.MockedLibraryServices
 import org.codefeedr.core.library.metastore._
 import org.codefeedr.model.zookeeper.QuerySink
-import org.codefeedr.model.{Record, RecordSourceTrail, SubjectType, TrailedRecord}
+import org.codefeedr.model.{RecordSourceTrail, SubjectType}
+import org.codefeedr.util.MockitoExtensions
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach}
 
 import scala.collection.JavaConverters._
-import org.codefeedr.util
-import org.codefeedr.util.MockitoExtensions
 
 //Mockito
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
 import org.scalatest.mockito.MockitoSugar
 
 //Async
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Future
 
 
 class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfterEach with MockedLibraryServices with MockitoExtensions {
   var subjectType: SubjectType = _
   var subjectNode: SubjectNode = _
+  var jobNode: JobNode = _
+
   var sinkCollectionNode: QuerySinkCollection = _
   var sinkNode: QuerySinkNode = _
   var producerCollectionNode: ProducerCollection = _
@@ -299,7 +298,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     * @return
     */
   private def getTestSink(): TestKafkaSink = {
-    val sink = new TestKafkaSink(subjectNode,producerFactory,epochStateManager)
+    val sink = new TestKafkaSink(subjectNode,jobNode,producerFactory,epochStateManager)
     sink.setRuntimeContext(runtimeContext)
     sink.initializeState(initCtx)
     sink
@@ -310,6 +309,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     */
   override def beforeEach(): Unit = {
     subjectNode = mock[SubjectNode]
+    jobNode = mock[JobNode]
     subjectType = mock[SubjectType]
     sinkCollectionNode = mock[QuerySinkCollection]
     sinkNode = mock[QuerySinkNode]
@@ -370,7 +370,7 @@ class SampleObject {
 
 }
 
-class TestKafkaSink(node:SubjectNode, kafkaProducerFactory: KafkaProducerFactory,epochStateManager:EpochStateManager) extends KafkaSink[SampleObject](node,kafkaProducerFactory,epochStateManager)  {
+class TestKafkaSink(node:SubjectNode, jobNode: JobNode,kafkaProducerFactory: KafkaProducerFactory,epochStateManager:EpochStateManager) extends KafkaSink[SampleObject](node,jobNode,kafkaProducerFactory,epochStateManager)  {
 
   override protected val sinkUuid: String = "testsink"
 

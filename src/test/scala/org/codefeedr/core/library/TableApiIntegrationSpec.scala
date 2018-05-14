@@ -19,16 +19,14 @@
 
 package org.codefeedr.core.library
 
-import org.codefeedr.core.engine.query.{Join, SubjectSource}
-import org.codefeedr.core.{FullIntegrationSpec, KafkaTest}
-import org.scalatest.tagobjects.Slow
 import org.apache.flink.api.scala._
-import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
+import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.table.api.TableEnvironment
-import org.apache.flink.table.api.scala._
-import org.apache.flink.types.Row
+import org.codefeedr.core.engine.query.{Join, SubjectSource}
 import org.codefeedr.core.library.internal.kafka.sink.KafkaTableSink
 import org.codefeedr.core.library.internal.kafka.source.KafkaTableSource
+import org.codefeedr.core.{FullIntegrationSpec, KafkaTest}
+import org.scalatest.tagobjects.Slow
 
 import scala.async.Async.{async, await}
 
@@ -68,26 +66,26 @@ class TableApiIntegrationSpec extends FullIntegrationSpec{
       val groupType = await(runSourceEnvironment(groups))
 
       //Validate that the data is actually sent and received by the kafka topic dedicated to both datasets
-      assert(await(awaitAllData(objectType)).size == 6)
-      assert(await(awaitAllData(groupType)).size == 2)
+      assert(await(awaitAllData(objectType)).length == 6)
+      assert(await(awaitAllData(groupType)).length == 2)
 
       //Execute the query environment, and obtain the typeDefinition of the result of the query
       val resultType = await(runQueryEnvironment(query))
       val resultNode = subjectLibrary.getSubject(resultType.name)
-      val jobNode = subjectLibrary.getJob("tableApiTestSource")
+      val queryJobNode = subjectLibrary.getJob("tableApiTestSource")
 
       //Construct Flinks tableEnvironment
       val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
       env.enableCheckpointing(100)
       val tableEnv = TableEnvironment.getTableEnvironment(env)
       //Register a custom implemented tableSource based on the output from the previous query
-      tableEnv.registerTableSource("my_table", new KafkaTableSource(resultNode, "testSource",subjectFactory.getRowSource(resultNode,jobNode,"mysource")))
+      tableEnv.registerTableSource("my_table", new KafkaTableSource(resultNode, "testSource",subjectFactory.getRowSource(resultNode,queryJobNode,"mysource")))
 
 
       //Perform a Flink SQL Query
-      val sqlResult  = tableEnv.sql("SELECT SUM(id), grp FROM my_table GROUP BY grp")
+      val sqlResult  = tableEnv.sqlQuery("SELECT SUM(id), grp FROM my_table GROUP BY grp")
       //Write query results to a new custom kafka table sink
-      sqlResult.writeToSink(KafkaTableSink("my_sum", "testSink"))
+      sqlResult.writeToSink(KafkaTableSink("my_sum",queryJobNode.name, "testSink"))
       //Run the environment with TABLE API Query
       this.runEnvironment(env)
 

@@ -39,7 +39,7 @@ import org.apache.flink.types.Row
 import org.apache.kafka.clients.producer.{Callback, KafkaProducer, ProducerRecord, RecordMetadata}
 import org.codefeedr.core.library.internal.KeyFactory
 import org.codefeedr.core.library.LibraryServices
-import org.codefeedr.core.library.metastore.{ProducerNode, QuerySinkNode, SubjectNode}
+import org.codefeedr.core.library.metastore.{JobNode, ProducerNode, QuerySinkNode, SubjectNode}
 import org.codefeedr.model.zookeeper.{Producer, QuerySink}
 import org.codefeedr.model.{RecordSourceTrail, _}
 import org.codefeedr.util.Stopwatch
@@ -59,6 +59,7 @@ import scala.util.{Failure, Success}
   * Created by Niels on 11/07/2017.
   */
 abstract class KafkaSink[TSink](subjectNode: SubjectNode,
+                                jobNode: JobNode,
                                 kafkaProducerFactory: KafkaProducerFactory,
                                 epochStateManager: EpochStateManager)
     extends TwoPhaseCommitSinkFunction[TSink, TransactionState, TransactionContext](

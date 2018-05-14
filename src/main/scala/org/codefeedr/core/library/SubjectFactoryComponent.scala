@@ -54,8 +54,10 @@ trait SubjectFactoryComponent {
     * Created by Niels on 18/07/2017.
     */
   class SubjectFactoryController {
-    def GetSink[TData: ru.TypeTag: ClassTag](sinkId: String): Future[SinkFunction[TData]] = {
+    def GetSink[TData: ru.TypeTag: ClassTag](sinkId: String,
+                                             jobName: String): Future[SinkFunction[TData]] = {
       val subjectType = SubjectTypeFactory.getSubjectType[TData]
+      val jobNode = subjectLibrary.getJob(jobName)
       val subjectNode = subjectLibrary
         .getSubject(subjectType.name)
       subjectNode
@@ -66,6 +68,7 @@ trait SubjectFactoryComponent {
               .map(
                 _ =>
                   new KafkaGenericSink(subjectNode,
+                                       jobNode,
                                        kafkaProducerFactory,
                                        epochStateManager,
                                        sinkId
@@ -79,11 +82,18 @@ trait SubjectFactoryComponent {
       * @param subjectType subject to obtain the sink for
       * @return
       */
-    def getSink(subjectType: SubjectType, sinkId: String): Future[SinkFunction[TrailedRecord]] =
+    def getSink(subjectType: SubjectType,
+                jobName: String,
+                sinkId: String): Future[SinkFunction[TrailedRecord]] =
       async {
         val subjectNode = subjectLibrary.getSubject(subjectType.name)
+        val jobNode = subjectLibrary.getJob(jobName)
         await(guaranteeTopic(subjectType))
-        new TrailedRecordSink(subjectNode, kafkaProducerFactory, epochStateManager, sinkId)
+        new TrailedRecordSink(subjectNode,
+                              jobNode,
+                              kafkaProducerFactory,
+                              epochStateManager,
+                              sinkId)
       }
 
     /**
@@ -92,10 +102,11 @@ trait SubjectFactoryComponent {
       * @param subjectType subject to obtain rowsink for
       * @return
       */
-    def getRowSink(subjectType: SubjectType, sinkId: String): RowSink = {
+    def getRowSink(subjectType: SubjectType, jobName: String, sinkId: String): RowSink = {
       val subjectNode = subjectLibrary.getSubject(subjectType.name)
+      val jobNode = subjectLibrary.getJob(jobName)
       guaranteeTopicBlocking(subjectType)
-      new RowSink(subjectNode, kafkaProducerFactory, epochStateManager, sinkId)
+      new RowSink(subjectNode, jobNode, kafkaProducerFactory, epochStateManager, sinkId)
     }
 
     /**

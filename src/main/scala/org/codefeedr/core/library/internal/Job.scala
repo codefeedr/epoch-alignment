@@ -70,7 +70,7 @@ abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.Type
   def compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit] = async {
     val sinkName = s"composedsink_${queryId}"
     //HACK: Direct call to libraryServices
-    val sink = await(LibraryServices.subjectFactory.GetSink[Output](sinkName))
+    val sink = await(LibraryServices.subjectFactory.GetSink[Output](sinkName, queryId))
     val stream = getStream(env)
     stream.addSink(sink)
   }

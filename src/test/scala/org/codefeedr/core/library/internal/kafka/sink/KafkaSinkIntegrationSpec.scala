@@ -51,8 +51,9 @@ class KafkaSinkIntegrationSpec extends LibraryServiceSpec with BeforeAndAfterEac
     val sinkId = "testSink"
     val subjectNode = subjectLibrary.getSubject[TestKafkaSinkSubject]()
     val subject = await(subjectNode.getOrCreateType[TestKafkaSinkSubject]())
+    val job = subjectLibrary.getJob("testJob")
     //,subjectFactory.getTransformer[TestKafkaSinkSubject](subject)
-    val sink = new KafkaGenericSink[TestKafkaSinkSubject](subjectNode,kafkaProducerFactory,epochStateManager,sinkId)
+    val sink = new KafkaGenericSink[TestKafkaSinkSubject](subjectNode,job,kafkaProducerFactory,epochStateManager,sinkId)
     val sinkNode = subjectNode.getSinks().getChild(sinkId)
     val runtimeContext = mock[StreamingRuntimeContext]
     sink.setRuntimeContext(runtimeContext)

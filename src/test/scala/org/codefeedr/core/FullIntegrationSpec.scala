@@ -122,7 +122,7 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     val resultStream = composer.compose(queryEnv)
     val resultType = composer.getExposedType()
     logger.debug(s"Composing sink for ${resultType.name}.")
-    val sink = await(subjectFactory.getSink(resultType, "testsink"))
+    val sink = await(subjectFactory.getSink(resultType, name,"testsink"))
     resultStream.addSink(sink)
     logger.debug("Starting queryEnv")
     queryEnv.execute()

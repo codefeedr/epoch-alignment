@@ -58,7 +58,7 @@ abstract class SimplePlugin[TData: ru.TypeTag: ClassTag] extends AbstractPlugin 
   override def compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit] = async {
     val sinkName = s"composedsink_${queryId}"
     //HACK: Direct call to libraryServices
-    val sink = await(LibraryServices.subjectFactory.GetSink[TData](sinkName))
+    val sink = await(LibraryServices.subjectFactory.GetSink[TData](sinkName, queryId))
     logger.debug(s"Got sink. Creating stream")
     val stream = getStream(env)
     stream.addSink(sink)
