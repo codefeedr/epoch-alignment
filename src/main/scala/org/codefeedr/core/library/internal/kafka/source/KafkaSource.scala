@@ -386,7 +386,6 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
   private def pollSynchronized(ctx: SourceFunction.SourceContext[T]): Unit = {
     //Do not lock if already reached the offsets
     if (!OffsetUtils.HigherOrEqual(currentOffsets.toMap, alignmentOffsets)) {
-
       //Stay within lock until desired offset was reached
       ctx.getCheckpointLock.synchronized {
         while (!OffsetUtils.HigherOrEqual(currentOffsets.toMap, alignmentOffsets)) {
