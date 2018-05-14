@@ -92,6 +92,12 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
   //Running state
   @transient
   @volatile private var state: KafkaSourceState.Value = KafkaSourceState.UnSynchronized
+
+  //State transitions in progress
+  @transient
+  @volatile private var stateTransition: KafkaSourceStateTransition.Value =
+    KafkaSourceStateTransition.None
+
   //Node in zookeeper representing state of the subject this consumer is subscribed on
   @volatile private[kafka] var running = true
   @volatile private[kafka] var inititialized = false
@@ -151,36 +157,14 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
     * @param command the command
     */
   def apply(command: SourceCommand): Unit = {
-    command.command match {
-      //Handle the synchronize command
-      case KafkaSourceCommand.catchUp =>
-        state match {
-          case KafkaSourceState.UnSynchronized =>
-            state = KafkaSourceState.CatchingUp
-            manager.startedCatchingUp()
-          case _ =>
-            val msg = s"Invalid state transition from $state to catchingUp"
-            logger.error(msg)
-            throw new Error(msg)
-        }
-      case KafkaSourceCommand.synchronize =>
-        state match {
-          case KafkaSourceState.Ready =>
-            synchronizeEpochId = command.context.get.toLong
-            logger.debug(s"Synchronizing on epoch $synchronizeEpochId in $getLabel")
-          case _ =>
-            val msg = s"Invalid state transition from $state to synchronized"
-            logger.error(msg)
-            throw new Error(msg)
-        }
-      case _ => throw new Error("Unknown command")
+    stateTransition.synchronized {
+      command.command match {
+        case KafkaSourceCommand.catchUp => catchUpCommand()
+        case KafkaSourceCommand.synchronize => synchronizeCommand(command.context.get)
+        case KafkaSourceCommand.abort => abortCommand()
+        case _ => throw new Error("Unknown command")
+      }
     }
-  }
-
-  def readableOffsets(offsetMap: Map[TopicPartition, Long]): String = {
-    offsetMap
-      .map(tpo => s"(${tpo._1.topic()}_${tpo._1.partition()} -> ${tpo._2})")
-      .mkString("\r\n")
   }
 
   //Called when restoring the state
@@ -222,17 +206,8 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
     val epochId = context.getCheckpointId
     logger.debug(s"Snapshotting epoch $epochId on $getLabel")
     checkpointOffsets(epochId) = currentOffsets.toMap
-    //HACK: Sometimes cancelling on first checkpoint will cause incorrect offsets to be obtained (because no assignment happened yet)
-    if (epochId > 1) {
-      cancelIfNeeded(epochId)
-    }
-    if (epochId == synchronizeEpochId) {
-      if (state == KafkaSourceState.Ready) {
-        transitionToSynchronized()
-      } else {
-        logger.warn(s"Source reached synchronize epoch, but state was $state in source $getLabel")
-      }
-    }
+
+    performTransitions(epochId)
     //Handle state specific code
     state match {
       case KafkaSourceState.CatchingUp => snapshotCatchingUpState(epochId)
@@ -241,6 +216,43 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
       case _ =>
     }
     logger.debug(s"Done snapshotting epoch ${context.getCheckpointId} on $getLabel")
+  }
+
+  /**
+    * Performs eventual state transitions in the source
+    * @param epochId id of the current epoch
+    */
+  private def performTransitions(epochId: Long): Unit = {
+    //HACK: Sometimes cancelling on first checkpoint will cause incorrect offsets to be obtained (because no assignment happened yet)
+    if (epochId > 1) {
+      cancelIfNeeded(epochId)
+    }
+
+    if (epochId == synchronizeEpochId) {
+      if (state == KafkaSourceState.Ready) {
+        transitionToSynchronized()
+      } else {
+        logger.warn(s"Source reached synchronize epoch, but state was $state in source $getLabel")
+      }
+    }
+
+    //TODO: Should we synchronize here? Technically it is required, but with current usage conflicts cannot occur.
+    //If this state transition logic becomes more complex, we should synchronize it with the write operations to stateTransition
+    stateTransition match {
+      case KafkaSourceStateTransition.Aborting => {
+        stateTransition = KafkaSourceStateTransition.None
+        if (state != KafkaSourceState.UnSynchronized) {
+          manager.notifyAbort()
+          state = KafkaSourceState.UnSynchronized
+        }
+      }
+      case KafkaSourceStateTransition.CatchUp => {
+        stateTransition = KafkaSourceStateTransition.None
+        state = KafkaSourceState.CatchingUp
+        manager.startedCatchingUp()
+      }
+      case _ =>
+    }
   }
 
   private def snapshotCatchingUpState(epochId: Long): Unit = {
@@ -390,7 +402,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
       ctx.getCheckpointLock.synchronized {
         while (!OffsetUtils.HigherOrEqual(currentOffsets.toMap, alignmentOffsets)) {
           logger.debug(
-            s"Perfoming synchronized poll loop in $getLabel.\r\n Offsets: ${currentOffsets.toMap}.\r\n Desired: ${alignmentOffsets}")
+            s"Perfoming synchronized poll loop in $getLabel.\r\n Offsets: ${currentOffsets.toMap}.\r\n Desired: $alignmentOffsets")
           val offsets = consumer.poll(ctx, alignmentOffsets)
           offsets.foreach(o => {
             currentOffsets(o._1) = o._2
@@ -455,14 +467,57 @@ abstract class KafkaSource[T](subjectNode: SubjectNode, kafkaConsumerFactory: Ka
   }
 
   /**
-    *
-    * @param id index of the checkpoint to await
-    */
-  def awaitCheckpoint(id: Long): Unit = {}
-
-  /**
     * Get typeinformation of the returned type
     * @return
     */
   def getProducedType: TypeInformation[T]
+
+  private def catchUpCommand(): Unit = {
+    assertNoTransition()
+    state match {
+      case KafkaSourceState.UnSynchronized =>
+        stateTransition = KafkaSourceStateTransition.CatchUp
+      case _ =>
+        val msg = s"Invalid state transition from $state to catchingUp"
+        logger.error(msg)
+        throw new Error(msg)
+    }
+  }
+
+  private def synchronizeCommand(context: String): Unit = {
+    assertNoTransition()
+    state match {
+      case KafkaSourceState.Ready =>
+        synchronizeEpochId = context.toLong
+        logger.debug(s"Synchronizing on epoch $synchronizeEpochId in $getLabel")
+      case _ =>
+        val msg = s"Invalid state transition from $state to synchronized"
+        logger.error(msg)
+        throw new Error(msg)
+    }
+  }
+
+  private def abortCommand(): Unit = {
+    logger.info(s"Aborting synchronization in $getLabel. \r\nWas in state: $state")
+    stateTransition = KafkaSourceStateTransition.Aborting
+  }
+
+  /**
+    * Asserts there is no state transition in progress
+    * Throws an exception if there is
+    */
+  private def assertNoTransition(): Unit = {
+    if (stateTransition != KafkaSourceStateTransition.None) {
+      val msg =
+        s"Cannot perform another state transition while state transition to $stateTransition is in progress"
+      logger.error(msg)
+      throw new Error(msg)
+    }
+  }
+
+  def readableOffsets(offsetMap: Map[TopicPartition, Long]): String = {
+    offsetMap
+      .map(tpo => s"(${tpo._1.topic()}_${tpo._1.partition()} -> ${tpo._2})")
+      .mkString("\r\n")
+  }
 }

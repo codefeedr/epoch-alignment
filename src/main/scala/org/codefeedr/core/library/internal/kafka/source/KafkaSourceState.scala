@@ -6,3 +6,7 @@ package org.codefeedr.core.library.internal.kafka.source
 object KafkaSourceState extends Enumeration {
   val UnSynchronized, CatchingUp, Ready, Synchronized, Closing = Value
 }
+
+object KafkaSourceStateTransition extends Enumeration {
+  val None, CatchUp, Aborting = Value
+}

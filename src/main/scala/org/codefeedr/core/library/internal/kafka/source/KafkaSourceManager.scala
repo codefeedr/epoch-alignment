@@ -62,6 +62,11 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
   }
 
   /**
+    * Notify the manager that the consumer has aborted synchronization
+    */
+  def notifyAbort(): Future[Unit] = notifyAggregateState(KafkaSourceState.UnSynchronized)
+
+  /**
     * Notify the manager that the consumer is catched up
     * If all consumers are catched up, the entire source will me marked as catched up (and ready to synchronize)
     */
