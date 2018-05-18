@@ -5,7 +5,7 @@ resolvers in ThisBuild ++= Seq(
   Resolver.mavenLocal)
 resolvers += "Artima Maven Repository" at "http://repo.artima.com/releases"
 
-name := "CodeFeedr"
+name := "flink"
 
 version := "0.1-SNAPSHOT"
 
@@ -50,7 +50,7 @@ val dep_core = Seq(
 
 
 
-lazy val root = (project in file("."))
+lazy val flink = (project in file("."))
   .settings(
     libraryDependencies ++= dep_core,
     libraryDependencies ++= dep_flink,
@@ -59,13 +59,11 @@ lazy val root = (project in file("."))
 
 
 
-mainClass in assembly := Some("org.codefeedr.Job")
-
 // make run command include the provided dependencies
 run in Compile := Defaults.runTask(fullClasspath in Compile,
   mainClass in (Compile, run),
   runner in (Compile, run))
 
 // exclude Scala library from assembly
-assemblyOption in assembly := (assemblyOption in assembly).value
-  .copy(includeScala = false)
+//assemblyOption in assembly := (assemblyOption in assembly).value
+//  .copy(includeScala = false)
