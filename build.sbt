@@ -1,6 +1,6 @@
 lazy val root = (project in file("."))
-  .aggregate(flink)
+  .aggregate(flinkintegration)
 
-lazy val flink = (project in file("flink"))
+lazy val flinkintegration = (project in file("flinkintegration"))
 
 
