@@ -66,7 +66,6 @@ class TransactionState(
         awaitCommitPromise.success()
       }
     }
-
   }
 
   /**

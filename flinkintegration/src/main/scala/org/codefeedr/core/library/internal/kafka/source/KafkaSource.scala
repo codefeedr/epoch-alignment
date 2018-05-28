@@ -20,6 +20,7 @@
 package org.codefeedr.core.library.internal.kafka.source
 
 import java.util.UUID
+import java.util.concurrent.TimeoutException
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.state.{ListState, ListStateDescriptor}
@@ -150,8 +151,18 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
     * Cancels this source on the final epoch of the source it is subscribed on
     */
   override def cancel(): Unit = {
-    finalSourceEpoch = Await.result(manager.getLatestSubjectEpoch(), Duration(5, SECONDS))
-    logger.debug(s"Cancelling $getLabel after final source epoch $finalSourceEpoch.")
+    try {
+      finalSourceEpoch = Await.result(manager.getLatestSubjectEpoch(), Duration(5, SECONDS))
+      logger.debug(s"Cancelling $getLabel after final source epoch $finalSourceEpoch.")
+    } catch {
+      case e: TimeoutException => {
+        logger.error(
+          "Timeout when obtaining final source epoch during cancellation. Performing forced shutdown",
+          e)
+        running = false
+      }
+    }
+
   }
 
   /**
