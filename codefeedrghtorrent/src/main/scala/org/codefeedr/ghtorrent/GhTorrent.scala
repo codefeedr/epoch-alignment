@@ -30,7 +30,6 @@ import java.util.Date
   Work in progress, classes are added as needed
  */
 
-
 /**
   *
   * @param id
@@ -48,20 +47,20 @@ import java.util.Date
   * @param state
   * @param city
   */
-case class User( id: Int,
-                 login:String,
-                 name:String,
-                 company:String,
-                 email:String,
-                 created_at: Date,
-                 `type`: String,
-                 fake: Boolean,
-                 deleted: Boolean,
-                 long: Float,
-                 lat: Float,
-                 country_code: String,
-                 state: String,
-                 city: String)
+case class User(id: Int,
+                login: String,
+                name: String,
+                company: String,
+                email: String,
+                created_at: Date,
+                `type`: String,
+                fake: Boolean,
+                deleted: Boolean,
+                long: Float,
+                lat: Float,
+                country_code: String,
+                state: String,
+                city: String)
 
 /**
   * Github commit
@@ -75,7 +74,7 @@ case class User( id: Int,
 case class Commit(id: Int,
                   sha: String,
                   author_id: Int,
-                  committer_id:Int,
+                  committer_id: Int,
                   project_id: Int,
                   created_at: Date)
 

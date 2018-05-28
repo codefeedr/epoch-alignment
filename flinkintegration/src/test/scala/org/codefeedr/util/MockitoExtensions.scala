@@ -8,6 +8,7 @@ import org.mockito.stubbing.Answer
 import org.scalatest.AsyncFlatSpec
 import org.scalatest.mockito.MockitoSugar
 
+
 import scala.concurrent.{Future, Promise}
 
 trait MockitoExtensions {
