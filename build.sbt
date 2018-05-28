@@ -28,7 +28,7 @@ resolvers in ThisBuild ++= Seq(
 
 //Object containing all depdencies, to prevent version conflicts between projects
 lazy val dependencies = new {
-  val flinkV = "1.4.2"
+  val flinkV = "1.5.0"
 
   val zookeeperV = "3.4.9"
   val kafkaV = "1.0.0"
