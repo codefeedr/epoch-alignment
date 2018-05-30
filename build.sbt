@@ -44,14 +44,11 @@ lazy val dependencies = new {
   val mongoV = "2.1.0"
   val eclipseV = "2.1.5"
 
+  val flinkScala             = "org.apache.flink"  %% "flink-scala"            % flinkV     % "provided" exclude("org.slf4j","slf4j-log4j12")
+  val flinkStreamingScala   = "org.apache.flink"  %% "flink-streaming-scala"  % flinkV       % "provided" exclude("org.slf4j","slf4j-log4j12")
+  val flinkTable             = "org.apache.flink"  %% "flink-table"            % flinkV       % "provided" exclude("org.slf4j","slf4j-log4j12")
 
-
-
-  val flinkScala             = "org.apache.flink"  %% "flink-scala"            % flinkV       % "provided"
-  val flinkStreamingScala   = "org.apache.flink"  %% "flink-streaming-scala"  % flinkV       % "provided"
-  val flinkTable             = "org.apache.flink"  %% "flink-table"            % flinkV       % "provided"
-
-  val zookeeper = "org.apache.zookeeper" % "zookeeper" % zookeeperV
+  val zookeeper = "org.apache.zookeeper" % "zookeeper" % zookeeperV exclude("org.slf4j","slf4j-log4j12")
   val kafka = "org.apache.kafka" % "kafka-clients" % kafkaV
 
   val scalaAsync = "org.scala-lang.modules" %% "scala-async" % scalaAsyncV
@@ -136,7 +133,6 @@ lazy val demo = (project in file("demo"))
       settings,
       mainClass in assembly := Some("org.codefeedr.demo.ghtorrent.GhTorrentUserImporter"),
       assemblyMergeStrategy in assembly := {
-        case PathList("org","slf4j", xs @ _*) => MergeStrategy.first
         case "log4j.properties" => MergeStrategy.discard
         case x =>
           val oldStrategy = (assemblyMergeStrategy in assembly).value
