@@ -121,7 +121,7 @@ class SourceAlignmentSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAn
 
     //Some default values
     when(syncStateNode.getData()) thenReturn Future.successful(Some(SynchronizationState(KafkaSourceState.UnSynchronized)))
-    when(syncStateNode.setData(ArgumentMatchers.any())) thenReturn Future.successful()
+    when(syncStateNode.setData(ArgumentMatchers.any())) thenReturn Future.successful(())
 
     super.beforeEach()
   }

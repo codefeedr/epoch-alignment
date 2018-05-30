@@ -32,7 +32,7 @@ class ZkNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEa
     val root = new TestRoot()
     val configNode = new TestConfigNodeWithPostCreate("testc", root, () => {
       postCreateCalled = true
-      Future.successful()
+      Future.successful(())
     })
     await(configNode.create(data))
     assert(postCreateCalled)

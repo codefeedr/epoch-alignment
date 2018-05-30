@@ -49,7 +49,7 @@ abstract class ZkNodeBase(val name: String) extends Serializable with LazyLoggin
     * @return a future that resolves when the node has been deleted
     */
   def delete(): Future[Unit] =
-    exists().flatMap(b => if (b) { zkClient.Delete(path) } else { Future.successful() })
+    exists().flatMap(b => if (b) { zkClient.Delete(path) } else { Future.successful(()) })
 
   /**
     * Delete the current node and all its children
@@ -57,7 +57,7 @@ abstract class ZkNodeBase(val name: String) extends Serializable with LazyLoggin
     * @return a future that resolves when the node has been deleted
     */
   def deleteRecursive(): Future[Unit] =
-    exists().flatMap(b => if (b) { zkClient.deleteRecursive(path) } else { Future.successful() })
+    exists().flatMap(b => if (b) { zkClient.deleteRecursive(path) } else { Future.successful(()) })
 
   /**
     * Creates a future that awaits the registration of a specific child

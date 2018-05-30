@@ -63,7 +63,7 @@ class TransactionState(
     this.synchronized {
       pendingEvents -= 1
       if (awaitingCommit && pendingEvents == 0) {
-        awaitCommitPromise.success()
+        awaitCommitPromise.success(())
       }
     }
   }
@@ -77,7 +77,7 @@ class TransactionState(
     //Check if the promise should be completed
     this.synchronized {
       if (pendingEvents == 0 && !awaitCommitPromise.isCompleted) {
-        awaitCommitPromise.success()
+        awaitCommitPromise.success(())
       }
     }
     awaitCommitPromise.future

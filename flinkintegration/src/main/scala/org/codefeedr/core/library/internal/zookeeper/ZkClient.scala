@@ -490,7 +490,7 @@ class ZkClient extends LazyLogging {
         override def process(event: WatchedEvent): Unit = {
           if (!p.isCompleted) {
             if (event.getType == Event.EventType.NodeDeleted) {
-              p.success()
+              p.success(())
             } else {
               placeAwaitRemovalWatch(p, path)
             }

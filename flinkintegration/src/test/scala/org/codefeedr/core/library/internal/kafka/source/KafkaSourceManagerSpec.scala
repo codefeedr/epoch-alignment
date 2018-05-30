@@ -69,10 +69,10 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     when(consumerCollection.getChildren()) thenReturn Future.successful(Iterable(consumerNode,otherConsumerNode))
     when(consumerNode.create(ArgumentMatchers.any())) thenReturn Future.successful(null)
     when(consumerNode.getSyncState()) thenReturn consumerSyncState
-    when(consumerSyncState.setData(ArgumentMatchers.any())) thenReturn Future.successful()
+    when(consumerSyncState.setData(ArgumentMatchers.any())) thenReturn Future.successful(())
 
     when(otherConsumerNode.getSyncState()) thenReturn otherConsumerSyncState
-    when(otherConsumerSyncState.setData(ArgumentMatchers.any())) thenReturn Future.successful()
+    when(otherConsumerSyncState.setData(ArgumentMatchers.any())) thenReturn Future.successful(())
 
 
     when(subjectNode.getEpochs()) thenReturn epochCollection
@@ -101,7 +101,7 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     manager.initializeRun()
 
     //Act
-    completePromise.success()
+    completePromise.success(())
 
     //Assert
     await(manager.cancel)

@@ -1,12 +1,5 @@
 import sbt.Keys.libraryDependencies
 
-lazy val root =
-  (project in file("."))
-  .settings(settings)
-  .aggregate(
-    flinkintegration,
-    codefeedrghtorrent)
-
 
 parallelExecution in Test := false
 
@@ -15,7 +8,8 @@ lazy val settings = Seq(
   version := "0.1.0-SNAPSHOT",
   scalaVersion := "2.11.11",
   scalacOptions ++= Seq(
-    "-deprecation"
+    "-deprecation",
+    "-feature"
   )
 )
 
@@ -42,6 +36,7 @@ lazy val dependencies = new {
   val scalaLoggingV = "3.5.0"
   val typesafeConfigV = "1.3.1"
   val json4sV = "3.6.0-M2"
+  val shapelessV = "2.3.3"
 
   val mockitoV = "2.13.0"
   val scalaTestV = "3.0.1"
@@ -68,7 +63,10 @@ lazy val dependencies = new {
   val scalaLogging = "com.typesafe.scala-logging" %% "scala-logging" % scalaLoggingV
   val scalaP = "org.json4s" % "json4s-scalap_2.11" % json4sV
   val jackson = "org.json4s" % "json4s-jackson_2.11" % json4sV
+  val json4sNative = "org.json4s" %% "json4s-native" % json4sV
   val typeSafeConfig = "com.typesafe" % "config" % typesafeConfigV
+  val shapeless = "com.chuusai" %% "shapeless" % shapelessV
+
 
   val mockito = "org.mockito" % "mockito-core" % mockitoV % "test"
   val scalactic = "org.scalactic" %% "scalactic" % scalaTestV % "test"
@@ -90,7 +88,9 @@ lazy val commonDependencies = Seq(
   dependencies.scalaLogging,
   dependencies.scalaP,
   dependencies.jackson,
+  dependencies.json4sNative,
   dependencies.typeSafeConfig,
+  dependencies.shapeless,
 
   //Test
   dependencies.mockito,
@@ -130,11 +130,51 @@ lazy val codefeedrghtorrent = (project in file("codefeedrghtorrent"))
     libraryDependencies ++= commonDependencies
   )
 
+lazy val demo = (project in file("demo"))
+  .dependsOn(flinkintegration,codefeedrghtorrent)
+    .settings(
+      settings,
+      mainClass in assembly := Some("org.codefeedr.demo.ghtorrent.GhTorrentUserImporter"),
+      assemblyMergeStrategy in assembly := {
+        case PathList("org","slf4j", xs @ _*) => MergeStrategy.first
+        case "log4j.properties" => MergeStrategy.discard
+        case x =>
+          val oldStrategy = (assemblyMergeStrategy in assembly).value
+          oldStrategy(x)
+      },
+      libraryDependencies ++= commonDependencies ++ flinkDependencies
+    )
+
+
+lazy val mainRunner = project.in(file("mainRunner"))
+  .dependsOn(flinkintegration,codefeedrghtorrent,demo).settings(
+  settings,
+  // we set all provided dependencies to none, so that they are included in the classpath of mainRunner
+  libraryDependencies := (libraryDependencies in flinkintegration).value.map{
+    module => module.configurations match {
+      case Some("provided") => module.withConfigurations(None)
+      case _ => module
+    }
+  }
+)
+
+
+
+unmanagedJars in Compile += file("lib/flinkwebsocketsource_2.11-1.0.jar")
+unmanagedJars in Compile += file("lib/websocketclient-1.0.jar")
+
+
+
+
 // make run command include the provided dependencies
 run in Compile := Defaults.runTask(fullClasspath in Compile,
     mainClass in (Compile, run),
    runner in (Compile, run))
 
+test in assembly := {}
+
+
+
 // exclude Scala library from assembly
-//assemblyOption in assembly := (assemblyOption in assembly).value
-//  .copy(includeScala = false)
+assemblyOption in assembly := (assemblyOption in assembly).value
+  .copy(includeScala = false)

@@ -19,16 +19,16 @@
 
 package org.codefeedr.plugins.github.input
 
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
 import org.codefeedr.plugins.github.clients.GitHubProtocol.Event
 import org.codefeedr.plugins.github.clients.{GitHubAPI, GitHubRequestService}
-import org.slf4j.{Logger, LoggerFactory}
 
-class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] {
+class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] with LazyLogging {
 
   //get logger used by Flink
-  val log: Logger = LoggerFactory.getLogger(classOf[GitHubSource])
+
 
   //loads the github api
   var gitHubAPI: GitHubAPI = _
@@ -56,7 +56,7 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
     * Cancels the GitHub API retrieval.
     */
   override def cancel(): Unit = {
-    log.info("Closing connection with GitHub API")
+    logger.info("Closing connection with GitHub API")
     isRunning = false
   }
 
@@ -65,7 +65,7 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
     * @param ctx run context.
     */
   override def run(ctx: SourceFunction.SourceContext[Event]): Unit = {
-    log.info("Opening connection with GitHub API")
+    logger.info("Opening connection with GitHub API")
 
     //get github service
     val service: GitHubRequestService = new GitHubRequestService(gitHubAPI.client)
@@ -91,7 +91,7 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
       if (maxRequests != -1 && currentRequest >= maxRequests) {
         cancel()
 
-        log.info(s"Going to send $eventsPolled events")
+        logger.info(s"Going to send $eventsPolled events")
         return
       }
     }

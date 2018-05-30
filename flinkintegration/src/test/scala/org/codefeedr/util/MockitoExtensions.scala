@@ -29,7 +29,7 @@ trait MockitoExtensions {
       override def answer(invocation: InvocationOnMock): T = {
         i = i-1
         if(i == 0) {
-          p.success()
+          p.success(())
         }
         f(invocation)
       }

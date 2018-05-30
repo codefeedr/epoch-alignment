@@ -111,15 +111,15 @@ class EpochStateManagerSpec extends AsyncFlatSpec with MockitoSugar with BeforeA
 
     when(p1.create(Partition(1,10l))) thenReturn Future.successful(Partition(1,10l))
     when(p2.create(Partition(2,12l))) thenReturn Future.successful(Partition(2,12l))
-    when(p1.setState(true)) thenReturn Future.successful()
-    when(p2.setState(true)) thenReturn Future.successful()
-    when(epochNode.setState(true)) thenReturn(Future.successful())
+    when(p1.setState(true)) thenReturn Future.successful(())
+    when(p2.setState(true)) thenReturn Future.successful(())
+    when(epochNode.setState(true)) thenReturn Future.successful(())
     when(epochNode.getState()) thenReturn Future.successful(Some(false))
-    when(epochNode.setData(ArgumentMatchers.any())) thenReturn Future.successful()
+    when(epochNode.setData(ArgumentMatchers.any())) thenReturn Future.successful(())
     when(epochNode.getPartitionData()) thenReturn Future.successful(Array(Partition(1,100),Partition(2,200)).toIterable)
 
     when(epochCollectionNode.parent()) thenReturn new ZkNode("testparent",null)
-    when(epochCollectionNode.setData(ArgumentMatchers.any())) thenReturn Future.successful()
+    when(epochCollectionNode.setData(ArgumentMatchers.any())) thenReturn Future.successful(())
 
     val epochState = new EpochState(transactionState,epochCollectionNode)
     when(epochPartitions.getState()) thenReturn Future.successful(true)
@@ -148,15 +148,15 @@ class EpochStateManagerSpec extends AsyncFlatSpec with MockitoSugar with BeforeA
 
     when(p1.create(Partition(1,10l))) thenReturn Future.successful(Partition(1,10l))
     when(p2.create(Partition(2,12l))) thenReturn Future.successful(Partition(2,12l))
-    when(p1.setState(true)) thenReturn Future.successful()
-    when(p2.setState(true)) thenReturn Future.successful()
-    when(epochNode.setState(true)) thenReturn(Future.successful())
+    when(p1.setState(true)) thenReturn Future.successful(())
+    when(p2.setState(true)) thenReturn Future.successful(())
+    when(epochNode.setState(true)) thenReturn Future.successful(())
     when(epochNode.getState()) thenReturn Future.successful(Some(false))
-    when(epochNode.setData(ArgumentMatchers.any())) thenReturn Future.successful()
+    when(epochNode.setData(ArgumentMatchers.any())) thenReturn Future.successful(())
     when(epochNode.getPartitionData()) thenReturn Future.successful(Iterable(Partition(1,100),Partition(2,200)))
 
     when(epochCollectionNode.parent()) thenReturn new ZkNode("testparent",null)
-    when(epochCollectionNode.setData(ArgumentMatchers.any())) thenReturn Future.successful()
+    when(epochCollectionNode.setData(ArgumentMatchers.any())) thenReturn Future.successful(())
 
     val epochState = new EpochState(transactionState,epochCollectionNode)
     when(epochPartitions.getState()) thenReturn Future.successful(true)

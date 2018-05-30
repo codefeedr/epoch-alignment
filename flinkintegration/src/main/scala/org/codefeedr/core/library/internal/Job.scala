@@ -18,7 +18,7 @@
  */
 package org.codefeedr.core.library.internal
 
-import com.typesafe.scalalogging.Logger
+import com.typesafe.scalalogging.{LazyLogging, Logger}
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
@@ -29,18 +29,14 @@ import org.codefeedr.model.SubjectType
 
 import scala.concurrent._
 import ExecutionContext.Implicits.global
-import org.slf4j.LoggerFactory
-
 import scala.concurrent.Future
 import async.Async.{async, await}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
 abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.TypeTag: ClassTag](
-    name: String) {
+    name: String) extends LazyLogging {
 
-  lazy val logger: Logger =
-    Logger(LoggerFactory.getLogger(getClass.getName))
 
   var subjectType: SubjectType = _
   //HACK: Direct call to libraryServices

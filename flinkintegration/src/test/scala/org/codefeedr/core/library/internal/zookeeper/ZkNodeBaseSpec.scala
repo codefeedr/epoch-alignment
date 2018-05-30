@@ -35,7 +35,7 @@ class ZkNodeBaseSpec extends LibraryServiceSpec with Matchers with BeforeAndAfte
     val root = new TestRootBase()
     val config = new TestConfigNodeWithPostCreateBase("testc", root, () => {
       postCreateCalled = true
-      Future.successful()
+      Future.successful(())
     })
     await(config.create())
     assert(postCreateCalled)

@@ -40,7 +40,7 @@ class ZkReadLock(path: String) extends BaseLock with LazyLogging {
     val writeLocks = children.filter(isWriteLock)
     if (!writeLocks.exists(getSequence(_) < sequence)) {
       logger.debug(s"$label obtained lock")
-      promise.success()
+      promise.success(())
     } else {
       logger.debug(s"$label for now waiting on lock")
       //Place a watch on the node that has a write lock

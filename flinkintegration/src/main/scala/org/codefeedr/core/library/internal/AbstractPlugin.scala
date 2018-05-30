@@ -27,7 +27,7 @@ import scala.concurrent.Future
 /**
   * Created by Niels on 04/08/2017.
   */
-abstract class AbstractPlugin {
+abstract class AbstractPlugin extends Serializable {
 
   /**
     * Create a new subjecttype for the plugin

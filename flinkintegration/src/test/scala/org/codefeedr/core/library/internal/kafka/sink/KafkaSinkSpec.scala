@@ -1,5 +1,7 @@
 package org.codefeedr.core.library.internal.kafka.sink
 
+import java.lang
+
 import org.apache.flink.api.common.state.{ListState, OperatorStateStore}
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.runtime.state.{FunctionInitializationContext, FunctionSnapshotContext}
@@ -163,7 +165,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     val producer1 = sink.producerPool(transaction1.producerIndex)
     var cb: Callback = null
 
-    val mockedMetadata = new RecordMetadata(new TopicPartition("",2),0L,1337L,0L,0L,0,0)
+    val mockedMetadata = new RecordMetadata(new TopicPartition("",2),0L,1337L,0L,new lang.Long(0),0,0)
     when(producer1.send(ArgumentMatchers.any(),ArgumentMatchers.any())) thenAnswer answer[java.util.concurrent.Future[RecordMetadata]](r => {
       cb = r.getArgument[Callback](1)
       null
@@ -192,7 +194,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     val producer1 = sink.producerPool(transaction1.producerIndex)
     var cb: Callback = null
 
-    val mockedMetadata = new RecordMetadata(new TopicPartition("",2),0L,1337L,0L,0L,0,0)
+    val mockedMetadata = new RecordMetadata(new TopicPartition("",2),0L,1337L,0L,new lang.Long(0),0,0)
     when(producer1.send(ArgumentMatchers.any(),ArgumentMatchers.any())) thenAnswer answer[java.util.concurrent.Future[RecordMetadata]](r => {
       cb = r.getArgument[Callback](1)
       null
@@ -220,7 +222,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     val producer1 = sink.producerPool(transaction1.producerIndex)
     var cb: Callback = null
 
-    val mockedMetadata = new RecordMetadata(new TopicPartition("",2),0L,1337L,0L,0L,0,0)
+    val mockedMetadata = new RecordMetadata(new TopicPartition("",2),0L,1337L,0L,new lang.Long(0),0,0)
     when(producer1.send(ArgumentMatchers.any(),ArgumentMatchers.any())) thenAnswer answer[java.util.concurrent.Future[RecordMetadata]](r => {
       cb = r.getArgument[Callback](1)
       null
@@ -247,7 +249,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     val producer1 = sink.producerPool(transaction1.producerIndex)
     var cb: Callback = null
 
-    val mockedMetadata = new RecordMetadata(new TopicPartition("",2),0L,1337L,0L,0L,0,0)
+    val mockedMetadata = new RecordMetadata(new TopicPartition("",2),0L,1337L,0L,new lang.Long(0),0,0)
     when(producer1.send(ArgumentMatchers.any(),ArgumentMatchers.any())) thenAnswer answer[java.util.concurrent.Future[RecordMetadata]](r => {
       cb = r.getArgument[Callback](1)
       null
@@ -274,7 +276,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     val producer1 = sink.producerPool(transaction1.producerIndex)
     var cb: Callback = null
 
-    val mockedMetadata = new RecordMetadata(new TopicPartition("",2),0L,1337L,0L,0L,0,0)
+    val mockedMetadata = new RecordMetadata(new TopicPartition("",2),0L,1337L,0L, new lang.Long(0),0,0)
     when(producer1.send(ArgumentMatchers.any(),ArgumentMatchers.any())) thenAnswer answer[java.util.concurrent.Future[RecordMetadata]](r => {
       cb = r.getArgument[Callback](1)
       null
@@ -344,7 +346,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     when(sinkNode.create(ArgumentMatchers.any())) thenReturn Future.successful(null)
     when(producerCollectionNode.getChild(ArgumentMatchers.any[String]())) thenReturn producerNode
     when(producerNode.create(ArgumentMatchers.any()))thenReturn Future.successful(null)
-    when(producerNode.setState(ArgumentMatchers.any())) thenReturn Future.successful()
+    when(producerNode.setState(ArgumentMatchers.any())) thenReturn Future.successful(())
     when(subjectType.name) thenReturn "testsubject"
 
     when(runtimeContext.isCheckpointingEnabled) thenReturn true
@@ -359,8 +361,8 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("4"))(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p3
     when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("5"))(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p4
 
-    when(epochStateManager.commit(ArgumentMatchers.any())) thenReturn Future.successful()
-    when(epochStateManager.preCommit(ArgumentMatchers.any())) thenReturn Future.successful()
+    when(epochStateManager.commit(ArgumentMatchers.any())) thenReturn Future.successful(())
+    when(epochStateManager.preCommit(ArgumentMatchers.any())) thenReturn Future.successful(())
   }
 
 }
