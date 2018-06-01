@@ -28,6 +28,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.streaming.api.CheckpointingMode
 import org.scalatest._
 import org.apache.flink.streaming.api.scala._
+import org.codefeedr.core.library.internal.SubjectTypeFactory
 import org.codefeedr.core.{FullIntegrationSpec, IntegrationTestLibraryServices, KafkaTest}
 import org.codefeedr.core.library.internal.zookeeper.ZkClient
 import org.codefeedr.model.TrailedRecord
@@ -198,8 +199,10 @@ class MyOwnSourceQuery(nr: Int, parallelism: Int) extends Runnable with LazyLogg
   def createTopology(env: StreamExecutionEnvironment, nr: Int): Future[Unit] = async {
     val name = UUID.randomUUID().toString
     val jobNode = Library.subjectLibrary.getJob(name)
-    val subjectNode = Library.subjectLibrary.getSubject[MyOwnIntegerObject]()
-    val subjectType = await(subjectNode.getOrCreateType[MyOwnIntegerObject]())
+
+    val subjectType = SubjectTypeFactory.getSubjectType[MyOwnIntegerObject]
+    val subjectNode = await(Library.subjectFactory.create(subjectType))
+
     val transformer = Library.subjectFactory.getUnTransformer[MyOwnIntegerObject](subjectType)
     val source = Library.subjectFactory.getSource(subjectNode,jobNode, "testSource")
     val r =() => {

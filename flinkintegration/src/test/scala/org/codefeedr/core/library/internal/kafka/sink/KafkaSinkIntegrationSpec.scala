@@ -21,15 +21,11 @@
 
 package org.codefeedr.core.library.internal.kafka.sink
 
-import org.apache.flink.api.common.functions.RuntimeContext
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.codefeedr.core.LibraryServiceSpec
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito._
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
+import org.codefeedr.core.library.internal.SubjectTypeFactory
 import org.scalatest.mockito.MockitoSugar
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
 import scala.async.Async.{async, await}
 import scala.concurrent.Await
@@ -49,8 +45,10 @@ class KafkaSinkIntegrationSpec extends LibraryServiceSpec with BeforeAndAfterEac
 
   "A KafkaSink" should "Register and remove itself in the SubjectLibrary" in async {
     val sinkId = "testSink"
-    val subjectNode = subjectLibrary.getSubject[TestKafkaSinkSubject]()
-    val subject = await(subjectNode.getOrCreateType[TestKafkaSinkSubject]())
+
+    val subject = SubjectTypeFactory.getSubjectType[TestKafkaSinkSubject]
+    val subjectNode = await(subjectFactory.create(subject))
+
     val job = subjectLibrary.getJob("testJob")
     //,subjectFactory.getTransformer[TestKafkaSinkSubject](subject)
     val sink = new KafkaGenericSink[TestKafkaSinkSubject](subjectNode,job,kafkaProducerFactory,epochStateManager,sinkId)

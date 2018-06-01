@@ -1,16 +1,14 @@
 package org.codefeedr.core.library.internal.zookeeper
 
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.zookeeper.KeeperException.NoNodeException
 import org.codefeedr.core.LibraryServiceSpec
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
+import org.codefeedr.util.futureExtensions._
 import org.codefeedr.util.observableExtension._
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
 
 import scala.async.Async.{async, await}
-import scala.concurrent.{Await, Future}
-import org.codefeedr.util.futureExtensions._
-
 import scala.concurrent.duration.{Duration, MILLISECONDS, SECONDS}
+import scala.concurrent.{Await, Future}
 
 
 /**
@@ -55,26 +53,6 @@ class ZkNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEa
     val data2 = MyConfig("testotherstring")
     await(config.create(data1))
     assert(await(config.create(data2).failed.map(_ => true)))
-  }
-
-
-  "ZkNode.GetOrCreate" should "use the factory to construct a node that does not exist" in async {
-    val root = new TestRoot()
-    val child = new TestConfigNode("child", root)
-    val config = await(child.getOrCreate(() => MyConfig("factorystring")))
-    assert(await(child.exists()))
-    assert(config.s == "factorystring")
-    assert(await(child.getData()).get.s == "factorystring")
-  }
-
-  it should "keep the existing node there if it already exists" in async {
-    val root = new TestRoot()
-    val child = new TestConfigNode("child", root)
-    await(child.create(MyConfig("initstring")))
-    val config = await(child.getOrCreate(() => MyConfig("factorystring")))
-    assert(await(child.exists()))
-    assert(config.s == "initstring")
-    assert(await(child.getData()).get.s == "initstring")
   }
 
   "ZkNode.GetData" should "return a deserialized version of a case class" in async {

@@ -18,12 +18,6 @@ import scala.concurrent.duration.{Duration, SECONDS}
 class SubjectNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with LazyLogging{
 
 
-  "GetOrCreate" should "create a node in the open state" in async {
-    val subjectNode = subjectLibrary.getSubject[MyOwnIntegerObject]()
-    await(subjectNode.getOrCreateType[MyOwnIntegerObject]())
-    assert(await(subjectNode.getState()).get)
-  }
-
 
 
   /**

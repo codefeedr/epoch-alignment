@@ -65,10 +65,10 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)
 
   /**
     * Gets the data, or creates a node with the data
-    *
-    * @param factory    method that creates the data that should be stored in this zookeeper node
+    * @param factory method that creates the data that should be stored in this zookeeper node
     * @return
     */
+  /*
   def getOrCreate(factory: () => TData): Future[TData] = {
     async {
       if (await(exists())) {
@@ -84,6 +84,7 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)
       case _: Exception => getData().map(o => o.get)
     }
   }
+  */
 
   /**
     * Get the data of the current node

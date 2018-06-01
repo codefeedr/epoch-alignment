@@ -28,12 +28,12 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction
 import org.apache.flink.table.sinks.{RetractStreamTableSink, TableSink}
 import org.apache.flink.types.Row
 import org.codefeedr.core.library.internal.SubjectTypeFactory
-import org.codefeedr.core.library.{LibraryServices, TypeInformationServices}
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
+import org.codefeedr.core.library.{LibraryServices, TypeInformationServices}
 import org.codefeedr.model._
 
 import scala.concurrent.Await
-import scala.concurrent.duration.{Duration, _}
+import scala.concurrent.duration._
 
 class KafkaTableSink(subjectNode: SubjectNode,
                      jobNode: JobNode,
@@ -41,7 +41,7 @@ class KafkaTableSink(subjectNode: SubjectNode,
                      sink: SinkFunction[tuple.Tuple2[lang.Boolean, Row]])
     extends RetractStreamTableSink[Row] {
 
-  @transient lazy val subjectType = subjectNode.getDataSync().get
+  @transient lazy val subjectType: SubjectType = subjectNode.getDataSync().get
 
   override def emitDataStream(dataStream: DataStream[tuple.Tuple2[lang.Boolean, Row]]): Unit =
     dataStream
@@ -54,8 +54,8 @@ class KafkaTableSink(subjectNode: SubjectNode,
 
   /**
     * Constructs a new KafkaTableSink with a newly generated subject with the given fields
-    * @param fieldNames
-    * @param fieldTypes
+    * @param fieldNames names of the fields of the subject
+    * @param fieldTypes types of the fields of the subject
     * @return
     */
   override def configure(
@@ -70,21 +70,29 @@ class KafkaTableSink(subjectNode: SubjectNode,
 }
 
 object KafkaTableSink {
+  /**
+    * Creates a new KafkaTableSink
+    * Also creates the kafka topic and zookeeper subject for the subject
+    * @param subjectName name of the subject to create
+    * @param jobName name of the job the sink is part of
+    * @param fieldNames field names of the subject
+    * @param fieldTypes field types of the subject
+    * @param sinkId unique identifier of this sink
+    * @return
+    */
   def apply(subjectName: String,
             jobName: String,
             fieldNames: Array[String],
             fieldTypes: Array[TypeInformation[_]],
             sinkId: String): KafkaTableSink = {
-    val subjectNode = LibraryServices.subjectLibrary
-      .getSubject(subjectName)
+
+
+    val subjectType =  SubjectTypeFactory.getSubjectType(subjectName, fieldNames, fieldTypes)
+    val subjectNode = Await.result(LibraryServices.subjectFactory.create(subjectType), 5.seconds)
     val jobNode = LibraryServices.subjectLibrary.getJob(jobName)
 
-    val subjectFuture = subjectNode.getOrCreate(() =>
-      SubjectTypeFactory.getSubjectType(subjectName, fieldNames, fieldTypes))
-    val subjectType =
-      Await.ready[SubjectType](subjectFuture, Duration(5000, MILLISECONDS)).value.get.get
     val rowSink = LibraryServices.subjectFactory.getRowSink(subjectType, jobName, sinkId)
-    //Have to implement the non-async FLINK api, thus must block here
+    //Have to implement the non-async Flink api, thus must block here
     new KafkaTableSink(subjectNode, jobNode, sinkId, rowSink)
   }
 

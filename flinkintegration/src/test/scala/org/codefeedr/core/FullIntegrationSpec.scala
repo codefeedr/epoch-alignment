@@ -31,6 +31,7 @@ import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.streaming.api.watermark.Watermark
 import org.codefeedr.core.engine.query.QueryTree
+import org.codefeedr.core.library.internal.SubjectTypeFactory
 import org.codefeedr.core.library.internal.kafka.KafkaTrailedRecordSource
 import org.codefeedr.core.plugin.CollectionPlugin
 import org.codefeedr.model.{SubjectType, TrailedRecord}
@@ -133,7 +134,7 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
   /**
     * Execute an environment
     * Currently not very complex, but more logic might be added in the future
-    * @param env
+    * @param env execution environment
     */
   def runEnvironment(env: StreamExecutionEnvironment): Unit = {
     logger.debug("Starting environment")
@@ -148,7 +149,9 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     * @return A future that returns when all data has been pushed to kakfa, with the subjectType that was used
     */
   def runSourceEnvironment[T: ru.TypeTag: ClassTag: TypeInformation](data: Array[T]): Future[SubjectType] = async {
-    val t = await(subjectLibrary.getSubject[T]().getOrCreateType[T]())
+    val t = SubjectTypeFactory.getSubjectType[T]
+    await(subjectFactory.create(t))
+
 
     val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
     env.enableCheckpointing(100,CheckpointingMode.EXACTLY_ONCE)

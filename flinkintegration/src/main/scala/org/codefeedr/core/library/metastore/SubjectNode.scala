@@ -60,32 +60,6 @@ class SubjectNode(subjectName: String, parent: ZkNodeBase)
   def getEpochs(): EpochCollectionNode = new EpochCollectionNode(this)
 
   /**
-    * Retrieve a subjectType for an arbitrary scala type
-    * Creates type information and registers the type in the library
-    * Creates a non-persistent type
-    *
-    * @tparam T The type to register
-    * @return The subjectType when it is registered in the library
-    */
-  def getOrCreateType[T: ru.TypeTag](): Future[SubjectType] =
-    getOrCreateType[T](persistent = false)
-
-  /**
-    * Retrieve a subjectType for an arbitrary scala type
-    * Creates type information and registers the type in the library
-    *
-    * @param persistent Should the type, if it does not exist, be created as persistent?
-    * @tparam T The type to register
-    * @return The subjectType when it is registered in the library
-    */
-  def getOrCreateType[T: ru.TypeTag](persistent: Boolean): Future[SubjectType] = {
-    val name = SubjectTypeFactory.getSubjectName[T]
-    logger.debug(s"Getting or creating type $name with persistency: $persistent")
-    val factory = () => SubjectTypeFactory.getSubjectType[T](persistent)
-    getOrCreate(factory)
-  }
-
-  /**
     * Retrieve value if the subject has an active consumer
     * @return
     */

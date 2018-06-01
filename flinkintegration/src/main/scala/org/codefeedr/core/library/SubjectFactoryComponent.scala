@@ -56,24 +56,24 @@ trait SubjectFactoryComponent {
   class SubjectFactoryController {
     def GetSink[TData: ru.TypeTag: ClassTag](sinkId: String,
                                              jobName: String): Future[SinkFunction[TData]] = {
-      val subjectType = SubjectTypeFactory.getSubjectType[TData]
+      val subjectName = SubjectTypeFactory.getSubjectName[TData]
       val jobNode = subjectLibrary.getJob(jobName)
       val subjectNode = subjectLibrary
-        .getSubject(subjectType.name)
+        .getSubject(subjectName)
+
       subjectNode
-        .getOrCreate(() => subjectType)
-        .flatMap(
-          o =>
-            guaranteeTopic(o)
-              .map(
-                _ =>
-                  new KafkaGenericSink(subjectNode,
-                                       jobNode,
-                                       kafkaProducerFactory,
-                                       epochStateManager,
-                                       sinkId
-                                       //subjectFactory.getTransformer[TData](subjectType)
-                )))
+        .getData().map {
+        case Some(v) => v
+        case None => throw new IllegalStateException(s"Subject $subjectName has not been registered yet. Forgot to register it?")
+      }
+        .map(
+          _ =>
+            new KafkaGenericSink(subjectNode,
+              jobNode,
+              kafkaProducerFactory,
+              epochStateManager,
+              sinkId
+            ))
     }
 
     /**
@@ -87,8 +87,8 @@ trait SubjectFactoryComponent {
                 sinkId: String): Future[SinkFunction[TrailedRecord]] =
       async {
         val subjectNode = subjectLibrary.getSubject(subjectType.name)
+        await(subjectNode.assertExists())
         val jobNode = subjectLibrary.getJob(jobName)
-        await(guaranteeTopic(subjectType))
         new TrailedRecordSink(subjectNode,
                               jobNode,
                               kafkaProducerFactory,
@@ -105,7 +105,6 @@ trait SubjectFactoryComponent {
     def getRowSink(subjectType: SubjectType, jobName: String, sinkId: String): RowSink = {
       val subjectNode = subjectLibrary.getSubject(subjectType.name)
       val jobNode = subjectLibrary.getJob(jobName)
-      guaranteeTopicBlocking(subjectType)
       new RowSink(subjectNode, jobNode, kafkaProducerFactory, epochStateManager, sinkId)
     }
 
@@ -153,6 +152,33 @@ trait SubjectFactoryComponent {
                   jobNode: JobNode,
                   sinkId: String): SourceFunction[TrailedRecord] = {
       new KafkaTrailedRecordSource(subjectNode, jobNode, kafkaConsumerFactory, sinkId)
+    }
+
+
+    /**
+      * Creates a subject. Both the zookeeper subject and kafka topic are created.
+      * Once the zookeeper subjectNode exists, one can assume the kafka topic also exists
+      * @tparam TSubject Type of the subject to create
+      * @return the subject node of the created subject
+      */
+    def create[TSubject : ClassTag : ru.TypeTag]() : Future[SubjectNode] = {
+      val subjectType = SubjectTypeFactory.getSubjectType[TSubject]
+      create(subjectType)
+    }
+
+    /**
+      * Creates a subject. Both the zookeeper subject and kafka topic are created.
+      * Once the zookeeper subjectNode exists, one can assume the kafka topic also exists
+      * @param subjectType Type of the subject to create
+      * @return the subject node of the created subject
+      */
+    def create(subjectType:SubjectType):Future[SubjectNode] = async {
+      //Make sure to first create the kafka topic, and only create the subject after!
+      await(guaranteeTopic(subjectType))
+      val subjectNode = subjectLibrary.getSubject(subjectType.name)
+      //Next create the subjectNode in zookeeper
+      await(subjectNode.create(subjectType))
+      subjectNode
     }
 
     /***

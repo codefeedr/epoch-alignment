@@ -71,8 +71,14 @@ abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.Type
     stream.addSink(sink)
   }
 
-  def setupType(subjectLibrary: SubjectLibrary) = async {
-    subjectType = await(subjectLibrary.getSubject[Output]().getOrCreateType[Output]())
+  /**
+    * Makes sure the subjectType is created
+    * @param subjectLibrary
+    * @return
+    */
+  def setupType(subjectLibrary: SubjectLibrary):Future[Unit] = {
+    subjectType = SubjectTypeFactory.getSubjectType[Output]
+    LibraryServices.subjectFactory.create(subjectType).map(_=> ())
   }
 
   def setSource(job: Job[_, Input]) = {
