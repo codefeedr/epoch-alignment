@@ -29,7 +29,6 @@ class GitHubSource(maxRequests: Integer = -1) extends RichSourceFunction[Event] 
 
   //get logger used by Flink
 
-
   //loads the github api
   var gitHubAPI: GitHubAPI = _
 

@@ -84,7 +84,7 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)
       case _: Exception => getData().map(o => o.get)
     }
   }
-  */
+   */
 
   /**
     * Get the data of the current node

@@ -17,9 +17,6 @@ import scala.concurrent.duration.{Duration, SECONDS}
 
 class SubjectNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with LazyLogging{
 
-
-
-
   /**
     * After each test, make sure to clean the zookeeper store
     */

@@ -62,18 +62,20 @@ trait SubjectFactoryComponent {
         .getSubject(subjectName)
 
       subjectNode
-        .getData().map {
-        case Some(v) => v
-        case None => throw new IllegalStateException(s"Subject $subjectName has not been registered yet. Forgot to register it?")
-      }
+        .getData()
+        .map {
+          case Some(v) => v
+          case None =>
+            throw new IllegalStateException(
+              s"Subject $subjectName has not been registered yet. Forgot to register it?")
+        }
         .map(
           _ =>
             new KafkaGenericSink(subjectNode,
-              jobNode,
-              kafkaProducerFactory,
-              epochStateManager,
-              sinkId
-            ))
+                                 jobNode,
+                                 kafkaProducerFactory,
+                                 epochStateManager,
+                                 sinkId))
     }
 
     /**
@@ -154,14 +156,13 @@ trait SubjectFactoryComponent {
       new KafkaTrailedRecordSource(subjectNode, jobNode, kafkaConsumerFactory, sinkId)
     }
 
-
     /**
       * Creates a subject. Both the zookeeper subject and kafka topic are created.
       * Once the zookeeper subjectNode exists, one can assume the kafka topic also exists
       * @tparam TSubject Type of the subject to create
       * @return the subject node of the created subject
       */
-    def create[TSubject : ClassTag : ru.TypeTag]() : Future[SubjectNode] = {
+    def create[TSubject: ClassTag: ru.TypeTag](): Future[SubjectNode] = {
       val subjectType = SubjectTypeFactory.getSubjectType[TSubject]
       create(subjectType)
     }
@@ -172,7 +173,7 @@ trait SubjectFactoryComponent {
       * @param subjectType Type of the subject to create
       * @return the subject node of the created subject
       */
-    def create(subjectType:SubjectType):Future[SubjectNode] = async {
+    def create(subjectType: SubjectType): Future[SubjectNode] = async {
       //Make sure to first create the kafka topic, and only create the subject after!
       await(guaranteeTopic(subjectType))
       val subjectNode = subjectLibrary.getSubject(subjectType.name)

@@ -70,6 +70,7 @@ class KafkaTableSink(subjectNode: SubjectNode,
 }
 
 object KafkaTableSink {
+
   /**
     * Creates a new KafkaTableSink
     * Also creates the kafka topic and zookeeper subject for the subject
@@ -86,8 +87,7 @@ object KafkaTableSink {
             fieldTypes: Array[TypeInformation[_]],
             sinkId: String): KafkaTableSink = {
 
-
-    val subjectType =  SubjectTypeFactory.getSubjectType(subjectName, fieldNames, fieldTypes)
+    val subjectType = SubjectTypeFactory.getSubjectType(subjectName, fieldNames, fieldTypes)
     val subjectNode = Await.result(LibraryServices.subjectFactory.create(subjectType), 5.seconds)
     val jobNode = LibraryServices.subjectLibrary.getJob(jobName)
 

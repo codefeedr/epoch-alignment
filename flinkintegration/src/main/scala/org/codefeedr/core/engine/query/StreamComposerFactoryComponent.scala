@@ -58,11 +58,12 @@ trait StreamComposerFactoryComponent {
             rightComposer <- getComposer(right, jobName)
             joinedType <- subjectLibrary
               .getSubject(alias)
-              .create(JoinQueryComposer.buildComposedType(leftComposer.getExposedType(),
-                                                      rightComposer.getExposedType(),
-                                                      selectLeft,
-                                                      selectRight,
-                                                      alias))
+              .create(
+                JoinQueryComposer.buildComposedType(leftComposer.getExposedType(),
+                                                    rightComposer.getExposedType(),
+                                                    selectLeft,
+                                                    selectRight,
+                                                    alias))
           } yield
             new JoinQueryComposer(leftComposer,
                                   rightComposer,

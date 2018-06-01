@@ -35,8 +35,8 @@ import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
 abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.TypeTag: ClassTag](
-    name: String) extends LazyLogging {
-
+    name: String)
+    extends LazyLogging {
 
   var subjectType: SubjectType = _
   //HACK: Direct call to libraryServices
@@ -76,9 +76,9 @@ abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.Type
     * @param subjectLibrary
     * @return
     */
-  def setupType(subjectLibrary: SubjectLibrary):Future[Unit] = {
+  def setupType(subjectLibrary: SubjectLibrary): Future[Unit] = {
     subjectType = SubjectTypeFactory.getSubjectType[Output]
-    LibraryServices.subjectFactory.create(subjectType).map(_=> ())
+    LibraryServices.subjectFactory.create(subjectType).map(_ => ())
   }
 
   def setSource(job: Job[_, Input]) = {

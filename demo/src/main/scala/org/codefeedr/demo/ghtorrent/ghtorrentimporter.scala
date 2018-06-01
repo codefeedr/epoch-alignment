@@ -1,6 +1,5 @@
 package org.codefeedr.demo.ghtorrent
 
-
 import net.vankaam.flink.WebSocketSourceFunction
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.utils.ParameterTool
@@ -17,13 +16,14 @@ import scala.reflect.ClassTag
 import scala.reflect._
 import scala.reflect.runtime.{universe => ru}
 
-
-
-class WebSocketJsonPlugin[TData : ru.TypeTag:ClassTag](url:String, subject:String, batchSize:Int) extends SimplePlugin[TData] {
+class WebSocketJsonPlugin[TData: ru.TypeTag: ClassTag](url: String,
+                                                       subject: String,
+                                                       batchSize: Int)
+    extends SimplePlugin[TData] {
   @transient private lazy val targetType = classTag[TData].runtimeClass.asInstanceOf[Class[TData]]
   @transient implicit lazy val typeInfo: TypeInformation[TData] = TypeInformation.of(targetType)
   @transient implicit lazy val formats: DefaultFormats.type = DefaultFormats
-  @transient private lazy val source = WebSocketSourceFunction(url,subject,batchSize)
+  @transient private lazy val source = WebSocketSourceFunction(url, subject, batchSize)
 
   /**
     * Method to implement as plugin to expose a datastream
@@ -33,18 +33,18 @@ class WebSocketJsonPlugin[TData : ru.TypeTag:ClassTag](url:String, subject:Strin
     * @return The datastream itself
     */
   override def getStream(env: StreamExecutionEnvironment): DataStream[TData] =
-    env.addSource(source).map((o:String) => {
-      try {
-        parse(o).extract[TData]
-      } catch {
-        case e:org.json4s.ParserUtil.ParseException =>
-          logger.error(s"Error while parsing string \r\n$o\r\nTarget: ${targetType.getName}",e)
-          throw e
-      }
-    })
+    env
+      .addSource(source)
+      .map((o: String) => {
+        try {
+          parse(o).extract[TData]
+        } catch {
+          case e: org.json4s.ParserUtil.ParseException =>
+            logger.error(s"Error while parsing string \r\n$o\r\nTarget: ${targetType.getName}", e)
+            throw e
+        }
+      })
 }
-
-
 
 /**
   * Main class for a simple job that reads data from a websocket,
@@ -52,32 +52,27 @@ class WebSocketJsonPlugin[TData : ru.TypeTag:ClassTag](url:String, subject:Strin
   */
 object GhTorrentUserImporter {
 
-
   def main(args: Array[String]): Unit = {
     val parameter = ParameterTool.fromArgs(args)
     val url = parameter.getRequired("url")
     val subjectName = parameter.getRequired("subject")
-    val batchSize = parameter.getInt("batchSize",100)
+    val batchSize = parameter.getInt("batchSize", 100)
 
-    val plugin = new WebSocketJsonPlugin[User](url, subjectName,batchSize)
+    val plugin = new WebSocketJsonPlugin[User](url, subjectName, batchSize)
 
     val env = StreamExecutionEnvironment.getExecutionEnvironment
 
     //@transient implicit lazy val formats: DefaultFormats.type = DefaultFormats
     //env.addSource(socket).map[User]((o:String) => parse(o).extract[User])
 
-    Await.result(plugin.compose(env, "readusers"),5.seconds)
+    Await.result(plugin.compose(env, "readusers"), 5.seconds)
     env.execute()
   }
 }
 
-
-class WebSocketPlugin(url:String, subject:String, batchSize:Int) extends SimplePlugin[String] {
-  @transient private lazy val source = WebSocketSourceFunction(url,subject,batchSize)
+class WebSocketPlugin(url: String, subject: String, batchSize: Int) extends SimplePlugin[String] {
+  @transient private lazy val source = WebSocketSourceFunction(url, subject, batchSize)
 
   override def getStream(env: StreamExecutionEnvironment): DataStream[String] =
     env.addSource(source)
 }
-
-
-
