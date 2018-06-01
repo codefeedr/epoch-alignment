@@ -116,12 +116,18 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
   def runQueryEnvironment(query: QueryTree): Future[SubjectType] = async {
     val queryEnv = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
     val name = UUID.randomUUID().toString
-    queryEnv.enableCheckpointing(1000)
+    queryEnv.enableCheckpointing(100)
     logger.debug("Creating query Composer")
     val composer = await(streamComposerFactory.getComposer(query,name))
     logger.debug("Composing queryEnv")
     val resultStream = composer.compose(queryEnv)
     val resultType = composer.getExposedType()
+    val node = subjectLibrary.getSubject(resultType.name)
+
+    if(!await(node.exists())) {
+      await(subjectFactory.create(resultType))
+    }
+
     logger.debug(s"Composing sink for ${resultType.name}.")
     val sink = await(subjectFactory.getSink(resultType, name,"testsink"))
     resultStream.addSink(sink)
@@ -150,11 +156,13 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     */
   def runSourceEnvironment[T: ru.TypeTag: ClassTag: TypeInformation](data: Array[T]): Future[SubjectType] = async {
     val t = SubjectTypeFactory.getSubjectType[T]
-    await(subjectFactory.create(t))
+    if(!await(subjectLibrary.getSubject(t.name).exists())) {
+      await(subjectFactory.create(t))
+    }
 
 
     val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
-    env.enableCheckpointing(100,CheckpointingMode.EXACTLY_ONCE)
+    env.enableCheckpointing(1000,CheckpointingMode.EXACTLY_ONCE)
     logger.debug(s"Composing env for ${t.name}")
     await(new CollectionPlugin(data).compose(env, "testplugin"))
     logger.debug(s"Starting env for ${t.name}")

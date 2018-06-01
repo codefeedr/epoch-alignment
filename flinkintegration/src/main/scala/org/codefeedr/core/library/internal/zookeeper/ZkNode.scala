@@ -64,29 +64,6 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)
   }
 
   /**
-    * Gets the data, or creates a node with the data
-    * @param factory method that creates the data that should be stored in this zookeeper node
-    * @return
-    */
-  /*
-  def getOrCreate(factory: () => TData): Future[TData] = {
-    async {
-      if (await(exists())) {
-        await(getData()).get
-      } else {
-        val r = await(create(factory()))
-        //Call post-create hooks
-        await(postCreate())
-        //Return data as result
-        r
-      }
-    }.recoverWith { //Register type. When error because node already exists just retrieve this value because the first writer wins.
-      case _: Exception => getData().map(o => o.get)
-    }
-  }
-   */
-
-  /**
     * Get the data of the current node
     *
     * @return
@@ -99,7 +76,7 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)
     * @return
     */
   def getDataSync(): Option[TData] =
-    Await.result(getData(), Duration(500, MILLISECONDS))
+    Await.result(getData(), 1.seconds)
 
   /**
     * Set data of the node

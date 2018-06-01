@@ -120,8 +120,9 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
 
   override def close(): Unit = {
     logger.debug(s"Closing producer ${getLabel()}")
-    Await.ready(producerNode.setState(false), Duration(5, SECONDS))
-    logger.debug(s"Closed producer ${getLabel()}")
+    Await.ready(producerNode.setState(false).andThen({
+      case _ => logger.debug(s"Closed producer ${getLabel()}")
+    }),5.seconds)
   }
 
   override def open(parameters: Configuration): Unit = {

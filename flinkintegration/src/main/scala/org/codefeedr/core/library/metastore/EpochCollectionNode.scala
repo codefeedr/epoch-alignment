@@ -23,8 +23,14 @@ class EpochCollectionNode(parent: ZkNodeBase)
     * If the subject is still active, this method might return different values upon each call
     * @return
     */
-  def getLatestEpochId(): Future[Long] = async {
-    await(getData()).get.latestEpoch
+  def getLatestEpochId: Future[Long] = async {
+    val data = await(getData())
+    data match {
+      case None => throw new IllegalStateException(s"No latest epoch known for subject $parent")
+      case Some(v) =>
+        logger.debug(s"Got latest epoch: ${v.latestEpoch}")
+        v.latestEpoch
+    }
   }
 
   def getChild(epoch: Long): EpochNode = {

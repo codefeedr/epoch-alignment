@@ -58,7 +58,7 @@ class KafkaSourceEpochStateSpec extends AsyncFlatSpec with MockitoSugar with Bef
     when(children(0).getEpoch()) thenReturn 0
     when(children(1).getEpoch()) thenReturn 1
     when(epochCollection.getChild("1")) thenReturn children(1)
-    when(epochCollection.getLatestEpochId()) thenReturn (Future successful 1L)
+    when(epochCollection.getLatestEpochId) thenReturn (Future successful 1L)
 
     when(children(1).getPartitionData()) thenReturn Future.successful(partitions)
     when(epochCollection.getChildren()) thenReturn Future.successful(children)

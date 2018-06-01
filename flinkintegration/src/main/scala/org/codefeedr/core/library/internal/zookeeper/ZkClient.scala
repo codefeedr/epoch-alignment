@@ -34,9 +34,9 @@ import org.apache.zookeeper.data.Stat
 import org.codefeedr.core.library.internal.serialisation.{GenericDeserialiser, GenericSerialiser}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent._
 import scala.concurrent.duration._
-import scala.async.Async._
+import scala.concurrent.{Promise, Await, Future}
+import scala.async.Async.{async, await}
 import rx.lang.scala._
 import rx.lang.scala.observables.{AsyncOnSubscribe, SyncOnSubscribe}
 
@@ -133,10 +133,11 @@ class ZkClient extends LazyLogging {
   def getRawData(path: String,
                  ctx: Option[Any] = None,
                  watch: Option[Watcher] = None): Future[Array[Byte]] = {
-    val resultPromise = Promise[Array[Byte]]
+    logger.debug(s"GetData called on path $path")
+    val resultPromise = Promise[Array[Byte]]()
     zk.getData(
       prependPath(path),
-      watch.orNull,
+      false,
       new DataCallback {
         override def processResult(rc: Int,
                                    path: String,
@@ -151,14 +152,30 @@ class ZkClient extends LazyLogging {
     resultPromise.future
   }
 
+  def getRawDataSync(path: String): Array[Byte] = {
+    logger.debug(s"GetData called on path $path")
+    val result = zk.getData(prependPath(path), false, null)
+    logger.debug(s"Got result on $path")
+    result
+  }
+
   /**
     * Get the data of the node on the given path, and deserialize to the given generic parameter
     * @param path path of the node
     * @tparam T type to deserialize to
     * @return deserialized data
     */
-  def getData[T: ClassTag](path: String): Future[Option[T]] =
-    getRawData(path).map(o => if (o != null) Some(GenericDeserialiser[T](o)) else None)
+  def getData[T: ClassTag](path: String): Future[Option[T]] = async {
+    val data = await(getRawData(path))
+    logger.debug(s"Awaited raw data")
+    if (data != null) {
+      logger.debug(s"Deserializing data for path $path")
+      Some(GenericDeserialiser[T](data))
+    } else {
+      logger.warn(s"Got none as result for path $path")
+      None
+    }
+  }
 
   /**
     * Sets the data on the given node.
@@ -168,6 +185,7 @@ class ZkClient extends LazyLogging {
     */
   def setData[T: ClassTag](path: String, data: T, ctx: Option[Any] = None): Future[String] = {
     val resultPromise = Promise[String]
+    logger.debug(s"SetData called on path $path")
     zk.setData(
       prependPath(path),
       GenericSerialiser[T](data),
@@ -199,13 +217,16 @@ class ZkClient extends LazyLogging {
                                 data: T,
                                 stat: Stat = null): Unit = {
     Code.get(rc) match {
-      case Code.OK => p.success(data)
+      case Code.OK =>
+        logger.debug(s"Received data for path $path")
+        p.success(data)
       case error if path == null =>
         p.failure(
           ZkClientException(KeeperException.create(error), Option(path), Option(stat), ctx))
       case error =>
         p.failure(
           ZkClientException(KeeperException.create(error, path), Option(path), Option(stat), ctx))
+
     }
   }
 

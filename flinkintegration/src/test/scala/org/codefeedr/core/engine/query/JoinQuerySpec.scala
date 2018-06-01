@@ -69,6 +69,7 @@ class JoinQuerySpec extends FullIntegrationSpec with BeforeAndAfterEach {
       assert(await(awaitAllData(groupType)).size == 1)
       //Perform the query and assert
       val resultType = await(runQueryEnvironment(query))
+
       val result = await(awaitAllData(resultType))
       logger.debug("Done with InnerJoinQuery.eachjoincandidate")
       assert(result.size == 3)

@@ -56,14 +56,15 @@ trait StreamComposerFactoryComponent {
           for {
             leftComposer <- getComposer(left, jobName)
             rightComposer <- getComposer(right, jobName)
-            joinedType <- subjectLibrary
-              .getSubject(alias)
-              .create(
-                JoinQueryComposer.buildComposedType(leftComposer.getExposedType(),
-                                                    rightComposer.getExposedType(),
-                                                    selectLeft,
-                                                    selectRight,
-                                                    alias))
+            joinedType <- async {
+              val t = JoinQueryComposer.buildComposedType(leftComposer.getExposedType(),
+                rightComposer.getExposedType(),
+                selectLeft,
+                selectRight,
+                alias)
+              await(subjectFactory.create(t))
+              t
+            }
           } yield
             new JoinQueryComposer(leftComposer,
                                   rightComposer,
@@ -85,7 +86,7 @@ trait StreamComposerFactoryComponent {
         env.addSource(
           subjectFactory.getSource(subjectLibrary.getSubject(subjectType.name),
                                    subjectLibrary.getJob(jobName),
-                                   s"composedsink_${subjectType.name}"))
+                                   s"composedsource_${subjectType.name}"))
       }
 
       /**

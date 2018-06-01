@@ -126,7 +126,7 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     * @param offset the offsets to check
     */
   def isCatchedUp(offset: Map[Int, Long]): Future[Boolean] = async {
-    val comparedEpoch = await(subjectEpochs.getLatestEpochId()) - 1
+    val comparedEpoch = await(subjectEpochs.getLatestEpochId) - 1
     if (comparedEpoch < 0) {
       //If compared epoch is in the history, we just consider to be "up to date"
       true
@@ -150,7 +150,7 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     }
   }
 
-  def getLatestSubjectEpoch(): Future[Long] = subjectEpochs.getLatestEpochId()
+  def getLatestSubjectEpoch: Future[Long] = subjectEpochs.getLatestEpochId
 
   /**
     * Obtain the partitions belonging to the passed synchronized epcoh

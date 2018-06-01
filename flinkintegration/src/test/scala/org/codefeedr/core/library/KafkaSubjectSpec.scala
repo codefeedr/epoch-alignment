@@ -95,7 +95,7 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
     //Generate some test input
     await(runSourceEnvironment[MyOwnIntegerObject](mutable.Set(1, 2, 3).map(o => MyOwnIntegerObject(o)).toArray))
 
-    Thread.sleep(5000)
+
     //Creating fake query environments
     val environments = Future.sequence(Seq(CreateSourceQuery(1), CreateSourceQuery(2), CreateSourceQuery(3)))
 
@@ -201,7 +201,7 @@ class MyOwnSourceQuery(nr: Int, parallelism: Int) extends Runnable with LazyLogg
     val jobNode = Library.subjectLibrary.getJob(name)
 
     val subjectType = SubjectTypeFactory.getSubjectType[MyOwnIntegerObject]
-    val subjectNode = await(Library.subjectFactory.create(subjectType))
+    val subjectNode = Library.subjectLibrary.getSubject(subjectType.name)
 
     val transformer = Library.subjectFactory.getUnTransformer[MyOwnIntegerObject](subjectType)
     val source = Library.subjectFactory.getSource(subjectNode,jobNode, "testSource")

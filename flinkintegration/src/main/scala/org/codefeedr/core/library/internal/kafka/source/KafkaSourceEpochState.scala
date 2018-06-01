@@ -80,7 +80,7 @@ class KafkaSourceEpochState(subjectNode: SubjectNode, querySourceNode: QuerySour
     * @return
     */
   private def createFirstSourceEpoch(checkpointId: Long): Future[SourceEpoch] = async {
-    val maxEpoch = await(subjectNode.getEpochs().getLatestEpochId())
+    val maxEpoch = await(subjectNode.getEpochs().getLatestEpochId)
     val sourceEpoch =
       await(CreateSourceEpoch(subjectNode.getEpochs().getChild(s"$maxEpoch"), checkpointId))
     await(sourceEpochCollection.getChild(s"$checkpointId").create(sourceEpoch))

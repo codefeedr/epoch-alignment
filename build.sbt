@@ -1,7 +1,7 @@
 import sbt.Keys.libraryDependencies
 
 
-parallelExecution in Test := false
+
 
 lazy val settings = Seq(
   organization := "org.codefeedr",
@@ -22,10 +22,10 @@ resolvers in ThisBuild ++= Seq(
 
 //Object containing all depdencies, to prevent version conflicts between projects
 lazy val dependencies = new {
-  val flinkV = "1.5.0"
+  val flinkV = "1.4.2"
 
-  val zookeeperV = "3.4.9"
-  val kafkaV = "1.0.0"
+  val zookeeperV = "3.4.12"
+  val kafkaV = "1.1.0"
 
   val scalaAsyncV = "0.9.7"
   val scalaJavaCompatV = "0.8.0"
@@ -117,6 +117,7 @@ lazy val connectorDependencies = Seq(
 lazy val flinkintegration = (project in file("flinkintegration"))
   .settings(
     settings,
+    parallelExecution in Test := false,
     libraryDependencies ++= commonDependencies ++ zkKafkaDependencies ++ flinkDependencies ++ connectorDependencies
 
   )
@@ -166,9 +167,6 @@ unmanagedJars in Compile += file("lib/websocketclient-1.0.jar")
 run in Compile := Defaults.runTask(fullClasspath in Compile,
     mainClass in (Compile, run),
    runner in (Compile, run))
-
-test in assembly := {}
-
 
 
 // exclude Scala library from assembly

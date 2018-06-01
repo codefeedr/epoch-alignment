@@ -84,7 +84,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     when(consumerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.any[String]())(ArgumentMatchers.any(),ArgumentMatchers.any())).thenReturn (mock[KafkaConsumer[RecordSourceTrail,Row]])
 
     //Some default values
-    when(manager.getLatestSubjectEpoch()) thenReturn Future.successful(0L)
+    when(manager.getLatestSubjectEpoch) thenReturn Future.successful(0L)
     when(manager.getEpochOffsets(0L)) thenReturn Future.successful(Iterable.empty[Partition])
     when(manager.isCatchedUp(ArgumentMatchers.any())) thenReturn Future.successful(false)
   }
@@ -205,7 +205,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     val testKafkaSource = constructSource()
     val epochCollectionNodeMock = mock[EpochCollectionNode]
 
-    when(manager.getLatestSubjectEpoch()) thenReturn Future.successful(1337L)
+    when(manager.getLatestSubjectEpoch) thenReturn Future.successful(1337L)
     when(manager.getEpochOffsets(1337L)) thenReturn Future.successful(Iterable(Partition(2,1338)))
 
     //Act
@@ -228,7 +228,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     when(context.getCheckpointId) thenReturn 2
 
 
-    when(manager.getLatestSubjectEpoch()) thenReturn Future.successful(1L)
+    when(manager.getLatestSubjectEpoch) thenReturn Future.successful(1L)
     when(manager.getEpochOffsets(1L)) thenReturn Future.successful(Iterable(Partition(3,1339)))
 
     testKafkaSource.setRuntimeContext(runtimeContext)
@@ -265,7 +265,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     when(context.getCheckpointId) thenReturn 1
 
     when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
-    when(epochCollectionNodeMock.getLatestEpochId()) thenReturn Future.successful(1L)
+    when(epochCollectionNodeMock.getLatestEpochId) thenReturn Future.successful(1L)
     when(manager.getEpochOffsets(1L)) thenReturn Future.successful(Iterable(Partition(3,1339)))
 
     //Act

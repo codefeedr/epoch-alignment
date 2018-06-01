@@ -44,7 +44,7 @@ import org.codefeedr.model.{RecordSourceTrail, SubjectType, TrailedRecord}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future, blocking}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.async.Async.{async, await}
@@ -150,19 +150,15 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
   /**
     * Cancels this source on the final epoch of the source it is subscribed on
     */
-  override def cancel(): Unit = {
-    try {
-      finalSourceEpoch = Await.result(manager.getLatestSubjectEpoch(), Duration(5, SECONDS))
-      logger.debug(s"Cancelling $getLabel after final source epoch $finalSourceEpoch.")
-    } catch {
-      case e: TimeoutException => {
-        logger.error(
-          "Timeout when obtaining final source epoch during cancellation. Performing forced shutdown",
-          e)
-        running = false
-      }
-    }
+  override def cancel(): Unit = blocking {
+    logger.warn(s"Cancel was called")
+    running = false
+  }
 
+  def cancelAsync(): Future[Unit] = async {
+    logger.debug(s"Obtaining final source epoch to cancel $getLabel")
+    finalSourceEpoch = await(manager.getLatestSubjectEpoch)
+    logger.debug(s"Cancelling $getLabel after final source epoch $finalSourceEpoch.")
   }
 
   /**
@@ -283,7 +279,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
       for {
         _ <- manager.notifyStartedOnEpoch(epochId)
         _ <- async {
-          val epoch = await(manager.getLatestSubjectEpoch())
+          val epoch = await(manager.getLatestSubjectEpoch)
           alignmentOffsets = await(manager.getEpochOffsets(epoch)).map(o => o.nr -> o.offset).toMap
 
         }
@@ -309,7 +305,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
 
   /** Hanlde the state transition to synchronized */
   private def transitionToSynchronized(): Unit = {
-    logger.debug(s"Source is now running synchronized in $getLabel")
+    logger.debug(s"Sou  rce is now running synchronized in $getLabel")
     state = KafkaSourceState.Synchronized
     manager.notifySynchronized()
   }
@@ -318,7 +314,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
     * Checks if a cancel is required
     */
   private def cancelIfNeeded(currentCheckpoint: Long): Unit = {
-    if (finalSourceEpoch > -2) {
+    if (finalSourceEpoch > -2 && finalCheckpointId == Long.MaxValue) {
       logger.debug(s"Attempting to finish on source epoch $finalSourceEpoch")
       logger.debug(s"Current offsets: ${currentOffsets.toMap} ($getLabel)")
       logger.debug(s"Final offsets: $finalSourceEpochOffsets ($getLabel)")
@@ -341,7 +337,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
     checkpointOffsets(checkpointId).foreach(o => listState.add(o._1, o._2))
 
     //Check if the final checkpoint completed
-    if (checkpointId == finalCheckpointId) {
+    if (checkpointId >= finalCheckpointId) {
       logger.debug(s"$getLabel is stopping, final checkpoint $checkpointId completed")
       running = false
     }
@@ -358,7 +354,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
       throw new Exception(s"Cannot run $getLabel before calling initialize.")
     }
     manager.initializeRun()
-    manager.cancel.onComplete(o => cancel())
+    manager.cancel.onComplete(o => cancelAsync())
   }
 
   /**
