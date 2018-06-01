@@ -58,10 +58,10 @@ trait StreamComposerFactoryComponent {
             rightComposer <- getComposer(right, jobName)
             joinedType <- async {
               val t = JoinQueryComposer.buildComposedType(leftComposer.getExposedType(),
-                rightComposer.getExposedType(),
-                selectLeft,
-                selectRight,
-                alias)
+                                                          rightComposer.getExposedType(),
+                                                          selectLeft,
+                                                          selectRight,
+                                                          alias)
               await(subjectFactory.create(t))
               t
             }
