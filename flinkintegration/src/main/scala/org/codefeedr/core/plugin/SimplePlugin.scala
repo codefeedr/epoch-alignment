@@ -64,4 +64,21 @@ abstract class SimplePlugin[TData: ru.TypeTag: ClassTag] extends AbstractPlugin 
     stream.addSink(sink)
   }
 
+  /**
+    * Creates the type of the plugin as a subject.
+    * Make sure to call this method only once!
+    * @return a future when the call has completed
+    */
+  def createSubject(): Future[Unit] =
+    LibraryServices.subjectFactory.create[TData]().map(_ => ())
+
+  /**
+    * Deletes an existing registration of the subject, and creates a new one
+    * Make sure to only call this when knowing for sure the subject is not in use
+    * Otherwise this might result in unexpected behavior
+    * @return A future that completes when the operation is done
+    */
+  def reCreateSubject(): Future[Unit] =
+    LibraryServices.subjectFactory.reCreate[TData]().map(_ => ())
+
 }

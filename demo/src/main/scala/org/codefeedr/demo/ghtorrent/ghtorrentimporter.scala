@@ -59,7 +59,7 @@ object GhTorrentUserImporter {
     val batchSize = parameter.getInt("batchSize", 100)
 
     val plugin = new WebSocketJsonPlugin[User](url, subjectName, batchSize)
-
+    Await.ready(plugin.reCreateSubject(), 5.seconds)
     val env = StreamExecutionEnvironment.getExecutionEnvironment
 
     //@transient implicit lazy val formats: DefaultFormats.type = DefaultFormats

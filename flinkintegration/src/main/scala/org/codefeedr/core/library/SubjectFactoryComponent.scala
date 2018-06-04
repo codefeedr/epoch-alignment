@@ -168,6 +168,20 @@ trait SubjectFactoryComponent {
     }
 
     /**
+      * Removes the given type from the zookeeper registration, and then adds it again
+      * Make sure to only use this method when you are sure nothing is still using this subject
+      * This method is meant for development purposes
+      * Otherwise you might end up with unexpected behavior
+      * @tparam TSubject the subject to create
+      * @return the created subjectNode
+      */
+    def reCreate[TSubject: ClassTag: ru.TypeTag](): Future[SubjectNode] = async {
+      val subjectType = SubjectTypeFactory.getSubjectType[TSubject]
+      await(subjectLibrary.getSubject(subjectType.name).deleteRecursive())
+      await(create(subjectType))
+    }
+
+    /**
       * Creates a subject. Both the zookeeper subject and kafka topic are created.
       * Once the zookeeper subjectNode exists, one can assume the kafka topic also exists
       * @param subjectType Type of the subject to create

@@ -31,12 +31,6 @@ trait MockitoExtensions {
         if(i == 0) {
           p.success(())
         }
-
-        if(i <= 0) {
-          //Hack: Free up thread in case of running single threaded..
-          //Hack: Only used from tests
-          Thread.sleep(10)
-        }
         f(invocation)
       }
     }
@@ -60,4 +54,15 @@ trait MockitoExtensions {
 
   }
 
+}
+
+
+object MockitoExtensions {
+  implicit class answerp1[P1, T](factory: P1 => T) extends Answer[T] {
+    override def answer(invocation: InvocationOnMock): T = factory(invocation.getArgument[P1](0))
+  }
+
+  implicit class answerp2[P1,P2, T](factory: (P1,P2) => T) extends Answer[T] {
+    override def answer(invocation: InvocationOnMock): T = factory(invocation.getArgument[P1](0),invocation.getArgument[P2](1))
+  }
 }

@@ -349,15 +349,18 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
   }
 
   /**
+    * Init run operation. Is called before starting on the runCycle
     * Performs all operations needed to start up the consumer
-    * Blocks on the creation of zookeeper state
-    */
+    * Blocks on the creation of zookeeper state*/
   private[kafka] def initRun(): Unit = {
     if (!initialized) {
       throw new Exception(s"Cannot run $getLabel before calling initialize.")
     }
     manager.initializeRun()
     manager.cancel.onComplete(o => cancelAsync())
+
+    logger.debug(s"Source $getLabel started running.")
+    started = true
   }
 
   /**
@@ -366,7 +369,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
     */
   private[kafka] def finalizeRun(): Unit = {
     logger.debug(s"$getLabel performing finalization step")
-    //First close the kafkaconsumer
+    //First close the consumer
     consumer.close()
     manager.finalizeRun() //Notify manager for distributed state update
     //Notify of the closing, to whoever is interested
@@ -409,7 +412,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
     * Perform a synchronized poll, that runs and does not leave the checkpoint lock until the desired offset was reached
     * @param ctx the context to perform the synchronized poll on
     */
-  private def pollSynchronized(ctx: SourceFunction.SourceContext[T]): Unit = {
+  def pollSynchronized(ctx: SourceFunction.SourceContext[T]): Unit = {
     logger.debug(s"Currently performing synchronized poll in $getLabel")
     //Do not lock if already reached the offsets
     if (!OffsetUtils.HigherOrEqual(currentOffsets.toMap, alignmentOffsets)) {
@@ -430,6 +433,23 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
   }
 
   /**
+    * Performs a single run cycle
+    */
+  def doCycle(ctx: SourceFunction.SourceContext[T]): Unit = {
+    if (state == KafkaSourceState.Synchronized) {
+      pollSynchronized(ctx)
+    } else {
+      poll(ctx)
+    }
+
+    //HACK: Workaround to support running the source without checkpoints enabled.
+    // Currently just performs a checkpoint every loop. Need a proper solution for this!
+    if (checkpointingMode.isEmpty) {
+      fakeCheckpoint()
+    }
+  }
+
+  /**
     * Called at the start of a synchronized epoch
     * Determines the endOffsets for the current epoch
     */
@@ -438,20 +458,10 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
   }
 
   override def run(ctx: SourceFunction.SourceContext[T]): Unit = {
-    logger.debug(s"Source $getLabel started running.")
     initRun()
-    started = true
-    while (running) {
-      if (state == KafkaSourceState.Synchronized) {
-        pollSynchronized(ctx)
-      } else {
-        poll(ctx)
-      }
 
-      //HACK: Workaround to support running the source without checkpoints enabled. Currently just performs a checkpoint every loop. Need a proper solution for this!
-      if (checkpointingMode.isEmpty) {
-        fakeCheckpoint()
-      }
+    while (running) {
+      doCycle(ctx)
     }
 
     logger.debug(s"Source reach endOffsets $getLabel")
@@ -487,6 +497,10 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
     * @return
     */
   def getProducedType: TypeInformation[T]
+
+  /*
+    Below here are the handlers for commands
+   */
 
   private def catchUpCommand(): Unit = {
     assertNoTransition()

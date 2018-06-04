@@ -46,6 +46,8 @@ class KafkaConsumerFactory extends Serializable {
     //Kafka consumer constructor is not thread safe!
     val properties = KafkaConfig.consumerPropertes.clone().asInstanceOf[Properties]
     properties.setProperty("group.id", group)
+    //Only read committed records
+    properties.setProperty("isolation.level", "read_committed")
     //properties.setProperty("enable.auto.commit", "false") //Disable auto commit because we use manual commit
     new KafkaConsumer[TKey, TData](properties,
                                    new KafkaDeserialiser[TKey],
