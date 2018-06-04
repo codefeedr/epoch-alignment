@@ -123,9 +123,10 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     val resultStream = composer.compose(queryEnv)
     val resultType = composer.getExposedType()
     val node = subjectLibrary.getSubject(resultType.name)
-
-    if(!await(node.exists())) {
-      await(subjectFactory.create(resultType))
+    this.synchronized {
+      if (!await(node.exists())) {
+        await(subjectFactory.create(resultType))
+      }
     }
 
     logger.debug(s"Composing sink for ${resultType.name}.")
@@ -156,11 +157,11 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     */
   def runSourceEnvironment[T: ru.TypeTag: ClassTag: TypeInformation](data: Array[T]): Future[SubjectType] = async {
     val t = SubjectTypeFactory.getSubjectType[T]
-    this.synchronized {
-      if (!await(subjectLibrary.getSubject(t.name).exists())) {
-        await(subjectFactory.create(t))
-      }
+
+    if (!await(subjectLibrary.getSubject(t.name).exists())) {
+      await(subjectFactory.create(t))
     }
+
 
 
     val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
