@@ -150,8 +150,8 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
   /**
     * Cancels this source on the final epoch of the source it is subscribed on
     */
-  override def cancel(): Unit = blocking {
-    logger.warn(s"Cancel was called")
+  override def cancel(): Unit = {
+    logger.warn(s"Cancel was called. Forcing a shutdown of this source")
     running = false
   }
 
