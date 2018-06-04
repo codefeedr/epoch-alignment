@@ -16,10 +16,11 @@ import scala.reflect.ClassTag
 import scala.reflect._
 import scala.reflect.runtime.{universe => ru}
 
-class WebSocketJsonPlugin[TData: ru.TypeTag: ClassTag](url: String,
-                                                       subject: String,
-                                                       batchSize: Int)
+class WebSocketJsonPlugin[TData: ru.TypeTag: ClassTag: Serde](url: String,
+                                                              subject: String,
+                                                              batchSize: Int)
     extends SimplePlugin[TData] {
+
   @transient private lazy val targetType = classTag[TData].runtimeClass.asInstanceOf[Class[TData]]
   @transient implicit lazy val typeInfo: TypeInformation[TData] = TypeInformation.of(targetType)
   @transient private lazy val source = WebSocketSourceFunction(url, subject, batchSize)
@@ -34,7 +35,7 @@ class WebSocketJsonPlugin[TData: ru.TypeTag: ClassTag](url: String,
   override def getStream(env: StreamExecutionEnvironment): DataStream[TData] =
     env
       .addSource(source)
-      .map((o: String) => o.deserialize)
+      .map((o: String) => implicitly[Serde[TData]].deserialize(o))
 }
 
 /**
