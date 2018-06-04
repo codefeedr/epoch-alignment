@@ -6,9 +6,9 @@ import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.codefeedr.core.plugin.SimplePlugin
 import org.codefeedr.ghtorrent.User
-import org.json4s._
-import org.json4s.native.JsonMethods._
 import org.apache.flink.streaming.api.scala._
+import org.codefeedr.serde.ghtorrent._
+import org.codefeedr.demo.ghtorrent.Serde.ops._
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -22,7 +22,6 @@ class WebSocketJsonPlugin[TData: ru.TypeTag: ClassTag](url: String,
     extends SimplePlugin[TData] {
   @transient private lazy val targetType = classTag[TData].runtimeClass.asInstanceOf[Class[TData]]
   @transient implicit lazy val typeInfo: TypeInformation[TData] = TypeInformation.of(targetType)
-  @transient implicit lazy val formats: DefaultFormats.type = DefaultFormats
   @transient private lazy val source = WebSocketSourceFunction(url, subject, batchSize)
 
   /**
@@ -35,15 +34,7 @@ class WebSocketJsonPlugin[TData: ru.TypeTag: ClassTag](url: String,
   override def getStream(env: StreamExecutionEnvironment): DataStream[TData] =
     env
       .addSource(source)
-      .map((o: String) => {
-        try {
-          parse(o).extract[TData]
-        } catch {
-          case e: org.json4s.ParserUtil.ParseException =>
-            logger.error(s"Error while parsing string \r\n$o\r\nTarget: ${targetType.getName}", e)
-            throw e
-        }
-      })
+      .map((o: String) => o.deserialize)
 }
 
 /**
