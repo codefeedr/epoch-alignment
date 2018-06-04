@@ -109,7 +109,7 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
     */
   def transform(value: TSink): (RecordSourceTrail, Row)
 
-  def getLabel(): String = s"KafkaSink ${subjectType.name}($sinkUuid-$instanceUuid)"
+  def getLabel(): String = s"KafkaSink ${subjectNode.name}($sinkUuid-$instanceUuid)"
 
   def getFirstFreeProducerIndex() =
     getUserContext.get().availableProducers.filter(o => o._2).keys.head
@@ -147,13 +147,13 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
     opened = true
     logger.debug(s"Opening producer ${getLabel()} for ${subjectType.name}")
     //Create zookeeper nodes synchronous
-    if (!Await.result(subjectNode.exists(), Duration(5, SECONDS))) {
+    if (!Await.result(subjectNode.exists(), 5.seconds)) {
       throw new Exception(s"Cannot open source ${getLabel()} because its subject does not exist.")
     }
-    Await.ready(sinkNode.create(QuerySink(sinkUuid)), Duration(5, SECONDS))
+    Await.ready(sinkNode.create(QuerySink(sinkUuid)), 5.seconds)
     Await.ready(producerNode.create(Producer(instanceUuid, null, System.currentTimeMillis())),
-                Duration(5, SECONDS))
-    Await.ready(producerNode.setState(true), Duration.Inf)
+                5.seconds)
+    Await.ready(producerNode.setState(true), 5.seconds)
     logger.debug(s"Producer ${getLabel()} created for topic $topic")
   }
   //Used for test
@@ -216,7 +216,7 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
         .displayOffsets()}\r\n${getLabel()}")
     producerPool(transaction.producerIndex).commitTransaction()
     val epochState = EpochState(transaction, subjectNode.getEpochs())
-    Await.ready(epochStateManager.commit(epochState), Duration(5, SECONDS))
+    Await.ready(epochStateManager.commit(epochState), 5.seconds)
     getUserContext.get().availableProducers(transaction.producerIndex) = true
     logger.debug(
       s"${getLabel()} done committing transaction ${transaction.checkPointId}.\r\n${transaction.displayOffsets()}")
@@ -237,13 +237,13 @@ abstract class KafkaSink[TSink](subjectNode: SubjectNode,
         .displayOffsets()}\r\n${getLabel()}")
     blocking {
       //TODO: Validate if this should/can be replaced by just a flush
-      Await.ready(transaction.awaitCommit(), Duration(5, SECONDS))
+      Await.ready(transaction.awaitCommit(), 5.seconds)
       //producerPool(transaction.producerIndex).flush()
       logger.debug(
         s"flushed and is awaiting events to commit in ${sw.elapsed().toMillis}\r\n${getLabel()}")
       //Perform precommit on the epochState
       val epochState = EpochState(transaction, subjectNode.getEpochs())
-      Await.ready(epochStateManager.preCommit(epochState), Duration(5, SECONDS))
+      Await.ready(epochStateManager.preCommit(epochState), 5.seconds)
     }
     logger.debug(
       s"Precommit completed in ${sw.elapsed().toMillis} transaction ${transaction.checkPointId}.\r\n${transaction

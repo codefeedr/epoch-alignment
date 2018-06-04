@@ -113,7 +113,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
 
   //TODO: Can we somehow perform this async?
   @transient private[kafka] lazy val finalSourceEpochOffsets =
-    Await.result(manager.getEpochOffsets(finalSourceEpoch), Duration(1, SECONDS))
+    Await.result(manager.getEpochOffsets(finalSourceEpoch), 1.seconds)
   @transient private[kafka] var checkpointingMode: Option[CheckpointingMode] = _
 
   //State of the source. We use the mutable map in operation,
@@ -129,7 +129,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
     * Get a display label for this source
     * @return
     */
-  def getLabel: String = s"KafkaSource ${subjectType.name}($sourceUuid-$instanceUuid)"
+  def getLabel: String = s"KafkaSource ${subjectNode.name}($sourceUuid-$instanceUuid)"
 
   /**
     * Retrieve the current state of the source
@@ -268,7 +268,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
   }
 
   private def snapshotCatchingUpState(epochId: Long): Unit = {
-    if (Await.result(manager.isCatchedUp(currentOffsets.toMap), Duration(1, SECONDS))) {
+    if (Await.result(manager.isCatchedUp(currentOffsets.toMap), 1.seconds)) {
       state = KafkaSourceState.Ready
       logger.info(s"Transitioned to ready state in $getLabel")
       manager.notifyStartedOnEpoch(epochId)
@@ -288,7 +288,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
         }
 
       } yield Unit,
-      Duration(1, SECONDS)
+      1.seconds
     )
   }
 
@@ -302,7 +302,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
             await(manager.nextSourceEpoch(epochId)).map(o => o.nr -> o.offset).toMap
         }
       } yield Unit,
-      Duration(1, SECONDS)
+      1.seconds
     )
   }
 
