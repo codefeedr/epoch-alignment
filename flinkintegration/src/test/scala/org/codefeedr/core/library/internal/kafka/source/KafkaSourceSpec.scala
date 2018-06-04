@@ -96,7 +96,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
     //Act
     runAsync(testKafkaSource)
-    while(!testKafkaSource.inititialized){}
+    while(!testKafkaSource.started){}
 
     //Assert
     verify(manager, times(1)).initializeRun()
@@ -111,7 +111,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
     //Act
     runAsync(testKafkaSource)
-    while(!testKafkaSource.inititialized){}
+    while(!testKafkaSource.started){}
 
     //Assert
     verify(manager, times(1)).initializeRun()
@@ -126,7 +126,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     //Arrange
     val testKafkaSource = constructSource()
     val p = Promise[Unit]()
-    when(consumer.poll(ctx)).thenAnswer(awaitAndReturn(p, Map(2 -> 10L),2))
+    when(consumer.poll(ArgumentMatchers.any())).thenAnswer(awaitAndReturn(p, Map(2 -> 10L),2))
 
     //Act
     runAsync(testKafkaSource)
@@ -143,12 +143,12 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
     //Act
     val p = Promise[Unit]()
-    when(consumer.poll(ctx)).thenAnswer(awaitAndReturn(p, Map(2 -> 10L),2))
+    when(consumer.poll(ArgumentMatchers.any())).thenAnswer(awaitAndReturn(p, Map(2 -> 10L),2))
     runAsync(testKafkaSource)
     await(p.future)
 
     val p2 = Promise[Unit]()
-    when(consumer.poll(ctx)).thenAnswer(awaitAndReturn(p2, Map(2 -> 12L,1->2L),2))
+    when(consumer.poll(ArgumentMatchers.any())).thenAnswer(awaitAndReturn(p2, Map(2 -> 12L,1->2L),2))
     await(p2.future)
 
     //Assert
@@ -162,7 +162,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     //Arrange
     val testKafkaSource = constructSource()
     val p = Promise[Unit]()
-    when(consumer.poll(ctx)).thenAnswer(awaitAndReturn(p, Map(2 -> 10L),2))
+    when(consumer.poll(ArgumentMatchers.any())).thenAnswer(awaitAndReturn(p, Map(2 -> 10L),2))
 
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn 1
@@ -181,7 +181,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     //Arrange
     val testKafkaSource = constructSource()
     val p = Promise[Unit]()
-    when(consumer.poll(ctx)).thenAnswer(awaitAndReturn(p, Map(2 -> 10L),2))
+    when(consumer.poll(ArgumentMatchers.any())).thenAnswer(awaitAndReturn(p, Map(2 -> 10L),2))
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn 1
 
@@ -222,7 +222,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     val testKafkaSource = constructSource()
     val epochCollectionNodeMock = mock[EpochCollectionNode]
     val p = Promise[Unit]()
-    when(consumer.poll(ctx)).thenAnswer(awaitAndReturn(p, Map(3 -> 1339L),2))
+    when(consumer.poll(ArgumentMatchers.any())).thenAnswer(awaitAndReturn(p, Map(3 -> 1339L),2))
 
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn 2
@@ -254,7 +254,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     val testKafkaSource = constructSource()
     val epochCollectionNodeMock = mock[EpochCollectionNode]
     val p = Promise[Unit]()
-    when(consumer.poll(ctx)).thenAnswer(awaitAndReturn(p, Map(3 -> 1338L),2))
+    when(consumer.poll(ArgumentMatchers.any())).thenAnswer(awaitAndReturn(p, Map(3 -> 1338L),2))
     when(consumer.getCurrentOffsets) thenReturn mutable.Map(3 -> 0L)
     //Initialize with empty collection
     testKafkaSource.setRuntimeContext(runtimeContext)

@@ -42,7 +42,7 @@ import scala.util.{Failure, Success}
   * Integration test for a join
   * Created by Niels on 04/08/2017.
   */
-class JoinQuerySpec extends FullIntegrationSpec with BeforeAndAfterEach {
+class JoinQuerySpec extends FullIntegrationSpec {
 
   "InnerJoinQuery" should "produce a record for each join candidate" taggedAs(Slow, KafkaTest) in async {
     logger.debug("Started InnerJoinQuery.eachjoincandidate")

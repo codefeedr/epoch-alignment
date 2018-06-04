@@ -103,7 +103,8 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
 
   //Node in zookeeper representing state of the subject this consumer is subscribed on
   @volatile private[kafka] var running = true
-  @volatile private[kafka] var inititialized = false
+  @volatile private[kafka] var initialized = false
+  @volatile private[kafka] var started = false
 
   //CheckpointId after which the source should start shutting down.
   @volatile private[kafka] var finalCheckpointId: Long = Long.MaxValue
@@ -120,7 +121,6 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
   @transient private[kafka] lazy val currentOffsets = consumer.getCurrentOffsets
   @transient private[kafka] lazy val checkpointOffsets = mutable.Map[Long, Map[Int, Long]]()
   @transient private var listState: ListState[(Int, Long)] = _
-  @volatile private var initialized = false
 
   @volatile
   @transient private[kafka] var alignmentOffsets: Map[Int, Long] = _
@@ -151,7 +151,10 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
     * Cancels this source on the final epoch of the source it is subscribed on
     */
   override def cancel(): Unit = {
-    logger.warn(s"Cancel was called. Forcing a shutdown of this source")
+    logger.warn(s"Cancel was called. Forcing a shutdown of $getLabel")
+    if (!initialized) {
+      logger.info(s"Cancel was called before the job was actually initialized in $getLabel")
+    }
     running = false
   }
 
@@ -379,25 +382,27 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
 
   /**
     * Perform a poll on the kafka consumer and collect data on the given method
-    * Should be  under checkpoint lock because all of this method depends on the dataConsumer, which is not built for multi-threaded access
+    * Performs poll on kafka, buffering to a buffer. Then collects all data under checkpointlock
     */
   def poll(ctx: SourceFunction.SourceContext[T]): Unit = {
+    val queue = new mutable.Queue[T]
+    val offsets =
+      if (state == KafkaSourceState.Ready) {
+        //If ready, make sure not to poll past the latest known offsets to zookeeper
+        consumer.poll(queue += _, alignmentOffsets)
+      } else {
+        //Otherwise, just poll
+        consumer.poll(queue += _)
+      }
+
     ctx.getCheckpointLock.synchronized {
-      val offsets =
-        if (state == KafkaSourceState.Ready) {
-          //If ready, make sure not to poll past the latest known offsets to zookeeper
-          consumer.poll(ctx, alignmentOffsets)
-        } else {
-          //Otherwise, just poll
-          consumer.poll(ctx)
-        }
+      while (queue.nonEmpty) {
+        ctx.collect(queue.dequeue())
+      }
       offsets.foreach(o => {
         currentOffsets(o._1) = o._2
       })
     }
-    //Give the checkpoint algorithm a chance to obtain the checkpoint lock
-    //TODO: Find a way to perform most of the "poll" operations outside the checkpoint lock
-    Thread.sleep(1)
   }
 
   /**
@@ -405,6 +410,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
     * @param ctx the context to perform the synchronized poll on
     */
   private def pollSynchronized(ctx: SourceFunction.SourceContext[T]): Unit = {
+    logger.debug(s"Currently performing synchronized poll in $getLabel")
     //Do not lock if already reached the offsets
     if (!OffsetUtils.HigherOrEqual(currentOffsets.toMap, alignmentOffsets)) {
       //Stay within lock until desired offset was reached
@@ -412,13 +418,15 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
         while (!OffsetUtils.HigherOrEqual(currentOffsets.toMap, alignmentOffsets)) {
           logger.debug(
             s"Perfoming synchronized poll loop in $getLabel.\r\n Offsets: ${currentOffsets.toMap}.\r\n Desired: $alignmentOffsets")
-          val offsets = consumer.poll(ctx, alignmentOffsets)
+          val offsets = consumer.poll(ctx.collect, alignmentOffsets)
           offsets.foreach(o => {
             currentOffsets(o._1) = o._2
           })
         }
       }
     }
+    logger.debug(s"Done performing synchronized poll in $getLabel")
+
   }
 
   /**
@@ -432,8 +440,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
   override def run(ctx: SourceFunction.SourceContext[T]): Unit = {
     logger.debug(s"Source $getLabel started running.")
     initRun()
-    inititialized = true
-
+    started = true
     while (running) {
       if (state == KafkaSourceState.Synchronized) {
         pollSynchronized(ctx)

@@ -31,6 +31,12 @@ trait MockitoExtensions {
         if(i == 0) {
           p.success(())
         }
+
+        if(i <= 0) {
+          //Hack: Free up thread in case of running single threaded..
+          //Hack: Only used from tests
+          Thread.sleep(10)
+        }
         f(invocation)
       }
     }

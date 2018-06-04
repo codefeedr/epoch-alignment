@@ -26,19 +26,18 @@ class KafkaSourceConsumer[T](name: String,
 
   /**
     * Performs a poll on kafka
-    * @param ctx context to perform the poll on
+    * @param cb callback to invoke for every element
     * @return the last offsets for each partition of the consumer that has been collected in the poll
     */
-  def poll(ctx: SourceFunction.SourceContext[T]): Map[Int, Long] = poll(ctx, Map[Int, Long]())
+  def poll(cb: T => Unit): Map[Int, Long] = poll(cb, Map[Int, Long]())
 
-  def poll(ctx: SourceFunction.SourceContext[T],
-           seekOffsets: PartialFunction[Int, Long]): Map[Int, Long] = {
+  def poll(cb: T => Unit, seekOffsets: PartialFunction[Int, Long]): Map[Int, Long] = {
     val shouldInclude = (r: ConsumerRecord[RecordSourceTrail, Row]) =>
       seekOffsets.lift(r.partition()).forall(_ >= r.offset())
-    poll(ctx, shouldInclude, seekOffsets)
+    poll(cb, shouldInclude, seekOffsets)
   }
 
-  private def poll(ctx: SourceFunction.SourceContext[T],
+  private def poll(cb: T => Unit,
                    shouldInclude: ConsumerRecord[RecordSourceTrail, Row] => Boolean,
                    seekOffsets: PartialFunction[Int, Long]): Map[Int, Long] = {
     logger.debug(s"$name started polling")
@@ -48,7 +47,7 @@ class KafkaSourceConsumer[T](name: String,
     val resetSet = ArrayBuffer[Int]()
     data.foreach(o => {
       if (shouldInclude(o)) {
-        ctx.collect(mapper(TrailedRecord(o.value())))
+        cb(mapper(TrailedRecord(o.value())))
         val partition = o.partition()
         val offset = o.offset()
         logger.debug(s"Processing $partition -> $offset ")

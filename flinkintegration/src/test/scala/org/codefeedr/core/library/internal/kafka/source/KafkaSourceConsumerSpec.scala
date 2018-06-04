@@ -14,14 +14,14 @@ import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, FlatSpec}
 
+import scala.collection.mutable
+
 class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with MockitoSugar with MockitoExtensions  {
   private var consumer: KafkaConsumer[RecordSourceTrail, Row] = _
-  private var ctx: SourceFunction.SourceContext[SourceElement] = _
   private val topic = "sourceElement"
 
   override def beforeEach() = {
     consumer = mock[KafkaConsumer[RecordSourceTrail, Row]]
-    ctx = mock[SourceFunction.SourceContext[SourceElement]]
   }
 
   "KafkaSourceConsumer.Poll" should "return the latest offsets that it recieved by polling the source" in {
@@ -30,7 +30,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
     when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((1,1L),(1,2L),(2,2L)))
 
     //Act
-    val r = component.poll(ctx)
+    val r = component.poll(_ => Unit)
 
     //Assert
     assert(r.contains(1 -> 2L))
@@ -41,26 +41,28 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
     //Arrange
     val component = constructConsumer()
     when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((1,1L),(1,2L),(2,2L)))
+    val queue = new mutable.Queue[SourceElement]
 
     //Act
-    val r = component.poll(ctx)
+    val r = component.poll(queue += _)
 
     //Assert
-    verify(ctx,times(3)).collect(ArgumentMatchers.any())
+    assert(queue.size == 3)
   }
 
   it should "not treat elements past the given offset" in {
     //Arrange
     val component = constructConsumer()
     when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((1,1L),(1,2L),(1,3L),(2,2L),(2,3L)))
+    val queue = new mutable.Queue[SourceElement]
 
     //Act
-    val r = component.poll(ctx,Map(1->2,2->2))
+    val r = component.poll(queue+= _,Map(1->2,2->2))
 
     //Assert
     assert(r.contains(1 -> 2L))
     assert(r.contains(2 -> 2L))
-    verify(ctx,times(3)).collect(ArgumentMatchers.any())
+    assert(queue.size == 3)
   }
 
   it should "call seek when it recieved elements past the given offset" in {
@@ -69,7 +71,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
     when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((1,1L),(1,2L),(1,3L),(2,2L),(2,3L)))
 
     //Act
-    val r = component.poll(ctx,Map(1->2,2->2))
+    val r = component.poll(_ => Unit,Map(1->2,2->2))
 
     //Assert
     verify(consumer,times(1)).seek(Matches((o: TopicPartition) => o.partition() == 1),ArgumentMatchers.eq(2L))

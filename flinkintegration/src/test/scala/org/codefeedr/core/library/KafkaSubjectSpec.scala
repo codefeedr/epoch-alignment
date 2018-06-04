@@ -81,6 +81,7 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
     }
   }
 
+  override def beforeEach(): Unit = super.beforeEach()
 
   override def afterEach(): Unit = {
     super.afterEach()

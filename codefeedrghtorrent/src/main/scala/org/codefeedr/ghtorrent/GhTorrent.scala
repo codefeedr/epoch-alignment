@@ -52,15 +52,15 @@ case class User(id: Int,
                 name: String,
                 company: String,
                 email: String,
-                created_at: Date,
+                created_at: String,
                 `type`: String,
-                fake: Boolean,
-                deleted: Boolean,
-                long: Float,
-                lat: Float,
-                country_code: String,
-                state: String,
-                city: String)
+                fake: Boolean = false,
+                deleted: Boolean = false,
+                long: Option[Float],
+                lat: Option[Float],
+                country_code: Option[String],
+                state: Option[String],
+                city: Option[String])
 
 /**
   * Github commit
