@@ -119,7 +119,7 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
   }
 
 
-  it should " still receive data if they are created before the sink" taggedAs(Slow, KafkaTest) in async {
+  it should "still receive data if they are created before the sink" taggedAs(Slow, KafkaTest) in async {
     val subjectNode = subjectLibrary.getSubject(testSubjectName)
     assert(!await(subjectNode.exists()))
 
@@ -143,7 +143,7 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
     assert(TestCollector.collectedData.count(o => o._2.value == 3) == 3)
   }
 
-  it should " be able to recieve data from multiple sinks" taggedAs(Slow, KafkaTest) in async {
+  it should "be able to recieve data from multiple sinks" taggedAs(Slow, KafkaTest) in async {
     val subjectNode = subjectLibrary.getSubject(testSubjectName)
     assert(!await(subjectNode.exists()))
 

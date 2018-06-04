@@ -156,8 +156,10 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     */
   def runSourceEnvironment[T: ru.TypeTag: ClassTag: TypeInformation](data: Array[T]): Future[SubjectType] = async {
     val t = SubjectTypeFactory.getSubjectType[T]
-    if(!await(subjectLibrary.getSubject(t.name).exists())) {
-      await(subjectFactory.create(t))
+    this.synchronized {
+      if (!await(subjectLibrary.getSubject(t.name).exists())) {
+        await(subjectFactory.create(t))
+      }
     }
 
 

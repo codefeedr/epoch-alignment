@@ -209,7 +209,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     when(manager.getEpochOffsets(1337L)) thenReturn Future.successful(Iterable(Partition(2,1338)))
 
     //Act
-    testKafkaSource.cancel()
+    await(testKafkaSource.cancelAsync())
 
     //Assert
     assert(testKafkaSource.finalSourceEpoch == 1337)
@@ -235,7 +235,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     testKafkaSource.initializeState(initCtx)
 
     //Act
-    testKafkaSource.cancel()
+    await(testKafkaSource.cancelAsync())
     testKafkaSource.snapshotState(context)
     val before = testKafkaSource.running
     testKafkaSource.poll(ctx)
@@ -269,7 +269,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     when(manager.getEpochOffsets(1L)) thenReturn Future.successful(Iterable(Partition(3,1339)))
 
     //Act
-    testKafkaSource.cancel()
+    await(testKafkaSource.cancelAsync())
     testKafkaSource.snapshotState(context)
     val before = testKafkaSource.running
     testKafkaSource.poll(ctx)
