@@ -79,12 +79,28 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)
     getDataSync(5.seconds)
 
   /**
+    * HAcky implementation to block current thread until the promise completes
+    * @param d maximum time to wait
+    * @return
+    */
+  def getDataBlocking(d: FiniteDuration): Option[TData] = {
+    val f = getData()
+    val deadline = d.fromNow
+    while (deadline.hasTimeLeft() && !f.isCompleted) {}
+    f.value.get.get
+  }
+
+  /**
     * Retrieve the data with a blocking wait
     * @param d duration to wait until timeout
     * @return
     */
-  def getDataSync(d: Duration): Option[TData] =
-    Await.result(getData(), d)
+  def getDataSync(d: Duration): Option[TData] = {
+    logger.debug(s"Get data sync called on node with name $name")
+    val r = Await.result(getData(), d)
+    logger.debug(s"Got result of getdata on node with name $name")
+    r
+  }
 
   /**
     * Set data of the node
