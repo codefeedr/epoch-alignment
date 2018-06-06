@@ -76,7 +76,15 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)
     * @return
     */
   def getDataSync(): Option[TData] =
-    Await.result(getData(), 1.seconds)
+    getDataSync(5.seconds)
+
+  /**
+    * Retrieve the data with a blocking wait
+    * @param d duration to wait until timeout
+    * @return
+    */
+  def getDataSync(d: Duration): Option[TData] =
+    Await.result(getData(), d)
 
   /**
     * Set data of the node
