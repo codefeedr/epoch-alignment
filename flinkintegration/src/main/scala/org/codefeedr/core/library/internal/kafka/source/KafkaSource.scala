@@ -87,7 +87,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
   @transient private[kafka] lazy val instanceUuid = UUID.randomUUID().toString
   //@transient private lazy val closePromise: Promise[Unit] = Promise[Unit]()
   @transient protected lazy val subjectType: SubjectType =
-    subjectNode.getDataBlocking(10.seconds).get
+    subjectNode.getDataSync(60.seconds).get
 
   //Manager of this source. This should "cleanly" be done by composition, but we cannot do so because this source is "constructed" by Flink
   @transient private[kafka] var manager: KafkaSourceManager = _
