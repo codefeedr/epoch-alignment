@@ -166,8 +166,9 @@ class ZkClient extends LazyLogging {
     * @return deserialized data
     */
   def getData[T: ClassTag](path: String): Future[Option[T]] = async {
+    logger.debug(s"Retrieving data for path $path")
     val data = await(getRawData(path))
-    logger.debug(s"Awaited raw data")
+    logger.debug(s"Awaited raw data for $path")
     if (data != null) {
       logger.debug(s"Deserializing data for path $path")
       Some(GenericDeserialiser[T](data))
