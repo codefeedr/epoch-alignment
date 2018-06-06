@@ -169,11 +169,24 @@ class ZkClient extends LazyLogging {
     logger.debug(s"Retrieving data for path $path")
     val data = await(getRawData(path))
     logger.debug(s"Awaited raw data for $path")
+    toT[T](data)
+  }
+
+  /**
+    * Retrieves data from zookeeper in a synchronous way
+    * @param path
+    * @tparam T
+    * @return
+    */
+  def getDataSync[T: ClassTag](path: String): Option[T] = {
+    val data = getRawDataSync(path)
+    toT[T](data)
+  }
+
+  private def toT[T: ClassTag](data: Array[Byte]): Option[T] = {
     if (data != null) {
-      logger.debug(s"Deserializing data for path $path")
       Some(GenericDeserialiser[T](data))
     } else {
-      logger.warn(s"Got none as result for path $path")
       None
     }
   }

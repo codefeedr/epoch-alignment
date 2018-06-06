@@ -75,17 +75,9 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)
     * Retrieve the data with a blocking wait
     * @return
     */
-  def getDataSync(): Option[TData] =
-    getDataSync(5.seconds)
-
-  /**
-    * Retrieve the data with a blocking wait
-    * @param d duration to wait until timeout
-    * @return
-    */
-  def getDataSync(d: Duration): Option[TData] = {
+  def getDataSync(): Option[TData] = {
     logger.debug(s"Get data sync called on node with name $name")
-    val r = Await.result(getData(), d)
+    val r = zkClient.getDataSync[TData](path())
     logger.debug(s"Got result of getdata on node with name $name")
     r
   }
