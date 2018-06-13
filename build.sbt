@@ -9,8 +9,7 @@ lazy val settings = Seq(
   scalaVersion := "2.11.12",
   scalacOptions ++= Seq(
     "-deprecation",
-    "-feature",
-    "-evicted"
+    "-feature"
   )
 )
 
