@@ -458,7 +458,9 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
   }
 
   override def run(ctx: SourceFunction.SourceContext[T]): Unit = {
-    initRun()
+    ctx.getCheckpointLock.synchronized {
+      initRun()
+    }
 
     while (running) {
       doCycle(ctx)
