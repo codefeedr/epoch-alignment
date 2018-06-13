@@ -9,7 +9,8 @@ lazy val settings = Seq(
   scalaVersion := "2.11.12",
   scalacOptions ++= Seq(
     "-deprecation",
-    "-feature"
+    "-feature",
+    "-evicted"
   )
 )
 
@@ -22,7 +23,7 @@ resolvers in ThisBuild ++= Seq(
 
 //Object containing all depdencies, to prevent version conflicts between projects
 lazy val dependencies = new {
-  val flinkV = "1.5.0"
+  val flinkV = "1.4.2"
 
   val zookeeperV = "3.4.12"
   val kafkaV = "1.1.0"
