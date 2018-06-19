@@ -24,7 +24,7 @@ class ZkCollectionStateNodeSpec  extends LibraryServiceSpec with Matchers with B
     await(collection.getChild("child1").create("child1data"))
     await(collection.getChild("child2").create("child2data"))
     val aggregate = await(collection.getState())
-    assert(aggregate == "(s_child1)-(s_child2)")
+    assert(aggregate == "(s_child1)-(s_child2)" || aggregate == "(s_child2)-(s_child1)")
   }
 
   it should "return the default if there are no children" in async {
