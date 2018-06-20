@@ -29,13 +29,12 @@ class QuerySourceNode(name: String, parent: ZkNodeBase)
   def getCommandNode(): QuerySourceCommandNode = new QuerySourceCommandNode(this)
 
   override def postCreate(): Future[Unit] = {
-    for {
-      _ <- super.postCreate()
-      _ <- getEpochs().create()
-      _ <- getSyncState().create()
-      _ <- getCommandNode().create()
-      _ <- getConsumers().create()
-    } yield {}
+    //HACK: Actually synchronous, because postcreate will be called from synchronous code
+    getEpochs().createSync()
+    getSyncState().createSync()
+    getCommandNode().createSync()
+    getConsumers().createSync()
+    super.postCreate()
   }
 
   override def typeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])

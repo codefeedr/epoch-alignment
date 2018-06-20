@@ -37,6 +37,20 @@ abstract class ZkNodeBase(val name: String) extends Serializable with LazyLoggin
   }
 
   /**
+    * Creates the node synchronously
+    * @throws Exception when the postCreate operation is actually asynchronous
+    * @return path to the node
+    */
+  def createSync(): String = {
+    zkClient.create(path())
+    val r = postCreate()
+    if (!r.isCompleted) {
+      throw new Exception("PostCreate from createSync is performing an asynchronous operation")
+    }
+    path()
+  }
+
+  /**
     * Checks if the node exists
     *
     * @return a future with the result
