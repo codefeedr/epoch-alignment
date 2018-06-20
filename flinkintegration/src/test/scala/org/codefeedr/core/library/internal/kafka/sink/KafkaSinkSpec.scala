@@ -372,7 +372,7 @@ class SampleObject {
 
 }
 
-class TestKafkaSink(node:SubjectNode, jobNode: JobNode,kafkaProducerFactory: KafkaProducerFactory,epochStateManager:EpochStateManager) extends KafkaSink[SampleObject](node,jobNode,kafkaProducerFactory,epochStateManager)  {
+class TestKafkaSink(node:SubjectNode, jobNode: JobNode,kafkaProducerFactory: KafkaProducerFactory,epochStateManager:EpochStateManager) extends KafkaSink[SampleObject,Row,RecordSourceTrail](node,jobNode,kafkaProducerFactory,epochStateManager)  {
 
   override protected val sinkUuid: String = "testsink"
 

@@ -17,7 +17,7 @@ class RowSink(subjectNode: SubjectNode,
               kafkaProducerFactory: KafkaProducerFactory,
               epochStateManager: EpochStateManager,
               override val sinkUuid: String)
-    extends KafkaSink[tuple.Tuple2[lang.Boolean, Row]](subjectNode,
+    extends KafkaSink[tuple.Tuple2[lang.Boolean, Row],Row,RecordSourceTrail](subjectNode,
                                                        jobNode,
                                                        kafkaProducerFactory,
                                                        epochStateManager) {

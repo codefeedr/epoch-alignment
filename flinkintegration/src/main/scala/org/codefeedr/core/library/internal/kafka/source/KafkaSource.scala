@@ -462,6 +462,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
       initRun()
     }
 
+
     while (running) {
       doCycle(ctx)
     }
