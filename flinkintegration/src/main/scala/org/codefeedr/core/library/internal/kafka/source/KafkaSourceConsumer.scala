@@ -15,10 +15,10 @@ import scala.collection.mutable.ArrayBuffer
   * Class performing the polling of kafka for a KafkaSource
   * Converting (java)types we use on Kafka back to (scala) types we use in Flink
   */
-class KafkaSourceConsumer[T](name: String,
+class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
                              topic: String,
-                             consumer: KafkaConsumer[RecordSourceTrail, Row],
-                             mapper: TrailedRecord => T)
+                             consumer: KafkaConsumer[TKey, TValue],
+                             mapper: (TValue,TKey) => TElement)
     extends LazyLogging {
 
   //Timeout when polling kafka
@@ -29,16 +29,16 @@ class KafkaSourceConsumer[T](name: String,
     * @param cb callback to invoke for every element
     * @return the last offsets for each partition of the consumer that has been collected in the poll
     */
-  def poll(cb: T => Unit): Map[Int, Long] = poll(cb, Map[Int, Long]())
+  def poll(cb: TElement => Unit): Map[Int, Long] = poll(cb, Map[Int, Long]())
 
-  def poll(cb: T => Unit, seekOffsets: PartialFunction[Int, Long]): Map[Int, Long] = {
-    val shouldInclude = (r: ConsumerRecord[RecordSourceTrail, Row]) =>
+  def poll(cb: TElement => Unit, seekOffsets: PartialFunction[Int, Long]): Map[Int, Long] = {
+    val shouldInclude = (r: ConsumerRecord[TKey, TValue]) =>
       seekOffsets.lift(r.partition()).forall(_ >= r.offset())
     poll(cb, shouldInclude, seekOffsets)
   }
 
-  private def poll(cb: T => Unit,
-                   shouldInclude: ConsumerRecord[RecordSourceTrail, Row] => Boolean,
+  private def poll(cb: TElement => Unit,
+                   shouldInclude: ConsumerRecord[TKey, TValue] => Boolean,
                    seekOffsets: PartialFunction[Int, Long]): Map[Int, Long] = {
     logger.debug(s"$name started polling")
     val data = consumer.poll(pollTimeout).iterator().asScala
@@ -47,7 +47,7 @@ class KafkaSourceConsumer[T](name: String,
     val resetSet = ArrayBuffer[Int]()
     data.foreach(o => {
       if (shouldInclude(o)) {
-        cb(mapper(TrailedRecord(o.value())))
+        cb(mapper(o.value(),o.key()))
         val partition = o.partition()
         val offset = o.offset()
         logger.debug(s"Processing $partition -> $offset ")

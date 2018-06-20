@@ -34,7 +34,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   private var sampleObject: SampleObject = _
   private var manager: KafkaSourceManager = _
 
-  private var consumer: KafkaSourceConsumer[SampleObject] = _
+  private var consumer: KafkaSourceConsumer[SampleObject,SampleObject,Object] = _
 
   private var initCtx : FunctionInitializationContext  = _
   private var context: FunctionSnapshotContext = _
@@ -56,7 +56,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     sampleObject = new SampleObject()
     manager = mock[KafkaSourceManager]
 
-    consumer = mock[KafkaSourceConsumer[SampleObject]]
+    consumer = mock[KafkaSourceConsumer[SampleObject,SampleObject,Object]]
 
     initCtx = mock[FunctionInitializationContext]
     context = mock[FunctionSnapshotContext]
@@ -521,14 +521,14 @@ class SampleObject {
 
 }
 
-class TestKafkaSource(node: SubjectNode,jobNode: JobNode,kafkaConsumerFactory: KafkaConsumerFactory, mockedConsumer:KafkaSourceConsumer[SampleObject])
-  extends KafkaSource[SampleObject](node,jobNode,kafkaConsumerFactory) {
+class TestKafkaSource(node: SubjectNode,jobNode: JobNode,kafkaConsumerFactory: KafkaConsumerFactory, mockedConsumer:KafkaSourceConsumer[SampleObject,SampleObject,Object])
+  extends KafkaSource[SampleObject,SampleObject,Object](node,jobNode,kafkaConsumerFactory) {
 
   override val sourceUuid: String = "testuuid"
 
-  override def mapToT(record: TrailedRecord): SampleObject = new SampleObject
 
-  @transient override lazy val consumer: KafkaSourceConsumer[SampleObject] = mockedConsumer
+
+  @transient override lazy val consumer: KafkaSourceConsumer[SampleObject,SampleObject,Object] = mockedConsumer
 
   /**
     * Get typeinformation of the returned type
@@ -536,6 +536,8 @@ class TestKafkaSource(node: SubjectNode,jobNode: JobNode,kafkaConsumerFactory: K
     * @return
     */
   override def getProducedType: TypeInformation[SampleObject] = null
+
+  override def transform(value: SampleObject, key: Object): SampleObject = value
 }
 
 

@@ -20,21 +20,18 @@
 package org.codefeedr.core.library.internal.kafka
 
 import org.apache.flink.api.common.typeinfo.TypeInformation
+import org.apache.flink.types.Row
 import org.codefeedr.core.library.LibraryServices
-import org.codefeedr.core.library.internal.kafka.source.{
-  KafkaConsumerFactory,
-  KafkaSource,
-  KafkaSourceEpochState
-}
+import org.codefeedr.core.library.internal.kafka.source.{KafkaConsumerFactory, KafkaSource, KafkaSourceEpochState}
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
-import org.codefeedr.model.TrailedRecord
+import org.codefeedr.model.{Record, RecordSourceTrail, TrailedRecord}
 
 class KafkaTrailedRecordSource(subjectNode: SubjectNode,
                                jobNode: JobNode,
                                kafkaConsumerFactory: KafkaConsumerFactory,
                                override val sourceUuid: String)
-    extends KafkaSource[TrailedRecord](subjectNode, jobNode, kafkaConsumerFactory) {
-  override def mapToT(record: TrailedRecord) = record
+    extends KafkaSource[TrailedRecord,Record,RecordSourceTrail](subjectNode, jobNode, kafkaConsumerFactory) {
+
 
   /**
     * Get typeinformation of the returned type
@@ -44,4 +41,6 @@ class KafkaTrailedRecordSource(subjectNode: SubjectNode,
   override def getProducedType = {
     TypeInformation.of[TrailedRecord](classOf[TrailedRecord])
   }
+
+  override def transform(value: Record, key: RecordSourceTrail): TrailedRecord = TrailedRecord(value,key)
 }

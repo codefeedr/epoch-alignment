@@ -38,9 +38,9 @@ class KafkaGenericSource[T: ru.TypeTag: ClassTag: TypeInformation](
     kafkaConsumerFactory: KafkaConsumerFactory,
     transformer: TrailedRecord => T,
     override val sourceUuid: String)
-    extends KafkaSource[T](subjectNode, jobNode, kafkaConsumerFactory) {
+    extends KafkaSource[T,T,Object](subjectNode, jobNode, kafkaConsumerFactory) {
 
-  override def mapToT(record: TrailedRecord): T = transformer.apply(record)
+
 
   /**
     * Get typeinformation of the returned type
@@ -48,4 +48,6 @@ class KafkaGenericSource[T: ru.TypeTag: ClassTag: TypeInformation](
     * @return
     */
   override def getProducedType: TypeInformation[T] = createTypeInformation[T]
+
+  override def transform(value: T, key: Object): T = value
 }

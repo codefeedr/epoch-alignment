@@ -4,7 +4,7 @@ import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.types.Row
 import org.apache.kafka.clients.consumer.{ConsumerRecord, ConsumerRecords, KafkaConsumer}
 import org.apache.kafka.common.TopicPartition
-import org.codefeedr.model.{RecordSourceTrail, Source, TrailedRecord}
+import org.codefeedr.model.{Record, RecordSourceTrail, Source, TrailedRecord}
 
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
@@ -95,12 +95,12 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
       new Row(1))
   }
 
-  private def constructConsumer(): KafkaSourceConsumer[SourceElement] = {
-    new KafkaSourceConsumer[SourceElement]("sourceConsumer",topic,consumer,mapper)
+  private def constructConsumer(): KafkaSourceConsumer[SourceElement,Row,RecordSourceTrail] = {
+    new KafkaSourceConsumer[SourceElement,Row,RecordSourceTrail]("sourceConsumer",topic,consumer,mapper)
   }
 
-  private def mapper(r:TrailedRecord):SourceElement = {
-    SourceElement(r.hashCode())
+  private def mapper(value:Row, key:RecordSourceTrail):SourceElement = {
+    SourceElement(value.hashCode())
   }
 
   case class SourceElement(nr: Int)

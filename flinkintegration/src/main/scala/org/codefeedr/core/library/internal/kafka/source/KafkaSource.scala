@@ -26,11 +26,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.state.{ListState, ListStateDescriptor}
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable
-import org.apache.flink.runtime.state.{
-  CheckpointListener,
-  FunctionInitializationContext,
-  FunctionSnapshotContext
-}
+import org.apache.flink.runtime.state.{CheckpointListener, FunctionInitializationContext, FunctionSnapshotContext}
 import org.apache.flink.streaming.api.CheckpointingMode
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
@@ -48,6 +44,7 @@ import scala.concurrent.{Await, Future, blocking}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.async.Async.{async, await}
+import scala.reflect.ClassTag
 
 /**
   * Use a single thread to perform all polling operations on kafka
@@ -59,12 +56,12 @@ import scala.async.Async.{async, await}
   * Because this class needs to be serializable and the LibraryServices are not, no dependency injection structure can be used here :(
   * Created by Niels on 18/07/2017.
   */
-abstract class KafkaSource[T](subjectNode: SubjectNode,
+abstract class KafkaSource[TElement, TValue:ClassTag,TKey:ClassTag](subjectNode: SubjectNode,
                               JobNode: JobNode,
                               kafkaConsumerFactory: KafkaConsumerFactory)
 //Flink interfaces
-    extends RichSourceFunction[T]
-    with ResultTypeQueryable[T]
+    extends RichSourceFunction[TElement]
+    with ResultTypeQueryable[TElement]
     with CheckpointedFunction
     with CheckpointListener
     //Internal services
@@ -72,12 +69,12 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
     with LazyLogging
     with Serializable {
 
-  @transient protected lazy val consumer: KafkaSourceConsumer[T] = {
-    val kafkaConsumer = kafkaConsumerFactory.create[RecordSourceTrail, Row](instanceUuid.toString)
+  @transient protected lazy val consumer: KafkaSourceConsumer[TElement,TValue,TKey] = {
+    val kafkaConsumer = kafkaConsumerFactory.create[TKey, TValue](instanceUuid.toString)
     kafkaConsumer.subscribe(Iterable(topic).asJavaCollection)
     logger.debug(
       s"Source $instanceUuid of consumer $sourceUuid subscribed on topic $topic as group $instanceUuid")
-    new KafkaSourceConsumer[T](s"Consumer $getLabel", topic, kafkaConsumer, mapToT)
+    new KafkaSourceConsumer[TElement,TValue,TKey](s"Consumer $getLabel", topic, kafkaConsumer, transform)
   }
 
   //Unique id of the source the instance of this kafka source belongs to
@@ -376,7 +373,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
     //closePromise.success()
   }
 
-  def mapToT(record: TrailedRecord): T
+  def transform(value: TValue, key:TKey):TElement
 
   /**
     * @return A future that resolves when the source has been close
@@ -387,8 +384,8 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
     * Perform a poll on the kafka consumer and collect data on the given method
     * Performs poll on kafka, buffering to a buffer. Then collects all data under checkpointlock
     */
-  def poll(ctx: SourceFunction.SourceContext[T]): Unit = {
-    val queue = new mutable.Queue[T]
+  def poll(ctx: SourceFunction.SourceContext[TElement]): Unit = {
+    val queue = new mutable.Queue[TElement]
     val offsets =
       if (state == KafkaSourceState.Ready) {
         //If ready, make sure not to poll past the latest known offsets to zookeeper
@@ -412,7 +409,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
     * Perform a synchronized poll, that runs and does not leave the checkpoint lock until the desired offset was reached
     * @param ctx the context to perform the synchronized poll on
     */
-  def pollSynchronized(ctx: SourceFunction.SourceContext[T]): Unit = {
+  def pollSynchronized(ctx: SourceFunction.SourceContext[TElement]): Unit = {
     logger.debug(s"Currently performing synchronized poll in $getLabel")
     //Do not lock if already reached the offsets
     if (!OffsetUtils.HigherOrEqual(currentOffsets.toMap, alignmentOffsets)) {
@@ -435,7 +432,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
   /**
     * Performs a single run cycle
     */
-  def doCycle(ctx: SourceFunction.SourceContext[T]): Unit = {
+  def doCycle(ctx: SourceFunction.SourceContext[TElement]): Unit = {
     if (state == KafkaSourceState.Synchronized) {
       pollSynchronized(ctx)
     } else {
@@ -457,7 +454,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
     subjectNode.getEpochs()
   }
 
-  override def run(ctx: SourceFunction.SourceContext[T]): Unit = {
+  override def run(ctx: SourceFunction.SourceContext[TElement]): Unit = {
     ctx.getCheckpointLock.synchronized {
       initRun()
     }
@@ -499,7 +496,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
     * Get typeinformation of the returned type
     * @return
     */
-  def getProducedType: TypeInformation[T]
+  def getProducedType: TypeInformation[TElement]
 
   /*
     Below here are the handlers for commands

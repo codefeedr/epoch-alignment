@@ -31,7 +31,7 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
 
   private var epochCollection: EpochCollectionNode = _
 
-  private var source: KafkaSource[String] = _
+  private var source: KafkaSource[String,String,Object] = _
 
   private var completePromise = Promise[Unit]()
 
@@ -53,7 +53,7 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
 
     epochCollection = mock[EpochCollectionNode]
 
-    source = mock[KafkaSource[String]]
+    source = mock[KafkaSource[String,String,Object]]
 
     when(subjectNode.getSources()) thenReturn sourceCollectionNode
     when(subjectNode.awaitClose()) thenReturn completePromise.future

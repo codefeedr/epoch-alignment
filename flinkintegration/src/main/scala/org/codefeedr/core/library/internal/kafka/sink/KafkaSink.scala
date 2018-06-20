@@ -174,7 +174,7 @@ abstract class KafkaSink[TSink,TValue:ClassTag, TKey:ClassTag](subjectNode: Subj
     logger.debug(
       s"${getLabel()} sending event on transaction ${transaction.checkPointId} producer ${transaction.producerIndex}")
 
-    val (key:TKey,value:TValue) = transform(element)
+    val (key,value) = transform(element)
     val record = new ProducerRecord[TValue, TKey](topic, parallelIndex, value, key)
 
     //Wrap the callback into a proper scala promise
