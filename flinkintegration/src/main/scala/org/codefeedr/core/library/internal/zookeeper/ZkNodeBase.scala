@@ -41,7 +41,13 @@ abstract class ZkNodeBase(val name: String) extends Serializable with LazyLoggin
     *
     * @return a future with the result
     */
-  def exists(): Future[Boolean] = zkClient.exists(path)
+  def exists(): Future[Boolean] = zkClient.exists(path())
+
+  /**
+    * Checks synchronously if the path exists
+    * @return true if the path exists, otherwise false
+    */
+  def existsSync(): Boolean = zkClient.existsSync(path())
 
   /**
     * Delete the current node

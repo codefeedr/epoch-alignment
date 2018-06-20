@@ -40,6 +40,13 @@ class EpochNode(epoch: Int, parent: ZkNodeBase)
       )
   }
 
+  /**
+    * Synchronously retrieve all partition data of the epoch
+    * @return the partition data
+    */
+  def getPartitionDataSync(): Iterable[Partition] =
+    getPartitions().getChildrenSync().map(o => o.getDataSync().get)
+
   def getEpoch(): Int = epoch
 
   override def postCreate(): Future[Unit] =

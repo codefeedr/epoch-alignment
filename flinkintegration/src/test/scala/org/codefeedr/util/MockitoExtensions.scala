@@ -1,17 +1,15 @@
 package org.codefeedr.util
 
-import org.codefeedr.core.library.internal.zookeeper.ZkNodeBase
+import org.codefeedr.core.library.internal.zookeeper.{ZkNodeBase, ZkWriteLock}
 import org.mockito.Mockito.when
-import org.mockito.{ArgumentMatcher, ArgumentMatchers}
+import org.mockito.{ArgumentMatcher, ArgumentMatchers, Mock}
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.scalatest.AsyncFlatSpec
 import org.scalatest.mockito.MockitoSugar
-
 
 import scala.concurrent.{Future, Promise}
 
-trait MockitoExtensions {
+trait MockitoExtensions extends MockitoSugar{
 
     def answer[T](f: InvocationOnMock => T): Answer[T] = {
       //Ignore the warning, compiler needs it
@@ -52,6 +50,8 @@ trait MockitoExtensions {
     when(zkNodeBase.asyncWriteLock(ArgumentMatchers.any[() => Future[Unit]]()))
       .thenAnswer(answer(a => a.getArgument[() => Future[Unit]](0)()))
 
+
+    when(zkNodeBase.writeLock()) thenReturn Future.successful(mock[ZkWriteLock])
   }
 
 }

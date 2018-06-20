@@ -15,7 +15,7 @@ import org.codefeedr.model.{RecordProperty, RecordSourceTrail, SubjectType, Trai
 import org.codefeedr.util.MockitoExtensions
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
-import org.scalatest.concurrent.{ConductorFixture, Conductors}
+import org.scalatest.concurrent.Conductors
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach}
 
@@ -23,7 +23,6 @@ import scala.async.Async.{async, await}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
-import org.codefeedr.util.MockitoExtensions._
 
 class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfterEach with Conductors with MockedLibraryServices with MockitoExtensions {
 
@@ -88,9 +87,9 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     when(consumerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.any[String]())(ArgumentMatchers.any(),ArgumentMatchers.any())).thenReturn (mock[KafkaConsumer[RecordSourceTrail,Row]])
 
     //Some default values
-    when(manager.getLatestSubjectEpoch) thenReturn Future.successful(0L)
-    when(manager.getEpochOffsets(0L)) thenReturn Future.successful(Iterable.empty[Partition])
-    when(manager.isCatchedUp(ArgumentMatchers.any())) thenReturn Future.successful(false)
+    when(manager.getLatestSubjectEpochSync) thenReturn 0L
+    when(manager.getEpochOffsetsSync(0L)) thenReturn Iterable.empty[Partition]
+    when(manager.isCatchedUpSync(ArgumentMatchers.any())) thenReturn false
   }
 
 
@@ -196,8 +195,8 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   it should "mark the latest epoch and offsets when cancel is called" in async {
     //Arrange
     val testKafkaSource = constructInitializedSource()
-    when(manager.getLatestSubjectEpoch) thenReturn Future.successful(1337L)
-    when(manager.getEpochOffsets(1337L)) thenReturn Future.successful(Iterable(Partition(2,1338)))
+    when(manager.getLatestSubjectEpochSync) thenReturn 1337L
+    when(manager.getEpochOffsetsSync(1337L)) thenReturn Iterable(Partition(2,1338))
 
     //Act
     await(testKafkaSource.cancelAsync())
@@ -213,8 +212,8 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     when(consumer.poll(ArgumentMatchers.any())).thenReturn(Map(3 -> 1339L))
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn 2
-    when(manager.getLatestSubjectEpoch) thenReturn Future.successful(1L)
-    when(manager.getEpochOffsets(1L)) thenReturn Future.successful(Iterable(Partition(3,1339)))
+    when(manager.getLatestSubjectEpochSync) thenReturn 1L
+    when(manager.getEpochOffsetsSync(1L)) thenReturn Iterable(Partition(3,1339))
     val testKafkaSource = constructInitializedSource()
 
     //Act
@@ -247,7 +246,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     when(context.getCheckpointId) thenReturn 1
     when(subjectNode.getEpochs()) thenReturn epochCollectionNodeMock
     when(epochCollectionNodeMock.getLatestEpochId) thenReturn Future.successful(1L)
-    when(manager.getEpochOffsets(1L)) thenReturn Future.successful(Iterable(Partition(3,1339)))
+    when(manager.getEpochOffsetsSync(1L)) thenReturn Iterable(Partition(3,1339))
 
     //Act
     await(testKafkaSource.cancelAsync())
@@ -296,14 +295,14 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     val testKafkaSource = constructSourceCatchingUp()
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn 1337L
-    when(manager.isCatchedUp(ArgumentMatchers.any())) thenReturn Future.successful(true)
+    when(manager.isCatchedUpSync(ArgumentMatchers.any())) thenReturn true
 
     //Act
     testKafkaSource.snapshotState(context)
 
     //Assert
     verify(manager, times(1)).notifyCatchedUp()
-    verify(manager, times(1)).notifyStartedOnEpoch(1337L)
+    verify(manager, times(1)).notifyStartedOnEpochSync(1337L)
     assert(testKafkaSource.getState == KafkaSourceState.Ready)
   }
 
@@ -312,13 +311,12 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     val testKafkaSource = constructSourceReady()
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn 1337L
-    when(manager.notifyStartedOnEpoch(ArgumentMatchers.any())) thenReturn Future.successful(())
 
     //Act
     testKafkaSource.snapshotState(context)
 
     //Assert
-    verify(manager, times(1)).notifyStartedOnEpoch(1337L)
+    verify(manager, times(1)).notifyStartedOnEpochSync(1337L)
     assert(true)
   }
 
@@ -326,7 +324,6 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     //Arrange
     val testKafkaSource = constructSourceReady()
     val context = getMockedContext(1337)
-    when(manager.notifyStartedOnEpoch(ArgumentMatchers.any())) thenReturn Future.successful(())
     testKafkaSource.apply(SourceCommand(KafkaSourceCommand.synchronize, Some("1337")))
 
     //Act
@@ -341,7 +338,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     //Arrange
     val testKafkaSource = constructSourceReady()
     val context = getMockedContext(1337)
-    when(manager.notifyStartedOnEpoch(ArgumentMatchers.any())) thenReturn Future.successful(())
+    //when(manager.notifyStartedOnEpochSync(ArgumentMatchers.any())) thenReturn none
     testKafkaSource.apply(SourceCommand(KafkaSourceCommand.synchronize, Some("1338")))
 
     //Act
@@ -357,14 +354,13 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     val testKafkaSource = constructSourceSynchronized()
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn 1337L
-    when(manager.notifyStartedOnEpoch(ArgumentMatchers.any())) thenReturn Future.successful(())
-    when(manager.nextSourceEpoch(1337L)) thenReturn Future.successful(Iterable(Partition(1,10)))
+    when(manager.nextSourceEpoch(1337L)) thenReturn Iterable(Partition(1,10))
 
     //Act
     testKafkaSource.snapshotState(context)
 
     //Assert
-    verify(manager, times(1)).notifyStartedOnEpoch(1337L)
+    verify(manager, times(1)).notifyStartedOnEpochSync(1337L)
     verify(manager, times(1)).nextSourceEpoch(1337L)
     assert(testKafkaSource.alignmentOffsets(1) == 10L)
   }
@@ -449,8 +445,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   def getMockedContext(epoch: Long): FunctionSnapshotContext = {
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn epoch
-    when(manager.nextSourceEpoch(epoch)) thenReturn Future.successful(Iterable.empty[Partition])
-    when(manager.notifyStartedOnEpoch(epoch)) thenReturn Future.successful(())
+    when(manager.nextSourceEpoch(epoch)) thenReturn Iterable.empty[Partition]
     context
   }
 
@@ -464,8 +459,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     val source = constructSourceReady()
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn -100
-    when(manager.notifyStartedOnEpoch(ArgumentMatchers.any())) thenReturn Future.successful(())
-    when(manager.nextSourceEpoch(-100)) thenReturn Future.successful(Iterable.empty[Partition])
+    when(manager.nextSourceEpoch(-100)) thenReturn Iterable.empty[Partition]
 
 
     source.apply(SourceCommand(KafkaSourceCommand.synchronize, Some("-100")))
@@ -481,7 +475,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   def constructSourceReady(): TestKafkaSource = {
     val source = constructSourceCatchingUp()
     val context = getMockedContext(-100)
-    when(manager.isCatchedUp(ArgumentMatchers.any())) thenReturn Future.successful(true)
+    when(manager.isCatchedUpSync(ArgumentMatchers.any())) thenReturn true
     source.snapshotState(context)
     source
   }

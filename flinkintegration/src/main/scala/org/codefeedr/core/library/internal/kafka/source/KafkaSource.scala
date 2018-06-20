@@ -87,7 +87,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
   @transient private[kafka] lazy val instanceUuid = UUID.randomUUID().toString
   //@transient private lazy val closePromise: Promise[Unit] = Promise[Unit]()
   @transient protected lazy val subjectType: SubjectType =
-    Await.result(subjectNode.getData(),5.seconds).get
+    subjectNode.getDataSync().get
 
   //Manager of this source. This should "cleanly" be done by composition, but we cannot do so because this source is "constructed" by Flink
   @transient private[kafka] var manager: KafkaSourceManager = _
@@ -113,7 +113,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
 
   //TODO: Can we somehow perform this async?
   @transient private[kafka] lazy val finalSourceEpochOffsets =
-    Await.result(manager.getEpochOffsets(finalSourceEpoch), 1.seconds)
+    manager.getEpochOffsetsSync(finalSourceEpoch)
   @transient private[kafka] var checkpointingMode: Option[CheckpointingMode] = _
 
   //State of the source. We use the mutable map in operation,
@@ -160,7 +160,7 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
 
   def cancelAsync(): Future[Unit] = async {
     logger.debug(s"Obtaining final source epoch to cancel $getLabel")
-    finalSourceEpoch = await(manager.getLatestSubjectEpoch)
+    finalSourceEpoch = manager.getLatestSubjectEpochSync
     logger.debug(s"Cancelling $getLabel after final source epoch $finalSourceEpoch.")
   }
 
@@ -268,42 +268,25 @@ abstract class KafkaSource[T](subjectNode: SubjectNode,
   }
 
   private def snapshotCatchingUpState(epochId: Long): Unit = {
-    if (Await.result(manager.isCatchedUp(currentOffsets.toMap), 1.seconds)) {
+    if (manager.isCatchedUpSync(currentOffsets.toMap)) {
       state = KafkaSourceState.Ready
       logger.info(s"Transitioned to ready state in $getLabel")
-      manager.notifyStartedOnEpoch(epochId)
+      manager.notifyStartedOnEpochSync(epochId)
       manager.notifyCatchedUp()
     }
   }
 
   /** If th source is in "ready" state, obtain the maximum partition to read up to. We must not read ahead of the latest known epoch*/
   private def snapshotReadyState(epochId: Long): Unit = {
-    Await.result(
-      for {
-        _ <- manager.notifyStartedOnEpoch(epochId)
-        _ <- async {
-          val epoch = await(manager.getLatestSubjectEpoch)
-          alignmentOffsets = await(manager.getEpochOffsets(epoch)).map(o => o.nr -> o.offset).toMap
-
-        }
-
-      } yield Unit,
-      1.seconds
-    )
+    manager.notifyStartedOnEpochSync(epochId)
+    val epoch = manager.getLatestSubjectEpochSync
+    alignmentOffsets = manager.getEpochOffsetsSync(epoch).map(o => o.nr -> o.offset).toMap
   }
 
   /** If the source is in "synchronized" state, call a specific method on the manager to obtain offsets to synchronize on */
   private def snapshotSynchronizedState(epochId: Long): Unit = {
-    Await.result(
-      for {
-        _ <- manager.notifyStartedOnEpoch(epochId)
-        _ <- async {
-          alignmentOffsets =
-            await(manager.nextSourceEpoch(epochId)).map(o => o.nr -> o.offset).toMap
-        }
-      } yield Unit,
-      1.seconds
-    )
+    manager.notifyStartedOnEpochSync(epochId)
+    alignmentOffsets = manager.nextSourceEpoch(epochId).map(o => o.nr -> o.offset).toMap
   }
 
   /** Hanlde the state transition to synchronized */

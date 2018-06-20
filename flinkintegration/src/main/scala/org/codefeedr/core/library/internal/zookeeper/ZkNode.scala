@@ -20,15 +20,12 @@
 package org.codefeedr.core.library.internal.zookeeper
 
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.zookeeper.KeeperException.NodeExistsException
-import org.codefeedr.core.library.LibraryServices
 import rx.lang.scala.Observable
 
 import scala.async.Async.{async, await}
-import scala.concurrent.{Await, Future}
-import scala.reflect.ClassTag
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
+import scala.concurrent.Future
+import scala.reflect.ClassTag
 
 /**
   * ZkNode, represents a node on zookeeper
@@ -51,7 +48,6 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)
     * @return a future of the saved data
     */
   def create(data: TData): Future[TData] = async {
-    //TODO: Implement proper locks
     if (await(exists())) {
       if (!await(getData()).get.equals(data)) {
         throw new Exception(
@@ -60,6 +56,29 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)
     }
     await(zkClient.createWithData(path(), data))
     await(postCreate())
+    data
+  }
+
+  /**
+    * Synchronously creates a node
+    * @param data the data to store on the node
+    * @throws Exception when the postCreate operation is actually asynchronous
+    * @return
+    */
+  def createSync(data: TData): TData = {
+    if (existsSync()) {
+      if (!getDataSync().get.equals(data)) {
+        throw new Exception(
+          s"Cannot create node ${path()}. The node already exists with different data")
+      }
+    }
+    zkClient.createWithDataSync(path(), data)
+
+    val r = postCreate()
+    if (!r.isCompleted) {
+      throw new Exception("PostCreate from createSync is performing an asynchronous operation")
+    }
+
     data
   }
 
@@ -89,6 +108,12 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)
     * @return a future that resolves when the data has been set
     */
   def setData(data: TData): Future[Unit] = zkClient.setData[TData](path(), data).map(_ => Unit)
+
+  /**
+    * Synchronously set the data of a node
+    * @param data the data to set
+    */
+  def setDataSync(data: TData): Unit = zkClient.setDataSync[TData](path(), data)
 
   /**
     * Create the child of the node with the given name

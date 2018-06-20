@@ -215,6 +215,17 @@ class ZkClient extends LazyLogging {
   }
 
   /**
+    * Sets the data on the given path
+    * @param path to set data on
+    * @param data data to set
+    * @tparam T type used to serialize data to byte array
+    */
+  def setDataSync[T: ClassTag](path: String, data: T): Unit = {
+    logger.debug(s"SetData called on path $path")
+    zk.setData(prependPath(path), GenericSerialiser[T](data), -1)
+  }
+
+  /**
     * Internal method used to satisfy the result promise, and perform custom error handling
     * @param p promise to set the result on
     * @param rc State
@@ -256,6 +267,16 @@ class ZkClient extends LazyLogging {
     create(path, GenericSerialiser(data), ctx)
 
   /**
+    * Creates a node with the given data (serialises data to byte array)
+    * @param path to node to create
+    * @param data data to set on node
+    * @tparam T generic type of the data
+    * @return
+    */
+  def createWithDataSync[T: ClassTag](path: String, data: T): String =
+    createSync(path, GenericSerialiser(data))
+
+  /**
     * Recursively creates a path of nodes on zookeeper
     * @param path the path to the node to create
     * @return a future that resolves when the node has been created
@@ -283,6 +304,29 @@ class ZkClient extends LazyLogging {
       )
       resultPromise.future
     }
+
+  /**
+    * Creates a node on zookeeper in a synchronous fashion
+    * @param path
+    * @param data
+    * @return
+    */
+  def createSync(path: String, data: Array[Byte] = null, guaranteeParent: Boolean = true): String = {
+    logger.debug(s"Creating zknode on $path")
+    if (guaranteeParent) {
+      val p = path.lastIndexOf("/")
+      if (p > 0) { //Both 0 and -1 should continue
+        //Create child nodes if needed
+        guaranteeExists(path.take(p))
+      }
+    }
+    zk.create(
+      prependPath(path),
+      data,
+      OPEN_ACL_UNSAFE,
+      CreateMode.PERSISTENT
+    )
+  }
 
   /**
     * Delete a path. Throws an exception if the path does not exist or has children
@@ -328,6 +372,14 @@ class ZkClient extends LazyLogging {
     )
     resultPromise.future
   }
+
+  /**
+    * Retrieve the children of the given node in a synchronous way
+    * @param path to retrieve children on
+    * @return collection of children
+    */
+  def getChildrenSync(path: String): Iterable[String] =
+    zk.getChildren(path, false).asScala
 
   /**
     * Gets a recursive childwatcher that calls the callback whenever something changes on the children
@@ -466,8 +518,8 @@ class ZkClient extends LazyLogging {
 
   /**
     * Guarantees the path exists
-    * If a node does not exists, it recursively guarantees its parant and creates the node
-    * @param path
+    * If a node does not exists, it recursively guarantees its parent and creates the node
+    * @param path to guarantee
     * @return
     */
   def guaranteeExists(path: String): Future[Unit] = async {
@@ -479,6 +531,22 @@ class ZkClient extends LazyLogging {
       }
       await(create(path))
     }
+  }
+
+  /**
+    * Synchronously guarantees the path exists
+    * If a node does not exist, it recursively guarantees its parent exists and then creates the node without data
+    * @param path to guarantee
+    */
+  def guaranteeExitsSync(path: String): Unit = {
+    if (!existsSync(path)) {
+      val p = path.lastIndexOf("/")
+      if (p > 0) { //Both 0 and -1 should continue
+        //Create child nodes if needed
+        guaranteeExitsSync(path.take(p))
+      }
+    }
+    createSync(path, null, guaranteeParent = false)
   }
 
   /**
@@ -505,6 +573,14 @@ class ZkClient extends LazyLogging {
     )
     resultPromise.future
   }
+
+  /**
+    * Returns a boolean if the given path exists
+    * Synchronous implementation
+    * @param path path to check for existence
+    * @return boolean if the node exists or not
+    */
+  def existsSync(path: String): Boolean = zk.exists(path, false) != null
 
   /**
     * Creates a future that resolves when the node at the given path is removed

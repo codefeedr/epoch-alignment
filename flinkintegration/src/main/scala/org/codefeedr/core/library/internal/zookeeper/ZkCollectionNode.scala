@@ -33,6 +33,12 @@ class ZkCollectionNode[TNode <: ZkNodeBase, TData: ClassTag](
     zkClient.GetChildren(path()).map(o => o.map(getChild))
 
   /**
+    * Gets all the children currently stored in zookeeper in a synchronous fashion
+    * @return the collection of children
+    */
+  def getChildrenSync(): Iterable[TNode] = zkClient.getChildrenSync(path()).map(getChild)
+
+  /**
     * Awaits child registration, and returns the node when the child has been created
     * @param child name of the child to await
     * @return a future that resolves when the child has been created, with the name of the child

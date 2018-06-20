@@ -58,7 +58,7 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     when(subjectNode.getSources()) thenReturn sourceCollectionNode
     when(subjectNode.awaitClose()) thenReturn completePromise.future
     when(sourceCollectionNode.getChild(ArgumentMatchers.any[String]())) thenReturn sourceNode
-    when(sourceNode.create(ArgumentMatchers.any())) thenReturn Future.successful(null)
+    when(sourceNode.createSync(ArgumentMatchers.any())) thenReturn null
     when(sourceNode.getSyncState()) thenReturn sourceSyncStateNode
     when(sourceNode.getEpochs()) thenReturn sourceEpochCollectionNode
     mockLock(sourceEpochCollectionNode)
@@ -66,14 +66,11 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
 
     when(sourceNode.getConsumers()) thenReturn consumerCollection
     when(consumerCollection.getChild(ArgumentMatchers.any[String]())) thenReturn consumerNode
-    when(consumerCollection.getChildren()) thenReturn Future.successful(Iterable(consumerNode,otherConsumerNode))
-    when(consumerNode.create(ArgumentMatchers.any())) thenReturn Future.successful(null)
+    when(consumerCollection.getChildrenSync()) thenReturn Iterable(consumerNode,otherConsumerNode)
+    when(consumerNode.createSync(ArgumentMatchers.any())) thenReturn null
     when(consumerNode.getSyncState()) thenReturn consumerSyncState
-    when(consumerSyncState.setData(ArgumentMatchers.any())) thenReturn Future.successful(())
 
     when(otherConsumerNode.getSyncState()) thenReturn otherConsumerSyncState
-    when(otherConsumerSyncState.setData(ArgumentMatchers.any())) thenReturn Future.successful(())
-
 
     when(subjectNode.getEpochs()) thenReturn epochCollection
   }
@@ -88,8 +85,8 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     manager.initializeRun()
 
     //Assert
-    verify(sourceNode, times(1)).create(ArgumentMatchers.any())
-    verify(consumerNode, times(1)).create(ArgumentMatchers.any())
+    verify(sourceNode, times(1)).createSync(ArgumentMatchers.any())
+    verify(consumerNode, times(1)).createSync(ArgumentMatchers.any())
     assert(true)
   }
 
@@ -116,144 +113,144 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     manager.startedCatchingUp()
 
     //Assert
-    verify(consumerSyncState, times(1)).setData(SynchronizationState(KafkaSourceState.CatchingUp))
+    verify(consumerSyncState, times(1)).setDataSync(SynchronizationState(KafkaSourceState.CatchingUp))
     assert(true)
   }
 
 
-  "KafkaSourceManager.isCatchedUp" should "Return true if the passed offsets are all past the second-last epoch" in async {
+  "KafkaSourceManager.isCatchedUp" should "Return true if the passed offsets are all past the second-last epoch" in {
     //Arrange
     val manager = constructManager()
-    when(epochCollection.getLatestEpochId) thenReturn Future.successful(3L)
+    when(epochCollection.getLatestEpochIdSync) thenReturn 3L
     val epoch = mock[EpochNode]
     when(epochCollection.getChild(2)) thenReturn epoch
-    when(epoch.getData()) thenReturn Future.successful(Some(Epoch(2,Seq(Partition(1,2L),Partition(2,2L),Partition(3,3L)))))
+    when(epoch.getDataSync()) thenReturn Some(Epoch(2,Seq(Partition(1,2L),Partition(2,2L),Partition(3,3L))))
 
     val comparison = Map(1-> 2L, 2->2L)
 
     //Act
-    val r = await(manager.isCatchedUp(comparison))
+    val r = manager.isCatchedUpSync(comparison)
 
     //Assert
     assert(r)
   }
 
-  it should "Return true if the pre-last epoch does not exist" in async {
+  it should "Return true if the pre-last epoch does not exist" in {
     //Arrange
     val manager = constructManager()
-    when(epochCollection.getLatestEpochId) thenReturn Future.successful(0L)
+    when(epochCollection.getLatestEpochIdSync) thenReturn 0L
 
     val comparison = Map(1-> 2L, 2->2L)
 
     //Act
-    val r = await(manager.isCatchedUp(comparison))
+    val r = manager.isCatchedUpSync(comparison)
 
     //Assert
     assert(r)
   }
 
-  it should "Return false if for some partition the offset is not past the pre-last epoch" in async {
+  it should "Return false if for some partition the offset is not past the pre-last epoch" in {
     //Arrange
     val manager = constructManager()
-    when(epochCollection.getLatestEpochId) thenReturn Future.successful(3L)
+    when(epochCollection.getLatestEpochIdSync) thenReturn 3L
     val epoch = mock[EpochNode]
     when(epochCollection.getChild(2)) thenReturn epoch
-    when(epoch.getData()) thenReturn Future.successful(Some(Epoch(2,Seq(Partition(1,2L),Partition(2,3L),Partition(3,3L)))))
+    when(epoch.getDataSync()) thenReturn Some(Epoch(2,Seq(Partition(1,2L),Partition(2,3L),Partition(3,3L))))
 
     val comparison = Map(1-> 2L, 2->2L)
 
     //Act
-    val r = await(manager.isCatchedUp(comparison))
+    val r = manager.isCatchedUpSync(comparison)
 
     //Assert
     assert(!r)
   }
 
 
-  "KafkaSourceManager.notifyCatchedUp" should "Set the state of the considered consumer to ready" in async {
+  "KafkaSourceManager.notifyCatchedUp" should "Set the state of the considered consumer to ready" in {
     //Arrange
     val manager = constructManager()
-    when(sourceSyncStateNode.getData()) thenReturn  Future.successful(Some(SynchronizationState(KafkaSourceState.CatchingUp)))
-    when(consumerSyncState.getData()) thenReturn  Future.successful(Some(SynchronizationState(KafkaSourceState.CatchingUp)))
-    when(otherConsumerSyncState.getData()) thenReturn Future.successful(Some(SynchronizationState(KafkaSourceState.CatchingUp)))
+    when(sourceSyncStateNode.getDataSync()) thenReturn  Some(SynchronizationState(KafkaSourceState.CatchingUp))
+    when(consumerSyncState.getDataSync()) thenReturn  Some(SynchronizationState(KafkaSourceState.CatchingUp))
+    when(otherConsumerSyncState.getDataSync()) thenReturn Some(SynchronizationState(KafkaSourceState.CatchingUp))
 
     //Act
-    await(manager.notifyCatchedUp())
+    manager.notifyCatchedUp()
 
     //Assert
-    verify(consumerSyncState,times(1)).setData(SynchronizationState(KafkaSourceState.Ready))
+    verify(consumerSyncState,times(1)).setDataSync(SynchronizationState(KafkaSourceState.Ready))
     assert(true)
   }
 
-  it should "set the state of the source to ready if all consumers are ready" in async {
+  it should "set the state of the source to ready if all consumers are ready" in {
     //Arrange
     val manager = constructManager()
-    when(sourceSyncStateNode.getData()) thenReturn  Future.successful(Some(SynchronizationState(KafkaSourceState.CatchingUp)))
-    when(consumerSyncState.getData()) thenReturn  Future.successful(Some(SynchronizationState(KafkaSourceState.Ready)))
-    when(otherConsumerSyncState.getData()) thenReturn Future.successful(Some(SynchronizationState(KafkaSourceState.Ready)))
+    when(sourceSyncStateNode.getDataSync()) thenReturn  Some(SynchronizationState(KafkaSourceState.CatchingUp))
+    when(consumerSyncState.getDataSync()) thenReturn  Some(SynchronizationState(KafkaSourceState.Ready))
+    when(otherConsumerSyncState.getDataSync()) thenReturn Some(SynchronizationState(KafkaSourceState.Ready))
 
     //Act
-    await(manager.notifyCatchedUp())
+    manager.notifyCatchedUp()
 
     //Assert
     verify(sourceSyncStateNode,times(1)).setData(SynchronizationState(KafkaSourceState.Ready))
     assert(true)
   }
 
-  it should "not set the state of the source to ready if some consumer is not yet ready" in async {
+  it should "not set the state of the source to ready if some consumer is not yet ready" in {
     //Arrange
     val manager = constructManager()
-    when(sourceSyncStateNode.getData()) thenReturn  Future.successful(Some(SynchronizationState(KafkaSourceState.CatchingUp)))
-    when(consumerSyncState.getData()) thenReturn  Future.successful(Some(SynchronizationState(KafkaSourceState.Ready)))
-    when(otherConsumerSyncState.getData()) thenReturn Future.successful(Some(SynchronizationState(KafkaSourceState.CatchingUp)))
+    when(sourceSyncStateNode.getDataSync()) thenReturn Some(SynchronizationState(KafkaSourceState.CatchingUp))
+    when(consumerSyncState.getDataSync()) thenReturn Some(SynchronizationState(KafkaSourceState.Ready))
+    when(otherConsumerSyncState.getDataSync()) thenReturn Some(SynchronizationState(KafkaSourceState.CatchingUp))
 
     //Act
-    await(manager.notifyCatchedUp())
+    manager.notifyCatchedUp()
 
     //Assert
     verify(sourceSyncStateNode,times(0)).setData(SynchronizationState(KafkaSourceState.Ready))
     assert(true)
   }
 
-  "KafkaSourceManager.notifySynchronized" should "Set the state of the considered consumer to synchronized" in async {
+  "KafkaSourceManager.notifySynchronized" should "Set the state of the considered consumer to synchronized" in {
     //Arrange
     val manager = constructManager()
-    when(sourceSyncStateNode.getData()) thenReturn  Future.successful(Some(SynchronizationState(KafkaSourceState.Ready)))
-    when(consumerSyncState.getData()) thenReturn  Future.successful(Some(SynchronizationState(KafkaSourceState.Ready)))
-    when(otherConsumerSyncState.getData()) thenReturn Future.successful(Some(SynchronizationState(KafkaSourceState.Ready)))
+    when(sourceSyncStateNode.getDataSync()) thenReturn Some(SynchronizationState(KafkaSourceState.Ready))
+    when(consumerSyncState.getDataSync()) thenReturn Some(SynchronizationState(KafkaSourceState.Ready))
+    when(otherConsumerSyncState.getDataSync()) thenReturn Some(SynchronizationState(KafkaSourceState.Ready))
 
     //Act
-    await(manager.notifySynchronized())
+    manager.notifySynchronized()
 
     //Assert
-    verify(consumerSyncState,times(1)).setData(SynchronizationState(KafkaSourceState.Synchronized))
+    verify(consumerSyncState,times(1)).setDataSync(SynchronizationState(KafkaSourceState.Synchronized))
     assert(true)
   }
 
-  it should "set the state of the source to synchronized if all consumers are synchronized" in async {
+  it should "set the state of the source to synchronized if all consumers are synchronized" in {
     //Arrange
     val manager = constructManager()
-    when(sourceSyncStateNode.getData()) thenReturn  Future.successful(Some(SynchronizationState(KafkaSourceState.Ready)))
-    when(consumerSyncState.getData()) thenReturn  Future.successful(Some(SynchronizationState(KafkaSourceState.Synchronized)))
-    when(otherConsumerSyncState.getData()) thenReturn Future.successful(Some(SynchronizationState(KafkaSourceState.Synchronized)))
+    when(sourceSyncStateNode.getDataSync()) thenReturn Some(SynchronizationState(KafkaSourceState.Ready))
+    when(consumerSyncState.getDataSync()) thenReturn Some(SynchronizationState(KafkaSourceState.Synchronized))
+    when(otherConsumerSyncState.getDataSync()) thenReturn Some(SynchronizationState(KafkaSourceState.Synchronized))
 
     //Act
-    await(manager.notifySynchronized())
+    manager.notifySynchronized()
 
     //Assert
     verify(sourceSyncStateNode,times(1)).setData(SynchronizationState(KafkaSourceState.Synchronized))
     assert(true)
   }
 
-  it should "not set the state of the source to ready if some consumer is not yet ready" in async {
+  it should "not set the state of the source to ready if some consumer is not yet ready" in {
     //Arrange
     val manager = constructManager()
-    when(sourceSyncStateNode.getData()) thenReturn  Future.successful(Some(SynchronizationState(KafkaSourceState.Ready)))
-    when(consumerSyncState.getData()) thenReturn  Future.successful(Some(SynchronizationState(KafkaSourceState.Synchronized)))
-    when(otherConsumerSyncState.getData()) thenReturn Future.successful(Some(SynchronizationState(KafkaSourceState.Ready)))
+    when(sourceSyncStateNode.getDataSync()) thenReturn  Some(SynchronizationState(KafkaSourceState.Ready))
+    when(consumerSyncState.getDataSync()) thenReturn Some(SynchronizationState(KafkaSourceState.Synchronized))
+    when(otherConsumerSyncState.getDataSync()) thenReturn Some(SynchronizationState(KafkaSourceState.Ready))
 
     //Act
-    await(manager.notifySynchronized())
+    manager.notifySynchronized()
 
     //Assert
     verify(sourceSyncStateNode,times(0)).setData(SynchronizationState(KafkaSourceState.Synchronized))
@@ -262,29 +259,29 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
 
 
 
-  "NotifyStartedOnEpoch" should "update the latest epoch of the source" in async {
+  "NotifyStartedOnEpoch" should "update the latest epoch of the source" in {
     //Arrange
     val manager = constructManager()
-    when(sourceEpochCollectionNode.getLatestEpochId()) thenReturn Future.successful(0L)
+    when(sourceEpochCollectionNode.getLatestEpochIdSync()) thenReturn 0L
 
     //Act
-    await(manager.notifyStartedOnEpoch(1))
+    manager.notifyStartedOnEpochSync(1)
 
     //Assert
-    verify(sourceEpochCollectionNode, times(1)).setData(EpochCollection(1))
+    verify(sourceEpochCollectionNode, times(1)).setDataSync(EpochCollection(1))
     assert(true)
   }
 
-  it should "do nothing if the latest epoch was alreadt set" in async {
+  it should "do nothing if the latest epoch was alreadt set" in {
     //Arrange
     val manager = constructManager()
-    when(sourceEpochCollectionNode.getLatestEpochId()) thenReturn Future.successful(1L)
+    when(sourceEpochCollectionNode.getLatestEpochIdSync()) thenReturn 1L
 
     //Act
-    await(manager.notifyStartedOnEpoch(1))
+    manager.notifyStartedOnEpochSync(1)
 
     //Assert
-    verify(sourceEpochCollectionNode, times(0)).setData(ArgumentMatchers.any())
+    verify(sourceEpochCollectionNode, times(0)).setDataSync(ArgumentMatchers.any())
     assert(true)
   }
 }

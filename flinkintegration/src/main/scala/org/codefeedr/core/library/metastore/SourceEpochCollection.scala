@@ -18,8 +18,18 @@ class SourceEpochCollection(parent: ZkNodeBase)
     * @return
     */
   def getLatestEpochId(): Future[Long] = async {
-    await(getData()).get.latestEpoch
+    getLatestEpochId(await(getData()))
   }
+
+  /**
+    * Synchronously retrieves the latest known completed checkpoint for this source.
+    * returns -1 if the source has no checkpoints.
+    * If the subject is still active, this method might return different values upon each call
+    * @return
+    */
+  def getLatestEpochIdSync(): Long = getLatestEpochId(getDataSync())
+
+  private def getLatestEpochId(data: Option[EpochCollection]) = data.get.latestEpoch
 
   /**
     * Retrieve the epochNode of the given epcoh
