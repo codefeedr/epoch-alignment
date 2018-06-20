@@ -11,8 +11,10 @@ trait ZkStateNode[TNode, TState] extends ZkNode[TNode] {
     * Override postcreate to create initial state
     * @return
     */
-  override def postCreate(): Future[Unit] = async {
-    await(getStateNode().create(initialState()))
+  override def postCreate(): Future[Unit] = {
+    //HACK: Not really asynchronous, but needed because consumers are created from synchronous code
+    getStateNode().createSync(initialState())
+    Future.successful()
   }
 
   /**

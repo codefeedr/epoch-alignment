@@ -71,14 +71,13 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)
         throw new Exception(
           s"Cannot create node ${path()}. The node already exists with different data")
       }
+    } else {
+      zkClient.createWithDataSync(path(), data)
+      val r = postCreate()
+      if (!r.isCompleted) {
+        throw new Exception("PostCreate from createSync is performing an asynchronous operation")
+      }
     }
-    zkClient.createWithDataSync(path(), data)
-
-    val r = postCreate()
-    if (!r.isCompleted) {
-      throw new Exception("PostCreate from createSync is performing an asynchronous operation")
-    }
-
     data
   }
 

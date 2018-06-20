@@ -61,8 +61,12 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     when(sourceNode.createSync(ArgumentMatchers.any())) thenReturn null
     when(sourceNode.getSyncState()) thenReturn sourceSyncStateNode
     when(sourceNode.getEpochs()) thenReturn sourceEpochCollectionNode
+    when(sourceNode.parent()) thenReturn sourceCollectionNode
+
     mockLock(sourceEpochCollectionNode)
     mockLock(sourceNode)
+    mockLock(sourceCollectionNode)
+
 
     when(sourceNode.getConsumers()) thenReturn consumerCollection
     when(consumerCollection.getChild(ArgumentMatchers.any[String]())) thenReturn consumerNode

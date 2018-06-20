@@ -379,7 +379,7 @@ class ZkClient extends LazyLogging {
     * @return collection of children
     */
   def getChildrenSync(path: String): Iterable[String] =
-    zk.getChildren(path, false).asScala
+    zk.getChildren(prependPath(path), false).asScala
 
   /**
     * Gets a recursive childwatcher that calls the callback whenever something changes on the children
@@ -580,7 +580,7 @@ class ZkClient extends LazyLogging {
     * @param path path to check for existence
     * @return boolean if the node exists or not
     */
-  def existsSync(path: String): Boolean = zk.exists(path, false) != null
+  def existsSync(path: String): Boolean = zk.exists(prependPath(path), false) != null
 
   /**
     * Creates a future that resolves when the node at the given path is removed

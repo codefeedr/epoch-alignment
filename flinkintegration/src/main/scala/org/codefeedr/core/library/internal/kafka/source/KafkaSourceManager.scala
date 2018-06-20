@@ -36,7 +36,10 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     //Create self on zookeeper
     val initialConsumer = Consumer(instanceUuid, null, System.currentTimeMillis())
     //Update zookeeper state blocking, because the source cannot start until the proper zookeeper state has been configured
-    sourceNode.createSync(QuerySource(sourceUuid))
+    val lock = Await.result(sourceNode.parent().writeLock(), 1.second)
+    managed(lock) acquireAndGet { _ =>
+      sourceNode.createSync(QuerySource(sourceUuid))
+    }
     consumerNode.createSync(initialConsumer)
   }
 
