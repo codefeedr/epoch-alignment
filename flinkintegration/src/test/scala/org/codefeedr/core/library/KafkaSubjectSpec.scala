@@ -77,7 +77,9 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
 
   def CreateSourceQuery(nr: Int): Future[Unit] = {
     Future {
-      new MyOwnSourceQuery(nr, parallelism).run()
+      blocking {
+        new MyOwnSourceQuery(nr, parallelism).run()
+      }
     }
   }
 
