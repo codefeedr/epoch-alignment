@@ -17,7 +17,7 @@ abstract class KafkaTrailedRecordSink[TSink](subjectNode: SubjectNode,
                                              jobNode: JobNode,
                                              kafkaProducerFactory: KafkaProducerFactory,
                                              epochStateManager: EpochStateManager)
-                                             extends KafkaSink[TSink,TrailedRecord, Row](
+                                             extends KafkaSink[TSink,Row,RecordSourceTrail](
                                                subjectNode,
                                                jobNode,
                                                kafkaProducerFactory,

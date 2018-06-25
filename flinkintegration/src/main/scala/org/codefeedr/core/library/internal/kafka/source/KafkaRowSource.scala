@@ -22,7 +22,7 @@ package org.codefeedr.core.library.internal.kafka.source
 import org.apache.flink.types.Row
 import org.codefeedr.core.library.{LibraryServices, TypeInformationServices}
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
-import org.codefeedr.model.{RecordSourceTrail, SubjectType, TrailedRecord}
+import org.codefeedr.model.{Record, RecordSourceTrail, SubjectType, TrailedRecord}
 
 /**
   * KafkaSource that exposes a subject as stream of table API rows
