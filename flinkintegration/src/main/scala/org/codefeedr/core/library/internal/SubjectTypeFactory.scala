@@ -27,7 +27,7 @@ import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInfo, TypeInformation
 import org.codefeedr.model.{RecordProperty, SubjectType}
 import org.apache.flink.streaming.api.scala.createTypeInformation
 
-import scala.reflect.api
+import scala.reflect.{ClassTag, api}
 import scala.reflect.runtime.{universe => ru}
 
 /**
@@ -75,7 +75,7 @@ object SubjectTypeFactory extends LazyLogging {
     * @tparam T the type to retrieve th name for
     * @return the name
     */
-  def getSubjectName[T: ru.TypeTag]: String = getSubjectName(ru.typeOf[T])
+  def getSubjectName[T](implicit ct: ClassTag[T]): String = ct.runtimeClass.getSimpleName
 
   /**
     * Use the type to retrieve the subjectName that the given type woul produce

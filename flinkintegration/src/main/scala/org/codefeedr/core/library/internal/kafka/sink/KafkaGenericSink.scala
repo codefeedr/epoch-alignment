@@ -31,12 +31,15 @@ import scala.reflect.runtime.{universe => ru}
 /**
   * Created by Niels on 31/07/2017.
   */
-class KafkaGenericSink[TData: ru.TypeTag: ClassTag](val subjectNode: SubjectNode,
-                                                    jobNode: JobNode,
-                                                    kafkaProducerFactory: KafkaProducerFactory,
-                                                    epochStateManager: EpochStateManager,
-                                                    override val sinkUuid: String
-) extends KafkaSink[TData,TData,Object](subjectNode, jobNode, kafkaProducerFactory, epochStateManager) {
+class KafkaGenericSink[TData: ClassTag](val subjectNode: SubjectNode,
+                                        jobNode: JobNode,
+                                        kafkaProducerFactory: KafkaProducerFactory,
+                                        epochStateManager: EpochStateManager,
+                                        override val sinkUuid: String)
+    extends KafkaSink[TData, TData, Object](subjectNode,
+                                            jobNode,
+                                            kafkaProducerFactory,
+                                            epochStateManager) {
 
-  override def transform(value: TData): (Object,TData) = (null,value)
+  override def transform(value: TData): (Object, TData) = (null, value)
 }

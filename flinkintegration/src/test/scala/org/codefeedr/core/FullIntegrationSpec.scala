@@ -33,6 +33,7 @@ import org.apache.flink.streaming.api.watermark.Watermark
 import org.codefeedr.core.engine.query.QueryTree
 import org.codefeedr.core.library.internal.SubjectTypeFactory
 import org.codefeedr.core.library.internal.kafka.KafkaTrailedRecordSource
+import org.codefeedr.core.library.internal.kafka.sink.KafkaTableSink
 import org.codefeedr.core.plugin.CollectionPlugin
 import org.codefeedr.model.{SubjectType, TrailedRecord}
 import org.scalatest.{BeforeAndAfterEach, Matchers}
@@ -130,8 +131,10 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     }
 
     logger.debug(s"Composing sink for ${resultType.name}.")
-    val sink = await(subjectFactory.getSink(resultType, name,"testsink"))
+    val sink = subjectFactory.getTrailedSink(resultType,"testSink",name)
+    //val sink = await(subjectFactory.get(resultType, name,"testsink"))
     resultStream.addSink(sink)
+
     logger.debug("Starting queryEnv")
     queryEnv.execute()
     logger.debug("queryenv completed")
@@ -155,7 +158,7 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     * @tparam T type of the data
     * @return A future that returns when all data has been pushed to kakfa, with the subjectType that was used
     */
-  def runSourceEnvironment[T: ru.TypeTag: ClassTag: TypeInformation](data: Array[T]): Future[SubjectType] = async {
+  def runSourceEnvironment[T: ru.TypeTag: ClassTag: TypeInformation](data: Array[T],useTrailedSink:Boolean = false): Future[SubjectType] = async {
     val t = SubjectTypeFactory.getSubjectType[T]
 
     if (!await(subjectLibrary.getSubject(t.name).exists())) {
@@ -167,7 +170,7 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
     env.enableCheckpointing(1000,CheckpointingMode.EXACTLY_ONCE)
     logger.debug(s"Composing env for ${t.name}")
-    await(new CollectionPlugin(data).compose(env, "testplugin"))
+    await(new CollectionPlugin(data,useTrailedSink).compose(env, "testplugin"))
     logger.debug(s"Starting env for ${t.name}")
     env.execute()
     logger.debug(s"Completed env for ${t.name}")

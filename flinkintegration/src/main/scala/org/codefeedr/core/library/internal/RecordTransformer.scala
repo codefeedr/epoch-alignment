@@ -19,6 +19,7 @@
 
 package org.codefeedr.core.library.internal
 
+import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.model._
 
 import scala.reflect.ClassTag
@@ -30,7 +31,7 @@ import scala.reflect.runtime.{universe => ru}
   * This class is serializable and can be distributed over the kafka environment
   * The constructor assumes that this class will only be constructed after the subjectType has actually been registered in the library
   */
-class RecordTransformer[TData: ru.TypeTag: ClassTag](subjectType: SubjectType) {
+class RecordTransformer[TData: ClassTag](subjectType: SubjectType) extends LazyLogging {
   private def ct = implicitly[reflect.ClassTag[TData]]
 
   /**
@@ -38,13 +39,19 @@ class RecordTransformer[TData: ru.TypeTag: ClassTag](subjectType: SubjectType) {
     * Make sure to crash whenever there is a mismatch between distributed typeinformation and actual object type
     */
   private val accessors = {
-    subjectType.properties
-      .map(o => ct.runtimeClass.getDeclaredField(o.name))
-      .map(o => {
-        o.setAccessible(true)
-        (obj: TData) =>
-          o.get(obj)
-      })
+    try {
+      subjectType.properties
+        .map(o => ct.runtimeClass.getDeclaredField(o.name))
+        .map(o => {
+          o.setAccessible(true)
+          (obj: TData) =>
+            o.get(obj)
+        })
+    } catch {
+      case e: NoSuchFieldException =>
+        logger.error("Error while transforming record", e)
+        throw e
+    }
   }
 
   /**

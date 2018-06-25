@@ -16,9 +16,9 @@ import scala.collection.mutable.ArrayBuffer
   * Converting (java)types we use on Kafka back to (scala) types we use in Flink
   */
 class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
-                             topic: String,
-                             consumer: KafkaConsumer[TKey, TValue],
-                             mapper: (TValue,TKey) => TElement)
+                                                  topic: String,
+                                                  consumer: KafkaConsumer[TKey, TValue],
+                                                  mapper: (TValue, TKey) => TElement)
     extends LazyLogging {
 
   //Timeout when polling kafka
@@ -47,7 +47,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     val resetSet = ArrayBuffer[Int]()
     data.foreach(o => {
       if (shouldInclude(o)) {
-        cb(mapper(o.value(),o.key()))
+        cb(mapper(o.value(), o.key()))
         val partition = o.partition()
         val offset = o.offset()
         logger.debug(s"Processing $partition -> $offset ")

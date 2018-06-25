@@ -62,8 +62,8 @@ class JoinQuerySpec extends FullIntegrationSpec {
         "groupedMessage")
 
 
-      val objectType = await(runSourceEnvironment(objects))
-      val groupType = await(runSourceEnvironment(groups))
+      val objectType = await(runSourceEnvironment(objects,useTrailedSink = true))
+      val groupType = await(runSourceEnvironment(groups,useTrailedSink = true))
       //Validate that the data is actually sent
       assert(await(awaitAllData(objectType)).size == 3)
       assert(await(awaitAllData(groupType)).size == 1)
@@ -97,8 +97,8 @@ class JoinQuerySpec extends FullIntegrationSpec {
       "groupedMessage")
 
     //Add sources and wait for them to finish
-    val objectType = await(runSourceEnvironment(objects))
-    val groupType = await(runSourceEnvironment(groups))
+    val objectType = await(runSourceEnvironment(objects,useTrailedSink = true))
+    val groupType = await(runSourceEnvironment(groups,useTrailedSink = true))
     //Validate that the data is actually sent
     assert(await(awaitAllData(objectType)).size == 3)
     assert(await(awaitAllData(groupType)).size == 2)
@@ -136,8 +136,8 @@ class JoinQuerySpec extends FullIntegrationSpec {
     //Run all environments
 
     //Add sources and wait for them to finish
-    val objectType = await(runSourceEnvironment(objects))
-    val groupType = await(runSourceEnvironment(groups))
+    val objectType = await(runSourceEnvironment(objects, useTrailedSink = true))
+    val groupType = await(runSourceEnvironment(groups,useTrailedSink = true))
 
     //Validate that the data is actually sent
     assert(await(awaitAllData(objectType)).size == 3)

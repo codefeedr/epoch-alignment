@@ -28,6 +28,8 @@ import org.codefeedr.core.library.internal.kafka._
 import org.codefeedr.core.library.internal.kafka.sink._
 import org.codefeedr.core.library.internal.kafka.source.{
   KafkaConsumerFactoryComponent,
+  KafkaGenericSource,
+  KafkaGenericTrailedSource,
   KafkaRowSource
 }
 import org.codefeedr.core.library.internal.{KeyFactory, RecordTransformer, SubjectTypeFactory}
@@ -54,28 +56,79 @@ trait SubjectFactoryComponent {
     * Created by Niels on 18/07/2017.
     */
   class SubjectFactoryController {
-    def GetSink[TData: ru.TypeTag: ClassTag](sinkId: String,
-                                             jobName: String): Future[SinkFunction[TData]] = {
+
+    /**
+      * Retrieve a basic sink of the given generic type
+      * @param sinkId unique id of the sink
+      * @param jobName name of the job the sink belongs to
+      * @tparam TData generic type of the element in the job
+      * @return
+      */
+    def getSink[TData: ClassTag](sinkId: String, jobName: String): Future[SinkFunction[TData]] =
+      async {
+        val (subjectNode, jobNode) = getSubjectJobNode[TData](jobName)
+        await(validateSubject(subjectNode))
+        new KafkaGenericSink(subjectNode, jobNode, kafkaProducerFactory, epochStateManager, sinkId)
+      }
+
+    /**
+      * Retrieve a trailed record sink for the given generic type
+      * @param sinkId
+      * @param jobName
+      * @tparam TData
+      * @return
+      */
+    def getGenericTrailedSink[TData: ClassTag](
+        sinkId: String,
+        jobName: String): Future[GenericTrailedRecordSink[TData]] = async {
+      val (subjectNode, jobNode) = getSubjectJobNode[TData](jobName)
+      await(validateSubject(subjectNode))
+      new GenericTrailedRecordSink[TData](subjectNode,
+                                          jobNode,
+                                          kafkaProducerFactory,
+                                          epochStateManager,
+                                          sinkId)
+    }
+
+    def getTrailedSink(subjectType: SubjectType,
+                       sinkId: String,
+                       jobName: String): TrailedRecordSink = {
+      val (subjectNode, jobNode) = getSubjectJobNode(subjectType.name, jobName)
+      new TrailedRecordSink(subjectNode, jobNode, kafkaProducerFactory, epochStateManager, sinkId)
+    }
+
+    /**
+      * retrieves the subjectnode and jobnode
+      * @param jobName name of the job sink belongs to
+      * @tparam TData entity type of the sink
+      * @return
+      */
+    private def getSubjectJobNode[TData: ClassTag](jobName: String): (SubjectNode, JobNode) = {
       val subjectName = SubjectTypeFactory.getSubjectName[TData]
+      getSubjectJobNode(subjectName, jobName)
+    }
+
+    private def getSubjectJobNode(subjectName: String, jobName: String): (SubjectNode, JobNode) = {
       val jobNode = subjectLibrary.getJob(jobName)
       val subjectNode = subjectLibrary
         .getSubject(subjectName)
+      (subjectNode, jobNode)
+    }
 
-      subjectNode
-        .getData()
-        .map {
-          case Some(v) => v
-          case None =>
-            throw new IllegalStateException(
-              s"Subject $subjectName has not been registered yet. Forgot to register it?")
-        }
-        .map(
-          _ =>
-            new KafkaGenericSink(subjectNode,
-                                 jobNode,
-                                 kafkaProducerFactory,
-                                 epochStateManager,
-                                 sinkId))
+    /**
+      * Validates if a subject is properly registered
+      * @return
+      */
+    private def validateSubject(subjectNode: SubjectNode): Future[Unit] = async {
+      await(
+        subjectNode
+          .getData()
+          .map {
+            case Some(v) => v
+            case None =>
+              throw new IllegalStateException(
+                s"Subject ${subjectNode.name} has not been registered yet. Forgot to register it?")
+          })
     }
 
     /**
@@ -84,6 +137,7 @@ trait SubjectFactoryComponent {
       * @param subjectType subject to obtain the sink for
       * @return
       */
+    /*
     def getSink(subjectType: SubjectType,
                 jobName: String,
                 sinkId: String): Future[SinkFunction[TrailedRecord]] =
@@ -96,7 +150,7 @@ trait SubjectFactoryComponent {
                               kafkaProducerFactory,
                               epochStateManager,
                               sinkId)
-      }
+      }*/
 
     /**
       * Return a sink for the tableApi
@@ -116,8 +170,7 @@ trait SubjectFactoryComponent {
       * @tparam TData Type of the source object to get a mapper for
       * @return A function that can convert the object into a trailed record
       */
-    def getTransformer[TData: ru.TypeTag: ClassTag](
-        subjectType: SubjectType): TData => TrailedRecord = {
+    def getTransformer[TData: ClassTag](subjectType: SubjectType): TData => TrailedRecord = {
       @transient lazy val transformer = new RecordTransformer[TData](subjectType)
       @transient lazy val keyFactory = new KeyFactory(subjectType, UUID.randomUUID())
       d: TData =>
@@ -150,9 +203,14 @@ trait SubjectFactoryComponent {
       new KafkaRowSource(subjectNode, jobNode, kafkaConsumerFactory, sourceId)
     }
 
-    def getSource(subjectNode: SubjectNode,
-                  jobNode: JobNode,
-                  sinkId: String): SourceFunction[TrailedRecord] = {
+    def getSource[TSource: ClassTag: ru.TypeTag](subjectNode: SubjectNode,
+                                                 jobNode: JobNode,
+                                                 sinkId: String) =
+      new KafkaGenericSource[TSource](subjectNode, jobNode, kafkaConsumerFactory, sinkId)
+
+    def getTrailedSource(subjectNode: SubjectNode,
+                         jobNode: JobNode,
+                         sinkId: String): SourceFunction[TrailedRecord] = {
       new KafkaTrailedRecordSource(subjectNode, jobNode, kafkaConsumerFactory, sinkId)
     }
 

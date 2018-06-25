@@ -26,7 +26,11 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.state.{ListState, ListStateDescriptor}
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable
-import org.apache.flink.runtime.state.{CheckpointListener, FunctionInitializationContext, FunctionSnapshotContext}
+import org.apache.flink.runtime.state.{
+  CheckpointListener,
+  FunctionInitializationContext,
+  FunctionSnapshotContext
+}
 import org.apache.flink.streaming.api.CheckpointingMode
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
@@ -56,9 +60,10 @@ import scala.reflect.ClassTag
   * Because this class needs to be serializable and the LibraryServices are not, no dependency injection structure can be used here :(
   * Created by Niels on 18/07/2017.
   */
-abstract class KafkaSource[TElement, TValue:ClassTag,TKey:ClassTag](subjectNode: SubjectNode,
-                              JobNode: JobNode,
-                              kafkaConsumerFactory: KafkaConsumerFactory)
+abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
+    subjectNode: SubjectNode,
+    JobNode: JobNode,
+    kafkaConsumerFactory: KafkaConsumerFactory)
 //Flink interfaces
     extends RichSourceFunction[TElement]
     with ResultTypeQueryable[TElement]
@@ -69,12 +74,15 @@ abstract class KafkaSource[TElement, TValue:ClassTag,TKey:ClassTag](subjectNode:
     with LazyLogging
     with Serializable {
 
-  @transient protected lazy val consumer: KafkaSourceConsumer[TElement,TValue,TKey] = {
+  @transient protected lazy val consumer: KafkaSourceConsumer[TElement, TValue, TKey] = {
     val kafkaConsumer = kafkaConsumerFactory.create[TKey, TValue](instanceUuid.toString)
     kafkaConsumer.subscribe(Iterable(topic).asJavaCollection)
     logger.debug(
       s"Source $instanceUuid of consumer $sourceUuid subscribed on topic $topic as group $instanceUuid")
-    new KafkaSourceConsumer[TElement,TValue,TKey](s"Consumer $getLabel", topic, kafkaConsumer, transform)
+    new KafkaSourceConsumer[TElement, TValue, TKey](s"Consumer $getLabel",
+                                                    topic,
+                                                    kafkaConsumer,
+                                                    transform)
   }
 
   //Unique id of the source the instance of this kafka source belongs to
@@ -373,7 +381,7 @@ abstract class KafkaSource[TElement, TValue:ClassTag,TKey:ClassTag](subjectNode:
     //closePromise.success()
   }
 
-  def transform(value: TValue, key:TKey):TElement
+  def transform(value: TValue, key: TKey): TElement
 
   /**
     * @return A future that resolves when the source has been close
@@ -458,7 +466,6 @@ abstract class KafkaSource[TElement, TValue:ClassTag,TKey:ClassTag](subjectNode:
     ctx.getCheckpointLock.synchronized {
       initRun()
     }
-
 
     while (running) {
       doCycle(ctx)

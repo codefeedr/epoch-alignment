@@ -22,6 +22,7 @@ package org.codefeedr.core.plugin
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.codefeedr.core.library.LibraryServices
+import org.codefeedr.core.library.internal.kafka.sink.KafkaTableSink
 import org.codefeedr.core.library.internal.{AbstractPlugin, SubjectTypeFactory}
 import org.codefeedr.model.SubjectType
 
@@ -35,7 +36,9 @@ import scala.reflect.runtime.{universe => ru}
   * Implement this class to expose a simple plugin
   * Created by Niels on 04/08/2017.
   */
-abstract class SimplePlugin[TData: ru.TypeTag: ClassTag] extends AbstractPlugin with LazyLogging {
+abstract class SimplePlugin[TData: ru.TypeTag: ClassTag](useTrailedSink: Boolean = false)
+    extends AbstractPlugin
+    with LazyLogging {
 
   /**
     * Method to implement as plugin to expose a datastream
@@ -58,7 +61,12 @@ abstract class SimplePlugin[TData: ru.TypeTag: ClassTag] extends AbstractPlugin 
   override def compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit] = async {
     val sinkName = s"composedsink_${queryId}"
     //HACK: Direct call to libraryServices
-    val sink = await(LibraryServices.subjectFactory.GetSink[TData](sinkName, queryId))
+    val sink = if (useTrailedSink) {
+      await(LibraryServices.subjectFactory.getGenericTrailedSink[TData](sinkName, queryId))
+    } else {
+      await(LibraryServices.subjectFactory.getSink[TData](sinkName, queryId))
+    }
+
     logger.debug(s"Got sink. Creating stream")
     val stream = getStream(env)
     stream.addSink(sink)

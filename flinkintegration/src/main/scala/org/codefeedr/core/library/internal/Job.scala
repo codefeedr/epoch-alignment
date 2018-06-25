@@ -23,7 +23,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.codefeedr.core.library.LibraryServices
-import org.codefeedr.core.library.internal.kafka.source.{KafkaGenericSource, KafkaRowSource}
+import org.codefeedr.core.library.internal.kafka.source.{KafkaGenericTrailedSource, KafkaRowSource}
 import org.codefeedr.core.library.metastore.{SubjectLibrary, SubjectNode}
 import org.codefeedr.model.SubjectType
 
@@ -66,7 +66,7 @@ abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.Type
   def compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit] = async {
     val sinkName = s"composedsink_${queryId}"
     //HACK: Direct call to libraryServices
-    val sink = await(LibraryServices.subjectFactory.GetSink[Output](sinkName, queryId))
+    val sink = await(LibraryServices.subjectFactory.getSink[Output](sinkName, queryId))
     val stream = getStream(env)
     stream.addSink(sink)
   }
@@ -83,7 +83,7 @@ abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.Type
 
   def setSource(job: Job[_, Input]) = {
     //HACK: Direct call to libraryServices
-    source = new KafkaGenericSource[Input](
+    source = new KafkaGenericTrailedSource[Input](
       job.subjectNode,
       job.jobNode,
       LibraryServices.kafkaConsumerFactory,

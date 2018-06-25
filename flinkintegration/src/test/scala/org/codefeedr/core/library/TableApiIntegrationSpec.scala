@@ -62,8 +62,8 @@ class TableApiIntegrationSpec extends FullIntegrationSpec{
 
     async {
       //Simulate source environment with the defined test sets
-      val objectType = await(runSourceEnvironment(objects))
-      val groupType = await(runSourceEnvironment(groups))
+      val objectType = await(runSourceEnvironment(objects, true))
+      val groupType = await(runSourceEnvironment(groups, true))
 
       //Validate that the data is actually sent and received by the kafka topic dedicated to both datasets
       assert(await(awaitAllData(objectType)).length == 6)

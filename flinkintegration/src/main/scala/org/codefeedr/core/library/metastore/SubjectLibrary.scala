@@ -25,6 +25,7 @@ import org.codefeedr.core.library.internal.SubjectTypeFactory
 import scala.reflect.runtime.{universe => ru}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.reflect.ClassTag
 
 /**
   * ThreadSafe, Async
@@ -65,7 +66,7 @@ class SubjectLibrary extends LazyLogging {
     * @tparam T
     * @return
     */
-  def getSubject[T: ru.TypeTag](): SubjectNode = getSubject(SubjectTypeFactory.getSubjectName[T])
+  def getSubject[T: ClassTag](): SubjectNode = getSubject(SubjectTypeFactory.getSubjectName[T])
 
   /**
     * Retrieves the jobNode for a job of the given name

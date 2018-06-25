@@ -207,13 +207,12 @@ class MyOwnSourceQuery(nr: Int, parallelism: Int) extends Runnable with LazyLogg
     val subjectType = SubjectTypeFactory.getSubjectType[MyOwnIntegerObject]
     val subjectNode = Library.subjectLibrary.getSubject(subjectType.name)
 
-    val transformer = Library.subjectFactory.getUnTransformer[MyOwnIntegerObject](subjectType)
-    val source = Library.subjectFactory.getSource(subjectNode,jobNode, "testSource")
+    //val transformer = Library.subjectFactory.getUnTransformer[MyOwnIntegerObject](subjectType)
+    val source = Library.subjectFactory.getSource[MyOwnIntegerObject](subjectNode,jobNode, "testSource")
     val r =() => {
       val num = nr
       env
         .addSource(source)
-        .map(transformer)
         .addSink(o => TestCollector.collect(num)(o))
     }
     r()

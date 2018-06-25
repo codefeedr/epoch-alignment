@@ -32,8 +32,7 @@ class KafkaRowSource(subjectNode: SubjectNode,
                      jobNode: JobNode,
                      kafkaConsumerFactory: KafkaConsumerFactory,
                      override val sourceUuid: String)
-    extends KafkaSource[Row,Row,RecordSourceTrail](subjectNode, jobNode, kafkaConsumerFactory) {
-
+    extends KafkaSource[Row, Row, RecordSourceTrail](subjectNode, jobNode, kafkaConsumerFactory) {
 
   /**
     * Get typeinformation of the returned type

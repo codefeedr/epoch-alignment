@@ -29,7 +29,11 @@ import org.apache.flink.api.java.tuple
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.runtime.state.{FunctionInitializationContext, FunctionSnapshotContext}
 import org.apache.flink.streaming.api.CheckpointingMode
-import org.apache.flink.streaming.api.functions.sink.{RichSinkFunction, SinkFunction, TwoPhaseCommitSinkFunction}
+import org.apache.flink.streaming.api.functions.sink.{
+  RichSinkFunction,
+  SinkFunction,
+  TwoPhaseCommitSinkFunction
+}
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.apache.flink.types.Row
 import org.apache.kafka.clients.producer.{Callback, KafkaProducer, ProducerRecord, RecordMetadata}
@@ -55,10 +59,11 @@ import scala.util.{Failure, Success}
   * Serializable (with lazy initialisation)
   * Created by Niels on 11/07/2017.
   */
-abstract class KafkaSink[TSink,TValue:ClassTag, TKey:ClassTag](subjectNode: SubjectNode,
-                                jobNode: JobNode,
-                                kafkaProducerFactory: KafkaProducerFactory,
-                                epochStateManager: EpochStateManager)
+abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
+    subjectNode: SubjectNode,
+    jobNode: JobNode,
+    kafkaProducerFactory: KafkaProducerFactory,
+    epochStateManager: EpochStateManager)
     extends TwoPhaseCommitSinkFunction[TSink, TransactionState, TransactionContext](
       transactionStateSerializer,
       transactionContextSerializer)
@@ -91,21 +96,20 @@ abstract class KafkaSink[TSink,TValue:ClassTag, TKey:ClassTag](subjectNode: Subj
     ConfigFactory.load.getInt("codefeedr.kafka.custom.producer.count")
 
   //Current set of available kafka producers
-  @transient protected[sink] lazy val producerPool: List[KafkaProducer[TValue, TKey]] =
+  @transient protected[sink] lazy val producerPool: List[KafkaProducer[TKey, TValue]] =
     (1 to producerPoolSize)
-      .map(i => kafkaProducerFactory.create[TValue, TKey](s"${instanceUuid}_$i"))
+      .map(i => kafkaProducerFactory.create[TKey, TValue](s"${instanceUuid}_$i"))
       .toList
 
   /** The index of this parallel subtask */
   @transient private lazy val parallelIndex = getRuntimeContext.getIndexOfThisSubtask
-
 
   /**
     * Transformation method to transform an element into a key and value for kafka
     * @param element
     * @return
     */
-  def transform(element: TSink):(TKey,TValue)
+  def transform(element: TSink): (TKey, TValue)
 
   def getLabel(): String = s"KafkaSink ${subjectNode.name}($sinkUuid-$instanceUuid)"
 
@@ -174,8 +178,8 @@ abstract class KafkaSink[TSink,TValue:ClassTag, TKey:ClassTag](subjectNode: Subj
     logger.debug(
       s"${getLabel()} sending event on transaction ${transaction.checkPointId} producer ${transaction.producerIndex}")
 
-    val (key,value) = transform(element)
-    val record = new ProducerRecord[TValue, TKey](topic, parallelIndex, value, key)
+    val (key, value) = transform(element)
+    val record = new ProducerRecord[TKey, TValue](topic, parallelIndex, key, value)
 
     //Wrap the callback into a proper scala promise
     val p = Promise[RecordMetadata]
@@ -235,7 +239,8 @@ abstract class KafkaSink[TSink,TValue:ClassTag, TKey:ClassTag](subjectNode: Subj
         .displayOffsets()}\r\n${getLabel()}")
     blocking {
       //TODO: Validate if this should/can be replaced by just a flush
-      Await.ready(transaction.awaitCommit(), 5.seconds)
+      //Needs a decent high time because the first pushes to kafka can take a few seconds
+      Await.ready(transaction.awaitCommit(), 60.seconds)
       //producerPool(transaction.producerIndex).flush()
       logger.debug(
         s"flushed and is awaiting events to commit in ${sw.elapsed().toMillis}\r\n${getLabel()}")

@@ -84,9 +84,9 @@ trait StreamComposerFactoryComponent {
       //HACK: hard coded id
       override def compose(env: StreamExecutionEnvironment): DataStream[TrailedRecord] = {
         env.addSource(
-          subjectFactory.getSource(subjectLibrary.getSubject(subjectType.name),
-                                   subjectLibrary.getJob(jobName),
-                                   s"composedsource_${subjectType.name}"))
+          subjectFactory.getTrailedSource(subjectLibrary.getSubject(subjectType.name),
+                                          subjectLibrary.getJob(jobName),
+                                          s"composedsource_${subjectType.name}"))
       }
 
       /**
