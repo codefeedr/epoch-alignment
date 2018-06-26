@@ -19,9 +19,6 @@
 
 package org.codefeedr.core.library.internal.kafka.source
 
-import java.util.UUID
-import java.util.concurrent.TimeoutException
-
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.state.{ListState, ListStateDescriptor}
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
@@ -35,20 +32,21 @@ import org.apache.flink.streaming.api.CheckpointingMode
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
-import org.apache.flink.types.Row
 import org.apache.kafka.common.TopicPartition
 import org.codefeedr.core.library.internal.kafka.OffsetUtils
-import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
 import org.codefeedr.core.library.metastore.sourcecommand.{KafkaSourceCommand, SourceCommand}
-import org.codefeedr.model.{RecordSourceTrail, SubjectType, TrailedRecord}
+import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
+import org.codefeedr.model.SubjectType
 
+import scala.async.Async.{async, await}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.concurrent.{Await, Future, blocking}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.async.Async.{async, await}
+import scala.concurrent.{Await, Future}
 import scala.reflect.ClassTag
+
+case class KafkaSourceStateContainer(instanceId: String, offsets: Map[Int, Long])
 
 /**
   * Use a single thread to perform all polling operations on kafka
@@ -75,7 +73,7 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
     with Serializable {
 
   @transient protected lazy val consumer: KafkaSourceConsumer[TElement, TValue, TKey] = {
-    val kafkaConsumer = kafkaConsumerFactory.create[TKey, TValue](instanceUuid.toString)
+    val kafkaConsumer = kafkaConsumerFactory.create[TKey, TValue](sourceUuid)
     kafkaConsumer.subscribe(Iterable(topic).asJavaCollection)
     logger.debug(
       s"Source $instanceUuid of consumer $sourceUuid subscribed on topic $topic as group $instanceUuid")
@@ -89,7 +87,6 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
   val sourceUuid: String
 
   @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
-  @transient private[kafka] lazy val instanceUuid = UUID.randomUUID().toString
   //@transient private lazy val closePromise: Promise[Unit] = Promise[Unit]()
   @transient protected lazy val subjectType: SubjectType =
     Await.result(subjectNode.getData(), 5.seconds).get
@@ -125,16 +122,29 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
   // and when a snapshot is performed we update the liststate. The liststate contains the offsets of the last comitted checkpoint
   @transient private[kafka] lazy val currentOffsets = consumer.getCurrentOffsets
   @transient private[kafka] lazy val checkpointOffsets = mutable.Map[Long, Map[Int, Long]]()
-  @transient private var listState: ListState[(Int, Long)] = _
+  @transient private var checkpointedState: ListState[KafkaSourceStateContainer] = _
 
   @volatile
   @transient private[kafka] var alignmentOffsets: Map[Int, Long] = _
+
+  @transient private lazy val parallelIndex = getRuntimeContext.getIndexOfThisSubtask
+  @transient private var sourceState: Option[KafkaSourceStateContainer] = None
 
   /**
     * Get a display label for this source
     * @return
     */
-  def getLabel: String = s"KafkaSource ${subjectNode.name}($sourceUuid-$instanceUuid)"
+  def getLabel: String =
+    s"KafkaSource ${subjectNode.name}($sourceUuid--${sourceState.map(o => o.instanceId).getOrElse("Uninitialized")})"
+
+  private def getSourceState: KafkaSourceStateContainer = sourceState match {
+    case None =>
+      throw new IllegalStateException(
+        s"Cannot request sink state before initialize state is called")
+    case Some(s: KafkaSourceStateContainer) => s
+  }
+
+  protected def instanceUuid: String = getSourceState.instanceId
 
   /**
     * Retrieve the current state of the source
@@ -186,10 +196,37 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
 
   //Called when restoring the state
   override def initializeState(context: FunctionInitializationContext): Unit = {
+    sourceState = None
+
+    val descriptor = new ListStateDescriptor[KafkaSourceStateContainer](
+      "collected offsets",
+      TypeInformation.of(new TypeHint[KafkaSourceStateContainer]() {})
+    )
+
+    //On restore, we only need to restore the current offsets. We won't need the checkpoint offsets any more
+    checkpointedState = context.getOperatorStateStore.getListState(descriptor)
+    val iterator = checkpointedState.get().asScala
+    //If the state was nonempty, initialize the offsets with the recieved data
+    if (iterator.nonEmpty) {
+      iterator.foreach((o: KafkaSourceStateContainer) => {
+        if (sourceState.nonEmpty) {
+          throw new IllegalStateException(
+            s"Operator received states of multiple operators upon restore. This is not allowed!")
+        }
+        sourceState = Some(o)
+        currentOffsets.clear()
+        o.offsets.foreach(o => currentOffsets(o._1) = o._2)
+      })
+    } else {
+      //Otherwise just initialize with the default value
+      sourceState = Some(KafkaSourceStateContainer(parallelIndex.toString, Map.empty[Int, Long]))
+    }
+
     //This construction would normally be done by composition, but because flink constructs the source we cannot do so here
     if (manager == null) {
       manager = new KafkaSourceManager(this, subjectNode, sourceUuid, instanceUuid)
     }
+
     logger.info(s"Initializing state of $getLabel")
     if (!getRuntimeContext.asInstanceOf[StreamingRuntimeContext].isCheckpointingEnabled) {
       logger.warn(
@@ -201,20 +238,9 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
     } else {
       checkpointingMode = Some(CheckpointingMode.EXACTLY_ONCE)
     }
-    val descriptor = new ListStateDescriptor[(Int, Long)](
-      "collected offsets",
-      TypeInformation.of(new TypeHint[(Int, Long)]() {})
-    )
-    //On restore, we only need to restore the current offsets. We won't need the checkpoint offsets any more
-    listState = context.getOperatorStateStore.getListState(descriptor)
-    //If the state was nonempty, initialize the offsets with the recieved data
-    if (listState.get().asScala.nonEmpty) {
-      currentOffsets.clear()
-      listState.get().asScala.foreach(o => currentOffsets(o._1) = o._2)
-    } else {
-      //Otherwise just initialize with the default value
-      currentOffsets.values
-    }
+
+    currentOffsets.values
+
     initialized = true
   }
 
@@ -232,6 +258,11 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
       case KafkaSourceState.Synchronized => snapshotSynchronizedState(epochId)
       case _ =>
     }
+
+    logger.debug(s"$getLabel snapshotting offsets for epoch $epochId")
+    val stateContainer = KafkaSourceStateContainer(instanceUuid, currentOffsets.toMap)
+    checkpointedState.update(List(stateContainer).asJava)
+
     logger.debug(s"Done snapshotting epoch ${context.getCheckpointId} on $getLabel")
   }
 
@@ -339,11 +370,6 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
     * @param checkpointId id of the the checkpoint to notify the completion of
     */
   override def notifyCheckpointComplete(checkpointId: Long): Unit = {
-    logger.debug(s"$getLabel snapshotting offsets for epoch $checkpointId")
-    listState.clear()
-    //Obtain the offsets for the checkpoint that completed
-    checkpointOffsets(checkpointId).foreach(o => listState.add(o._1, o._2))
-
     //Check if the final checkpoint completed
     if (checkpointId >= finalCheckpointId) {
       logger.debug(s"$getLabel is stopping, final checkpoint $checkpointId completed")

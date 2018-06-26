@@ -39,7 +39,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   private var initCtx : FunctionInitializationContext  = _
   private var context: FunctionSnapshotContext = _
   private var operatorStore: OperatorStateStore = _
-  private var listState:ListState[(Int, Long)] = _
+  private var listState:ListState[KafkaSourceStateContainer] = _
 
   private var runtimeContext:StreamingRuntimeContext = _
   private var consumerFactory:KafkaConsumerFactory = _
@@ -61,7 +61,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     initCtx = mock[FunctionInitializationContext]
     context = mock[FunctionSnapshotContext]
     operatorStore = mock[OperatorStateStore]
-    listState = mock[ListState[(Int, Long)]]
+    listState = mock[ListState[KafkaSourceStateContainer]]
 
     runtimeContext = mock[StreamingRuntimeContext]
     consumerFactory = mock[KafkaConsumerFactory]
@@ -76,8 +76,8 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
 
     when(initCtx.getOperatorStateStore) thenReturn operatorStore
-    when(operatorStore.getListState[(Int, Long)](ArgumentMatchers.any())) thenReturn listState
-    when(listState.get()) thenReturn List[(Int, Long)]().asJava
+    when(operatorStore.getListState[KafkaSourceStateContainer](ArgumentMatchers.any())) thenReturn listState
+    when(listState.get()) thenReturn List.empty[KafkaSourceStateContainer].asJava
 
     when(consumer.getCurrentOffsets) thenReturn mutable.Map[Int,Long]()
     when(consumer.poll(ArgumentMatchers.any())) thenReturn Map[Int, Long]()
@@ -174,7 +174,23 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     assert(testKafkaSource.running)
   }
 
-  it should "commit offsets and update list state stored for a checkpoint when notify complete is called" in async {
+  it should "update list state stored for a checkpoint when snapshot state is called" in async {
+    //Arrange
+    val testKafkaSource = constructInitializedSource()
+    when(consumer.poll(ArgumentMatchers.any())).thenReturn(Map(2 -> 10L))
+    val context = mock[FunctionSnapshotContext]
+    when(context.getCheckpointId) thenReturn 1
+
+    //Act
+    testKafkaSource.doCycle(ctx)
+    testKafkaSource.snapshotState(context)
+
+    //Assert
+    verify(listState, times(1)).update(List(KafkaSourceStateContainer("0",Map(2->10L))).asJava)
+    assert(testKafkaSource.running)
+  }
+
+  it should "commit offsets when notifyCheckpointComplete is called" in async {
     //Arrange
     val testKafkaSource = constructInitializedSource()
     when(consumer.poll(ArgumentMatchers.any())).thenReturn(Map(2 -> 10L))
@@ -187,8 +203,6 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     testKafkaSource.notifyCheckpointComplete(1)
 
     //Assert
-    verify(listState, times(1)).clear()
-    verify(listState, times(1)).add((2,10L))
     verify(consumer, times(1)).commit(Map(2->10L))
     assert(testKafkaSource.running)
   }
@@ -266,7 +280,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
   it should "Swich to catchingUp state when receiving prepareSynchronize command on the next epoch" in async {
     //Arrange
-    val testKafkaSource = constructSource()
+    val testKafkaSource = constructInitializedSource()
     val context = getMockedContext(13)
 
     //Act
@@ -372,7 +386,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
   "abort" should "do nothing when unsynchronized" in {
     //Arrange
-    val source = constructSource()
+    val source = constructInitializedSource()
     val command = SourceCommand(KafkaSourceCommand.abort, None)
     val ctx = getMockedContext(100)
 
@@ -492,7 +506,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     * @return
     */
   def constructSourceCatchingUp(): TestKafkaSource = {
-    val source = constructSource()
+    val source = constructInitializedSource()
     val context = getMockedContext(-200)
     source.apply(SourceCommand(KafkaSourceCommand.catchUp,None))
     source.snapshotState(context)

@@ -19,38 +19,32 @@
 
 package org.codefeedr.core.library.internal.kafka.sink
 
-import java.lang
 import java.util.{Optional, UUID}
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.flink.api.common.typeutils.TypeSerializer
-import org.apache.flink.api.java.tuple
+import org.apache.flink.api.common.state.{ListState, ListStateDescriptor}
+import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.runtime.state.{FunctionInitializationContext, FunctionSnapshotContext}
 import org.apache.flink.streaming.api.CheckpointingMode
-import org.apache.flink.streaming.api.functions.sink.{
-  RichSinkFunction,
-  SinkFunction,
-  TwoPhaseCommitSinkFunction
-}
+import org.apache.flink.streaming.api.functions.sink.{SinkFunction, TwoPhaseCommitSinkFunction}
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
-import org.apache.flink.types.Row
 import org.apache.kafka.clients.producer.{Callback, KafkaProducer, ProducerRecord, RecordMetadata}
-import org.codefeedr.core.library.internal.KeyFactory
-import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.library.metastore.{JobNode, ProducerNode, QuerySinkNode, SubjectNode}
+import org.codefeedr.model._
 import org.codefeedr.model.zookeeper.{Producer, QuerySink}
-import org.codefeedr.model.{RecordSourceTrail, _}
 import org.codefeedr.util.Stopwatch
+import scala.collection.JavaConverters._
 
 import scala.collection.mutable
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Promise, blocking}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
+
+case class KafkaSinkState(sinkId: String)
 
 /**
   * A simple kafka sink, pushing all records to a kafka topic of the given subjecttype
@@ -72,25 +66,33 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
 
   protected val sinkUuid: String
 
+  @transient private var checkpointedState: ListState[KafkaSinkState] = _
   @transient private[kafka] var checkpointingMode: Option[CheckpointingMode] = _
 
+  /** The index of this parallel subtask */
+  @transient private lazy val parallelIndex = getRuntimeContext.getIndexOfThisSubtask
   protected var opened: Boolean = false
-
   @transient protected lazy val subjectType: SubjectType =
     subjectNode.getDataSync().get
-
   @transient protected lazy val sinkNode: QuerySinkNode = subjectNode.getSinks().getChild(sinkUuid)
+
+  @transient private var sinkState: Option[KafkaSinkState] = None
+  private def getSinkState: KafkaSinkState = sinkState match {
+    case None =>
+      throw new IllegalStateException(
+        s"Cannot request sink state before initialize state is called")
+    case Some(s: KafkaSinkState) => s
+  }
+
+  protected def instanceUuid: String = getSinkState.sinkId
 
   /**
     * The ZookeeperNode that represent this instance of the producer
     */
   @transient protected lazy val producerNode: ProducerNode =
-    sinkNode.getProducers().getChild(instanceUuid)
+    sinkNode.getProducers().getChild(getSinkState.sinkId)
 
   @transient protected lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
-  //A random identifier for this specific sink
-  @transient protected lazy val instanceUuid: String = UUID.randomUUID().toString
-
   //Size (amount) of kafkaProducers
   @transient private lazy val producerPoolSize: Int =
     ConfigFactory.load.getInt("codefeedr.kafka.custom.producer.count")
@@ -98,11 +100,9 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
   //Current set of available kafka producers
   @transient protected[sink] lazy val producerPool: List[KafkaProducer[TKey, TValue]] =
     (1 to producerPoolSize)
-      .map(i => kafkaProducerFactory.create[TKey, TValue](s"${instanceUuid}_$i"))
+      .map(i =>
+        kafkaProducerFactory.create[TKey, TValue](s"${sinkUuid}_${getSinkState.sinkId}_$i"))
       .toList
-
-  /** The index of this parallel subtask */
-  @transient private lazy val parallelIndex = getRuntimeContext.getIndexOfThisSubtask
 
   /**
     * Transformation method to transform an element into a key and value for kafka
@@ -111,7 +111,8 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
     */
   def transform(element: TSink): (TKey, TValue)
 
-  def getLabel(): String = s"KafkaSink ${subjectNode.name}($sinkUuid-$instanceUuid)"
+  def getLabel: String =
+    s"KafkaSink ${subjectNode.name}($sinkUuid-${sinkState.map(o => o.sinkId).getOrElse("Uninitialized")})"
 
   def getFirstFreeProducerIndex() =
     getUserContext.get().availableProducers.filter(o => o._2).keys.head
@@ -121,21 +122,59 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
       TransactionContext(mutable.Map() ++ (0 until producerPoolSize).map(id => id -> true)))
 
   override def close(): Unit = {
-    logger.debug(s"Closing producer ${getLabel()}")
-    Await.ready(producerNode
-                  .setState(false)
-                  .andThen({
-                    case _ => logger.debug(s"Closed producer ${getLabel()}")
-                  }),
-                5.seconds)
+    logger.debug(s"Closing producer $getLabel")
+    if (sinkState.nonEmpty) {
+      Await.ready(producerNode
+                    .setState(false)
+                    .andThen({
+                      case _ => logger.debug(s"Closed producer $getLabel")
+                    }),
+                  5.seconds)
+    } else {
+      logger.warn(s"Close was called before initializing state")
+    }
   }
+
+  /**
+    * Initialization of the kafka sink
+    * @param context initialization context
+    */
+  override def initializeState(context: FunctionInitializationContext): Unit = {
+    sinkState = None
+    val descriptor = new ListStateDescriptor[KafkaSinkState](
+      "Custom aligning kafka sink state",
+      TypeInformation.of(new TypeHint[KafkaSinkState]() {})
+    )
+    checkpointedState = context.getOperatorStateStore.getListState[KafkaSinkState](descriptor)
+    val iterator = checkpointedState.get().iterator().asScala
+    iterator foreach { s: KafkaSinkState =>
+      {
+        if (sinkState.isEmpty) {
+          sinkState = Some(s)
+        } else {
+          throw new IllegalStateException(
+            s"Restored state contains multiple states. The current implementation does not support downscaling (yet)")
+        }
+      }
+    }
+
+    if (sinkState.isEmpty) {
+      sinkState = Some(KafkaSinkState(parallelIndex.toString))
+      updateCheckpointedState()
+    }
+    super.initializeState(context)
+  }
+
+  /**
+    * Updates the checkpointed state based on the sinkState variable
+    */
+  private def updateCheckpointedState(): Unit =
+    checkpointedState.update(List(sinkState.get).asJava)
 
   override def open(parameters: Configuration): Unit = {
     if (opened) {
-      throw new Exception(s"Open on sink called twice: ${getLabel()}")
+      throw new Exception(s"Open on sink called twice: $getLabel")
     }
-
-    getRuntimeContext().getNumberOfParallelSubtasks
 
     if (!getRuntimeContext().asInstanceOf[StreamingRuntimeContext].isCheckpointingEnabled) {
       logger.warn(
@@ -147,28 +186,28 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
 
     //Temporary check if opened
     opened = true
-    logger.debug(s"Opening producer ${getLabel()} for ${subjectType.name}")
+    logger.debug(s"Opening producer $getLabel for ${subjectType.name}")
     //Create zookeeper nodes synchronous
     if (!Await.result(subjectNode.exists(), 5.seconds)) {
-      throw new Exception(s"Cannot open source ${getLabel()} because its subject does not exist.")
+      throw new Exception(s"Cannot open source $getLabel because its subject does not exist.")
     }
     Await.ready(sinkNode.create(QuerySink(sinkUuid)), 5.seconds)
     Await.ready(producerNode.create(Producer(instanceUuid, null, System.currentTimeMillis())),
                 5.seconds)
     Await.ready(producerNode.setState(true), 5.seconds)
-    logger.debug(s"Producer ${getLabel()} created for topic $topic")
+    logger.debug(s"Producer $getLabel created for topic $topic")
   }
   //Used for test
-  override protected[sink] def currentTransaction() = super.currentTransaction()
+  override protected[sink] def currentTransaction(): TransactionState = super.currentTransaction()
 
   override def snapshotState(context: FunctionSnapshotContext): Unit = {
-    logger.debug(
-      s"snapshot State called on ${getLabel()} with checkpoint ${context.getCheckpointId}")
+    logger.debug(s"snapshot State called on $getLabel with checkpoint ${context.getCheckpointId}")
+
     //Save the checkpointId on the transaction, so it can be tracked to the right epoch
     //Perform this operation before calling snapshotState on the parent, because it will start a new transaction
     currentTransaction().checkPointId = context.getCheckpointId
     logger.debug(
-      s"${getLabel()} assigned transaction on producer ${currentTransaction().producerIndex} to checkpoint ${context.getCheckpointId}")
+      s"$getLabel assigned transaction on producer ${currentTransaction().producerIndex} to checkpoint ${context.getCheckpointId}")
     super.snapshotState(context)
   }
 
@@ -176,7 +215,7 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
                       element: TSink,
                       context: SinkFunction.Context[_]): Unit = {
     logger.debug(
-      s"${getLabel()} sending event on transaction ${transaction.checkPointId} producer ${transaction.producerIndex}")
+      s"$getLabel sending event on transaction ${transaction.checkPointId} producer ${transaction.producerIndex}")
 
     val (key, value) = transform(element)
     val record = new ProducerRecord[TKey, TValue](topic, parallelIndex, key, value)
@@ -214,17 +253,17 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
   override def commit(transaction: TransactionState): Unit = {
     val sw = Stopwatch.start()
     logger.debug(
-      s"${getLabel()} committing transaction ${transaction.checkPointId} on producer ${transaction.producerIndex}.\r\n${transaction
-        .displayOffsets()}\r\n${getLabel()}")
+      s"$getLabel committing transaction ${transaction.checkPointId} on producer ${transaction.producerIndex}.\r\n${transaction
+        .displayOffsets()}\r\n$getLabel")
     producerPool(transaction.producerIndex).commitTransaction()
     val epochState = EpochState(transaction, subjectNode.getEpochs())
     Await.ready(epochStateManager.commit(epochState), 5.seconds)
     getUserContext.get().availableProducers(transaction.producerIndex) = true
     logger.debug(
-      s"${getLabel()} done committing transaction ${transaction.checkPointId}.\r\n${transaction.displayOffsets()}")
+      s"$getLabel done committing transaction ${transaction.checkPointId}.\r\n${transaction.displayOffsets()}")
     logger.debug(
       s"Commit completed in ${sw.elapsed().toMillis} transaction ${transaction.checkPointId}.\r\n${transaction
-        .displayOffsets()}\r\n${getLabel()}")
+        .displayOffsets()}\r\n$getLabel")
   }
 
   /**
@@ -235,30 +274,30 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
   override def preCommit(transaction: TransactionState): Unit = {
     val sw = Stopwatch.start()
     logger.debug(
-      s"${getLabel()} Precomitting transaction ${transaction.checkPointId} on producer ${transaction.producerIndex}.\r\n${transaction
-        .displayOffsets()}\r\n${getLabel()}")
+      s"$getLabel Precomitting transaction ${transaction.checkPointId} on producer ${transaction.producerIndex}.\r\n${transaction
+        .displayOffsets()}\r\n$getLabel")
     blocking {
       //TODO: Validate if this should/can be replaced by just a flush
       //Needs a decent high time because the first pushes to kafka can take a few seconds
       Await.ready(transaction.awaitCommit(), 60.seconds)
       //producerPool(transaction.producerIndex).flush()
       logger.debug(
-        s"flushed and is awaiting events to commit in ${sw.elapsed().toMillis}\r\n${getLabel()}")
+        s"flushed and is awaiting events to commit in ${sw.elapsed().toMillis}\r\n$getLabel")
       //Perform precommit on the epochState
       val epochState = EpochState(transaction, subjectNode.getEpochs())
       Await.ready(epochStateManager.preCommit(epochState), 5.seconds)
     }
     logger.debug(
       s"Precommit completed in ${sw.elapsed().toMillis} transaction ${transaction.checkPointId}.\r\n${transaction
-        .displayOffsets()}\r\n${getLabel()}")
+        .displayOffsets()}\r\n$getLabel")
   }
 
   override def beginTransaction(): TransactionState = {
-    logger.debug(s"beginTransaction called on ${getLabel()}. Opened: $opened")
+    logger.debug(s"beginTransaction called on $getLabel. Opened: $opened")
     val producerIndex = getFirstFreeProducerIndex()
     getUserContext.get().availableProducers(producerIndex) = false
     producerPool(producerIndex).beginTransaction()
-    logger.debug(s"${getLabel()} started new transaction on producer ${producerIndex}")
+    logger.debug(s"$getLabel started new transaction on producer ${producerIndex}")
 
     val nt = new TransactionState(producerIndex)
     val ct = currentTransaction()
@@ -271,7 +310,7 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
 
   override def abort(transaction: TransactionState): Unit = {
     logger.debug(
-      s"${getLabel()} aborting transaction ${transaction.checkPointId} on producer ${transaction.producerIndex}")
+      s"$getLabel aborting transaction ${transaction.checkPointId} on producer ${transaction.producerIndex}")
     producerPool(transaction.producerIndex).abortTransaction()
     getUserContext
       .get()

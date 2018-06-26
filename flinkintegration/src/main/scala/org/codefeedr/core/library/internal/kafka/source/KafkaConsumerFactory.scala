@@ -21,6 +21,7 @@ package org.codefeedr.core.library.internal.kafka.source
 
 import java.util.Properties
 
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.consumer._
 import org.codefeedr.core.library.internal.kafka.{KafkaConfig, KafkaDeserialiser}
 
@@ -33,7 +34,7 @@ trait KafkaConsumerFactoryComponent {
 /**
   * Created by Niels on 14/07/2017.
   */
-class KafkaConsumerFactory extends Serializable {
+class KafkaConsumerFactory extends Serializable with LazyLogging {
 
   /**
     * Create a new kafka consumer
@@ -48,6 +49,7 @@ class KafkaConsumerFactory extends Serializable {
     properties.setProperty("group.id", group)
     //Only read committed records
     properties.setProperty("isolation.level", "read_committed")
+    logger.debug(s"Creating consumer in group $group")
     //properties.setProperty("enable.auto.commit", "false") //Disable auto commit because we use manual commit
     new KafkaConsumer[TKey, TData](properties,
                                    new KafkaDeserialiser[TKey],

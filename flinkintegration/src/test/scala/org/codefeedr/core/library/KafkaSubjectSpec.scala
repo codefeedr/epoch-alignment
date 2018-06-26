@@ -52,7 +52,7 @@ object TestCollector extends LazyLogging {
 
 
   def collect(nr:Int)(myOwnIntegerObject: MyOwnIntegerObject): Unit = {
-    logger.debug(s"${nr} recieved ${myOwnIntegerObject}")
+    logger.info(s"${nr} recieved ${myOwnIntegerObject}")
     this.synchronized {
       collectedData += Tuple2(nr, myOwnIntegerObject)
     }
@@ -208,7 +208,7 @@ class MyOwnSourceQuery(nr: Int, parallelism: Int) extends Runnable with LazyLogg
     val subjectNode = Library.subjectLibrary.getSubject(subjectType.name)
 
     //val transformer = Library.subjectFactory.getUnTransformer[MyOwnIntegerObject](subjectType)
-    val source = Library.subjectFactory.getSource[MyOwnIntegerObject](subjectNode,jobNode, "testSource")
+    val source = Library.subjectFactory.getSource[MyOwnIntegerObject](subjectNode,jobNode, s"testSource_$nr")
     val r =() => {
       val num = nr
       env
