@@ -100,8 +100,12 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
   //Current set of available kafka producers
   @transient protected[sink] lazy val producerPool: List[KafkaProducer[TKey, TValue]] =
     (1 to producerPoolSize)
-      .map(i =>
-        kafkaProducerFactory.create[TKey, TValue](s"${sinkUuid}_${getSinkState.sinkId}_$i"))
+      .map(i => {
+
+        val uuid = UUID.randomUUID().toString
+        val id = s"${sinkUuid}_${getSinkState.sinkId}($uuid)_$i" //($uuid)"
+        kafkaProducerFactory.create[TKey, TValue](id)
+      })
       .toList
 
   /**
