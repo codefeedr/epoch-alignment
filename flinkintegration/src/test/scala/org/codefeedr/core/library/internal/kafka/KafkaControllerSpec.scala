@@ -38,11 +38,11 @@ class KafkaControllerSpec extends LibraryServiceSpec with Matchers with BeforeAn
   val testTopic = "TestTopic"
 
   override def beforeEach(): Unit = {
-    Await.ready(subjectLibrary.initialize(),Duration(1, SECONDS))
+    Await.ready(subjectLibrary.initialize(),Duration(5, SECONDS))
   }
 
   override def afterEach(): Unit = {
-    Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(zkClient.deleteRecursive("/"), Duration(5, SECONDS))
 
   }
 

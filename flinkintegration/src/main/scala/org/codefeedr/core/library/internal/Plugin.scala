@@ -33,13 +33,13 @@ abstract class Plugin { this: ZkClientComponent with SubjectLibraryComponent =>
   var jobs: List[Job[_, _]] = List()
 
   private def startPlugin() = async {
-    Await.ready(subjectLibrary.initialize(), Duration(1, SECONDS))
-    Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(subjectLibrary.initialize(), Duration(5, SECONDS))
+    Await.ready(zkClient.deleteRecursive("/"), Duration(5, SECONDS))
     jobs = await(setupJobs)
   }
 
   private def stopPlugin() = async {
-    Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(zkClient.deleteRecursive("/"), Duration(5, SECONDS))
   }
 
   def setupJobs: Future[List[Job[_, _]]]
