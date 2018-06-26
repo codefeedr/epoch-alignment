@@ -21,15 +21,20 @@
 
 package org.codefeedr.core.library.internal.kafka.sink
 
+import org.apache.flink.api.common.state.{ListState, OperatorStateStore}
+import org.apache.flink.runtime.state.FunctionInitializationContext
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.codefeedr.core.LibraryServiceSpec
 import org.codefeedr.core.library.internal.SubjectTypeFactory
-import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import collection.JavaConverters._
 
 import scala.async.Async.{async, await}
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import org.mockito.ArgumentMatchers
+import org.mockito.Mockito._
+import org.scalatest.mockito.MockitoSugar
 
 case class TestKafkaSinkSubject(prop1: String)
 
@@ -54,11 +59,20 @@ class KafkaSinkIntegrationSpec extends LibraryServiceSpec with BeforeAndAfterEac
     val sink = new KafkaGenericSink[TestKafkaSinkSubject](subjectNode,job,kafkaProducerFactory,epochStateManager,sinkId)
     val sinkNode = subjectNode.getSinks().getChild(sinkId)
     val runtimeContext = mock[StreamingRuntimeContext]
+
+    val context = mock[FunctionInitializationContext]
+    val operatorStore = mock[OperatorStateStore]
+    val listState = mock[ListState[KafkaSinkState]]
+    when(context.getOperatorStateStore()) thenReturn(operatorStore)
+    when(operatorStore.getListState[KafkaSinkState](ArgumentMatchers.any())) thenReturn(listState)
+    when(listState.get()) thenReturn Iterable.empty[KafkaSinkState].asJava
+
+
     sink.setRuntimeContext(runtimeContext)
 
 
     assert(!await(sinkNode.exists()))
-
+    sink.initializeState(context)
     sink.open(null)
 
 
