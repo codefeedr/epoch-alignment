@@ -280,17 +280,16 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
     logger.debug(
       s"$getLabel Precomitting transaction ${transaction.checkPointId} on producer ${transaction.producerIndex}.\r\n${transaction
         .displayOffsets()}\r\n$getLabel")
-    blocking {
-      //TODO: Validate if this should/can be replaced by just a flush
-      //Needs a decent high time because the first pushes to kafka can take a few seconds
-      Await.ready(transaction.awaitCommit(), 60.seconds)
-      //producerPool(transaction.producerIndex).flush()
-      logger.debug(
-        s"flushed and is awaiting events to commit in ${sw.elapsed().toMillis}\r\n$getLabel")
-      //Perform precommit on the epochState
-      val epochState = EpochState(transaction, subjectNode.getEpochs())
-      Await.ready(epochStateManager.preCommit(epochState), 5.seconds)
-    }
+    //TODO: Validate if this should/can be replaced by just a flush
+    //Needs a decent high time because the first pushes to kafka can take a few seconds
+    Await.result(transaction.awaitCommit(), 60.seconds)
+    //producerPool(transaction.producerIndex).flush()
+    logger.debug(
+      s"flushed and is awaiting events to commit in ${sw.elapsed().toMillis}\r\n$getLabel")
+    //Perform precommit on the epochState
+    val epochState = EpochState(transaction, subjectNode.getEpochs())
+    Await.result(epochStateManager.preCommit(epochState), 5.seconds)
+
     logger.debug(
       s"Precommit completed in ${sw.elapsed().toMillis} transaction ${transaction.checkPointId}.\r\n${transaction
         .displayOffsets()}\r\n$getLabel")

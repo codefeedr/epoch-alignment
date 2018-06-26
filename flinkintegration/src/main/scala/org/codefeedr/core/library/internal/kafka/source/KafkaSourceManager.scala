@@ -36,11 +36,10 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     //Create self on zookeeper
     val initialConsumer = Consumer(instanceUuid, null, System.currentTimeMillis())
 
-    blocking {
-      //Update zookeeper state blocking, because the source cannot start until the proper zookeeper state has been configured
-      Await.ready(sourceNode.create(QuerySource(sourceUuid)), Duration(5, SECONDS))
-      Await.ready(consumerNode.create(initialConsumer), Duration(5, SECONDS))
-    }
+    //Update zookeeper state blocking, because the source cannot start until the proper zookeeper state has been configured
+    Await.result(sourceNode.create(QuerySource(sourceUuid)), Duration(5, SECONDS))
+    Await.result(consumerNode.create(initialConsumer), Duration(5, SECONDS))
+
   }
 
   /**
@@ -48,9 +47,7 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     */
   def finalizeRun(): Unit = {
     //Finally unsubscribe from the library
-    blocking {
-      Await.ready(consumerNode.setState(false), Duration(5, SECONDS))
-    }
+    Await.result(consumerNode.setState(false), Duration(5, SECONDS))
   }
 
   /**
