@@ -324,7 +324,7 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
         }
 
       } yield Unit,
-      1.seconds
+      5.seconds
     )
   }
 
@@ -338,7 +338,7 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
             await(manager.nextSourceEpoch(epochId)).map(o => o.nr -> o.offset).toMap
         }
       } yield Unit,
-      1.seconds
+      5.seconds
     )
   }
 

@@ -51,6 +51,7 @@ class KafkaProducerFactory extends LazyLogging with Serializable {
                                                   new KafkaSerialiser[TData])
 
     producer.initTransactions()
+    producer.flush()
     producer
   }
 }
