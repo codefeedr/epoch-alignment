@@ -52,6 +52,8 @@ class EpochStateManager extends Serializable with LazyLogging {
               }
               //Otherwise, create it with the new offset
             } else {*/
+                logger.debug(
+                  s"precommitting ${Partition(partition, offset)} on epoch {${epochState.epochNode.name} (${partitionNode.name})}")
                 await(partitionNode.create(Partition(partition, offset)))
                 /*}*/
             })

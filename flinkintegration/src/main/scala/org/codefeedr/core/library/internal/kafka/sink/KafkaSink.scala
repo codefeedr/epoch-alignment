@@ -127,7 +127,7 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
 
   override def close(): Unit = {
     logger.debug(s"Closing producer $getLabel")
-    if (sinkState != null) {
+    if (sinkState != null && sinkState.isDefined) {
       Await.ready(producerNode
                     .setState(false)
                     .andThen({

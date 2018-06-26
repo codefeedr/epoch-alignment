@@ -146,6 +146,7 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
     assert(TestCollector.collectedData.count(o => o._2.value == 3) == 3)
   }
 
+  /*
   it should "be able to recieve data from multiple sinks" taggedAs(Slow, KafkaTest) in async {
     val subjectNode = subjectLibrary.getSubject(testSubjectName)
     assert(!await(subjectNode.exists()))
@@ -171,7 +172,9 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
     assert(TestCollector.collectedData.count(o => o._2.value == 3) == 9)
 
   }
+  */
 }
+
 
 class MyOwnSourceQuery(nr: Int, parallelism: Int) extends Runnable with LazyLogging {
 
