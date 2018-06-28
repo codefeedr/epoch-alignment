@@ -132,7 +132,7 @@ lazy val demo = (project in file("demo"))
   .dependsOn(flinkintegration,codefeedrghtorrent)
     .settings(
       settings,
-      mainClass in assembly := Some("org.codefeedr.demo.ghtorrent.GhTorrentUserImporter"),
+ //     mainClass in assembly := Some("org.codefeedr.demo.ghtorrent.GhTorrentUserImporter"),
       assemblyMergeStrategy in assembly := {
         case "log4j.properties" => MergeStrategy.discard
         case x =>
@@ -155,7 +155,14 @@ lazy val mainRunner = project.in(file("mainRunner"))
   }
 )
 
-
+lazy val root = (project in file("."))
+  .aggregate(demo, codefeedrghtorrent)
+  .dependsOn(demo,codefeedrghtorrent)
+    .settings(
+      settings,
+      //mainClass in run := Some("org.codefeedr.demo.ghtorrent.GhTorrentUserImporter"),
+      mainClass in run := Some("org.codefeedr.generation.LongTupleSocketGenerator")
+    )
 
 unmanagedJars in Compile += file("lib/flinkwebsocketsource_2.11-1.0.jar")
 unmanagedJars in Compile += file("lib/websocketclient-1.0.jar")
@@ -163,10 +170,11 @@ unmanagedJars in Compile += file("lib/websocketclient-1.0.jar")
 
 
 
+
 // make run command include the provided dependencies
 run in Compile := Defaults.runTask(fullClasspath in Compile,
     mainClass in (Compile, run),
-   runner in (Compile, run))
+    runner in (Compile, run))
 
 
 // exclude Scala library from assembly
