@@ -1,6 +1,7 @@
 package org.codefeedr.jobs
 
 import org.apache.flink.api.java.utils.ParameterTool
+import org.apache.flink.streaming.api.CheckpointingMode
 import org.apache.flink.streaming.api.scala._
 import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.library.internal.kafka.sink.KafkaGenericSink
@@ -31,12 +32,14 @@ object LongTupleInputJob {
       }
     }
 
+    LibraryServices.zkClient.deleteRecursive("/")
     LibraryServices.subjectLibrary.initialize()
     val subject = Await.result(LibraryServices.subjectFactory.create[IntTuple](), 10.seconds)
     val sink = Await.result(LibraryServices.subjectFactory.getSink[IntTuple]("testsink", "myjob"),
                             10.seconds)
     val env: StreamExecutionEnvironment = StreamExecutionEnvironment.getExecutionEnvironment
     env.setParallelism(1)
+    env.enableCheckpointing(1000,CheckpointingMode.EXACTLY_ONCE)
     env
       .socketTextStream(hostname, port)
       .map(toIntTuple(_))

@@ -68,6 +68,7 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
 
   @transient private var checkpointedState: ListState[KafkaSinkState] = _
   @transient private[kafka] var checkpointingMode: Option[CheckpointingMode] = _
+  @transient private var gatheredEvents:Long = 0
 
   /** The index of this parallel subtask */
   @transient private lazy val parallelIndex = getRuntimeContext.getIndexOfThisSubtask
@@ -205,7 +206,7 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
   override protected[sink] def currentTransaction(): TransactionState = super.currentTransaction()
 
   override def snapshotState(context: FunctionSnapshotContext): Unit = {
-    logger.debug(s"snapshot State called on $getLabel with checkpoint ${context.getCheckpointId}")
+    logger.info(s"snapshot State called on $getLabel with checkpoint ${context.getCheckpointId}\nGathered events: ${gatheredEvents}")
 
     //Save the checkpointId on the transaction, so it can be tracked to the right epoch
     //Perform this operation before calling snapshotState on the parent, because it will start a new transaction
@@ -221,6 +222,7 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
     logger.debug(
       s"$getLabel sending event on transaction ${transaction.checkPointId} producer ${transaction.producerIndex}")
 
+    gatheredEvents+=1
     val (key, value) = transform(element)
     val record = new ProducerRecord[TKey, TValue](topic, parallelIndex, key, value)
 
