@@ -128,6 +128,13 @@ lazy val codefeedrghtorrent = (project in file("codefeedrghtorrent"))
     libraryDependencies ++= commonDependencies
   )
 
+lazy val util = (project in file("util"))
+  .settings(
+    settings,
+    libraryDependencies ++= commonDependencies
+  )
+
+
 lazy val demo = (project in file("demo"))
   .dependsOn(flinkintegration,codefeedrghtorrent)
     .settings(
@@ -142,9 +149,36 @@ lazy val demo = (project in file("demo"))
       libraryDependencies ++= commonDependencies ++ flinkDependencies
     )
 
+//Project containing models
+lazy val models = (project in file("models"))
+  .dependsOn(util)
+  .settings(settings,
+    libraryDependencies ++= commonDependencies)
+
+lazy val socketgenerator =  (project in file("evaluation/socketgenerator"))
+  .dependsOn(util,models)
+  .settings(settings,
+    mainClass in run := Some("org.codefeedr.socketgenerator.Main"),
+    libraryDependencies ++= commonDependencies
+    )
+
+lazy val socketreceiver =  (project in file("evaluation/socketreceiver"))
+  .dependsOn(util,models,flinkintegration)
+  .settings(settings,
+    mainClass in run := Some("org.codefeedr.socketreceiver.Main"),
+    libraryDependencies ++= commonDependencies ++ flinkDependencies
+  )
+
+lazy val connectoreval =  (project in file("evaluation/connectoreval"))
+  .dependsOn(util,models,flinkintegration)
+  .settings(settings,
+    libraryDependencies ++= commonDependencies
+  )
+
+
 
 lazy val mainRunner = project.in(file("mainRunner"))
-  .dependsOn(flinkintegration,codefeedrghtorrent,demo).settings(
+  .dependsOn(flinkintegration,codefeedrghtorrent,demo,socketreceiver).settings(
   settings,
   // we set all provided dependencies to none, so that they are included in the classpath of mainRunner
   libraryDependencies := (libraryDependencies in flinkintegration).value.map{

@@ -1,64 +1,14 @@
-package org.codefeedr.generation
+package org.codefeedr.socketgenerator
 
-import java.net.{ServerSocket, Socket}
-import java.io._
+import java.io.{BufferedWriter, OutputStreamWriter, PrintWriter}
+import java.net.ServerSocket
 import java.util.concurrent.{ScheduledFuture, ScheduledThreadPoolExecutor, TimeUnit}
 
-import resource._
-
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent._
-import scala.concurrent.duration._
-import scala.util.Try
+import resource.managed
 
-/**
-  * Simple object writing sample generated data to a websocket
-  */
-object LongTupleSocketGenerator {
+import scala.concurrent.{CancellationException, Future, blocking}
 
-  val initialRate = 1000
-
-  def main(args: Array[String]): Unit = {
-    if (args.length < 1) {
-      throw new IllegalStateException("Please pass the port as argument")
-    }
-    val port = args.head.toInt
-    println(s"Starting generation at port $port with a rate of $initialRate")
-
-    val worker = new Worker(initialRate, port)
-    val f = worker.run()
-
-    var running: Boolean = true
-
-    while (running) {
-      val line = scala.io.StdIn.readLine()
-      if (line.toLowerCase == "stop" || line.toLowerCase == "quit") {
-        println(s"Stopping generation at port $port")
-        worker.finish()
-        Await.result(f, 10.seconds)
-        running = false
-      } else {
-        Try(line.toInt).toOption match {
-          case None => println(s"Unknown command: $line")
-          case Some(i: Int) =>
-            worker.setRate(i)
-            println(s"Setting rate to $line")
-        }
-      }
-    }
-    println("closing application")
-  }
-}
-
-/**
-  * Simple extension to the ScheduledThreadPoolExecutor, which calls shutdown upon close so it can be used with ARM
-  * @param corePoolSize the number of threads to keep in the pool, even
-  *                                 if they are idle, unless { @code allowCoreThreadTimeOut} is set
-  */
-class ClosableScheduledThreadPoolExecutor(corePoolSize: Int)
-    extends ScheduledThreadPoolExecutor(corePoolSize) {
-  def close(): Unit = shutdown()
-}
 
 class Worker(@volatile var rate: Int, port: Int) {
   private var future: ScheduledFuture[_] = _
@@ -116,4 +66,15 @@ class Worker(@volatile var rate: Int, port: Int) {
   def finish(): Unit = {
     future.cancel(true)
   }
+}
+
+
+/**
+  * Simple extension to the ScheduledThreadPoolExecutor, which calls shutdown upon close so it can be used with ARM
+  * @param corePoolSize the number of threads to keep in the pool, even
+  *                                 if they are idle, unless { @code allowCoreThreadTimeOut} is set
+  */
+class ClosableScheduledThreadPoolExecutor(corePoolSize: Int)
+  extends ScheduledThreadPoolExecutor(corePoolSize) {
+  def close(): Unit = shutdown()
 }

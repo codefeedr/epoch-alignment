@@ -206,7 +206,7 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
   override protected[sink] def currentTransaction(): TransactionState = super.currentTransaction()
 
   override def snapshotState(context: FunctionSnapshotContext): Unit = {
-    logger.info(s"snapshot State called on $getLabel with checkpoint ${context.getCheckpointId}\nGathered events: ${gatheredEvents}")
+    logger.info(s"snapshot State called on $getLabel with checkpoint ${context.getCheckpointId}\nGathered events: $gatheredEvents")
 
     //Save the checkpointId on the transaction, so it can be tracked to the right epoch
     //Perform this operation before calling snapshotState on the parent, because it will start a new transaction
@@ -302,7 +302,7 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
     val producerIndex = getFirstFreeProducerIndex()
     getUserContext.get().availableProducers(producerIndex) = false
     producerPool(producerIndex).beginTransaction()
-    logger.debug(s"$getLabel started new transaction on producer ${producerIndex}")
+    logger.debug(s"$getLabel started new transaction on producer $producerIndex")
 
     val nt = new TransactionState(producerIndex)
     val ct = currentTransaction()
