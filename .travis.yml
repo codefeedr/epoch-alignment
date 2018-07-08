@@ -28,6 +28,7 @@ matrix:
       os: linux
       jdk: oraclejdk8
 
+
 before_script:
   - sleep 10
 
@@ -35,3 +36,9 @@ script:
   - sbt package
   - sbt 'set parallelExecution in ThisBuild := false' "testOnly org.codefeedr.core.* org.codefeedr.util.*"
   - sbt scalafmt::test
+
+#deploy:
+#  provider: script
+#  script: bash docker_push
+#  on:
+#    branch: epochalignment

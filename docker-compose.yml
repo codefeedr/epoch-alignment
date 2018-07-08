@@ -1,0 +1,17 @@
+version: '3.6'
+
+services:
+  socketgenerator:
+    image: nvankaam/codefeedr_socketgenerator
+    build:
+      context: .
+      dockerfile: containers/socketgenerator/dockerfile
+    volumes:
+      - "ivycache:/root/.ivy2"
+      - "sbtcache:/root/.sbt"
+
+volumes:
+  ivycache:
+    external: true
+  sbtcache:
+    external: true

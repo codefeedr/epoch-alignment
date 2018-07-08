@@ -1,0 +1,11 @@
+version: "3.3"
+services:
+  socketgenerator:
+    configs:
+      - source: socketgenerator_conf
+        target: "/root/app/application.conf"
+    image: "nvankaam/codefeedr_socketgenerator"
+
+configs:
+  socketgenerator_conf:
+    file: ./socketgenerator.conf

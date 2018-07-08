@@ -9,9 +9,17 @@ lazy val settings = Seq(
   scalaVersion := "2.11.12",
   scalacOptions ++= Seq(
     "-deprecation",
-    "-feature"
-  )
+    "-feature",
+    "-Xmax-classfile-name","240"
+  ),
+  assemblyExcludedJars in assembly := {
+    val cp = (fullClasspath in assembly).value
+    cp filter {_.data.getName == "shapeless_2.11-2.3.3.jar"}
+  }
 )
+
+
+
 
 resolvers in ThisBuild ++= Seq(
   "Apache Development Snapshot Repository" at "https://repository.apache.org/content/repositories/snapshots/",
@@ -158,14 +166,16 @@ lazy val models = (project in file("models"))
 lazy val socketgenerator =  (project in file("evaluation/socketgenerator"))
   .dependsOn(util,models)
   .settings(settings,
-    mainClass in run := Some("org.codefeedr.socketgenerator.Main"),
-    libraryDependencies ++= commonDependencies
+      mainClass := Some("org.codefeedr.socketgenerator.Main"),
+      libraryDependencies ++= commonDependencies
     )
 
 lazy val socketreceiver =  (project in file("evaluation/socketreceiver"))
   .dependsOn(util,models,flinkintegration)
   .settings(settings,
     mainClass in run := Some("org.codefeedr.socketreceiver.Main"),
+    assemblyOption in assembly := (assemblyOption in assembly).value
+       .copy(includeScala = false),
     libraryDependencies ++= commonDependencies ++ flinkDependencies
   )
 
@@ -193,15 +203,13 @@ lazy val root = (project in file("."))
   .aggregate(demo, codefeedrghtorrent)
   .dependsOn(demo,codefeedrghtorrent)
     .settings(
-      settings,
+      settings
       //mainClass in run := Some("org.codefeedr.demo.ghtorrent.GhTorrentUserImporter"),
-      mainClass in run := Some("org.codefeedr.generation.LongTupleSocketGenerator")
+      //mainClass in run := Some("org.codefeedr.generation.LongTupleSocketGenerator")
     )
 
 unmanagedJars in Compile += file("lib/flinkwebsocketsource_2.11-1.0.jar")
 unmanagedJars in Compile += file("lib/websocketclient-1.0.jar")
-
-
 
 
 
@@ -211,6 +219,7 @@ run in Compile := Defaults.runTask(fullClasspath in Compile,
     runner in (Compile, run))
 
 
+
 // exclude Scala library from assembly
-assemblyOption in assembly := (assemblyOption in assembly).value
-  .copy(includeScala = false)
+// assemblyOption in assembly := (assemblyOption in assembly).value
+//  .copy(includeScala = false)

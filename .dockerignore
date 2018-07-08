@@ -1,0 +1,7 @@
+evaluation/socketgenerator/target
+evaluation/socketreceiver/target
+flinkintegration/target
+mainRunner/target
+models/target
+codefeedrghtorrent/target
+.idea

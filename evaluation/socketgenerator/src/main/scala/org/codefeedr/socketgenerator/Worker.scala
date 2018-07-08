@@ -1,7 +1,7 @@
 package org.codefeedr.socketgenerator
 
 import java.io.{BufferedWriter, OutputStreamWriter, PrintWriter}
-import java.net.ServerSocket
+import java.net.{InetAddress, ServerSocket}
 import java.util.concurrent.{ScheduledFuture, ScheduledThreadPoolExecutor, TimeUnit}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -10,8 +10,10 @@ import resource.managed
 import scala.concurrent.{CancellationException, Future, blocking}
 
 
-class Worker(@volatile var rate: Int, port: Int) {
+class Worker(config: SocketGeneratorConfig) {
+
   private var future: ScheduledFuture[_] = _
+  @volatile var rate = config.rate
   @volatile var producedElements: Long = 0
   @volatile var running: Boolean = true
   val r = scala.util.Random
@@ -28,7 +30,7 @@ class Worker(@volatile var rate: Int, port: Int) {
       println(s"Started generating events loop. Waiting for connection")
       try {
         for {
-          server <- managed(new ServerSocket(port))
+          server <- managed(new ServerSocket(config.port,config.backlog,InetAddress.getByName(config.hostname)))
           connection <- managed(server.accept)
           outStream <- managed(
             new PrintWriter(
