@@ -3,11 +3,15 @@ package org.codefeedr.socketgenerator
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.LazyLogging
+import org.slf4j.MDC
 
-object Main {
+
+object Main extends LazyLogging{
 
   def main(args: Array[String]): Unit = {
-    println(s"Starting generation at port ${config.port}with a rate of ${config.rate}")
+    MDC.put("Testnumber", "1000")
+    logger.info(s"Starting generation at port ${config.port}with a rate of ${config.rate}")
 
     val worker = new Worker(config)
     val f = worker.run()
@@ -17,7 +21,8 @@ object Main {
     }
     worker.finish()
     Await.result(f, 10.second)
-    println(s"closing application after ${worker.producedElements} events")
+    logger.info(s"closing application after ${worker.producedElements} events")
+    MDC.remove("Testnumber")
   }
 
 

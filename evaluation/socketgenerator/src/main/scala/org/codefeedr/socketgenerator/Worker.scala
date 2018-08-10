@@ -4,13 +4,16 @@ import java.io.{BufferedWriter, OutputStreamWriter, PrintWriter}
 import java.net.{InetAddress, ServerSocket}
 import java.util.concurrent.{ScheduledFuture, ScheduledThreadPoolExecutor, TimeUnit}
 
+import com.typesafe.scalalogging.LazyLogging
+
+
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import resource.managed
-
 import scala.concurrent.{CancellationException, Future, blocking}
 
 
-class Worker(config: SocketGeneratorConfig) {
+class Worker(config: SocketGeneratorConfig) extends LazyLogging{
 
   private var future: ScheduledFuture[_] = _
   @volatile var rate = config.rate
@@ -27,7 +30,7 @@ class Worker(config: SocketGeneratorConfig) {
       if (future != null && future.isDone) {
         throw new IllegalStateException(s"Worker is already running")
       }
-      println(s"Started generating events loop. Waiting for connection")
+      logger.info(s"Started generating events loop. Waiting for connection")
       try {
         for {
           server <- managed(new ServerSocket(config.port,config.backlog,InetAddress.getByName(config.hostname)))
@@ -37,11 +40,11 @@ class Worker(config: SocketGeneratorConfig) {
               new BufferedWriter(new OutputStreamWriter(connection.getOutputStream))))
           ex <- managed(new ClosableScheduledThreadPoolExecutor(1))
         } {
-          println(s"Connection opened")
+          logger.info(s"Connection opened")
           val task = new Runnable {
             def run(): Unit = {
               val loopRate = rate
-              println(s"Writing $loopRate elements.")
+              logger.info(s"Writing $loopRate elements.")
               for (i <- 1 to loopRate) {
                 outStream.write(s"${r.nextInt()}|${r.nextInt()}\n")
               }
@@ -55,12 +58,14 @@ class Worker(config: SocketGeneratorConfig) {
           } catch {
             case e: CancellationException => ()
           }
-          println("Generator task finished")
+          logger.info("Generator task finished")
         }
       } catch {
-        case e: Exception => println(e)
+        case e: Exception => {
+          logger.error(e.getMessage,e)
+        }
       } finally {
-        println("worker run finished")
+        logger.info("worker run finished")
       }
     }
   }

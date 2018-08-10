@@ -40,11 +40,14 @@ lazy val dependencies = new {
   val scalaArmV = "2.0"
   val scalaTimeV = "0.4.1"
   val rxV = "0.26.5"
-  val logBackV = "1.1.7"
-  val scalaLoggingV = "3.5.0"
   val typesafeConfigV = "1.3.1"
   val json4sV = "3.6.0-M2"
   val shapelessV = "2.3.3"
+
+  val scalaLoggingV = "3.5.0"
+  val logBackV = "1.2.3"
+  val logBackJsonV = "0.1.5"
+  val logStashV = "5.2"
 
   val mockitoV = "2.13.0"
   val scalaTestV = "3.0.1"
@@ -64,11 +67,19 @@ lazy val dependencies = new {
   val scalaArm = "com.jsuereth" %% "scala-arm" % scalaArmV
   val scalaTime =  "codes.reactive" %% "scala-time" % scalaTimeV
   val rx = "io.reactivex" %% "rxscala" % rxV
+  val json4sNative = "org.json4s" %% "json4s-native" % json4sV
+
+
+  //Logging
   val logBack =  "ch.qos.logback" % "logback-classic" % logBackV
+  val slfBridge = "org.slf4j" % "log4j-over-slf4j" % "1.7.7"
+  val logStash = "net.logstash.logback" % "logstash-logback-encoder" % logStashV
+
   val scalaLogging = "com.typesafe.scala-logging" %% "scala-logging" % scalaLoggingV
   val scalaP = "org.json4s" % "json4s-scalap_2.11" % json4sV
   val jackson = "org.json4s" % "json4s-jackson_2.11" % json4sV
-  val json4sNative = "org.json4s" %% "json4s-native" % json4sV
+
+
   val typeSafeConfig = "com.typesafe" % "config" % typesafeConfigV
   val shapeless = "com.chuusai" %% "shapeless" % shapelessV
 
@@ -89,13 +100,16 @@ lazy val commonDependencies = Seq(
   dependencies.scalaArm,
   dependencies.scalaTime,
   dependencies.rx,
-  dependencies.logBack,
-  dependencies.scalaLogging,
   dependencies.scalaP,
   dependencies.jackson,
   dependencies.json4sNative,
   dependencies.typeSafeConfig,
   dependencies.shapeless,
+
+  //Logging
+  dependencies.logStash,
+  dependencies.logBack,
+  dependencies.scalaLogging,
 
   //Test
   dependencies.mockito,

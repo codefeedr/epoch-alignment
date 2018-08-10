@@ -1,0 +1,35 @@
+2018-07-16T10:34:56.601+0200	INFO	instance/beat.go:492	Home path: [C:\Users\Niels\Source\Repos\ElasticStack\Logs\filebeat] Config path: [C:\Users\Niels\Source\Repos\ElasticStack\Logs\filebeat] Data path: [C:\Users\Niels\Source\Repos\ElasticStack\Logs\filebeat\data] Logs path: [C:\Users\Niels\Source\Repos\ElasticStack\Logs\filebeat\logs]
+2018-07-16T10:34:56.606+0200	INFO	instance/beat.go:499	Beat UUID: 45b31b5d-b81f-4735-a110-759cdf97d972
+2018-07-16T10:34:56.606+0200	INFO	[beat]	instance/beat.go:716	Beat info	{"system_info": {"beat": {"path": {"config": "C:\\Users\\Niels\\Source\\Repos\\ElasticStack\\Logs\\filebeat", "data": "C:\\Users\\Niels\\Source\\Repos\\ElasticStack\\Logs\\filebeat\\data", "home": "C:\\Users\\Niels\\Source\\Repos\\ElasticStack\\Logs\\filebeat", "logs": "C:\\Users\\Niels\\Source\\Repos\\ElasticStack\\Logs\\filebeat\\logs"}, "type": "filebeat", "uuid": "45b31b5d-b81f-4735-a110-759cdf97d972"}}}
+2018-07-16T10:34:56.606+0200	INFO	[beat]	instance/beat.go:725	Build info	{"system_info": {"build": {"commit": "ed42bb85e72ae58cc09748dc1825159713e0ffd4", "libbeat": "6.3.1", "time": "2018-06-29T21:10:31.000Z", "version": "6.3.1"}}}
+2018-07-16T10:34:56.606+0200	INFO	[beat]	instance/beat.go:728	Go runtime info	{"system_info": {"go": {"os":"windows","arch":"386","max_procs":8,"version":"go1.9.4"}}}
+2018-07-16T10:34:56.652+0200	INFO	[beat]	instance/beat.go:732	Host info	{"system_info": {"host": {"architecture":"x86_64","boot_time":"2018-07-13T13:21:16.26+02:00","hostname":"Niels-P5","ips":["fe80::d51a:9d6d:1009:8ae3/64","10.102.116.175/24","fe80::7dac:ddc3:798a:cd22/64","169.254.205.34/16","fe80::e808:f9fc:f5fe:aba/64","192.168.56.1/24","fe80::95a3:e3ee:e4ba:75d2/64","192.168.99.1/24","fe80::d43b:bbfd:51ae:510c/64","169.254.81.12/16","fe80::3847:d692:e4ff:c0f0/64","169.254.192.240/16","fe80::958a:d0c:eb75:4dcb/64","169.254.77.203/16","fe80::5c50:f4e:ebc1:6348/64","10.102.116.179/24","fe80::8525:bd77:38ee:39c4/64","169.254.57.196/16","::1/128","127.0.0.1/8"],"kernel_version":"10.0.17134.165 (WinBuild.160101.0800)","mac_addresses":["d8:50:e6:0a:8e:3d","00:ff:45:97:5b:7a","0a:00:27:00:00:1e","0a:00:27:00:00:18","16:0a:64:43:fc:25","26:0a:64:43:fc:25","00:50:56:c0:00:01","24:0a:64:43:fc:25","24:0a:64:43:fc:24"],"os":{"family":"windows","platform":"windows","name":"Windows 10 Home","version":"10.0","major":10,"minor":0,"patch":0,"build":"17134.165"},"timezone":"CEST","timezone_offset_sec":7200,"id":"dad43dbd-6df7-4778-883a-3df049c56c85"}}}
+2018-07-16T10:34:56.653+0200	INFO	instance/beat.go:225	Setup Beat: filebeat; Version: 6.3.1
+2018-07-16T10:34:56.653+0200	INFO	pipeline/module.go:81	Beat name: Niels-P5
+2018-07-16T10:34:56.657+0200	INFO	instance/beat.go:315	filebeat start running.
+2018-07-16T10:34:56.657+0200	INFO	[monitoring]	log/log.go:97	Starting metrics logging every 30s
+2018-07-16T10:34:56.658+0200	INFO	registrar/registrar.go:116	Loading registrar data from C:\Users\Niels\Source\Repos\ElasticStack\Logs\filebeat\data\registry
+2018-07-16T10:34:56.658+0200	INFO	registrar/registrar.go:127	States Loaded from registrar: 2
+2018-07-16T10:34:56.658+0200	WARN	beater/filebeat.go:354	Filebeat is unable to load the Ingest Node pipelines for the configured modules because the Elasticsearch output is not configured/enabled. If you have already loaded the Ingest Node pipelines or are using Logstash pipelines, you can ignore this warning.
+2018-07-16T10:34:56.658+0200	INFO	crawler/crawler.go:48	Loading Inputs: 1
+2018-07-16T10:34:56.659+0200	INFO	log/input.go:113	Configured paths: [c:\elasticlogs\*.json]
+2018-07-16T10:34:56.659+0200	INFO	input/input.go:88	Starting input of type: log; ID: 13774007806248378524 
+2018-07-16T10:34:56.659+0200	INFO	crawler/crawler.go:82	Loading and starting Inputs completed. Enabled inputs: 1
+2018-07-16T10:34:56.659+0200	INFO	cfgfile/reload.go:122	Config reloader started
+2018-07-16T10:34:56.660+0200	INFO	cfgfile/reload.go:214	Loading of config files completed.
+2018-07-16T10:34:56.674+0200	INFO	log/harvester.go:228	Harvester started for file: c:\elasticlogs\aquakisperson.log.json
+2018-07-16T10:35:26.802+0200	INFO	[monitoring]	log/log.go:124	Non-zero metrics in the last 30s	{"monitoring": {"metrics": {"beat":{"cpu":{"system":{"ticks":109,"time":{"ms":109}},"total":{"ticks":218,"time":{"ms":218},"value":218},"user":{"ticks":109,"time":{"ms":109}}},"info":{"ephemeral_id":"fef16182-63bb-49fd-8637-7d9580e204bc","uptime":{"ms":30255}},"memstats":{"gc_next":5471392,"memory_alloc":3058800,"memory_total":6224528,"rss":19939328}},"filebeat":{"events":{"added":601,"done":601},"harvester":{"open_files":1,"running":1,"started":1}},"libbeat":{"config":{"module":{"running":0},"reloads":1},"output":{"events":{"acked":598,"batches":1,"total":598},"read":{"bytes":6},"type":"logstash","write":{"bytes":30773}},"pipeline":{"clients":1,"events":{"active":0,"filtered":3,"published":598,"retry":598,"total":601},"queue":{"acked":598}}},"registrar":{"states":{"current":2,"update":601},"writes":{"success":4,"total":4}},"system":{"cpu":{"cores":8}}}}}
+2018-07-16T10:35:41.515+0200	INFO	beater/filebeat.go:420	Stopping filebeat
+2018-07-16T10:35:41.515+0200	INFO	crawler/crawler.go:109	Stopping Crawler
+2018-07-16T10:35:41.515+0200	INFO	crawler/crawler.go:119	Stopping 1 inputs
+2018-07-16T10:35:41.515+0200	INFO	cfgfile/reload.go:217	Dynamic config reloader stopped
+2018-07-16T10:35:41.515+0200	INFO	input/input.go:122	input ticker stopped
+2018-07-16T10:35:41.515+0200	INFO	input/input.go:139	Stopping Input: 13774007806248378524
+2018-07-16T10:35:41.515+0200	INFO	log/harvester.go:249	Reader was closed: c:\elasticlogs\aquakisperson.log.json. Closing.
+2018-07-16T10:35:41.515+0200	INFO	crawler/crawler.go:135	Crawler stopped
+2018-07-16T10:35:41.515+0200	INFO	registrar/registrar.go:247	Stopping Registrar
+2018-07-16T10:35:41.515+0200	INFO	registrar/registrar.go:173	Ending Registrar
+2018-07-16T10:35:41.540+0200	INFO	[monitoring]	log/log.go:132	Total non-zero metrics	{"monitoring": {"metrics": {"beat":{"cpu":{"system":{"ticks":125,"time":{"ms":125}},"total":{"ticks":234,"time":{"ms":234},"value":234},"user":{"ticks":109,"time":{"ms":109}}},"info":{"ephemeral_id":"fef16182-63bb-49fd-8637-7d9580e204bc","uptime":{"ms":44990}},"memstats":{"gc_next":5471392,"memory_alloc":3124616,"memory_total":6290344,"rss":22032384}},"filebeat":{"events":{"added":601,"done":601},"harvester":{"closed":1,"open_files":0,"running":0,"started":1}},"libbeat":{"config":{"module":{"running":0},"reloads":1},"output":{"events":{"acked":598,"batches":1,"total":598},"read":{"bytes":6},"type":"logstash","write":{"bytes":30773}},"pipeline":{"clients":0,"events":{"active":0,"filtered":3,"published":598,"retry":598,"total":601},"queue":{"acked":598}}},"registrar":{"states":{"current":2,"update":601},"writes":{"success":5,"total":5}},"system":{"cpu":{"cores":8}}}}}
+2018-07-16T10:35:41.540+0200	INFO	[monitoring]	log/log.go:133	Uptime: 44.9935762s
+2018-07-16T10:35:41.540+0200	INFO	[monitoring]	log/log.go:110	Stopping metrics logging.
+2018-07-16T10:35:41.540+0200	INFO	instance/beat.go:321	filebeat stopped.
