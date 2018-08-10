@@ -1,4 +1,4 @@
-version: '3'
+version: '3.6'
 
 services:
 
@@ -42,7 +42,34 @@ services:
     depends_on:
       - elasticsearch
 
+  # Filebeat, monitoring on log files to send to the elastic stack
+  filebeat:
+    build:
+      context: filebeat/
+    container_name: filebeat
+    links:
+      - logstash
+      - kibana
+    command: filebeat -e -strict.perms=false
+    networks:
+      - elk
+    volumes:
+      - type: volume
+        source: codefeedr-log-vol
+        target: /logdir/
+      - type: bind
+        source: ./filebeat/filebeat.yml
+        target: /usr/share/filebeat/filebeat.yml
+    
+
 networks:
 
   elk:
     driver: bridge
+    
+    
+volumes:
+  codefeedr-log-vol:
+    #If you want to log to an external location, uncomment the external definition below
+    external:
+      name: codefeedr-log-vol
