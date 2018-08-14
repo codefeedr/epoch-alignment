@@ -20,24 +20,16 @@
 
 <configuration>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+      <!--<encoder>
+          <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger - %msg%n</pattern>
+      </encoder> -->
         <encoder class="net.logstash.logback.encoder.LogstashEncoder" >
             <includeMdc>true</includeMdc>
         </encoder>
     </appender>
-
-    <appender name="STASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
-        <destination>localdocker:5001</destination>
-
-        <!-- encoder is required -->
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder" >
-            <includeMdc>true</includeMdc>
-        </encoder>
-    </appender>
-
 
     <root level="INFO">
         <appender-ref ref="STDOUT" />
-        <appender-ref ref="STASH" />
     </root>
 
 

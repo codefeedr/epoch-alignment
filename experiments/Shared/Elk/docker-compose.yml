@@ -11,7 +11,8 @@ services:
       - "9200:9200"
       - "9300:9300"
     environment:
-      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+      - ES_JAVA_OPTS=-Xmx256m -Xms256m
+      - LOGSPOUT=ignore
     networks:
       - elk
 
@@ -22,9 +23,11 @@ services:
       - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
       - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
     ports:
-      - "5044:5044"
+      - "5000:5000"
+      - "5001:5001"
     environment:
-      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+      - LS_JAVA_OPTS=-Xmx256m -Xms256m
+      - LOGSPOUT=ignore
     networks:
       - elk
     depends_on:
@@ -33,6 +36,8 @@ services:
   kibana:
     build:
       context: kibana/
+    environment:
+      - LOGSPOUT=ignore
     volumes:
       - ./kibana/config/:/usr/share/kibana/config:ro
     ports:
@@ -43,8 +48,20 @@ services:
       - elasticsearch
 
 
-    
-
+  logspout:
+    #Using the prebuilt image because it takes very long to build
+    image: nvankaam/logspout
+    volumes:
+      - '/var/run/docker.sock:/tmp/docker.sock'
+    environment:
+      ROUTE_URIS: logstash://logstash:5000
+      LOGSTASH_TAGS: docker-elk
+    depends_on:
+      - logstash
+    networks:
+      - elk
+    restart: on-failure
+      
 networks:
 
   elk:
