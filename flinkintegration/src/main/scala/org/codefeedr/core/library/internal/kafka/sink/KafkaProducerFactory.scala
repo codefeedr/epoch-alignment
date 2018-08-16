@@ -21,37 +21,47 @@ package org.codefeedr.core.library.internal.kafka.sink
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.producer.KafkaProducer
+import org.codefeedr.configuration.KafkaConfigurationComponent
 import org.codefeedr.core.library.internal.kafka.KafkaSerialiser
 
 import scala.reflect.ClassTag
 
 trait KafkaProducerFactoryComponent {
-  val kafkaProducerFactory: KafkaProducerFactory
-}
+  this:KafkaConfigurationComponent =>
 
-/**
-  * Created by Niels on 11/07/2017.
-  */
-class KafkaProducerFactory extends LazyLogging with Serializable {
+    val kafkaProducerFactory: KafkaProducerFactory
 
-  /**
-    * Create a kafka producer for a specific data and key type
-    * The kafka producer will be initialized for transactions
-    * @tparam TData Type of the data object
-    * @tparam TKey Type of the key identifying the data object
-    * @return A kafka producer capable of pushing the tuple to kafka
-    */
-  def create[TKey: ClassTag, TData: ClassTag](
-      transactionalId: String): KafkaProducer[TKey, TData] = {
-    val properties = KafkaConfig.producerProperties
-    logger.debug(s"Creating producer with id $transactionalId")
-    properties.setProperty("transactional.id", transactionalId)
-    val producer = new KafkaProducer[TKey, TData](properties,
-                                                  new KafkaSerialiser[TKey],
-                                                  new KafkaSerialiser[TData])
 
-    producer.initTransactions()
-    producer.flush()
+
+
+    /**
+      * Created by Niels on 11/07/2017.
+      */
+    class KafkaProducerFactory extends LazyLogging with Serializable {
+
+    /**
+      * Create a kafka producer for a specific data and key type
+      * The kafka producer will be initialized for transactions
+      *
+      * @tparam TData Type of the data object
+      * @tparam TKey  Type of the key identifying the data object
+      * @return A kafka producer capable of pushing the tuple to kafka
+      */
+    def create[TKey: ClassTag, TData: ClassTag] (
+    transactionalId: String): KafkaProducer[TKey, TData] = {
+    val properties = kafkaConfiguration.getProperties
+    logger.debug (s"Creating producer with id $transactionalId")
+    properties.setProperty ("transactional.id", transactionalId)
+    val producer = new KafkaProducer[TKey, TData] (properties,
+    new KafkaSerialiser[TKey],
+    new KafkaSerialiser[TData] )
+
+    producer.initTransactions ()
+    producer.flush ()
     producer
   }
+  }
+
+
 }
+

@@ -23,37 +23,43 @@ import java.util.Properties
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.consumer._
+import org.codefeedr.configuration.KafkaConfigurationComponent
 import org.codefeedr.core.library.internal.kafka.KafkaDeserialiser
 
 import scala.reflect.ClassTag
 
 trait KafkaConsumerFactoryComponent {
-  val kafkaConsumerFactory: KafkaConsumerFactory
-}
+  this:KafkaConfigurationComponent =>
 
-/**
-  * Created by Niels on 14/07/2017.
-  */
-class KafkaConsumerFactory extends Serializable with LazyLogging {
+  val kafkaConsumerFactory: KafkaConsumerFactory
+
 
   /**
-    * Create a new kafka consumer
-    * @param group Groupname. Each group recieves each value once
-    * @tparam TKey Type of the key used by kafka
-    * @tparam TData Data type used to send to kafka
-    * @return
+    * Created by Niels on 14/07/2017.
     */
-  def create[TKey: ClassTag, TData: ClassTag](group: String): KafkaConsumer[TKey, TData] = {
-    //Kafka consumer constructor is not thread safe!
-    val properties = KafkaConfig.consumerPropertes.clone().asInstanceOf[Properties]
-    properties.setProperty("group.id", group)
-    //Only read committed records
-    properties.setProperty("isolation.level", "read_committed")
-    logger.debug(s"Creating consumer in group $group")
-    //properties.setProperty("enable.auto.commit", "false") //Disable auto commit because we use manual commit
-    new KafkaConsumer[TKey, TData](properties,
-                                   new KafkaDeserialiser[TKey],
-                                   new KafkaDeserialiser[TData])
+  class KafkaConsumerFactory extends Serializable with LazyLogging {
 
+    /**
+      * Create a new kafka consumer
+      * @param group Groupname. Each group recieves each value once
+      * @tparam TKey Type of the key used by kafka
+      * @tparam TData Data type used to send to kafka
+      * @return
+      */
+    def create[TKey: ClassTag, TData: ClassTag](group: String): KafkaConsumer[TKey, TData] = {
+      //Kafka consumer constructor is not thread safe!
+      val properties = kafkaConfiguration.getProperties
+      properties.setProperty("group.id", group)
+      //Only read committed records
+      properties.setProperty("isolation.level", "read_committed")
+      logger.debug(s"Creating consumer in group $group")
+      //properties.setProperty("enable.auto.commit", "false") //Disable auto commit because we use manual commit
+      new KafkaConsumer[TKey, TData](properties,
+        new KafkaDeserialiser[TKey],
+        new KafkaDeserialiser[TData])
+
+    }
   }
+
 }
+

@@ -13,13 +13,16 @@ abstract class ConfigurationMapping(val mapping: String => AnyRef, val default: 
 
 case class CM[TConfig<:AnyRef](m: String => TConfig, d: Option[TConfig]) extends ConfigurationMapping(m,d)
 
-case class KafkaConfiguration(kafkaConfig: immutable.Map[String, AnyRef], partitions: Int) {
+trait KafkaConfigurationComponent {
+  val kafkaConfiguration:KafkaConfiguration
+}
 
+case class KafkaConfiguration(kafkaConfig: immutable.Map[String, AnyRef], defaultPartitions: Int) {
 
   /**
     * Retrieve the properties represented by this case class
     */
-  lazy val getProperties:Properties = {
+  def getProperties:Properties = {
     val p = new Properties()
     p.putAll(kafkaConfig.asJava)
     p
@@ -31,44 +34,34 @@ case class KafkaConfiguration(kafkaConfig: immutable.Map[String, AnyRef], partit
 object KafkaConfiguration extends LazyLogging {
   private val mapping = immutable.Map[String, ConfigurationMapping](
     " bootstrap.servers"  -> CM(v => v,None),
-    "retries"                     -> CM(v => v.toInt,Some(1)),
+    "retries"                     -> CM[Integer](v => v.toInt,Some(1)),
     "auto.offset.reset"           -> CM(v => v,Some("earliest")),
-    "auto.commit.interval.ms"     -> CM(v => v.toInt,Some(100))
+    "auto.commit.interval.ms"     -> CM[Integer](v => v.toInt,Some(100))
   )
 
 
-  /**
-    * Tries to key the value for the given key from the parametertool
-    * @param pt parameter tool to search for key
-    * @param key key value to search for
-    * @return value if the key exists in the parameter tool, Otherwise None
-    */
-  private def tryGet(pt:ParameterTool, key: String):Option[String] = {
-    if(pt.has(key)) {
-      Some(pt.get(key))
-    } else {
-      None
-    }
-  }
+
 
   /**
     * Construct kafka configuration from parameters on the url
-    * @param params url parameters
+    * @param pt the parameterTool
+    * @param prefix prefix of the configuration
     */
-  def Apply(params: Array[String], prefix:String = ""):KafkaConfiguration = {
-    val pt = ParameterTool.fromArgs(params)
+  def apply(pt:ParameterTool, prefix:String = ""): KafkaConfiguration = {
     val values = mapping
       .map(kvp => {
         //Prefix is added in front of the keys that are read from the parameter array
         val prefixedKey = s"$prefix${kvp._1}"
-        val value = tryGet(pt,prefixedKey) match {
-          case None => kvp._2.default.getOrElse(_ =>  throw new IllegalStateException(s"No value found for required configuration: ${kvp._1}"))
+        val value = ConfigUtil.tryGet(pt,prefixedKey) match {
+          case None => kvp._2.default.getOrElse(() =>  throw new IllegalStateException(s"No value found for required configuration: ${kvp._1}"))
           case Some(v) => v
         }
         (kvp._1,value)
     })
 
-    val parsed = KafkaConfiguration(values)
+    val partitions = ConfigUtil.tryGet(pt, "partitions").getOrElse("4").toInt
+
+    val parsed = KafkaConfiguration(values,partitions)
     logger.debug(s"Parsed kafka configuration to $parsed")
     parsed
   }

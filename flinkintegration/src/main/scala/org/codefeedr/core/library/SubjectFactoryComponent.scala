@@ -47,6 +47,7 @@ trait SubjectFactoryComponent {
   this: SubjectLibraryComponent
     with KafkaProducerFactoryComponent
     with KafkaConsumerFactoryComponent
+    with KafkaControllerComponent
     with EpochStateManagerComponent =>
   val subjectFactory: SubjectFactoryController
 
@@ -257,9 +258,8 @@ trait SubjectFactoryComponent {
       * Guarantees a topic for the given subject is created on Kafka
       */
     private def guaranteeTopic(st: SubjectType): Future[Unit] = {
-      KafkaController
-        .guaranteeTopic(s"${st.name}_${st.uuid}",
-                        conf.getInt("codefeedr.kafka.custom.partition.count"))
+      kafkaController
+        .guaranteeTopic(s"${st.name}_${st.uuid}")
     }
 
     /**
