@@ -11,6 +11,7 @@ import com.typesafe.scalalogging.LazyLogging
 import scala.concurrent.ExecutionContext.Implicits.global
 import resource.managed
 import scala.concurrent.{CancellationException, Future, blocking}
+import org.slf4j.MDC
 
 
 class Worker(config: SocketGeneratorConfig) extends LazyLogging{
@@ -44,10 +45,15 @@ class Worker(config: SocketGeneratorConfig) extends LazyLogging{
           val task = new Runnable {
             def run(): Unit = {
               val loopRate = rate
+
+              MDC.put("EntityCount", loopRate.toString)
               logger.info(s"Writing $loopRate elements.")
+              MDC.remove("EntityCount")
+
               for (i <- 1 to loopRate) {
                 outStream.write(s"${r.nextInt()}|${r.nextInt()}\n")
               }
+
               outStream.flush()
               producedElements += loopRate
             }

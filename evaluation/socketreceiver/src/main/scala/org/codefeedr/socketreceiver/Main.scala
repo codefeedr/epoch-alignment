@@ -1,5 +1,6 @@
 package org.codefeedr.socketreceiver
 
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.streaming.api.CheckpointingMode
 import org.apache.flink.streaming.api.scala._
@@ -7,11 +8,24 @@ import org.apache.flink.streaming.api.scala._
 import scala.concurrent.duration._
 import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.evaluation.IntTuple
+import org.slf4j.MDC
 
 import scala.concurrent.Await
 
-object Main {
+object Main extends LazyLogging{
   def main(args: Array[String]): Unit = {
+    val runIncrement = Option(System.getenv("RUN_INCREMENT"))
+
+
+
+    if(runIncrement.isEmpty) {
+      logger.warn("No run increment was defined")
+    }
+
+    //Put runIdentifier in MDC so we can filter results in ELK.
+    MDC.put("RUN_INCREMENT", runIncrement.getOrElse("-1"))
+    //TODO: Find some better name
+    MDC.put("JOB_IDENTIFIER", "SOCKETRECEIVER")
 
     // the port to connect to
     val port = try {
@@ -19,7 +33,7 @@ object Main {
     } catch {
       case e: Exception => {
         System.err.println("No port specified. Please run 'SocketWindowWordCount --port <port>'")
-        return
+        throw e
       }
     }
 
@@ -27,8 +41,8 @@ object Main {
       ParameterTool.fromArgs(args).get("hostname")
     } catch {
       case e: Exception => {
-        System.err.println("No port specified. Please run 'SocketWindowWordCount --port <port>'")
-        return
+        System.err.println("No port specified. Please run 'SocketWindowWordCount --hostname <hostname>'")
+        throw e
       }
     }
 

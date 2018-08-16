@@ -1,22 +1,11 @@
 version: "3.3"
 services:
   socketgenerator:
-    configs:
-      - source: socketgenerator_conf
-        target: "/root/app/application.conf"
-      - source: logback_conf
-        target: "/root/app/logback.xml"
+    volumes:
+      - "./configuration/socketgenerator.conf:/root/app/application.conf"
+      - "./configuration/logback.xml:/root/app/logback.xml"
     image: "nvankaam/codefeedr_socketgenerator"
-
+    environment:
+      - RUN_INCREMENT=${RUNINCREMENT}
   
     
-    
-configs:
-  socketgenerator_conf:
-    file: ./socketgenerator/socketgenerator.conf
-  logback_conf:
-    file: ./socketgenerator/logback.xml
-
-    #If you want to log to an external location, uncomment the external definition below
-    #external:
-      #name: codefeedr-log-vol

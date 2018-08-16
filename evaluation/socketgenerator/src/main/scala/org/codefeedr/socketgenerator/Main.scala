@@ -10,8 +10,20 @@ import org.slf4j.MDC
 object Main extends LazyLogging{
 
   def main(args: Array[String]): Unit = {
-    MDC.put("Testnumber", "1000")
     logger.info(s"Starting generation at port ${config.port}with a rate of ${config.rate}")
+
+    val runIncrement = Option(System.getenv("RUN_INCREMENT"))
+
+    if(runIncrement.isEmpty) {
+      logger.warn("No run increment was defined")
+    }
+
+    //Put runIdentifier in MDC so we can filter results in ELK.
+    MDC.put("RUN_INCREMENT", runIncrement.getOrElse("-1"))
+    //TODO: Find some better name
+    MDC.put("JOB_IDENTIFIER", "SOCKETGENERATOR")
+
+
 
     val worker = new Worker(config)
     val f = worker.run()
@@ -22,7 +34,6 @@ object Main extends LazyLogging{
     worker.finish()
     Await.result(f, 10.second)
     logger.info(s"closing application after ${worker.producedElements} events")
-    MDC.remove("Testnumber")
   }
 
 
