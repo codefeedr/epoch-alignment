@@ -38,7 +38,6 @@ import org.codefeedr.core.library.metastore.{SubjectLibrary, SubjectLibraryCompo
 object LibraryServices
     extends ZkClientComponent
     with SubjectLibraryComponent
-    with ConfigFactoryComponent
     with KafkaConsumerFactoryComponent
     with KafkaProducerFactoryComponent
     with SubjectFactoryComponent
@@ -46,7 +45,6 @@ object LibraryServices
     with EpochStateManagerComponent {
   lazy override val zkClient = new ZkClient()
   lazy override val subjectLibrary = new SubjectLibrary()
-  lazy override val conf: Config = ConfigFactory.load
   lazy override val kafkaConsumerFactory = new KafkaConsumerFactory()
   lazy override val kafkaProducerFactory = new KafkaProducerFactory()
   lazy override val subjectFactory = new SubjectFactoryController()

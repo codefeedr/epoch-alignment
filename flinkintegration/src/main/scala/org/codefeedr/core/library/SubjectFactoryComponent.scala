@@ -45,7 +45,6 @@ import scala.reflect.runtime.{universe => ru}
 
 trait SubjectFactoryComponent {
   this: SubjectLibraryComponent
-    with ConfigFactoryComponent
     with KafkaProducerFactoryComponent
     with KafkaConsumerFactoryComponent
     with EpochStateManagerComponent =>

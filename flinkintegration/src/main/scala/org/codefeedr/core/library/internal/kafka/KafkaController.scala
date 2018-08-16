@@ -34,6 +34,7 @@ import scala.concurrent.Future
   */
 object KafkaController extends LazyLogging {
 
+
   /**
     * Perform a method on the kafka admin. Using a managed resource to dispose of the admin client after use
     * @param method the method to run on the kafka cluster
@@ -55,7 +56,10 @@ object KafkaController extends LazyLogging {
     * @param name name of the topic to register
     * @return a future that resolves when the topic has been created
     */
-  def createTopic(name: String, partitions: Int): Future[Unit] = {
+  def createTopic(name: String, partitions: Int = -1): Future[Unit] = {
+    if(partitions == -1) {
+      partitions =
+    }
     logger.debug(s"Creating kafka topic $name with $partitions partitions")
     val topic = new NewTopic(name, partitions, 1)
     val topicSet = Iterable(topic).asJavaCollection
