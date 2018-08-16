@@ -36,7 +36,7 @@ import scala.reflect.runtime.{universe => ru}
 class KafkaGenericTrailedSource[T: ru.TypeTag: ClassTag: TypeInformation](
     subjectNode: SubjectNode,
     jobNode: JobNode,
-    kafkaConsumerFactory: KafkaConsumerFactory,
+    kafkaConsumerFactory: KafkaConsumerFactoryComponent,
     transformer: TrailedRecord => T,
     override val sourceUuid: String)
     extends KafkaSource[T, Row, RecordSourceTrail](subjectNode, jobNode, kafkaConsumerFactory) {

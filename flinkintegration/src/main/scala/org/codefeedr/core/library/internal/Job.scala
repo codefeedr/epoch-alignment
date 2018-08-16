@@ -86,7 +86,7 @@ abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.Type
     source = new KafkaGenericTrailedSource[Input](
       job.subjectNode,
       job.jobNode,
-      LibraryServices.kafkaConsumerFactory,
+      LibraryServices,
       LibraryServices.subjectFactory.getUnTransformer[Input](subjectType),
       job.subjectType.uuid
     )

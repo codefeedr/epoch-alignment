@@ -14,7 +14,7 @@ import org.codefeedr.model.{ActionType, Record, RecordSourceTrail, TrailedRecord
   */
 class TrailedRecordSink(subjectNode: SubjectNode,
                         jobNode: JobNode,
-                        kafkaProducerFactory: KafkaProducerFactory,
+                        kafkaProducerFactory: KafkaProducerFactoryComponent,
                         epochStateManager: EpochStateManager,
                         override val sinkUuid: String)
     extends KafkaSink[TrailedRecord, Row, RecordSourceTrail](subjectNode,

@@ -61,7 +61,7 @@ case class KafkaSourceStateContainer(instanceId: String, offsets: Map[Int, Long]
 abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
     subjectNode: SubjectNode,
     JobNode: JobNode,
-    kafkaConsumerFactory: KafkaConsumerFactory)
+    kafkaConsumerFactory: KafkaConsumerFactoryComponent)
 //Flink interfaces
     extends RichSourceFunction[TElement]
     with ResultTypeQueryable[TElement]
@@ -73,7 +73,7 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
     with Serializable {
 
   @transient protected lazy val consumer: KafkaSourceConsumer[TElement, TValue, TKey] = {
-    val kafkaConsumer = kafkaConsumerFactory.create[TKey, TValue](sourceUuid)
+    val kafkaConsumer = kafkaConsumerFactory.kafkaConsumerFactory.create[TKey, TValue](sourceUuid)
     kafkaConsumer.subscribe(Iterable(topic).asJavaCollection)
     logger.debug(
       s"Source $instanceUuid of consumer $sourceUuid subscribed on topic $topic as group $instanceUuid")

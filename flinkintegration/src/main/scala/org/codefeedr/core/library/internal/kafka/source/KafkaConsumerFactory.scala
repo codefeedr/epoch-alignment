@@ -30,7 +30,6 @@ import scala.reflect.ClassTag
 
 trait KafkaConsumerFactoryComponent {
   this:KafkaConfigurationComponent =>
-
   val kafkaConsumerFactory: KafkaConsumerFactory
 
 
@@ -60,6 +59,5 @@ trait KafkaConsumerFactoryComponent {
 
     }
   }
-
 }
 

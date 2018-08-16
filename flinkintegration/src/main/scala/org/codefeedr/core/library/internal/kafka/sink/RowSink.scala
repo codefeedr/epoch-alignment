@@ -14,7 +14,7 @@ import org.codefeedr.model._
 
 class RowSink(subjectNode: SubjectNode,
               jobNode: JobNode,
-              kafkaProducerFactory: KafkaProducerFactory,
+              kafkaProducerFactory: KafkaProducerFactoryComponent,
               epochStateManager: EpochStateManager,
               override val sinkUuid: String)
     extends KafkaSink[tuple.Tuple2[lang.Boolean, Row], Row, RecordSourceTrail](
