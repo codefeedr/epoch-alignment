@@ -13,13 +13,15 @@ abstract class ConfigurationMapping(val mapping: String => AnyRef, val default: 
 
 case class CM[TConfig<:AnyRef](m: String => TConfig, d: Option[TConfig]) extends ConfigurationMapping(m,d)
 
-case class KafkaConfiguration(config: immutable.Map[String, AnyRef]) {
+case class KafkaConfiguration(kafkaConfig: immutable.Map[String, AnyRef], partitions: Int) {
+
+
   /**
-    * Retrieve the properties represented by this
+    * Retrieve the properties represented by this case class
     */
   lazy val getProperties:Properties = {
     val p = new Properties()
-    p.putAll(config.asJava)
+    p.putAll(kafkaConfig.asJava)
     p
   }
 }
@@ -41,14 +43,13 @@ object KafkaConfiguration extends LazyLogging {
     * @param key key value to search for
     * @return value if the key exists in the parameter tool, Otherwise None
     */
-  def tryGet(pt:ParameterTool, key: String):Option[String] = {
+  private def tryGet(pt:ParameterTool, key: String):Option[String] = {
     if(pt.has(key)) {
       Some(pt.get(key))
     } else {
       None
     }
   }
-
 
   /**
     * Construct kafka configuration from parameters on the url

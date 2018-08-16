@@ -21,6 +21,7 @@ package org.codefeedr.core.library.internal.kafka
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.admin.{AdminClient, NewTopic}
+import org.codefeedr.configuration.KafkaConfiguration
 import resource.managed
 
 import scala.collection.JavaConversions._
@@ -32,9 +33,7 @@ import scala.concurrent.Future
 /**
   * low level object to control the connected kafka
   */
-object KafkaController extends LazyLogging {
-
-
+class KafkaController(configuration: KafkaConfiguration) extends LazyLogging {
   /**
     * Perform a method on the kafka admin. Using a managed resource to dispose of the admin client after use
     * @param method the method to run on the kafka cluster
@@ -42,7 +41,7 @@ object KafkaController extends LazyLogging {
     * @return raw result from kafka API
     */
   private def apply[T](method: AdminClient => T): T =
-    (managed(AdminClient.create(KafkaConfig.properties)) map method).opt match {
+    (managed(AdminClient.create(configuration.getProperties)) map method).opt match {
       case None =>
         throw new Exception(
           "Error while connecting to Kafka. Is kafka running and the configuration correct?")
@@ -52,16 +51,14 @@ object KafkaController extends LazyLogging {
   /**
     * Create a new topic on kafka
     * For internal use only, does create corresponding state in Zookeeper
-    * Number of partitions is passed as parameter
+    * Number of partitions is passed as paramete optionally.
     * @param name name of the topic to register
     * @return a future that resolves when the topic has been created
     */
-  def createTopic(name: String, partitions: Int = -1): Future[Unit] = {
-    if(partitions == -1) {
-      partitions =
-    }
-    logger.debug(s"Creating kafka topic $name with $partitions partitions")
-    val topic = new NewTopic(name, partitions, 1)
+  def createTopic(name: String, partitions: Option[Int] = None): Future[Unit] = {
+    val usedPartitions = partitions.getOrElse[Int](_ => configuration.partitions)
+    logger.debug(s"Creating kafka topic $name with $usedPartitions partitions")
+    val topic = new NewTopic(name, usedPartitions, 1)
     val topicSet = Iterable(topic).asJavaCollection
     val result = apply(o => o.createTopics(topicSet))
     Future {

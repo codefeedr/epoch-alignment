@@ -21,7 +21,7 @@ package org.codefeedr.core.library.internal.kafka.sink
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.producer.KafkaProducer
-import org.codefeedr.core.library.internal.kafka.{KafkaConfig, KafkaSerialiser}
+import org.codefeedr.core.library.internal.kafka.KafkaSerialiser
 
 import scala.reflect.ClassTag
 

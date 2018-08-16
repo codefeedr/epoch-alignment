@@ -23,7 +23,7 @@ import java.util.Properties
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.consumer._
-import org.codefeedr.core.library.internal.kafka.{KafkaConfig, KafkaDeserialiser}
+import org.codefeedr.core.library.internal.kafka.KafkaDeserialiser
 
 import scala.reflect.ClassTag
 
