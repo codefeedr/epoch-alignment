@@ -13,7 +13,7 @@ abstract class ConfigurationMapping(val mapping: String => AnyRef, val default: 
 
 case class CM[TConfig<:AnyRef](m: String => TConfig, d: Option[TConfig]) extends ConfigurationMapping(m,d)
 
-trait KafkaConfigurationComponent {
+trait KafkaConfigurationComponent extends Serializable{
   this:ConfigurationProviderComponent =>
 
   val kafkaConfiguration:KafkaConfiguration

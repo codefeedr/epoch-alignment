@@ -34,7 +34,7 @@ trait KafkaProducerFactoryComponent {
   /**
     * Created by Niels on 11/07/2017.
     */
-  class KafkaProducerFactoryImpl extends LazyLogging with Serializable with KafkaProducerFactory {
+  class KafkaProducerFactoryImpl extends LazyLogging with KafkaProducerFactory {
     def create[TKey: ClassTag, TData: ClassTag](transactionalId: String): KafkaProducer[TKey, TData] = {
       val properties = kafkaConfiguration.getProducerProperties
       logger.debug(s"Creating producer with id $transactionalId")
@@ -53,7 +53,7 @@ trait KafkaProducerFactoryComponent {
 
 
 
-trait KafkaProducerFactory {
+trait KafkaProducerFactory extends Serializable {
 
   /**
     * Create a kafka producer for a specific data and key type

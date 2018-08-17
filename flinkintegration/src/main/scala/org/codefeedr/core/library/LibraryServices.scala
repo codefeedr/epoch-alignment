@@ -31,14 +31,25 @@ import org.codefeedr.core.library.metastore.{SubjectLibrary, SubjectLibraryCompo
 
 /**
   * Bundle different configuration components
+  * These components are not guaranteed to be singleton, due to Flink serializing and deserializing them
   */
 trait ConfigurationModule
-  extends ConfigurationProviderComponent
+  extends ConfigurationProviderComponent with Serializable
     with KafkaConfigurationComponent
     with ZookeeperConfigurationComponent
 {
   lazy override val configurationProvider: ConfigurationProvider = new ConfigurationProviderImpl()
   lazy override val kafkaConfiguration: KafkaConfiguration = new KafkaConfigurationImpl()
+}
+
+//Serializable components that can be used inside flink operators
+//These components are not guaranteed to be singletons!
+trait SerializableComponents
+  extends ConfigurationModule
+  with KafkaConsumerFactoryComponent
+  with KafkaProducerFactoryComponent {
+  lazy override val kafkaConsumerFactory = new KafkaConsumerFactoryImpl()
+  lazy override val kafkaProducerFactory = new KafkaProducerFactoryImpl()
 }
 
 
@@ -49,9 +60,11 @@ trait CodefeedrComponents
     extends ConfigurationModule
     with ZkClientComponent
     with SubjectLibraryComponent
-    with KafkaConsumerFactoryComponent
-    with KafkaProducerFactoryComponent
+
     with KafkaControllerComponent
+
+      with KafkaConsumerFactoryComponent
+      with KafkaProducerFactoryComponent
 
     with SubjectFactoryComponent
     with StreamComposerFactoryComponent
@@ -59,12 +72,21 @@ trait CodefeedrComponents
 
   lazy override val zkClient:ZkClient = new ZkClientImpl()
   lazy override val subjectLibrary = new SubjectLibrary()
-  lazy override val kafkaConsumerFactory = new KafkaConsumerFactoryImpl()
-  lazy override val kafkaProducerFactory = new KafkaProducerFactoryImpl()
+
   lazy override val subjectFactory = new SubjectFactoryController()
   lazy override val streamComposerFactory = new StreamComposerFactory()
   lazy override val epochStateManager = new EpochStateManager()
   lazy override val kafkaController = new KafkaController()
+
+  lazy override val kafkaConsumerFactory = SerializableServices.kafkaConsumerFactory
+  lazy override val kafkaProducerFactory = SerializableServices.kafkaProducerFactory
+}
+
+
+//HACK: make serializable components available in static context
+//Note that after serializing and deserializing these are no longer singletons!
+object SerializableServices extends SerializableComponents with Serializable {
+
 }
 
 //HACK: Making all singleton components available in the static context

@@ -11,14 +11,14 @@ class GenericTrailedRecordSink[TElement: ClassTag](subjectNode: SubjectNode,
                                                    jobNode: JobNode,
                                                    kafkaProducerFactory: KafkaProducerFactory,
                                                    epochStateManager: EpochStateManager,
-                                                   override val sinkUuid: String)
+                                                    override val sinkUuid: String)
     extends KafkaSink[TElement, Row, RecordSourceTrail](subjectNode,
                                                         jobNode,
                                                         kafkaProducerFactory,
                                                         epochStateManager) {
   //HACK: Direct call to libraryservices
-  @transient private lazy val transformer =
-    LibraryServices.subjectFactory.getTransformer[TElement](subjectType)
+  @transient private lazy val transformer: TElement => TrailedRecord =
+      LibraryServices.subjectFactory.getTransformer[TElement](subjectType)
 
   override def transform(value: TElement): (RecordSourceTrail, Row) = {
     val trailed = transformer(value)
