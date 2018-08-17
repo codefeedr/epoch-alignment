@@ -47,7 +47,7 @@ trait KafkaConsumerFactoryComponent {
       */
     override def create[TKey: ClassTag, TData: ClassTag](group: String): KafkaConsumer[TKey, TData] = {
       //Kafka consumer constructor is not thread safe!
-      val properties = kafkaConfiguration.getProperties
+      val properties = kafkaConfiguration.getConsumerProperties
       properties.setProperty("group.id", group)
       //Only read committed records
       properties.setProperty("isolation.level", "read_committed")

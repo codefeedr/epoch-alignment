@@ -46,7 +46,7 @@ trait KafkaControllerComponent {
       * @return raw result from kafka API
       */
     private def apply[T](method: AdminClient => T): T =
-      (managed(AdminClient.create(kafkaConfiguration.getProperties)) map method).opt match {
+      (managed(AdminClient.create(kafkaConfiguration.getAdminProperties)) map method).opt match {
         case None =>
           throw new Exception(
             "Error while connecting to Kafka. Is kafka running and the configuration correct?")
