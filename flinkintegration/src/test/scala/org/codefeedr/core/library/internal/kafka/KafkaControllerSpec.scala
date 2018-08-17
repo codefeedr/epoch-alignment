@@ -37,7 +37,8 @@ import scala.concurrent.duration.{Duration, SECONDS}
   * Created by Niels on 11/07/2017.
   */
 class KafkaControllerSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEach {
-  val testTopic = s"TestTopic-${UUID.randomUUID()}"
+  
+  private def createTestTopic(): String = s"TestTopic-${UUID.randomUUID()}"
 
   override def beforeEach(): Unit = {
     Await.ready(subjectLibrary.initialize(),Duration(5, SECONDS))
@@ -49,6 +50,7 @@ class KafkaControllerSpec extends LibraryServiceSpec with Matchers with BeforeAn
   }
 
   "A kafkaController" should "be able to create and delete new topics" in async {
+      val testTopic = createTestTopic()
       await(kafkaController.createTopic(testTopic))
       assert(await(kafkaController.getTopics()).contains(testTopic))
       await(kafkaController.deleteTopic(testTopic))
@@ -56,6 +58,7 @@ class KafkaControllerSpec extends LibraryServiceSpec with Matchers with BeforeAn
   }
 
   it should "create a new topic if guarantee is called and it does not exist yet" in async {
+    val testTopic = createTestTopic()
     await(kafkaController.guaranteeTopic(testTopic))
     assert(await(kafkaController.getTopics()).contains(testTopic))
     await(kafkaController.deleteTopic(testTopic))
@@ -63,6 +66,7 @@ class KafkaControllerSpec extends LibraryServiceSpec with Matchers with BeforeAn
   }
 
   it should "create a topic with the configured amount of partitions" in async {
+      val testTopic = createTestTopic()
       await(kafkaController.guaranteeTopic(testTopic))
       assert(await(kafkaController.getTopics()).contains(testTopic))
       val r = assert(await(kafkaController.getPartitions(testTopic)) == 4)

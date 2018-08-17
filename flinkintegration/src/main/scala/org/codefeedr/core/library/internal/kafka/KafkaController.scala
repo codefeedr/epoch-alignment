@@ -19,6 +19,7 @@
 
 package org.codefeedr.core.library.internal.kafka
 
+import akka.stream.FlowMonitorState.Failed
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.admin.{AdminClient, NewTopic}
 import org.codefeedr.configuration.{KafkaConfiguration, KafkaConfigurationComponent}
@@ -27,8 +28,11 @@ import resource.managed
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 import scala.collection.immutable._
+import scala.compat.java8.FutureConverters
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
+import scala.async.Async.{async, await}
+import scala.util.{Failure, Success}
 
 
 trait KafkaControllerComponent {
@@ -45,13 +49,13 @@ trait KafkaControllerComponent {
       * @tparam T return type of the method
       * @return raw result from kafka API
       */
-    private def apply[T](method: AdminClient => T): T =
-      (managed(AdminClient.create(kafkaConfiguration.getAdminProperties)) map method).opt match {
-        case None =>
-          throw new Exception(
-            "Error while connecting to Kafka. Is kafka running and the configuration correct?")
-        case Some(value) => value
+    private def apply[T](method: AdminClient => T): T = synchronized {
+      (managed(AdminClient.create(kafkaConfiguration.getAdminProperties)) map method).tried match {
+        case Failure(error) => throw new Exception(
+            "Error while connecting to Kafka. Is kafka running and the configuration correct?",error)
+        case Success(value) => value
       }
+    }
 
     /**
       * Create a new topic on kafka
@@ -66,9 +70,8 @@ trait KafkaControllerComponent {
       logger.debug(s"Creating kafka topic $name with $usedPartitions partitions")
       val topic = new NewTopic(name, usedPartitions, 1)
       val topicSet = Iterable(topic).asJavaCollection
-      val result = apply(o => o.createTopics(topicSet))
       Future {
-        result.all().get()
+        apply(o => o.createTopics(topicSet).all().get())
       }
     }
 
@@ -78,11 +81,11 @@ trait KafkaControllerComponent {
       * @param name Topic to guarantee
       * @return
       */
-    def guaranteeTopic(name: String, partitions: Option[Int] = None): Future[Unit] = {
-      getTopics().map(o =>
-        if (!o.contains(name)) {
-          createTopic(name, partitions)
-        })
+    def guaranteeTopic(name: String, partitions: Option[Int] = None): Future[Unit] =async {
+      val topics = await(getTopics())
+      if (!topics.contains(name)) {
+        await(createTopic(name, partitions))
+      }
     }
 
     /**
