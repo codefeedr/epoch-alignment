@@ -41,7 +41,7 @@ class GetOrAddCommitTest extends MongoGitHubSpec with Eventually {
     Stats(2, 1, 1),
     Nil)
 
-  "The correct indexes" should "be set when the GetOrAddCommit is initialized" taggedAs(Slow) in async {
+  ignore should "be set when the GetOrAddCommit is initialized" taggedAs(Slow) in async {
     val operator = new GetOrAddCommit()
     await(clearCollection(collectionName))
     await(operator.setIndexes(operator.getIndexNames))
@@ -58,7 +58,7 @@ class GetOrAddCommitTest extends MongoGitHubSpec with Eventually {
     assert(findIndex.size == 1)
   }
 
-  "The correct API key" should "be set when GetOrAddCommit is initialized" taggedAs(Slow) in async {
+  ignore should "be set when GetOrAddCommit is initialized" taggedAs(Slow) in async {
     val operator = new GetOrAddCommit()
     val runtimeContext = mock[RuntimeContext]
 
@@ -75,7 +75,7 @@ class GetOrAddCommitTest extends MongoGitHubSpec with Eventually {
     assert(operator.GitHubAPI.setOAuthToken() == "0")
   }
 
-  "The correct URL" should "be returned when inputting a commit and reponame" in {
+  ignore should "be returned when inputting a commit and reponame" in {
     val operator = new GetOrAddCommit()
     val input = (repo, simpleCommit)
 
@@ -86,7 +86,7 @@ class GetOrAddCommitTest extends MongoGitHubSpec with Eventually {
     assert(output.head == "https://api.github.com/repos/codefeedr/codefeedr/commits/2439402a43e11b5efa2a680ac31207f2210b63d5")
   }
 
-  "A SimpleCommit" should "be retrieved and forwarded if already in DB" in async {
+  ignore should "be retrieved and forwarded if already in DB" in async {
     val operator = new GetOrAddCommit()
     val runtimeContext = mock[RuntimeContext]
 
@@ -119,7 +119,7 @@ class GetOrAddCommitTest extends MongoGitHubSpec with Eventually {
     }
   }
 
-  "A SimpleCommit" should "be requested and forwarded if not in DB" in async {
+  ignore should "be requested and forwarded if not in DB" in async {
     val operator = spy(new GetOrAddCommit())
     val runtimeContext = mock[RuntimeContext]
 

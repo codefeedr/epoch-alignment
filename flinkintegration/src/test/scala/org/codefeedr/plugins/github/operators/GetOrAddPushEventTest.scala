@@ -26,7 +26,7 @@ class GetOrAddPushEventTest extends MongoGitHubSpec {
 
   val collectionName = "github_events"
 
-  "The correct indexes" should "be set when the GetOrAddPushEvent is initialized" taggedAs(Slow) in async {
+  ignore should "be set when the GetOrAddPushEvent is initialized" taggedAs(Slow) in async {
     val operator = new GetOrAddPushEvent()
     await(operator.setIndexes(operator.getIndexNames))
 
@@ -42,7 +42,7 @@ class GetOrAddPushEventTest extends MongoGitHubSpec {
     assert(findIndex.size == 1)
   }
 
-  "A PushEvent" should "be forwarded if already in the DB" taggedAs (Slow) in async {
+  ignore should "be forwarded if already in the DB" taggedAs (Slow) in async {
     val operator = new GetOrAddPushEvent()
 
     //get pushevent
@@ -68,7 +68,7 @@ class GetOrAddPushEventTest extends MongoGitHubSpec {
     succeed
   }
 
-  "A PushEvent" should "be stored and forwarded if not in the DB" taggedAs (Slow) in async {
+  ignore should "be stored and forwarded if not in the DB" taggedAs (Slow) in async {
     val operator = new GetOrAddPushEvent()
 
     //get pushevent

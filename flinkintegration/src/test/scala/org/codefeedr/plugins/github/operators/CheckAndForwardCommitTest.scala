@@ -23,7 +23,7 @@ class CheckAndForwardCommitTest extends MongoGitHubSpec {
     date
   }
 
-  "The correct indexes" should "be set when the CheckAndForwardCommit is initialized" taggedAs (Slow) in async {
+  ignore should "be set when the CheckAndForwardCommit is initialized" taggedAs (Slow) in async {
     val operator = new CheckAndForwardCommit()
     await(clearCollection(collectionName))
     await(operator.setIndexes())
@@ -40,7 +40,7 @@ class CheckAndForwardCommitTest extends MongoGitHubSpec {
     assert(findIndex.size == 1)
   }
 
-  "The latest commit" should "be retrieved from the DB" taggedAs(Slow) in async {
+  ignore should "be retrieved from the DB" taggedAs(Slow) in async {
     //generate commits
     val commit = fakeCommit()
     val commitEarlier = fakeCommit(earlierDate)
@@ -56,7 +56,7 @@ class CheckAndForwardCommitTest extends MongoGitHubSpec {
     assert(latestCommit.getOrElse("") == commitEarlier.sha)
   }
 
-  "The latest commit" should "not be retrieved from the DB if it is not there" taggedAs(Slow) in async {
+  ignore should "not be retrieved from the DB if it is not there" taggedAs(Slow) in async {
     //generate commits
     val commit = fakeCommit()
     val commitEarlier = fakeCommit(earlierDate)
@@ -72,7 +72,7 @@ class CheckAndForwardCommitTest extends MongoGitHubSpec {
     assert(latestCommit.getOrElse("") != commitEarlier.sha)
   }
 
-  "The correct commitlist" should "be returned when retrieving from GitHub API when using no beforeSHA" taggedAs(Slow) in async {
+  ignore should "be returned when retrieving from GitHub API when using no beforeSHA" taggedAs(Slow) in async {
     //this data comes from the codefeedr/codefeedr master branch
     val latestCommit = "5f2bd246c8245d83dfc770c989b8879d47e55b1c" //lets hope the master doesn't get destroyed
     val initCommit = "a9231217e41c854d4d65c824a8ddaec5e6bc8529"
@@ -96,7 +96,7 @@ class CheckAndForwardCommitTest extends MongoGitHubSpec {
     assert(commits.last.sha == initCommit)
   }
 
-  "The correct commitlist" should "be returned when retrieving from GitHub API when using beforeSHA" taggedAs(Slow) in async {
+  ignore should "be returned when retrieving from GitHub API when using beforeSHA" taggedAs(Slow) in async {
     //this data comes from the codefeedr/codefeedr master branch
     val latestCommit = "5f2bd246c8245d83dfc770c989b8879d47e55b1c"
     val aboveBeforeCommit = "d755223ed008bcc2361ba661ce08ac9d93bc30af"

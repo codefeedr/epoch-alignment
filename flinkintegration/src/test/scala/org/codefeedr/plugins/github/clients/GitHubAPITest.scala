@@ -4,7 +4,7 @@ import org.scalatest.{AsyncFlatSpec, Matchers}
 
 class GitHubAPITest extends AsyncFlatSpec with Matchers {
 
-  "The GitHubAPI" should "connect to GitHub" in {
+  ignore should "connect to GitHub" in {
     val source = new GitHubAPI(1)
     val client = source.client
 
@@ -12,7 +12,7 @@ class GitHubAPITest extends AsyncFlatSpec with Matchers {
     client.getRemainingRequests shouldBe an[Integer]
   }
 
-  "The GitHubAPI" should "retrieve the correct OAuthKey based on its worker id" in {
+  ignore should "retrieve the correct OAuthKey based on its worker id" in {
     val source1 = new GitHubAPI(1)
     val source2 = new GitHubAPI(2)
     val source3 = new GitHubAPI(3)

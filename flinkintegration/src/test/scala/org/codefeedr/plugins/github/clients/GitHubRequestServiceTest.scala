@@ -10,7 +10,7 @@ import scala.collection.JavaConverters._
 
 class GitHubRequestServiceTest extends AsyncFlatSpec with Matchers with LazyLogging {
 
-  "getCommit " should " should parse and return the correct commit" taggedAs (Slow) in async {
+  ignore should " should parse and return the correct commit" taggedAs (Slow) in async {
     val client = new GitHubClient()
     val requestService = new GitHubRequestService(client)
 
@@ -18,7 +18,7 @@ class GitHubRequestServiceTest extends AsyncFlatSpec with Matchers with LazyLogg
     assert(commit.files.size == 5)
   }
 
-  "getAllCommits " should " should parse and return a list of SimpleCommits" taggedAs (Slow) in async {
+  ignore should " should parse and return a list of SimpleCommits" taggedAs (Slow) in async {
     val client = new GitHubClient()
     val requestService = new GitHubRequestService(client)
 
@@ -30,7 +30,7 @@ class GitHubRequestServiceTest extends AsyncFlatSpec with Matchers with LazyLogg
   }
 
 
-  "getAllCommits with sha " should " should parse and return a list of SimpleCommits starting from sha" taggedAs (Slow) in async {
+  ignore should " should parse and return a list of SimpleCommits starting from sha" taggedAs (Slow) in async {
     val client = new GitHubClient()
     val requestService = new GitHubRequestService(client)
 
@@ -41,7 +41,7 @@ class GitHubRequestServiceTest extends AsyncFlatSpec with Matchers with LazyLogg
     assert(latestCommit.sha == "2439402a43e11b5efa2a680ac31207f2210b63d5")
   }
 
-  "getAllEvents " should " should parse and return a list of Events" taggedAs (Slow) in async {
+  ignore should " should parse and return a list of Events" taggedAs (Slow) in async {
     val client = new GitHubClient()
     val requestService = new GitHubRequestService(client)
 

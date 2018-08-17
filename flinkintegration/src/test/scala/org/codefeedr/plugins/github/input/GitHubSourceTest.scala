@@ -11,7 +11,7 @@ import org.scalatest.{FlatSpec, Matchers}
 
 class GitHubSourceTest extends FlatSpec with Matchers with MockitoSugar {
 
-  "GitHubSource" should "create the correct GitHub API based on its Subtask Id" in {
+  ignore should "create the correct GitHub API based on its Subtask Id" in {
     val source = new GitHubSource()
 
     //set mocking environment
@@ -32,7 +32,7 @@ class GitHubSourceTest extends FlatSpec with Matchers with MockitoSugar {
     assert(source.gitHubAPI.setOAuthToken() == "2")
   }
 
-  "GitHubSource" should "collect the results of an event request" in {
+  ignore should "collect the results of an event request" in {
     val source = new GitHubSource(1)
 
     //set mocking environment for runtimecontext
