@@ -4,7 +4,7 @@ import com.typesafe.config.Config
 import org.codefeedr.configuration.{KafkaConfiguration, KafkaConfigurationComponent}
 import org.codefeedr.core.engine.query.StreamComposerFactoryComponent
 import org.codefeedr.core.library.internal.kafka.KafkaControllerComponent
-import org.codefeedr.core.library.{ConfigFactoryComponent, LibraryServices, SubjectFactoryComponent}
+import org.codefeedr.core.library.{LibraryServices, SubjectFactoryComponent}
 import org.codefeedr.core.library.internal.kafka.sink.{EpochStateManager, EpochStateManagerComponent, KafkaProducerFactory, KafkaProducerFactoryComponent}
 import org.codefeedr.core.library.internal.kafka.source.{KafkaConsumerFactory, KafkaConsumerFactoryComponent}
 import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkClientComponent}

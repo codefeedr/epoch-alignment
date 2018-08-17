@@ -1,7 +1,6 @@
 package org.codefeedr.core.library.internal.manager
 
 import com.typesafe.scalalogging.LazyLogging
-import org.codefeedr.core.library.ConfigFactoryComponent
 import org.codefeedr.core.library.internal.kafka.source.KafkaSourceState
 import org.codefeedr.core.library.metastore.sourcecommand.{KafkaSourceCommand, SourceCommand}
 import org.codefeedr.core.library.metastore.{QuerySourceNode, SynchronizationState}
@@ -13,14 +12,13 @@ import scala.concurrent.Future
 /**
   * Class providing logic relevant for the alignment of a source
   */
-class SourceAlignment(sourceNode: QuerySourceNode, configFactory: ConfigFactoryComponent)
+class SourceAlignment(sourceNode: QuerySourceNode)
     extends LazyLogging {
 
   /** SyncState node of the source*/
   private lazy val syncState = sourceNode.getSyncState()
   private lazy val commandNode = sourceNode.getCommandNode()
-  private lazy val synchronizeAfter: Int =
-    configFactory.conf.getInt("codefeedr.synchronization.synchronizeAfter")
+  private lazy val synchronizeAfter: Int = configFactory.conf.getInt("codefeedr.synchronization.synchronizeAfter")
 
   /**
     * Starts the alignment

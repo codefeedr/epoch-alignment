@@ -2,7 +2,6 @@ package org.codefeedr.core
 
 import com.typesafe.config.Config
 import org.codefeedr.configuration.{KafkaConfiguration, KafkaConfigurationComponent}
-import org.codefeedr.core.library.ConfigFactoryComponent
 import org.codefeedr.core.library.internal.kafka.sink.{KafkaProducerFactory, KafkaProducerFactoryComponent}
 import org.codefeedr.core.library.internal.kafka.source.{KafkaConsumerFactory, KafkaConsumerFactoryComponent}
 import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkClientComponent}

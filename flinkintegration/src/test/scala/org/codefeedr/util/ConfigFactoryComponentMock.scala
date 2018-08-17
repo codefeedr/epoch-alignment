@@ -1,7 +1,6 @@
 package org.codefeedr.util
 
 import com.typesafe.config.Config
-import org.codefeedr.core.library.ConfigFactoryComponent
 
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{times, verify, when}
