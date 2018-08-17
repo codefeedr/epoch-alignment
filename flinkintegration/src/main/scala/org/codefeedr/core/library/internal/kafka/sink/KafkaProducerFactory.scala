@@ -28,40 +28,42 @@ import scala.reflect.ClassTag
 
 trait KafkaProducerFactoryComponent {
   this:KafkaConfigurationComponent =>
-
     val kafkaProducerFactory: KafkaProducerFactory
 
 
+  /**
+    * Created by Niels on 11/07/2017.
+    */
+  class KafkaProducerFactoryImpl extends LazyLogging with Serializable with KafkaProducerFactory {
+    def create[TKey: ClassTag, TData: ClassTag](transactionalId: String): KafkaProducer[TKey, TData] = {
+      val properties = kafkaConfiguration.getProperties
+      logger.debug(s"Creating producer with id $transactionalId")
+      properties.setProperty("transactional.id", transactionalId)
+      val producer = new KafkaProducer[TKey, TData](properties,
+        new KafkaSerialiser[TKey],
+        new KafkaSerialiser[TData])
 
-
-    /**
-      * Created by Niels on 11/07/2017.
-      */
-    class KafkaProducerFactory extends LazyLogging with Serializable {
-
-    /**
-      * Create a kafka producer for a specific data and key type
-      * The kafka producer will be initialized for transactions
-      *
-      * @tparam TData Type of the data object
-      * @tparam TKey  Type of the key identifying the data object
-      * @return A kafka producer capable of pushing the tuple to kafka
-      */
-    def create[TKey: ClassTag, TData: ClassTag] (
-    transactionalId: String): KafkaProducer[TKey, TData] = {
-    val properties = kafkaConfiguration.getProperties
-    logger.debug (s"Creating producer with id $transactionalId")
-    properties.setProperty ("transactional.id", transactionalId)
-    val producer = new KafkaProducer[TKey, TData] (properties,
-    new KafkaSerialiser[TKey],
-    new KafkaSerialiser[TData] )
-
-    producer.initTransactions ()
-    producer.flush ()
-    producer
+      producer.initTransactions()
+      producer.flush()
+      producer
+    }
   }
-  }
-
 
 }
+
+
+
+trait KafkaProducerFactory {
+
+  /**
+    * Create a kafka producer for a specific data and key type
+    * The kafka producer will be initialized for transactions
+    *
+    * @tparam TData Type of the data object
+    * @tparam TKey  Type of the key identifying the data object
+    * @return A kafka producer capable of pushing the tuple to kafka
+    */
+  def create[TKey: ClassTag, TData: ClassTag](transactionalId: String): KafkaProducer[TKey, TData]
+}
+
 

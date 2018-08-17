@@ -1,6 +1,7 @@
 package org.codefeedr.core
 
 import com.typesafe.config.Config
+import org.codefeedr.configuration.{KafkaConfiguration, KafkaConfigurationComponent}
 import org.codefeedr.core.library.ConfigFactoryComponent
 import org.codefeedr.core.library.internal.kafka.sink.{KafkaProducerFactory, KafkaProducerFactoryComponent}
 import org.codefeedr.core.library.internal.kafka.source.{KafkaConsumerFactory, KafkaConsumerFactoryComponent}
@@ -21,11 +22,14 @@ trait MockedLibraryServices extends ZkClientComponent with MockitoSugar
 with SubjectLibraryComponent
 with ConfigFactoryComponent
 with KafkaConsumerFactoryComponent
-with KafkaProducerFactoryComponent {
+with KafkaProducerFactoryComponent
+with KafkaConfigurationComponent
+{
   override val zkClient: ZkClient = mock[ZkClient]
   override val conf: Config = mock[Config]
   override val subjectLibrary: SubjectLibrary = mock[SubjectLibrary]
   override val kafkaConsumerFactory: KafkaConsumerFactory = mock[KafkaConsumerFactory]
   override val kafkaProducerFactory: KafkaProducerFactory = mock[KafkaProducerFactory]
+  override val kafkaConfiguration:KafkaConfiguration = mock[KafkaConfiguration]
 }
 

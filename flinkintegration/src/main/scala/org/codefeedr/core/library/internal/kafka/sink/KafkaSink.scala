@@ -56,7 +56,7 @@ case class KafkaSinkState(sinkId: String)
 abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
     subjectNode: SubjectNode,
     jobNode: JobNode,
-    kafkaProducerFactory: KafkaProducerFactoryComponent,
+    kafkaProducerFactory: KafkaProducerFactory,
     epochStateManager: EpochStateManager)
     extends TwoPhaseCommitSinkFunction[TSink, TransactionState, TransactionContext](
       transactionStateSerializer,
@@ -105,7 +105,7 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
 
         val uuid = UUID.randomUUID().toString
         val id = s"${sinkUuid}_${getSinkState.sinkId}($uuid)_$i" //($uuid)"
-        kafkaProducerFactory.kafkaProducerFactory.create[TKey, TValue](id)
+        kafkaProducerFactory.create[TKey, TValue](id)
       })
       .toList
 

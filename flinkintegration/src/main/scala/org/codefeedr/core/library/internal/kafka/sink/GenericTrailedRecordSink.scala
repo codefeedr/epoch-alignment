@@ -9,7 +9,7 @@ import scala.reflect.ClassTag
 
 class GenericTrailedRecordSink[TElement: ClassTag](subjectNode: SubjectNode,
                                                    jobNode: JobNode,
-                                                   kafkaProducerFactory: KafkaProducerFactoryComponent,
+                                                   kafkaProducerFactory: KafkaProducerFactory,
                                                    epochStateManager: EpochStateManager,
                                                    override val sinkUuid: String)
     extends KafkaSink[TElement, Row, RecordSourceTrail](subjectNode,

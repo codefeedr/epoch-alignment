@@ -42,14 +42,14 @@ object LibraryServices
 
   lazy override val zkClient = new ZkClient()
   lazy override val subjectLibrary = new SubjectLibrary()
-  lazy override val kafkaConsumerFactory = new KafkaConsumerFactory()
-  lazy override val kafkaProducerFactory = new KafkaProducerFactory()
+  lazy override val kafkaConsumerFactory = new KafkaConsumerFactoryImpl()
+  lazy override val kafkaProducerFactory = new KafkaProducerFactoryImpl()
   lazy override val subjectFactory = new SubjectFactoryController()
   lazy override val streamComposerFactory = new StreamComposerFactory()
   lazy override val epochStateManager = new EpochStateManager()
   lazy override val kafkaController = new KafkaController()
 
   //Calls to static configuration provider
-  lazy override val kafkaConfiguration = ConfigurationProvider.getKafkaConfiguration
+  lazy override val kafkaConfiguration = ConfigurationProvider.getKafkaConfiguration()
 
 }

@@ -36,7 +36,7 @@ trait KafkaConsumerFactoryComponent {
   /**
     * Created by Niels on 14/07/2017.
     */
-  class KafkaConsumerFactory extends Serializable with LazyLogging {
+  class KafkaConsumerFactoryImpl extends Serializable with LazyLogging with KafkaConsumerFactory {
 
     /**
       * Create a new kafka consumer
@@ -45,7 +45,7 @@ trait KafkaConsumerFactoryComponent {
       * @tparam TData Data type used to send to kafka
       * @return
       */
-    def create[TKey: ClassTag, TData: ClassTag](group: String): KafkaConsumer[TKey, TData] = {
+    override def create[TKey: ClassTag, TData: ClassTag](group: String): KafkaConsumer[TKey, TData] = {
       //Kafka consumer constructor is not thread safe!
       val properties = kafkaConfiguration.getProperties
       properties.setProperty("group.id", group)
@@ -59,5 +59,18 @@ trait KafkaConsumerFactoryComponent {
 
     }
   }
+}
+
+trait KafkaConsumerFactory {
+
+  /**
+    * Create a new kafka consumer
+    *
+    * @param group Groupname. Each group recieves each value once
+    * @tparam TKey  Type of the key used by kafka
+    * @tparam TData Data type used to send to kafka
+    * @return
+    */
+  def create[TKey: ClassTag, TData: ClassTag](group: String): KafkaConsumer[TKey, TData]
 }
 

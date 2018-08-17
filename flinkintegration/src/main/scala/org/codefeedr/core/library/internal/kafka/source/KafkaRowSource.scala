@@ -30,7 +30,7 @@ import org.codefeedr.model.{Record, RecordSourceTrail, SubjectType, TrailedRecor
   */
 class KafkaRowSource(subjectNode: SubjectNode,
                      jobNode: JobNode,
-                     kafkaConsumerFactory: KafkaConsumerFactoryComponent,
+                     kafkaConsumerFactory: KafkaConsumerFactory,
                      override val sourceUuid: String)
     extends KafkaSource[Row, Row, RecordSourceTrail](subjectNode, jobNode, kafkaConsumerFactory) {
 

@@ -33,7 +33,7 @@ import scala.reflect.runtime.{universe => ru}
   */
 class KafkaGenericSink[TData: ClassTag](val subjectNode: SubjectNode,
                                         jobNode: JobNode,
-                                        kafkaProducerFactory: KafkaProducerFactoryComponent,
+                                        kafkaProducerFactory: KafkaProducerFactory,
                                         epochStateManager: EpochStateManager,
                                         override val sinkUuid: String)
     extends KafkaSink[TData, TData, Object](subjectNode,

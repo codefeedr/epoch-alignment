@@ -34,6 +34,12 @@ import async.Async.{async, await}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
+/**
+  * TODO: Refactor this class to depend on the traits used from libraryservices, instead of directly calling libraryservices
+  * @param name
+  * @tparam Input
+  * @tparam Output
+  */
 abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.TypeTag: ClassTag](
     name: String)
     extends LazyLogging {
@@ -86,7 +92,7 @@ abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.Type
     source = new KafkaGenericTrailedSource[Input](
       job.subjectNode,
       job.jobNode,
-      LibraryServices,
+      LibraryServices.kafkaConsumerFactory,
       LibraryServices.subjectFactory.getUnTransformer[Input](subjectType),
       job.subjectType.uuid
     )

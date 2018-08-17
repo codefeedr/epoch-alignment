@@ -47,23 +47,23 @@ class KafkaControllerSpec extends LibraryServiceSpec with Matchers with BeforeAn
   }
 
   "A kafkaController" should "be able to create and delete new topics" in async {
-      await(KafkaController.createTopic(testTopic, 4))
-      assert(await(KafkaController.getTopics()).contains(testTopic))
-      await(KafkaController.deleteTopic(testTopic))
-      assert(!await(KafkaController.getTopics()).contains(testTopic))
+      await(kafkaController.createTopic(testTopic))
+      assert(await(kafkaController.getTopics()).contains(testTopic))
+      await(kafkaController.deleteTopic(testTopic))
+      assert(!await(kafkaController.getTopics()).contains(testTopic))
   }
 
   it should "create a new topic if guarantee is called and it does not exist yet" in async {
-    await(KafkaController.guaranteeTopic(testTopic, 4))
-    assert(await(KafkaController.getTopics()).contains(testTopic))
-    await(KafkaController.deleteTopic(testTopic))
-    assert(!await(KafkaController.getTopics()).contains(testTopic))
+    await(kafkaController.guaranteeTopic(testTopic))
+    assert(await(kafkaController.getTopics()).contains(testTopic))
+    await(kafkaController.deleteTopic(testTopic))
+    assert(!await(kafkaController.getTopics()).contains(testTopic))
   }
 
   it should "create a topic with the configured amount of partitions" in async {
-      await(KafkaController.guaranteeTopic(testTopic, 4))
-      val r = assert(await(KafkaController.getPartitions(testTopic)) == 4)
-      await(KafkaController.deleteTopic(testTopic))
+      await(kafkaController.guaranteeTopic(testTopic))
+      val r = assert(await(kafkaController.getPartitions(testTopic)) == 4)
+      await(kafkaController.deleteTopic(testTopic))
       r
   }
 }

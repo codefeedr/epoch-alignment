@@ -16,7 +16,7 @@ import scala.reflect._
 class KafkaGenericSource[TElement](
     subjectNode: SubjectNode,
     jobNode: JobNode,
-    kafkaConsumerFactory: KafkaConsumerFactoryComponent,
+    kafkaConsumerFactory: KafkaConsumerFactory,
     override val sourceUuid: String)(implicit ct: ClassTag[TElement])
     extends KafkaSource[TElement, TElement, Object](subjectNode, jobNode, kafkaConsumerFactory) {
 
