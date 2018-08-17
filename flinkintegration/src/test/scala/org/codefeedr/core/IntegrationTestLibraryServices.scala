@@ -1,7 +1,7 @@
 package org.codefeedr.core
 
 import com.typesafe.config.Config
-import org.codefeedr.configuration.{KafkaConfiguration, KafkaConfigurationComponent}
+import org.codefeedr.configuration.{ConfigurationProvider, ConfigurationProviderComponent, KafkaConfiguration, KafkaConfigurationComponent}
 import org.codefeedr.core.engine.query.StreamComposerFactoryComponent
 import org.codefeedr.core.library.internal.kafka.KafkaControllerComponent
 import org.codefeedr.core.library.{LibraryServices, SubjectFactoryComponent}
@@ -18,8 +18,10 @@ trait IntegrationTestLibraryServices extends ZkClientComponent
   with KafkaControllerComponent
   with SubjectFactoryComponent
   with StreamComposerFactoryComponent
-  with KafkaConfigurationComponent
-with EpochStateManagerComponent {
+  with EpochStateManagerComponent
+
+  with ConfigurationProviderComponent
+  with KafkaConfigurationComponent {
   override val zkClient: ZkClient = LibraryServices.zkClient
   override val subjectLibrary: SubjectLibrary = LibraryServices.subjectLibrary
   override val kafkaConsumerFactory: KafkaConsumerFactory = LibraryServices.kafkaConsumerFactory
@@ -28,5 +30,7 @@ with EpochStateManagerComponent {
   val subjectFactory: SubjectFactoryController = LibraryServices.subjectFactory.asInstanceOf[SubjectFactoryController]
   val streamComposerFactory: StreamComposerFactory = LibraryServices.streamComposerFactory.asInstanceOf[StreamComposerFactory]
   override val epochStateManager: EpochStateManager = LibraryServices.epochStateManager
+
+  override val configurationProvider: ConfigurationProvider = LibraryServices.configurationProvider
   override val kafkaConfiguration: KafkaConfiguration = LibraryServices.kafkaConfiguration
 }

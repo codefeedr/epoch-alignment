@@ -8,7 +8,7 @@ import org.apache.flink.api.scala.ExecutionEnvironment
   * This component handles the global configuration
   */
 
-trait ConfigurationProdiverComponent {
+trait ConfigurationProviderComponent {
   val configurationProvider: ConfigurationProvider
 
 

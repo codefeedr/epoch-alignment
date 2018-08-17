@@ -1,5 +1,14 @@
 package org.codefeedr.configuration
 
+
+
+trait CodefeedrConfigurationComponent {
+  this:ConfigurationProviderComponent =>
+
+
+
+}
+
 /**
   *
   * @param partitionCount Number of partitions used when creating kafka topics

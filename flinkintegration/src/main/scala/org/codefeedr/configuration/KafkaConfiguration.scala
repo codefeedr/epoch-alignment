@@ -14,7 +14,7 @@ abstract class ConfigurationMapping(val mapping: String => AnyRef, val default: 
 case class CM[TConfig<:AnyRef](m: String => TConfig, d: Option[TConfig]) extends ConfigurationMapping(m,d)
 
 trait KafkaConfigurationComponent {
-  this:ConfigurationProdiverComponent =>
+  this:ConfigurationProviderComponent =>
 
   val kafkaConfiguration:KafkaConfiguration
 

@@ -4,7 +4,7 @@ import org.codefeedr.core.MockedLibraryServices
 import org.codefeedr.core.library.internal.kafka.source.KafkaSourceState
 import org.codefeedr.core.library.metastore._
 import org.codefeedr.core.library.metastore.sourcecommand.{KafkaSourceCommand, SourceCommand}
-import org.codefeedr.util.{ConfigFactoryComponentMock, MockitoExtensions}
+import org.codefeedr.util.{MockitoExtensions}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{times, verify, when}
 import org.scalatest.mockito.MockitoSugar
@@ -18,7 +18,6 @@ import scala.concurrent.Future
 
 class SourceAlignmentSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfterEach with MockedLibraryServices with MockitoExtensions {
 
-  private var configComponent: ConfigFactoryComponentMock = _
   private var sourceNode: QuerySourceNode = _
   private var sourceEpochs: SourceEpochCollection = _
   private var syncStateNode: SourceSynchronizationStateNode = _
@@ -108,7 +107,6 @@ class SourceAlignmentSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAn
     syncStateNode = mock[SourceSynchronizationStateNode]
     sourceEpochs = mock[SourceEpochCollection]
     commandNode = mock[QuerySourceCommandNode]
-    configComponent = new ConfigFactoryComponentMock()
 
     mockLock(sourceNode)
 
@@ -116,8 +114,6 @@ class SourceAlignmentSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAn
     when(sourceNode.getSyncState()) thenReturn syncStateNode
     when(sourceNode.getCommandNode()) thenReturn commandNode
 
-    //Configuration for the test
-    configComponent.addConfig("codefeedr.synchronization.synchronizeAfter",2)
 
     //Some default values
     when(syncStateNode.getData()) thenReturn Future.successful(Some(SynchronizationState(KafkaSourceState.UnSynchronized)))
@@ -126,6 +122,6 @@ class SourceAlignmentSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAn
     super.beforeEach()
   }
 
-  private def constructComponent(): SourceAlignment = new SourceAlignment(sourceNode,configComponent)
+  private def constructComponent(): SourceAlignment = new SourceAlignment(sourceNode)
 
 }
