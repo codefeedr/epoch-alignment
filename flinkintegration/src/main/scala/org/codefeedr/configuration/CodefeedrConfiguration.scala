@@ -5,8 +5,14 @@ package org.codefeedr.configuration
 trait CodefeedrConfigurationComponent {
   this:ConfigurationProviderComponent =>
 
-
-
+  /*
+  * Make sure to use lazy here, because configuration needs to be initialized
+  * Should find a different solution for that
+   *  */
+  lazy val codefeedrConfiguration:CodefeedrConfiguration = CodefeedrConfiguration(
+    partitionCount = configurationProvider.getInt("codefeedr.kafka.partition.count"),
+    producerCount = configurationProvider.getInt("codefeedr.kafka.producer.count")
+  )
 }
 
 /**
