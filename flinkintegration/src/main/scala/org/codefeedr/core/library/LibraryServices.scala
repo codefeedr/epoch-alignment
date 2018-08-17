@@ -20,7 +20,7 @@
 package org.codefeedr.core.library
 
 import com.typesafe.config.{Config, ConfigFactory}
-import org.codefeedr.configuration.{ConfigurationProviderComponent, ConfigurationProvider, KafkaConfiguration, KafkaConfigurationComponent}
+import org.codefeedr.configuration._
 import org.codefeedr.core.engine.query.StreamComposerFactoryComponent
 import org.codefeedr.core.library.internal.kafka.KafkaControllerComponent
 import org.codefeedr.core.library.internal.kafka.sink.{EpochStateManager, EpochStateManagerComponent, KafkaProducerFactoryComponent}
@@ -35,6 +35,7 @@ import org.codefeedr.core.library.metastore.{SubjectLibrary, SubjectLibraryCompo
 trait ConfigurationModule
   extends ConfigurationProviderComponent
     with KafkaConfigurationComponent
+    with ZookeeperConfigurationComponent
 {
   lazy override val configurationProvider: ConfigurationProvider = new ConfigurationProviderImpl()
   lazy override val kafkaConfiguration: KafkaConfiguration = new KafkaConfigurationImpl()
@@ -56,7 +57,7 @@ trait CodefeedrComponents
     with StreamComposerFactoryComponent
     with EpochStateManagerComponent {
 
-  lazy override val zkClient = new ZkClient()
+  lazy override val zkClient:ZkClient = new ZkClientImpl()
   lazy override val subjectLibrary = new SubjectLibrary()
   lazy override val kafkaConsumerFactory = new KafkaConsumerFactoryImpl()
   lazy override val kafkaProducerFactory = new KafkaProducerFactoryImpl()
