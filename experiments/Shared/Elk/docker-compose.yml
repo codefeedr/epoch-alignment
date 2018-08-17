@@ -15,6 +15,7 @@ services:
       - LOGSPOUT=ignore
     networks:
       - elk
+    restart: on-failure
 
   logstash:
     build:
@@ -32,6 +33,7 @@ services:
       - elk
     depends_on:
       - elasticsearch
+    restart: on-failure
 
   kibana:
     build:
@@ -46,6 +48,7 @@ services:
       - elk
     depends_on:
       - elasticsearch
+    restart: on-failure
 
 
   logspout:

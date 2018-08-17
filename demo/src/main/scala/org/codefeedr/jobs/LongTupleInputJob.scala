@@ -6,10 +6,7 @@ import org.apache.flink.streaming.api.scala._
 import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.library.internal.kafka.sink.KafkaGenericSink
 
-
 import scala.concurrent._
 import scala.concurrent.duration._
 
-object LongTupleInputJob {
-
-}
+object LongTupleInputJob {}
