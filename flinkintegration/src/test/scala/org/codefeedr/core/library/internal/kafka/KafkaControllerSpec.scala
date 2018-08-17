@@ -21,6 +21,8 @@
 
 package org.codefeedr.core.library.internal.kafka
 
+import java.util.UUID
+
 import org.codefeedr.core.library.internal.zookeeper.ZkClient
 import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.LibraryServiceSpec
@@ -35,7 +37,7 @@ import scala.concurrent.duration.{Duration, SECONDS}
   * Created by Niels on 11/07/2017.
   */
 class KafkaControllerSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEach {
-  val testTopic = "TestTopic"
+  val testTopic = s"TestTopic-${UUID.randomUUID()}"
 
   override def beforeEach(): Unit = {
     Await.ready(subjectLibrary.initialize(),Duration(5, SECONDS))
@@ -62,6 +64,7 @@ class KafkaControllerSpec extends LibraryServiceSpec with Matchers with BeforeAn
 
   it should "create a topic with the configured amount of partitions" in async {
       await(kafkaController.guaranteeTopic(testTopic))
+      assert(await(kafkaController.getTopics()).contains(testTopic))
       val r = assert(await(kafkaController.getPartitions(testTopic)) == 4)
       await(kafkaController.deleteTopic(testTopic))
       r

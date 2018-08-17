@@ -140,6 +140,7 @@ lazy val flinkintegration = (project in file("flinkintegration"))
   .settings(
     settings,
     parallelExecution in Test := false,
+    fork in ThisBuild in Test:= false,
     libraryDependencies ++= commonDependencies ++ zkKafkaDependencies ++ flinkDependencies ++ connectorDependencies
 
   )
