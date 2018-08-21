@@ -1,15 +1,25 @@
 package org.codefeedr.core.library.internal.kafka.source
 
+import java.util
+
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.types.Row
-import org.apache.kafka.clients.consumer.{ConsumerRecord, KafkaConsumer}
+import org.apache.kafka.clients.consumer.{ConsumerRebalanceListener, ConsumerRecord, KafkaConsumer}
 import org.apache.kafka.common.TopicPartition
 import org.codefeedr.model.{RecordSourceTrail, TrailedRecord}
+import rx.lang.scala.subjects.ReplaySubject
+import rx.lang.scala.{Observable, Subject}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+
+trait KafkaSourceMapper[TElement, TValue, TKey] {
+  //Transform the kafka data to an element
+  def mapKafkaSource(value:TValue,key:TKey):TElement
+}
+
 
 /**
   * Class performing the polling of kafka for a KafkaSource
@@ -17,9 +27,9 @@ import scala.collection.mutable.ArrayBuffer
   */
 class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
                                                   topic: String,
-                                                  consumer: KafkaConsumer[TKey, TValue],
-                                                  mapper: (TValue, TKey) => TElement)
+                                                  consumer: KafkaConsumer[TKey, TValue])
     extends LazyLogging {
+  this:KafkaSourceMapper[TElement,TValue,TKey] =>
 
   //Timeout when polling kafka
   @transient private lazy val pollTimeout = 1000
@@ -47,7 +57,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     val resetSet = ArrayBuffer[Int]()
     data.foreach(o => {
       if (shouldInclude(o)) {
-        cb(mapper(o.value(), o.key()))
+        cb(mapKafkaSource(o.value(), o.key()))
         val partition = o.partition()
         val offset = o.offset()
         logger.debug(s"Processing $partition -> $offset ")
@@ -83,6 +93,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     */
   def commit(offsets: Map[Int, Long]): Unit = {
     //TODO: Implement
+    //Do we care about committing a consumer? We already keep track of offsets in the flink managed state...
     /*
     consumer.commitAsync(
       offsets.map(o => (o._1, new OffsetAndMetadata(o._2))).asJava,
@@ -126,4 +137,67 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
   def close(): Unit = {
     consumer.close()
   }
+}
+
+
+/**
+  * Companion object for Kafka Source consumer, with initialization logic
+  */
+object KafkaSourceConsumer {
+  /**
+    * Construct a new KafkaSourceConsumer
+    * @param sourceUuid unique identifier of the Flink source that uses this consumer
+    * @param consumerFactory factory providing kafka consumers
+    * @tparam TElement Type of the element provided by the consumer
+    * @tparam TValue Type of the value in Kafka
+    * @tparam TKey Type of key in Kafka
+    * @return
+    */
+  def apply[TElement, TValue,TKey](name:String, sourceUuid: String, topic:String)(mapper:KafkaSourceMapper[TElement, TValue, TKey])(consumerFactory:KafkaConsumerFactory)= {
+    val kafkaConsumer = consumerFactory.create[TKey, TValue](sourceUuid)
+    //TODO: Subscribe
+    val rebalanceListener = new RebalanceListenerImpl()
+    kafkaConsumer.subscribe(Iterable(topic).asJavaCollection, rebalanceListener)
+
+    val sourceConsumer = new KafkaSourceConsumer[TElement,TValue,TKey](name,topic, kafkaConsumer)
+      with KafkaSourceMapper[TElement, TValue, TKey] {
+      override def mapKafkaSource(value: TValue, key: TKey):TElement = mapper.mapKafkaSource(value,key)
+    }
+
+    wire(rebalanceListener,sourceConsumer)
+    sourceConsumer
+  }
+
+  /**
+    * Wires up the observables to the kafkaConsumer to update it's partitions as the events come in
+    * @param observable consumer rebalance observable, passing all rebalance events
+    * @param kafkaConsumer the consumer to wire
+    * @tparam TElement Type of the element provided by the consumer
+    * @tparam TValue Type of the value in Kafka
+    * @tparam TKey Type of key in Kafka
+    */
+  private def wire[TElement, TValue,TKey](observable:ConsumerRebalanceObservable, kafkaConsumer: KafkaSourceConsumer[TElement, TValue,TKey]) {
+
+  }
+
+}
+
+
+trait ConsumerRebalanceObservable {
+  protected lazy val partitionsRevoked:Subject[Iterable[TopicPartition]] = new ReplaySubject[Iterable[TopicPartition]]()
+  protected lazy val partitionsAssigned:Subject[Iterable[TopicPartition]] = new ReplaySubject[Iterable[TopicPartition]]()
+
+  def observePartitionsRevoked():Observable[Iterable[TopicPartition]] = partitionsRevoked
+
+  def observePArtitionsAssigned():Observable[Iterable[TopicPartition]] = partitionsAssigned
+}
+
+/**
+  * Rx Wrapper around
+  */
+class RebalanceListenerImpl extends ConsumerRebalanceListener with ConsumerRebalanceObservable
+{
+  override protected def onPartitionsRevoked(partitions: util.Collection[TopicPartition]): Unit = partitionsRevoked.onNext(partitions.asScala)
+
+  override protected def onPartitionsAssigned(partitions: util.Collection[TopicPartition]): Unit = partitionsAssigned.onNext(partitions.asScala)
 }

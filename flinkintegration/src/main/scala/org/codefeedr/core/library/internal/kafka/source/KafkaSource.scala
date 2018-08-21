@@ -119,7 +119,11 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
 
   //State of the source. We use the mutable map in operation,
   // and when a snapshot is performed we update the liststate. The liststate contains the offsets of the last comitted checkpoint
-  @transient private[kafka] lazy val currentOffsets = consumer.getCurrentOffsets
+  @transient private[kafka] lazy val currentOffsets = {
+    val r = consumer.getCurrentOffsets
+    logger.debug(s"Initialized consumer $getLabel with offsets $r")
+    r
+  }
   @transient private[kafka] lazy val checkpointOffsets = mutable.Map[Long, Map[Int, Long]]()
   @transient private var checkpointedState: ListState[KafkaSourceStateContainer] = _
 
@@ -207,6 +211,7 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
     val iterator = checkpointedState.get().asScala
     //If the state was nonempty, initialize the offsets with the recieved data
     if (iterator.nonEmpty) {
+      logger.info(s"Initializing $getLabel source with preconfigured state.")
       iterator.foreach((o: KafkaSourceStateContainer) => {
         if (sourceState.nonEmpty) {
           throw new IllegalStateException(
