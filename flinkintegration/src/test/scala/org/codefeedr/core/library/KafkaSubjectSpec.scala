@@ -33,6 +33,7 @@ import org.codefeedr.core.{FullIntegrationSpec, IntegrationTestLibraryServices, 
 import org.codefeedr.core.library.internal.zookeeper.ZkClient
 import org.codefeedr.model.TrailedRecord
 import org.scalatest.tagobjects.Slow
+import org.slf4j.MDC
 
 import scala.collection.mutable
 import scala.concurrent.{TimeoutException, _}
@@ -94,14 +95,10 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
   "Kafka-Sources" should "retrieve all messages published by a source" taggedAs(Slow, KafkaTest) in async {
     val subjectNode = subjectLibrary.getSubject(testSubjectName)
     assert(!await(subjectNode.exists()))
-
     //Generate some test input
     await(runSourceEnvironment[MyOwnIntegerObject](mutable.Set(1, 2, 3).map(o => MyOwnIntegerObject(o)).toArray))
-
-
     //Creating fake query environments
     val environments = Future.sequence(Seq(CreateSourceQuery(1), CreateSourceQuery(2), CreateSourceQuery(3)))
-
 
     Console.println("Closing subject type, should close the queries")
     await(subjectNode.setState(false))
@@ -191,9 +188,11 @@ class MyOwnSourceQuery(nr: Int, parallelism: Int) extends Runnable with LazyLogg
       case _ => throw new Exception("Cannot get here")
     }
 
+    MDC.put("envId", s"source-$nr")
     logger.debug(s"Starting environment $nr")
     env.execute(s"job$nr")
     logger.debug(s"Environment $nr finished")
+    MDC.remove("envId")
   }
 
   /**

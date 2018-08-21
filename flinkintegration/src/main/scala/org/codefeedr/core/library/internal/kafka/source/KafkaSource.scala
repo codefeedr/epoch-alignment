@@ -52,8 +52,7 @@ case class KafkaSourceStateContainer(instanceId: String, offsets: Map[Int, Long]
   * Use a single thread to perform all polling operations on kafka
   * Note that new objects will still exist per distributed environment
   *
-  * Currently this source is only used as base class for RowSource
-  * This source does not support TimestampAssigners yet
+  * TODO: Clean up this class
   *
   * Because this class needs to be serializable and the LibraryServices are not, no dependency injection structure can be used here :(
   * Created by Niels on 18/07/2017.
