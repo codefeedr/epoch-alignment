@@ -20,7 +20,7 @@ trait IntegrationTestLibraryServices extends ZkClientComponent
   with StreamComposerFactoryComponent
   with EpochStateManagerComponent
 
-  with ConfigurationProviderComponent
+  with FlinkConfigurationProviderComponent
   with KafkaConfigurationComponent
   with ZookeeperConfigurationComponent {
   override val zkClient: ZkClient = LibraryServices.zkClient
@@ -32,6 +32,5 @@ trait IntegrationTestLibraryServices extends ZkClientComponent
   val streamComposerFactory: StreamComposerFactory = LibraryServices.streamComposerFactory.asInstanceOf[StreamComposerFactory]
   override val epochStateManager: EpochStateManager = LibraryServices.epochStateManager
 
-  override val configurationProvider: ConfigurationProvider = LibraryServices.configurationProvider
   override val kafkaConfiguration: KafkaConfiguration = LibraryServices.kafkaConfiguration
 }

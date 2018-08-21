@@ -71,7 +71,7 @@ trait KafkaConfigurationComponent extends Serializable{
   }
 }
 
-trait KafkaConfiguration {
+trait KafkaConfiguration extends Serializable {
 
   /**
     * Retrieve the configuration as java Properties (so it can be passed to the kafka driver)
