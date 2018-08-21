@@ -17,11 +17,16 @@ import org.scalatest.{BeforeAndAfterEach, FlatSpec}
 import scala.collection.mutable
 
 class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with MockitoSugar with MockitoExtensions  {
+  private var consumerFactory:KafkaConsumerFactory = _
   private var consumer: KafkaConsumer[RecordSourceTrail, Row] = _
   private val topic = "sourceElement"
 
+
+
   override def beforeEach() = {
     consumer = mock[KafkaConsumer[RecordSourceTrail, Row]]
+    consumerFactory = mock[KafkaConsumerFactory]
+    when(consumerFactory.create[RecordSourceTrail,Row](ArgumentMatchers.any())) thenReturn(consumer)
   }
 
   "KafkaSourceConsumer.Poll" should "return the latest offsets that it recieved by polling the source" in {
@@ -33,8 +38,8 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
     val r = component.poll(_ => Unit)
 
     //Assert
-    assert(r.contains(1 -> 2L))
-    assert(r.contains(2 -> 2L))
+    assert(component.getCurrentOffsets.contains(1 -> 2L))
+    assert(component.getCurrentOffsets.contains(2 -> 2L))
   }
 
   it should "invoke ctx with all returned elements" in {
@@ -60,8 +65,8 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
     val r = component.poll(queue+= _,Map(1->2,2->2))
 
     //Assert
-    assert(r.contains(1 -> 2L))
-    assert(r.contains(2 -> 2L))
+    assert(component.getCurrentOffsets.contains(1 -> 2L))
+    assert(component.getCurrentOffsets.contains(2 -> 2L))
     assert(queue.size == 3)
   }
 
@@ -96,12 +101,17 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
   }
 
   private def constructConsumer(): KafkaSourceConsumer[SourceElement,Row,RecordSourceTrail] = {
-    new KafkaSourceConsumer[SourceElement,Row,RecordSourceTrail]("sourceConsumer",topic,consumer,mapper)
+    new KafkaSourceConsumer[SourceElement,Row,RecordSourceTrail]("sourceConsumer","topic",consumer) with TestMapper
   }
 
-  private def mapper(value:Row, key:RecordSourceTrail):SourceElement = {
-    SourceElement(value.hashCode())
-  }
 
   case class SourceElement(nr: Int)
+
+  trait TestMapper extends KafkaSourceMapper[SourceElement,Row,RecordSourceTrail] {
+    override def transform(value: Row, key: RecordSourceTrail): SourceElement = {
+      SourceElement(value.hashCode())
+    }
+  }
 }
+
+

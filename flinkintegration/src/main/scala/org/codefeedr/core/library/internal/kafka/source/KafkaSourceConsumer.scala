@@ -1,24 +1,23 @@
 package org.codefeedr.core.library.internal.kafka.source
 
-import java.util
+
 
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.flink.streaming.api.functions.source.SourceFunction
-import org.apache.flink.types.Row
-import org.apache.kafka.clients.consumer.{ConsumerRebalanceListener, ConsumerRecord, KafkaConsumer}
+import org.apache.kafka.clients.consumer.{ConsumerRecord, KafkaConsumer}
 import org.apache.kafka.common.TopicPartition
-import org.codefeedr.model.{RecordSourceTrail, TrailedRecord}
-import rx.lang.scala.subjects.ReplaySubject
-import rx.lang.scala.{Observable, Subject}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import scala.reflect.ClassTag
 
 trait KafkaSourceMapper[TElement, TValue, TKey] {
   //Transform the kafka data to an element
-  def mapKafkaSource(value:TValue,key:TKey):TElement
+  def transform(value:TValue, key:TKey):TElement
 }
+
+
+case class KafkaSourceConsumerState(assignment:Option[Iterable[TopicPartition]], offsets:Option[Map[Int,Long]])
 
 
 /**
@@ -31,17 +30,29 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     extends LazyLogging {
   this:KafkaSourceMapper[TElement,TValue,TKey] =>
 
-  //Timeout when polling kafka
-  @transient private lazy val pollTimeout = 1000
+  //Timeout when polling kafka. TODO: Move to configuration
+  private lazy val pollTimeout = 1000
+
+  /**
+    * Current state of the source consumer
+    * Modified during poll loop
+    */
+  @volatile private var state : KafkaSourceConsumerState = KafkaSourceConsumerState(None,None)
 
   /**
     * Performs a poll on kafka
+    * Updates the state of the kafka consumer
     * @param cb callback to invoke for every element
-    * @return the last offsets for each partition of the consumer that has been collected in the poll
     */
-  def poll(cb: TElement => Unit): Map[Int, Long] = poll(cb, Map[Int, Long]())
+  def poll(cb: TElement => Unit): Unit = poll(cb, Map[Int, Long]())
 
-  def poll(cb: TElement => Unit, seekOffsets: PartialFunction[Int, Long]): Map[Int, Long] = {
+  /**
+    * Performs a poll on kafka, up to the given offset
+    * Updates the state of the kafka consumer
+    * @param cb callback to notify new elements to
+    * @param seekOffsets maximum offsets to retrieve
+    */
+  def poll(cb: TElement => Unit, seekOffsets: PartialFunction[Int, Long]):Unit = {
     val shouldInclude = (r: ConsumerRecord[TKey, TValue]) =>
       seekOffsets.lift(r.partition()).forall(_ >= r.offset())
     poll(cb, shouldInclude, seekOffsets)
@@ -57,7 +68,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     val resetSet = ArrayBuffer[Int]()
     data.foreach(o => {
       if (shouldInclude(o)) {
-        cb(mapKafkaSource(o.value(), o.key()))
+        cb(transform(o.value(), o.key()))
         val partition = o.partition()
         val offset = o.offset()
         logger.debug(s"Processing $partition -> $offset ")
@@ -77,6 +88,14 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     r.toMap
   }
 
+  /**
+    * Updates the assignment
+    */
+  private def updateAssignments(): Unit = {
+
+  }
+
+
   private def resetConsumer(partitions: Seq[Int], offsets: PartialFunction[Int, Long]): Unit = {
     if (partitions.nonEmpty) {
       logger.debug(s"Perfoming a seek on $name")
@@ -92,8 +111,8 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     * @param offsets the offsets to commit
     */
   def commit(offsets: Map[Int, Long]): Unit = {
-    //TODO: Implement
     //Do we care about committing a consumer? We already keep track of offsets in the flink managed state...
+    //TODO: Implement or discard
     /*
     consumer.commitAsync(
       offsets.map(o => (o._1, new OffsetAndMetadata(o._2))).asJava,
@@ -131,6 +150,18 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
       .map(o => o._1.partition() -> (o._2.toLong - 1))
       .toMap
 
+
+  /**
+    * Returns if the current offsets has passed the endOffsets
+    * @param reference offsets to compare to
+    * @return None if no assignment has ever been made to this consumer
+    *         True if the consumer is further than the reference for all assigned partitions
+    *         False if the consumer is behind on one or more assigned partitions
+    */
+  def higherOrEqual(reference: PartialFunction[Int, Long]): Option[Boolean] =
+    state.offsets.map(assignment => assignment.forall(o => reference(o._1) <= o._2))
+
+
   /**
     * Closes the kafka consumer
     */
@@ -153,7 +184,7 @@ object KafkaSourceConsumer {
     * @tparam TKey Type of key in Kafka
     * @return
     */
-  def apply[TElement, TValue,TKey](name:String, sourceUuid: String, topic:String)(mapper:KafkaSourceMapper[TElement, TValue, TKey])(consumerFactory:KafkaConsumerFactory)= {
+  def apply[TElement, TValue:ClassTag,TKey:ClassTag](name:String, sourceUuid: String, topic:String)(mapper:KafkaSourceMapper[TElement, TValue, TKey])(consumerFactory:KafkaConsumerFactory)= {
     val kafkaConsumer = consumerFactory.create[TKey, TValue](sourceUuid)
     //TODO: Subscribe
     val rebalanceListener = new RebalanceListenerImpl()
@@ -161,7 +192,7 @@ object KafkaSourceConsumer {
 
     val sourceConsumer = new KafkaSourceConsumer[TElement,TValue,TKey](name,topic, kafkaConsumer)
       with KafkaSourceMapper[TElement, TValue, TKey] {
-      override def mapKafkaSource(value: TValue, key: TKey):TElement = mapper.mapKafkaSource(value,key)
+      override def transform(value: TValue, key: TKey):TElement = mapper.transform(value,key)
     }
 
     wire(rebalanceListener,sourceConsumer)
@@ -183,21 +214,3 @@ object KafkaSourceConsumer {
 }
 
 
-trait ConsumerRebalanceObservable {
-  protected lazy val partitionsRevoked:Subject[Iterable[TopicPartition]] = new ReplaySubject[Iterable[TopicPartition]]()
-  protected lazy val partitionsAssigned:Subject[Iterable[TopicPartition]] = new ReplaySubject[Iterable[TopicPartition]]()
-
-  def observePartitionsRevoked():Observable[Iterable[TopicPartition]] = partitionsRevoked
-
-  def observePartitionsAssigned():Observable[Iterable[TopicPartition]] = partitionsAssigned
-}
-
-/**
-  * Rx Wrapper around
-  */
-class RebalanceListenerImpl extends ConsumerRebalanceListener with ConsumerRebalanceObservable
-{
-  override protected def onPartitionsRevoked(partitions: util.Collection[TopicPartition]): Unit = partitionsRevoked.onNext(partitions.asScala)
-
-  override protected def onPartitionsAssigned(partitions: util.Collection[TopicPartition]): Unit = partitionsAssigned.onNext(partitions.asScala)
-}
