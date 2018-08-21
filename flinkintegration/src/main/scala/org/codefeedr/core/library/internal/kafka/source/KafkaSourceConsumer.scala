@@ -9,6 +9,7 @@ import org.apache.kafka.common.TopicPartition
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.parallel.immutable
 import scala.reflect.ClassTag
 
 trait KafkaSourceMapper[TElement, TValue, TKey] {
@@ -33,6 +34,11 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
   //Timeout when polling kafka. TODO: Move to configuration
   private lazy val pollTimeout = 1000
 
+  /**
+    * Variable that keeps track of new the assignment of new topicPartitions
+    * Make sure to lock when writing to this value
+    */
+  @volatile private var newPartitions:Option[Iterable[TopicPartition]] = None
   /**
     * Current state of the source consumer
     * Modified during poll loop
@@ -89,10 +95,16 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
   }
 
   /**
-    * Updates the assignment
+    * Updates the assignment of topicPartitions
+    * In the case of new partitions, assigns -1 as starting offset
     */
-  private def updateAssignments(): Unit = {
+  private def updateAssignments(): Unit =  {
+    ???
+  }
 
+  private def onNewAssignment(partitions:Iterable[TopicPartition]): Unit = synchronized {
+    logger.info(s"New assignment for $name: $partitions")
+    newPartitions = Some(partitions)
   }
 
 
@@ -208,7 +220,7 @@ object KafkaSourceConsumer {
     * @tparam TKey Type of key in Kafka
     */
   private def wire[TElement, TValue,TKey](observable:ConsumerRebalanceObservable, kafkaConsumer: KafkaSourceConsumer[TElement, TValue,TKey]) {
-
+    observable.observePartitions().subscribe(kafkaConsumer.onNewAssignment(_))
   }
 
 }
