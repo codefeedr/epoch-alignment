@@ -189,7 +189,7 @@ trait ConsumerRebalanceObservable {
 
   def observePartitionsRevoked():Observable[Iterable[TopicPartition]] = partitionsRevoked
 
-  def observePArtitionsAssigned():Observable[Iterable[TopicPartition]] = partitionsAssigned
+  def observePartitionsAssigned():Observable[Iterable[TopicPartition]] = partitionsAssigned
 }
 
 /**
