@@ -2,7 +2,6 @@ package org.codefeedr.configuration
 import java.util.Properties
 
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.flink.api.java.utils.ParameterTool
 
 import scala.collection.immutable
 import scala.collection.JavaConverters._
@@ -23,18 +22,17 @@ trait KafkaConfigurationComponent extends Serializable{
     //Prefix for keys, added to support multimple kafka configurations in the future (if needed)
     val prefix = "kafka."
 
-    private val adminMapping = immutable.Map[String, ConfigurationMapping](
+    //These mappings are not serializable
+    @transient private lazy val adminMapping = immutable.Map[String, ConfigurationMapping](
       "bootstrap.servers"  -> CM(v => v,None),
       "retries"                     -> CM[Integer](v => v.toInt,Some(1))
     )
-
-    private val consumerMapping = adminMapping ++ immutable.Map[String,ConfigurationMapping](
+    @transient private lazy  val consumerMapping = adminMapping ++ immutable.Map[String,ConfigurationMapping](
       "auto.commit.enable" -> CM(v => v, Some("true")),
       "auto.offset.reset"           -> CM(v => v,Some("earliest")),
       "auto.commit.interval.ms"     -> CM[Integer](v => v.toInt,Some(100))
     )
-
-    private val producerMapping = adminMapping
+    @transient private lazy val producerMapping = adminMapping
 
 
     /**
