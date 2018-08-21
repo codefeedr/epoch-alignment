@@ -62,7 +62,7 @@ object observableExtension extends LazyLogging {
       val p = Promise[List[T]]
       val collection = new mutable.ListBuffer[T]
       val subscription = o.subscribe(element => {
-        logger.debug("Got element")
+        logger.debug(s"Got element: $element")
         collection.append(element)
       }, e => p.failure(e), () => p.success(collection.toList))
       p.future

@@ -31,14 +31,15 @@ trait ConsumerRebalanceObservable {
     * @return
     */
   def observePartitions(): Observable[Iterable[TopicPartition]] =
-    partitionsRevoked.map(revoke)
-    .merge(partitionsAssigned.map(assign))
-    .foldLeft(Iterable.empty[TopicPartition])((s,v) => {
+    partitionsAssigned.map(assign)
+    .merge(partitionsRevoked.map(revoke))
+    .scan(Iterable.empty[TopicPartition])((s,v) => {
       v match {
         case revoke(tp) => s.filter(r => !tp.exists(o => o.equals(r)))
         case assign(tp) => s ++ tp
       }
     })
+    .drop(1) //Drop the initial value injected into the scan operator
 
 
 
@@ -53,7 +54,7 @@ trait ConsumerRebalanceObservable {
   */
 class RebalanceListenerImpl extends ConsumerRebalanceListener with ConsumerRebalanceObservable
 {
-  override protected def onPartitionsRevoked(partitions: util.Collection[TopicPartition]): Unit = partitionsRevoked.onNext(partitions.asScala)
+  override def onPartitionsRevoked(partitions: util.Collection[TopicPartition]): Unit = partitionsRevoked.onNext(partitions.asScala)
 
-  override protected def onPartitionsAssigned(partitions: util.Collection[TopicPartition]): Unit = partitionsAssigned.onNext(partitions.asScala)
+  override def onPartitionsAssigned(partitions: util.Collection[TopicPartition]): Unit = partitionsAssigned.onNext(partitions.asScala)
 }
