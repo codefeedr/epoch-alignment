@@ -1,7 +1,6 @@
 package org.codefeedr.core.library.internal.kafka.source
 
 
-
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.consumer.{ConsumerRecord, KafkaConsumer}
 import org.apache.kafka.common.TopicPartition
@@ -14,11 +13,23 @@ import scala.reflect.ClassTag
 
 trait KafkaSourceMapper[TElement, TValue, TKey] {
   //Transform the kafka data to an element
-  def transform(value:TValue, key:TKey):TElement
+  def transform(value: TValue, key: TKey): TElement
 }
 
 
-case class KafkaSourceConsumerState(assignment:Option[Iterable[TopicPartition]], offsets:Option[Map[Int,Long]])
+case class KafkaSourceConsumerState(assignment: Option[Iterable[TopicPartition]], offsets: Option[Map[Int, Long]]) {
+  /**
+    * Retrieves the current assignment, or empty collection if no assignment exists yet
+    * @return
+    */
+  def getAssignment: Iterable[TopicPartition] = assignment.getOrElse(Iterable.empty[TopicPartition])
+
+  /**
+    * Retrieves the current offsets, or an empty map if no offsets are available yet
+    * @return
+    */
+  def getOffsets = offsets.getOrElse(Map.empty[Int,Long])
+}
 
 
 /**
@@ -28,8 +39,8 @@ case class KafkaSourceConsumerState(assignment:Option[Iterable[TopicPartition]],
 class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
                                                   topic: String,
                                                   consumer: KafkaConsumer[TKey, TValue])
-    extends LazyLogging {
-  this:KafkaSourceMapper[TElement,TValue,TKey] =>
+  extends LazyLogging {
+  this: KafkaSourceMapper[TElement, TValue, TKey] =>
 
   //Timeout when polling kafka. TODO: Move to configuration
   private lazy val pollTimeout = 1000
@@ -38,16 +49,17 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     * Variable that keeps track of new the assignment of new topicPartitions
     * Make sure to lock when writing to this value
     */
-  @volatile private var newPartitions:Option[Iterable[TopicPartition]] = None
+  @volatile private var newPartitions: Option[Iterable[TopicPartition]] = None
   /**
     * Current state of the source consumer
     * Modified during poll loop
     */
-  @volatile private var state : KafkaSourceConsumerState = KafkaSourceConsumerState(None,None)
+  @volatile private var state: KafkaSourceConsumerState = KafkaSourceConsumerState(None, None)
 
   /**
     * Performs a poll on kafka
     * Updates the state of the kafka consumer
+    *
     * @param cb callback to invoke for every element
     */
   def poll(cb: TElement => Unit): Unit = poll(cb, Map[Int, Long]())
@@ -55,10 +67,11 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
   /**
     * Performs a poll on kafka, up to the given offset
     * Updates the state of the kafka consumer
-    * @param cb callback to notify new elements to
+    *
+    * @param cb          callback to notify new elements to
     * @param seekOffsets maximum offsets to retrieve
     */
-  def poll(cb: TElement => Unit, seekOffsets: PartialFunction[Int, Long]):Unit = {
+  def poll(cb: TElement => Unit, seekOffsets: PartialFunction[Int, Long]): Unit = {
     val shouldInclude = (r: ConsumerRecord[TKey, TValue]) =>
       seekOffsets.lift(r.partition()).forall(_ >= r.offset())
     poll(cb, shouldInclude, seekOffsets)
@@ -66,7 +79,9 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
 
   private def poll(cb: TElement => Unit,
                    shouldInclude: ConsumerRecord[TKey, TValue] => Boolean,
-                   seekOffsets: PartialFunction[Int, Long]): Map[Int, Long] = {
+                   seekOffsets: PartialFunction[Int, Long]): Unit = {
+    updateAssignments()
+
     logger.debug(s"$name started polling")
     val data = consumer.poll(pollTimeout).iterator().asScala
     logger.debug(s"$name completed polling")
@@ -91,18 +106,63 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     })
     resetConsumer(resetSet, seekOffsets)
 
-    r.toMap
+    updateOffsetState(r.toMap)
+  }
+
+  /**
+    * Updates the state of this sourceConsumer with the new offset
+    * Typically called at the end of the poll loop with the new offsets
+    * Most code is just to provice debug information of the current state
+    * @param newOffsets offsets to update the state with
+    */
+  private def updateOffsetState(newOffsets: Map[Int, Long]): Unit = synchronized {
+    state = KafkaSourceConsumerState(state.assignment, Some(
+      newOffsets.foldLeft(state.getOffsets)((currentOffsets, po) => {
+        val partition = po._1
+        val offset = po._2
+        if (currentOffsets.get(partition).exists(offset < _)) {
+          logger.warn(s"$name received data from offsets lower than the existing offset. Partition: $partition, new offset: $offset, old offset: ${currentOffsets.get(partition).get}")
+        }
+        logger.debug(s"Updating offset in $name with $partition -> $offset (${
+          state.assignment.exists(o => o.exists(o2 => o2.partition() == partition))
+        })")
+        currentOffsets + (partition -> offset)
+      })
+    ))
   }
 
   /**
     * Updates the assignment of topicPartitions
     * In the case of new partitions, assigns -1 as starting offset
+    * Typically called after updateOffsetState, within the same lock
     */
-  private def updateAssignments(): Unit =  {
-    ???
+  private def updateAssignments(): Unit = synchronized {
+    if (newPartitions.nonEmpty) {
+
+      val newOffsets = newPartitions.get
+        .filterNot(state.getAssignment.toSet)
+        .map(tp => tp.partition() -> -1l)
+
+
+      logger.debug(s"$name removing offsets from state ${
+        state.getOffsets.filterNot(o => newPartitions.get.map(_.partition()).exists(_ == o._1))
+      }")
+
+      //Remove offsets, and add newly assigned partitions to the offset map
+      val newStateOffsets =
+        state.getOffsets
+          .filter(o => newPartitions.get.map(_.partition()).exists(_ == o._1)) ++ newOffsets
+
+      //Update assignment and offsets
+      state = KafkaSourceConsumerState(newPartitions, Some(newStateOffsets))
+    }
   }
 
-  private def onNewAssignment(partitions:Iterable[TopicPartition]): Unit = synchronized {
+  /**
+    * Notify the source consimer of a new assignment
+    * @param partitions
+    */
+  private[source] def onNewAssignment(partitions: Iterable[TopicPartition]): Unit = synchronized {
     logger.info(s"New assignment for $name: $partitions")
     newPartitions = Some(partitions)
   }
@@ -120,6 +180,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
 
   /**
     * Commits the passed offsets
+    *
     * @param offsets the offsets to commit
     */
   def commit(offsets: Map[Int, Long]): Unit = {
@@ -143,9 +204,18 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
   /**
     * Obtains the currently comitted offsets
     * Used to initialize a kafkaSource
+    *
     * @return
     */
-  def getCurrentOffsets: mutable.Map[Int, Long] =
+  def getCurrentOffsets: Map[Int, Long] = state.getOffsets
+
+
+  /**
+    * Retrieves the current position on the assigned partitions of the consumer
+    *
+    * @return
+    */
+  def getCurrentPosition: mutable.Map[Int, Long] =
     mutable.Map[Int, Long]() ++= consumer
       .assignment()
       .asScala
@@ -153,6 +223,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
 
   /**
     * Retrieves kafka endoffsets -1. (Kafka returns last avalaible message + 1)
+    *
     * @return
     */
   def getEndOffsets: Map[Int, Long] =
@@ -165,6 +236,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
 
   /**
     * Returns if the current offsets has passed the endOffsets
+    *
     * @param reference offsets to compare to
     * @return None if no assignment has ever been made to this consumer
     *         True if the consumer is further than the reference for all assigned partitions
@@ -189,37 +261,39 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
 object KafkaSourceConsumer {
   /**
     * Construct a new KafkaSourceConsumer
-    * @param sourceUuid unique identifier of the Flink source that uses this consumer
+    *
+    * @param sourceUuid      unique identifier of the Flink source that uses this consumer
     * @param consumerFactory factory providing kafka consumers
     * @tparam TElement Type of the element provided by the consumer
-    * @tparam TValue Type of the value in Kafka
-    * @tparam TKey Type of key in Kafka
+    * @tparam TValue   Type of the value in Kafka
+    * @tparam TKey     Type of key in Kafka
     * @return
     */
-  def apply[TElement, TValue:ClassTag,TKey:ClassTag](name:String, sourceUuid: String, topic:String)(mapper:KafkaSourceMapper[TElement, TValue, TKey])(consumerFactory:KafkaConsumerFactory)= {
+  def apply[TElement, TValue: ClassTag, TKey: ClassTag](name: String, sourceUuid: String, topic: String)(mapper: KafkaSourceMapper[TElement, TValue, TKey])(consumerFactory: KafkaConsumerFactory) = {
     val kafkaConsumer = consumerFactory.create[TKey, TValue](sourceUuid)
     //TODO: Subscribe
     val rebalanceListener = new RebalanceListenerImpl()
     kafkaConsumer.subscribe(Iterable(topic).asJavaCollection, rebalanceListener)
 
-    val sourceConsumer = new KafkaSourceConsumer[TElement,TValue,TKey](name,topic, kafkaConsumer)
+    val sourceConsumer = new KafkaSourceConsumer[TElement, TValue, TKey](name, topic, kafkaConsumer)
       with KafkaSourceMapper[TElement, TValue, TKey] {
-      override def transform(value: TValue, key: TKey):TElement = mapper.transform(value,key)
+      override def transform(value: TValue, key: TKey): TElement = mapper.transform(value, key)
     }
 
-    wire(rebalanceListener,sourceConsumer)
+    wire(rebalanceListener, sourceConsumer)
     sourceConsumer
   }
 
   /**
     * Wires up the observables to the kafkaConsumer to update it's partitions as the events come in
-    * @param observable consumer rebalance observable, passing all rebalance events
+    *
+    * @param observable    consumer rebalance observable, passing all rebalance events
     * @param kafkaConsumer the consumer to wire
     * @tparam TElement Type of the element provided by the consumer
-    * @tparam TValue Type of the value in Kafka
-    * @tparam TKey Type of key in Kafka
+    * @tparam TValue   Type of the value in Kafka
+    * @tparam TKey     Type of key in Kafka
     */
-  private def wire[TElement, TValue,TKey](observable:ConsumerRebalanceObservable, kafkaConsumer: KafkaSourceConsumer[TElement, TValue,TKey]) {
+  private def wire[TElement, TValue, TKey](observable: ConsumerRebalanceObservable, kafkaConsumer: KafkaSourceConsumer[TElement, TValue, TKey]) {
     observable.observePartitions().subscribe(kafkaConsumer.onNewAssignment(_))
   }
 

@@ -214,8 +214,8 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
             s"Operator received states of multiple operators upon restore. This is not allowed!")
         }
         sourceState = Some(o)
-        currentOffsets.clear()
-        o.offsets.foreach(o => currentOffsets(o._1) = o._2)
+        //TODO: currentOffsets.clear()
+        //o.offsets.foreach(o => currentOffsets(o._1) = o._2)
       })
     } else {
       //Otherwise just initialize with the default value

@@ -6,6 +6,7 @@ import org.apache.kafka.clients.consumer.{ConsumerRecord, ConsumerRecords, Kafka
 import org.apache.kafka.common.TopicPartition
 import org.codefeedr.model.{Record, RecordSourceTrail, Source, TrailedRecord}
 
+import rx.lang.scala.{Observable, Subject}
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 import org.codefeedr.util.MockitoExtensions
@@ -16,26 +17,22 @@ import org.scalatest.{BeforeAndAfterEach, FlatSpec}
 
 import scala.collection.mutable
 
-class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with MockitoSugar with MockitoExtensions  {
-  private var consumerFactory:KafkaConsumerFactory = _
+class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with MockitoSugar with MockitoExtensions {
   private var consumer: KafkaConsumer[RecordSourceTrail, Row] = _
   private val topic = "sourceElement"
 
 
-
   override def beforeEach() = {
     consumer = mock[KafkaConsumer[RecordSourceTrail, Row]]
-    consumerFactory = mock[KafkaConsumerFactory]
-    when(consumerFactory.create[RecordSourceTrail,Row](ArgumentMatchers.any())) thenReturn(consumer)
   }
 
-  "KafkaSourceConsumer.Poll" should "return the latest offsets that it recieved by polling the source" in {
+  "KafkaSourceConsumer.Poll" should "update the latest offsets that it recieved by polling the source" in {
     //Arrange
     val component = constructConsumer()
-    when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((1,1L),(1,2L),(2,2L)))
+    when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (2, 2L)))
 
     //Act
-    val r = component.poll(_ => Unit)
+    component.poll(_ => Unit)
 
     //Assert
     assert(component.getCurrentOffsets.contains(1 -> 2L))
@@ -45,7 +42,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
   it should "invoke ctx with all returned elements" in {
     //Arrange
     val component = constructConsumer()
-    when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((1,1L),(1,2L),(2,2L)))
+    when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (2, 2L)))
     val queue = new mutable.Queue[SourceElement]
 
     //Act
@@ -58,11 +55,11 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
   it should "not treat elements past the given offset" in {
     //Arrange
     val component = constructConsumer()
-    when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((1,1L),(1,2L),(1,3L),(2,2L),(2,3L)))
+    when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (1, 3L), (2, 2L), (2, 3L)))
     val queue = new mutable.Queue[SourceElement]
 
     //Act
-    val r = component.poll(queue+= _,Map(1->2,2->2))
+    component.poll(queue += _, Map(1 -> 2, 2 -> 2))
 
     //Assert
     assert(component.getCurrentOffsets.contains(1 -> 2L))
@@ -73,22 +70,55 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
   it should "call seek when it recieved elements past the given offset" in {
     //Arrange
     val component = constructConsumer()
-    when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((1,1L),(1,2L),(1,3L),(2,2L),(2,3L)))
+    when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (1, 3L), (2, 2L), (2, 3L)))
 
     //Act
-    val r = component.poll(_ => Unit,Map(1->2,2->2))
+    component.poll(_ => Unit, Map(1 -> 2, 2 -> 2))
 
     //Assert
-    verify(consumer,times(1)).seek(Matches((o: TopicPartition) => o.partition() == 1),ArgumentMatchers.eq(2L))
-    verify(consumer,times(1)).seek(Matches((o: TopicPartition) => o.partition() == 2),ArgumentMatchers.eq(2L))
+    verify(consumer, times(1)).seek(Matches((o: TopicPartition) => o.partition() == 1), ArgumentMatchers.eq(2L))
+    verify(consumer, times(1)).seek(Matches((o: TopicPartition) => o.partition() == 2), ArgumentMatchers.eq(2L))
   }
 
+
+  it should "add a default offset when a partition is assigned, but no data has been received" in {
+    //Arrange
+    val component = constructConsumer()
+    when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (2, 2L)))
+    val assignment = Iterable(new TopicPartition("a", 1), new TopicPartition("a", 2), new TopicPartition("a", 3))
+
+    //Act
+    component.onNewAssignment(assignment)
+    component.poll(_ => Unit)
+
+    //Assert
+    assert(component.getCurrentOffsets.contains(1 -> 2L))
+    assert(component.getCurrentOffsets.contains(2 -> 2L))
+    assert(component.getCurrentOffsets.contains(3 -> -1L))
+  }
+
+  it should "remove an offset when no longer subscribed to a topic" in {
+    val component = constructConsumer()
+    when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (2, 2L)))
+    val assignment1 = Iterable(new TopicPartition("a", 1), new TopicPartition("a", 2), new TopicPartition("a", 3))
+    val assignment2 = Iterable(new TopicPartition("a", 2), new TopicPartition("a", 3))
+    //Act
+    component.onNewAssignment(assignment1)
+    component.poll(_ => Unit)
+    when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((2, 3L)))
+    component.onNewAssignment(assignment2)
+    component.poll(_ => Unit)
+
+    assert(!component.getCurrentOffsets.contains(1 -> 2L))
+    assert(component.getCurrentOffsets.contains(2 -> 3L))
+    assert(component.getCurrentOffsets.contains(3 -> -1L))
+  }
 
   /** Constructs a simple poll response based on the given partitions and offsets */
   private def constructPollResponse(data: Seq[(Int, Long)]): ConsumerRecords[RecordSourceTrail, Row] = {
     val elements = data.groupBy(o => o._1).map(o => {
-      val key = new TopicPartition(topic,o._1)
-      val data = o._2.map(o => constructConsumerRecord(o._1,o._2)).toList.asJava
+      val key = new TopicPartition(topic, o._1)
+      val data = o._2.map(o => constructConsumerRecord(o._1, o._2)).toList.asJava
       key -> data
     }).asJava
     new ConsumerRecords[RecordSourceTrail, Row](elements)
@@ -96,22 +126,23 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
 
   /** Construct some consumerRecord, sufficient for this test class */
   private def constructConsumerRecord(partition: Int, offset: Long): ConsumerRecord[RecordSourceTrail, Row] = {
-    new ConsumerRecord[RecordSourceTrail, Row](topic,partition,offset,Source(Array(partition.toByte),Array(offset.toByte)),
+    new ConsumerRecord[RecordSourceTrail, Row](topic, partition, offset, Source(Array(partition.toByte), Array(offset.toByte)),
       new Row(1))
   }
 
-  private def constructConsumer(): KafkaSourceConsumer[SourceElement,Row,RecordSourceTrail] = {
-    new KafkaSourceConsumer[SourceElement,Row,RecordSourceTrail]("sourceConsumer","topic",consumer) with TestMapper
+  private def constructConsumer(): KafkaSourceConsumer[SourceElement, Row, RecordSourceTrail] = {
+    new KafkaSourceConsumer[SourceElement, Row, RecordSourceTrail]("sourceConsumer", "topic", consumer) with TestMapper
   }
 
 
   case class SourceElement(nr: Int)
 
-  trait TestMapper extends KafkaSourceMapper[SourceElement,Row,RecordSourceTrail] {
+  trait TestMapper extends KafkaSourceMapper[SourceElement, Row, RecordSourceTrail] {
     override def transform(value: Row, key: RecordSourceTrail): SourceElement = {
       SourceElement(value.hashCode())
     }
   }
+
 }
 
 

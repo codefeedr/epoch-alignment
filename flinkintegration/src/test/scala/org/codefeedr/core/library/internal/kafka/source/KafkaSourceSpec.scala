@@ -79,7 +79,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     when(operatorStore.getListState[KafkaSourceStateContainer](ArgumentMatchers.any())) thenReturn listState
     when(listState.get()) thenReturn List.empty[KafkaSourceStateContainer].asJava
 
-    when(consumer.getCurrentOffsets) thenReturn mutable.Map[Int,Long]()
+    when(consumer.getCurrentOffsets) thenReturn Map[Int,Long]()
 
     when(runtimeContext.isCheckpointingEnabled) thenReturn true
 
@@ -109,7 +109,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
   it should "initialize with startoffsets from the consumer" in async {
     //Arrange
-    when(consumer.getCurrentOffsets) thenReturn mutable.Map[Int, Long](1 -> 10,2->13)
+    when(consumer.getCurrentOffsets) thenReturn Map[Int, Long](1 -> 10,2->13)
 
     //Act
     val source = constructInitializedSource()
@@ -250,7 +250,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     val testKafkaSource = constructInitializedSource()
     val epochCollectionNodeMock = mock[EpochCollectionNode]
     //TODO: when(consumer.poll(ArgumentMatchers.any())).thenReturn(Map(3 -> 1338L))
-    when(consumer.getCurrentOffsets) thenReturn mutable.Map(3 -> 0L)
+    when(consumer.getCurrentOffsets) thenReturn Map(3 -> 0L)
     //Initialize with empty collection
     testKafkaSource.setRuntimeContext(runtimeContext)
     testKafkaSource.initializeState(initCtx)
