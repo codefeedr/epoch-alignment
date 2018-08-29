@@ -62,6 +62,16 @@ Contains data objects used by the engine. This module is published to the Flink 
 Contains data objects used by the integration tests, that also need to be published to the Flink cluster. In the future maybe refactor this to an "Integration Test" plugin. For now the plugin architecture is not finished yet.
 
 
+# Evaluation
+
+## Setup Kafka & Zookeeper
+
+1. Install docker-compose: https://docs.docker.com/compose/install/ (Docker with virtual box should come with docker-compose installed, so only relevant for linux)
+2. Open the docker console the root folder of the project
+3. `cd experiments/Shared/`
+4. `docker-compose up`
+
+
 ## Setup KAFKA & Zookeeper
 
 1. Install docker-compose: https://docs.docker.com/compose/install/ (Docker with virtual box should come with docker-compose installed, so only relevant for linux)
