@@ -107,59 +107,29 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     assert(testKafkaSource.running)
   }
 
-  it should "initialize with startoffsets from the consumer" in async {
-    //Arrange
-    when(consumer.getCurrentOffsets) thenReturn Map[Int, Long](1 -> 10,2->13)
-
-    //Act
-    val source = constructInitializedSource()
-
-    //Assert
-    verify(manager, times(1)).initializeRun()
-
-    assert(source.currentOffsets(2) == 13L)
-    assert(source.currentOffsets(1) == 10L)
-    assert(source.running)
-  }
-
-
   it should "store the current offsets when snapshotState is called" in async {
     //Arrange
     val testKafkaSource = constructInitializedSource()
     val p = Promise[Unit]()
-    when(consumer.poll(ArgumentMatchers.any())).thenAnswer(awaitAndReturn(p, Map(2 -> 10L),2))
+    when(consumer.getCurrentOffsets).thenReturn(Map(2 -> 10L))
+
 
     //Act
     testKafkaSource.doCycle(ctx)
     testKafkaSource.snapshotState(context)
 
     //Assert
-    assert(testKafkaSource.currentOffsets(2) == 10)
+    assert(testKafkaSource.checkpointOffsets(0)(2) == 10L)
     assert(testKafkaSource.running)
   }
 
-  it should "increment the offsets when multiple polls are perfomed" in async {
-    //Arrange
-
-    val testKafkaSource = constructInitializedSource()
-    //Act
-    //TODO: when(consumer.poll(ArgumentMatchers.any())).thenReturn(Map(2 -> 10L))
-    testKafkaSource.doCycle(ctx)
-
-    //TODO: when(consumer.poll(ArgumentMatchers.any())).thenReturn(Map(2 -> 12L,1->2L))
-    testKafkaSource.doCycle(ctx)
-
-    //Assert
-    assert(testKafkaSource.currentOffsets(2) == 12L)
-    assert(testKafkaSource.currentOffsets(1) == 2L)
-    assert(testKafkaSource.running)
-  }
 
 
   it should "store the offsets when snapshotState is called" in async {
     //Arrange
     val testKafkaSource = constructInitializedSource()
-    //TODO: when(consumer.poll(ArgumentMatchers.any())).thenReturn(Map(2 -> 10L))
+    when(consumer.getCurrentOffsets).thenReturn(Map(2 -> 10L))
+
 
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn 1
@@ -176,7 +146,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   it should "update list state stored for a checkpoint when snapshot state is called" in async {
     //Arrange
     val testKafkaSource = constructInitializedSource()
-    //TODO: when(consumer.poll(ArgumentMatchers.any())).thenReturn(Map(2 -> 10L))
+    when(consumer.getCurrentOffsets).thenReturn(Map(2 -> 10L))
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn 1
 
@@ -192,7 +162,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   it should "commit offsets when notifyCheckpointComplete is called" in async {
     //Arrange
     val testKafkaSource = constructInitializedSource()
-    //TODO: when(consumer.poll(ArgumentMatchers.any())).thenReturn(Map(2 -> 10L))
+    when(consumer.getCurrentOffsets).thenReturn(Map(2 -> 10L))
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn 1
 
@@ -223,10 +193,11 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
   it should "Close the source when a poll obtained all data of the final offsets" in async {
     //Arrange
-    //TODO: when(consumer.poll(ArgumentMatchers.any())).thenReturn(Map(3 -> 1339L))
+    when(consumer.getCurrentOffsets).thenReturn(Map(3 -> 1339L))
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn 2
     when(manager.getLatestSubjectEpoch) thenReturn Future.successful(1L)
+    when(consumer.higherOrEqual(Map(3 -> 1339L))).thenReturn(Some(true))
     when(manager.getEpochOffsets(1L)) thenReturn Future.successful(Iterable(Partition(3,1339)))
     val testKafkaSource = constructInitializedSource()
 
@@ -242,15 +213,15 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     //Assert
     assert(before)
     assert(!after)
-    assert(testKafkaSource.currentOffsets(3) == 1339)
+    assert(testKafkaSource.checkpointOffsets(2)(3) == 1339)
   }
 
   it should "not close if the offsets had not been reached" in async {
     //Arrange
     val testKafkaSource = constructInitializedSource()
     val epochCollectionNodeMock = mock[EpochCollectionNode]
-    //TODO: when(consumer.poll(ArgumentMatchers.any())).thenReturn(Map(3 -> 1338L))
-    when(consumer.getCurrentOffsets) thenReturn Map(3 -> 0L)
+    when(consumer.getCurrentOffsets).thenReturn(Map(3 -> 1338L))
+
     //Initialize with empty collection
     testKafkaSource.setRuntimeContext(runtimeContext)
     testKafkaSource.initializeState(initCtx)
@@ -274,7 +245,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     //Assert
     assert(before)
     assert(after)
-    assert(testKafkaSource.currentOffsets(3) == 1338)
+    assert(testKafkaSource.checkpointOffsets(1)(3) == 1338)
   }
 
   it should "Swich to catchingUp state when receiving prepareSynchronize command on the next epoch" in async {

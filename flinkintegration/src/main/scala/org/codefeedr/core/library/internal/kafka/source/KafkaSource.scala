@@ -113,13 +113,7 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
     Await.result(manager.getEpochOffsets(finalSourceEpoch), 1.seconds)
   @transient private[kafka] var checkpointingMode: Option[CheckpointingMode] = _
 
-  //State of the source. We use the mutable map in operation,
-  // and when a snapshot is performed we update the liststate. The liststate contains the offsets of the last comitted checkpoint
-  @transient private[kafka] lazy val currentOffsets = {
-    val r = consumer.getCurrentOffsets
-    logger.debug(s"Initialized consumer $getLabel with offsets $r")
-    r
-  }
+
   @transient private[kafka] lazy val checkpointOffsets = mutable.Map[Long, Map[Int, Long]]()
   @transient private var checkpointedState: ListState[KafkaSourceStateContainer] = _
 
@@ -239,8 +233,6 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
       checkpointingMode = Some(CheckpointingMode.EXACTLY_ONCE)
     }
 
-    currentOffsets.values
-
     initialized = true
   }
 
@@ -248,7 +240,9 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
   override def snapshotState(context: FunctionSnapshotContext): Unit = {
     val epochId = context.getCheckpointId
     logger.debug(s"Snapshotting epoch $epochId on $getLabel")
-    checkpointOffsets(epochId) = currentOffsets.toMap
+
+    //Retrieve offsets from the consumer
+    checkpointOffsets(epochId) = consumer.getCurrentOffsets
 
     performTransitions(epochId)
     //Handle state specific code
@@ -260,7 +254,7 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
     }
 
     logger.debug(s"$getLabel snapshotting offsets for epoch $epochId")
-    val stateContainer = KafkaSourceStateContainer(instanceUuid, currentOffsets.toMap)
+    val stateContainer = KafkaSourceStateContainer(instanceUuid, consumer.getCurrentOffsets)
     checkpointedState.update(List(stateContainer).asJava)
 
     logger.debug(s"Done snapshotting epoch ${context.getCheckpointId} on $getLabel")
@@ -304,7 +298,7 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
   }
 
   private def snapshotCatchingUpState(epochId: Long): Unit = {
-    if (Await.result(manager.isCatchedUp(currentOffsets.toMap), 1.seconds)) {
+    if (Await.result(manager.isCatchedUp(consumer.getCurrentOffsets), 1.seconds)) {
       state = KafkaSourceState.Ready
       logger.info(s"Transitioned to ready state in $getLabel")
       manager.notifyStartedOnEpoch(epochId)
@@ -355,7 +349,7 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
   private def cancelIfNeeded(currentCheckpoint: Long): Unit = {
     if (finalSourceEpoch > -2 && finalCheckpointId == Long.MaxValue) {
       logger.debug(s"Attempting to finish on source epoch $finalSourceEpoch")
-      logger.debug(s"Current offsets: ${currentOffsets.toMap} ($getLabel)")
+      logger.debug(s"Current offsets: ${consumer.getCurrentOffsets} ($getLabel)")
       logger.debug(s"Final offsets: $finalSourceEpochOffsets ($getLabel)")
 
       consumer.higherOrEqual(finalSourceEpochOffsets.map(o => o.nr -> o.offset).toMap) match {
@@ -453,7 +447,7 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
       ctx.getCheckpointLock.synchronized {
         while (!consumer.higherOrEqual(alignmentOffsets).getOrElse(false)) {
           logger.debug(
-            s"Perfoming synchronized poll loop in $getLabel.\r\n Offsets: ${currentOffsets.toMap}.\r\n Desired: $alignmentOffsets")
+            s"Perfoming synchronized poll loop in $getLabel.\r\n Offsets: ${consumer.getCurrentOffsets}.\r\n Desired: $alignmentOffsets")
             consumer.poll(ctx.collect, alignmentOffsets)
         }
       }
