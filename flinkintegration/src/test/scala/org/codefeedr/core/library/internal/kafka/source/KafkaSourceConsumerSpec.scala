@@ -111,6 +111,24 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
     assert(component.getCurrentOffsets.contains(3 -> -1L))
   }
 
+  it should "not overwrite offsets when it already received data for that partition but the assignment arrives later" in {
+    //Arrange
+    val component = constructConsumer()
+    when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (2, 2L)))
+    val assignment = Iterable(new TopicPartition("a", 1), new TopicPartition("a", 2), new TopicPartition("a", 3))
+
+    //Act
+    component.poll(_ => Unit)
+    component.onNewAssignment(assignment)
+    when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq[(Int,Long)]())
+    component.poll(_ => Unit)
+
+    //Assert
+    assert(component.getCurrentOffsets.contains(1 -> 2L))
+    assert(component.getCurrentOffsets.contains(2 -> 2L))
+    assert(component.getCurrentOffsets.contains(3 -> -1L))
+  }
+
   it should "remove an offset when no longer subscribed to a topic" in {
     val component = constructConsumer()
     when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (2, 2L)))

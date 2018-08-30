@@ -131,6 +131,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
         currentOffsets + (partition -> offset)
       })
     ))
+    logger.debug(s"New state in $name: $state")
   }
 
   /**
@@ -142,13 +143,15 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     if (newPartitions.nonEmpty) {
 
       val newOffsets = newPartitions.get
-        .filterNot(state.getAssignment.toSet)
+        .filterNot(o => state.getOffsets.keys.toSet.contains(o.partition()))
         .map(tp => tp.partition() -> -1l)
 
 
       logger.debug(s"$name removing offsets from state ${
         state.getOffsets.filterNot(o => newPartitions.get.map(_.partition()).exists(_ == o._1))
       }")
+
+      logger.debug(s"$name assigning new offsets $newOffsets")
 
       //Remove offsets, and add newly assigned partitions to the offset map
       val newStateOffsets =
@@ -157,6 +160,8 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
 
       //Update assignment and offsets
       state = KafkaSourceConsumerState(newPartitions, Some(newStateOffsets))
+
+
 
       //Reset the value
       newPartitions = None
