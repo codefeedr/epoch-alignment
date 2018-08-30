@@ -33,7 +33,7 @@ lazy val dependencies = new {
   val flinkV = "1.5.0"
 
   val zookeeperV = "3.4.12"
-  val kafkaV = "1.1.0"
+  val kafkaV = "2.0.0"
 
   val scalaAsyncV = "0.9.7"
   val scalaJavaCompatV = "0.8.0"

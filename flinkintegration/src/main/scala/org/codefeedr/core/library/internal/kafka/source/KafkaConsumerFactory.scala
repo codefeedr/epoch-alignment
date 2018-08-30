@@ -49,7 +49,7 @@ trait KafkaConsumerFactoryComponent {
       //Kafka consumer constructor is not thread safe!
       val properties = kafkaConfiguration.getConsumerProperties
 
-      properties.setProperty("group.id", UUID.randomUUID().toString)
+      properties.setProperty("group.id",group)
       //Only read committed records
       //properties.setProperty("isolation.level", "read_committed")
       logger.debug(s"Creating consumer in group $group")
