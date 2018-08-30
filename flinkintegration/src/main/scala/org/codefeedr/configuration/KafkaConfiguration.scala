@@ -27,7 +27,7 @@ trait KafkaConfigurationComponent extends Serializable{
       "bootstrap.servers"  -> CM(v => v,None),
       "retries"                     -> CM[Integer](v => v.toInt,Some(1))
     )
-    @transient private lazy  val consumerMapping = immutable.Map[String,ConfigurationMapping](
+    @transient private lazy val consumerMapping = immutable.Map[String,ConfigurationMapping](
     //  "auto.commit.enable" -> CM(v => v, Some("true")),
       "bootstrap.servers"  -> CM(v => v,None),
       "auto.offset.reset"           -> CM(v => v,Some("earliest")),
@@ -39,13 +39,13 @@ trait KafkaConfigurationComponent extends Serializable{
     /**
       * Admin properties for kafka
       */
-    lazy val getAdminProperties: Properties = toKafkaConfiguration(adminMapping)
+    def getAdminProperties: Properties = toKafkaConfiguration(adminMapping)
 
-    lazy val getConsumerProperties: Properties = toKafkaConfiguration(consumerMapping)
+    def getConsumerProperties: Properties = toKafkaConfiguration(consumerMapping)
 
-    lazy val getProducerProperties: Properties = toKafkaConfiguration(producerMapping)
+    def getProducerProperties: Properties = toKafkaConfiguration(producerMapping)
 
-    lazy val defaultPartitions:Int = configurationProvider.tryGet( "partitions").getOrElse("4").toInt
+    def defaultPartitions:Int = configurationProvider.tryGet( "partitions").getOrElse("4").toInt
 
     /**
       * Uses the mapping and the
