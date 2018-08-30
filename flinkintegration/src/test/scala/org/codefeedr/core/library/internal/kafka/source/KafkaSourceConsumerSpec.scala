@@ -5,12 +5,12 @@ import org.apache.flink.types.Row
 import org.apache.kafka.clients.consumer.{ConsumerRecord, ConsumerRecords, KafkaConsumer}
 import org.apache.kafka.common.TopicPartition
 import org.codefeedr.model.{Record, RecordSourceTrail, Source, TrailedRecord}
-
 import rx.lang.scala.{Observable, Subject}
+
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 import org.codefeedr.util.MockitoExtensions
-import org.mockito.ArgumentMatchers
+import org.mockito.{ArgumentMatcher, ArgumentMatchers}
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, FlatSpec}
@@ -80,6 +80,20 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
     verify(consumer, times(1)).seek(Matches((o: TopicPartition) => o.partition() == 2), ArgumentMatchers.eq(2L))
   }
 
+  it should "Set the state to the resetted offsets  when it recieved elements past the given offset" in {
+    //Arrange
+    val component = constructConsumer()
+    when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (1, 3L), (2, 2L), (2, 3L)))
+
+    //Act
+    component.poll(_ => Unit, Map(1 -> 2, 2 -> 2))
+
+    //Assert
+    assert(component.getCurrentOffsets(1) == 2)
+    assert(component.getCurrentOffsets(2) == 2)
+  }
+
+
 
   it should "add a default offset when a partition is assigned, but no data has been received" in {
     //Arrange
@@ -114,6 +128,101 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
     assert(component.getCurrentOffsets.contains(3 -> -1L))
   }
 
+
+
+  "higherOrEqual" should "return None if no partitions have been assigned" in {
+    //Arrange
+    val component = constructConsumer()
+    val partitionOffsetMap = Map(1 -> 2L)
+    //Act
+    val r = component.higherOrEqual(partitionOffsetMap)
+    //Assert
+    assert(r.isEmpty)
+  }
+
+  it should "return true if the consumer is further than the passed reference for all offsets" in {
+    //Arrange
+    val sConsumer = constructWithState(Map(1 -> 2,2 -> 2))
+    //Act
+    val r = sConsumer.higherOrEqual(Map(1 -> 2, 2->2))
+    //Assert
+    assert(r.get)
+  }
+  it should "return true if the reference contains fewer partitions than the assignment, but still ahead for all that match" in {
+    //Arrange
+    val sConsumer = constructWithState(Map(1 -> 2,2 -> 2))
+    //Act
+    val r = sConsumer.higherOrEqual(Map(1 -> 2))
+    //Assert
+    assert(r.get)
+  }
+
+  it should "return true if the reference contains more partitions than the assignment, but still ahead for all that match" in {
+    //Arrange
+    val sConsumer = constructWithState(Map(1 -> 2,2 -> 2))
+    //Act
+    val r = sConsumer.higherOrEqual(Map(1 -> 2,2->2,3->2))
+    //Assert
+    assert(r.get)
+  }
+
+  it should "return false if the consumer is behind on one of the references" in {
+    //Arrange
+    val sConsumer = constructWithState(Map(1 -> 2,2 -> 2))
+    //Act
+    val r = sConsumer.higherOrEqual(Map(1 -> 2,2->3))
+    //Assert
+    assert(!r.get)
+  }
+
+
+
+  "setPosition" should "call seek ok kafka partition that is part of the assignment" in {
+    //Arrange
+    val sConsumer = constructWithAssignment(Seq(1,2))
+
+    //Act
+    sConsumer.setPosition(Map(1->2,2->3,3->4,0->1))
+
+    //Assert
+    //2 calls in total
+    verify(consumer, times(2)).seek(ArgumentMatchers.any(),ArgumentMatchers.any())
+    verify(consumer, times(1)).seek(ArgumentMatchers.eq(new TopicPartition("a",1)), ArgumentMatchers.eq(2L))
+    verify(consumer, times(1)).seek(ArgumentMatchers.eq(new TopicPartition("a",2)), ArgumentMatchers.eq(3L))
+  }
+
+  it should "update the currentoffsets" in {
+    //Arrange
+    val sConsumer = constructWithAssignment(Seq(1,2))
+
+    //Act
+    sConsumer.setPosition(Map(1->2,2->3,3->4,0->1))
+
+    //Assert
+    assert(sConsumer.getCurrentOffsets.size == 2)
+    assert(sConsumer.getCurrentOffsets(1) == 2)
+    assert(sConsumer.getCurrentOffsets(2) == 3)
+  }
+
+  /** Constructs a consumer with the given offset map as assignment and state **/
+  private def constructWithState(offsets: Map[Int,Long]):  KafkaSourceConsumer[SourceElement, Row, RecordSourceTrail] = {
+    val sConsumer = constructWithAssignment(offsets.keys)
+    //reset the consumer to the passed position
+    sConsumer.setPosition(offsets)
+    sConsumer
+  }
+
+  /** Constructs a consumer with the passed assignment */
+  private def constructWithAssignment(partitions: Iterable[Int]): KafkaSourceConsumer[SourceElement, Row, RecordSourceTrail] = {
+    val sConsumer = constructConsumer()
+    val tps = partitions.map(new TopicPartition("a",_))
+
+    when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq[(Int,Long)]())
+    sConsumer.onNewAssignment(tps)
+    sConsumer.poll(_ => ())
+    sConsumer
+  }
+
   /** Constructs a simple poll response based on the given partitions and offsets */
   private def constructPollResponse(data: Seq[(Int, Long)]): ConsumerRecords[RecordSourceTrail, Row] = {
     val elements = data.groupBy(o => o._1).map(o => {
@@ -136,6 +245,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
 
 
   case class SourceElement(nr: Int)
+
 
   trait TestMapper extends KafkaSourceMapper[SourceElement, Row, RecordSourceTrail] {
     override def transform(value: Row, key: RecordSourceTrail): SourceElement = {

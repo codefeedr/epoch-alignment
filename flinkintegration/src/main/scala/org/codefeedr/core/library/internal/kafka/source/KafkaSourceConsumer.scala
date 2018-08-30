@@ -104,9 +104,10 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
         }
       }
     })
+    updateOffsetState(r.toMap)
     resetConsumer(resetSet, seekOffsets)
 
-    updateOffsetState(r.toMap)
+
   }
 
   /**
@@ -168,7 +169,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
   }
 
 
-  private def resetConsumer(partitions: Seq[Int], offsets: PartialFunction[Int, Long]): Unit = {
+  private[source] def resetConsumer(partitions: Seq[Int], offsets: PartialFunction[Int, Long]): Unit = {
     if (partitions.nonEmpty) {
       logger.debug(s"Perfoming a seek on $name")
       partitions.foreach(partition => {
@@ -176,6 +177,25 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
         consumer.seek(new TopicPartition(topic, partition), offset)
       })
     }
+  }
+
+  /**
+    * Sets the position of the consumer to the given offsets
+    * Uses the assignment to reset the position
+    * Throws an exception if no assignment was made yet
+    * TODO: Determine what to do when the assignment changes later during the process, after a call to this method was made
+    * @param offsets p offsets to reset to
+    */
+  def setPosition(offsets:Map[Int,Long]): Unit = synchronized {
+    val seekSet = state.assignment match {
+      case Some(v) => v.map(o => (o,offsets.lift.apply(o.partition())))
+      case none => throw new NotImplementedError("Cannot set position when no assignment has been made yet. Need to implement a handler if this is required")
+    }
+    seekSet.foreach {
+      case (tp,Some(offset)) => consumer.seek(tp,offset)
+      case (tp, none) => throw new IllegalStateException(s"Cannot set position, because no offset was passed for TP ${tp.topic()}${tp.partition()}.")
+    }
+    updateOffsetState(offsets.filter(p => seekSet.exists(tp => tp._1.partition() == p._1)))
   }
 
   /**
@@ -235,7 +255,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
 
 
   /**
-    * Returns if the current offsets has passed the endOffsets
+    * Returns if the current offsets has passed the reference offset
     *
     * @param reference offsets to compare to
     * @return None if no assignment has ever been made to this consumer
@@ -243,7 +263,10 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     *         False if the consumer is behind on one or more assigned partitions
     */
   def higherOrEqual(reference: PartialFunction[Int, Long]): Option[Boolean] =
-    state.offsets.map(assignment => assignment.forall(o => reference(o._1) <= o._2))
+    state.offsets.map(offset => offset.forall(o => hasPassedReference(reference)(o._1,o._2)))
+
+  private def hasPassedReference(referenceSet:PartialFunction[Int,Long])(partition: Int, currentOffset:Long): Boolean =
+    referenceSet.andThen((reference:Long) => reference <= currentOffset).applyOrElse(partition, (_:Int)=> true)
 
 
   /**
