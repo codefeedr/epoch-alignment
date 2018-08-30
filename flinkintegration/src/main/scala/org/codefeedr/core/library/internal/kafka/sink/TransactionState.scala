@@ -48,7 +48,7 @@ class TransactionState(
   }
 
   /**
-    * Notify the state an event has been recieved by kafka
+    * Notify the state an event has been received by kafka
     * Used to save offsets in the
     */
   def confirmed(recordMetadata: RecordMetadata): Unit = synchronized {

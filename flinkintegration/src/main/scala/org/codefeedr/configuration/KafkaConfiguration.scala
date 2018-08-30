@@ -27,8 +27,9 @@ trait KafkaConfigurationComponent extends Serializable{
       "bootstrap.servers"  -> CM(v => v,None),
       "retries"                     -> CM[Integer](v => v.toInt,Some(1))
     )
-    @transient private lazy  val consumerMapping = adminMapping ++ immutable.Map[String,ConfigurationMapping](
-      "auto.commit.enable" -> CM(v => v, Some("true")),
+    @transient private lazy  val consumerMapping = immutable.Map[String,ConfigurationMapping](
+    //  "auto.commit.enable" -> CM(v => v, Some("true")),
+      "bootstrap.servers"  -> CM(v => v,None),
       "auto.offset.reset"           -> CM(v => v,Some("earliest")),
       "auto.commit.interval.ms"     -> CM[Integer](v => v.toInt,Some(100))
     )

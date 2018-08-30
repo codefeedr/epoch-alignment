@@ -199,7 +199,7 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
     //On restore, we only need to restore the current offsets. We won't need the checkpoint offsets any more
     checkpointedState = context.getOperatorStateStore.getListState(descriptor)
     val iterator = checkpointedState.get().asScala
-    //If the state was nonempty, initialize the offsets with the recieved data
+    //If the state was nonempty, initialize the offsets with the received data
     if (iterator.nonEmpty) {
       logger.info(s"Initializing $getLabel source with preconfigured state.")
       iterator.foreach((o: KafkaSourceStateContainer) => {
@@ -367,6 +367,7 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
     * @param checkpointId id of the the checkpoint to notify the completion of
     */
   override def notifyCheckpointComplete(checkpointId: Long): Unit = {
+    logger.debug(s"$getLabel got checkpoint completion notification for checkpoint $checkpointId. Final checkpoint: $finalCheckpointId")
     //Check if the final checkpoint completed
     if (checkpointId >= finalCheckpointId) {
       logger.debug(s"$getLabel is stopping, final checkpoint $checkpointId completed")

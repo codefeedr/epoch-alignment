@@ -74,7 +74,7 @@
 
 
     <root level="DEBUG">
-        <appender-ref ref="STASH" />
+        <!--<appender-ref ref="STASH" />-->
         <appender-ref ref="STDOUT" />
     </root>
     <logger name="org.codefeedr.core.library.internal.kafka.sink" level="DEBUG"/>

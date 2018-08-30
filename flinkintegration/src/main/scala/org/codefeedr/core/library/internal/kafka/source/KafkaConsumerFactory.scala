@@ -19,7 +19,7 @@
 
 package org.codefeedr.core.library.internal.kafka.source
 
-import java.util.Properties
+import java.util.{Properties, UUID}
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.consumer._
@@ -40,7 +40,7 @@ trait KafkaConsumerFactoryComponent {
 
     /**
       * Create a new kafka consumer
-      * @param group Groupname. Each group recieves each value once
+      * @param group Groupname. Each group receives each value once
       * @tparam TKey Type of the key used by kafka
       * @tparam TData Data type used to send to kafka
       * @return
@@ -48,11 +48,12 @@ trait KafkaConsumerFactoryComponent {
     override def create[TKey: ClassTag, TData: ClassTag](group: String): KafkaConsumer[TKey, TData] = {
       //Kafka consumer constructor is not thread safe!
       val properties = kafkaConfiguration.getConsumerProperties
-      properties.setProperty("group.id", group)
+
+      properties.setProperty("group.id", UUID.randomUUID().toString)
       //Only read committed records
-      properties.setProperty("isolation.level", "read_committed")
+      //properties.setProperty("isolation.level", "read_committed")
       logger.debug(s"Creating consumer in group $group")
-      //properties.setProperty("enable.auto.commit", "false") //Disable auto commit because we use manual commit
+      properties.setProperty("enable.auto.commit", "false") //Disable auto commit because we use manual commit
       new KafkaConsumer[TKey, TData](properties,
         new KafkaDeserialiser[TKey],
         new KafkaDeserialiser[TData])
@@ -66,7 +67,7 @@ trait KafkaConsumerFactory {
   /**
     * Create a new kafka consumer
     *
-    * @param group Groupname. Each group recieves each value once
+    * @param group Groupname. Each group receives each value once
     * @tparam TKey  Type of the key used by kafka
     * @tparam TData Data type used to send to kafka
     * @return

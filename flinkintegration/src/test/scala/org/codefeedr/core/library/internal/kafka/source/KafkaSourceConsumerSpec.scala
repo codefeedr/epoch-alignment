@@ -26,7 +26,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
     consumer = mock[KafkaConsumer[RecordSourceTrail, Row]]
   }
 
-  "KafkaSourceConsumer.Poll" should "update the latest offsets that it recieved by polling the source" in {
+  "KafkaSourceConsumer.Poll" should "update the latest offsets that it received by polling the source" in {
     //Arrange
     val component = constructConsumer()
     when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (2, 2L)))
@@ -67,7 +67,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
     assert(queue.size == 3)
   }
 
-  it should "call seek when it recieved elements past the given offset" in {
+  it should "call seek when it received elements past the given offset" in {
     //Arrange
     val component = constructConsumer()
     when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (1, 3L), (2, 2L), (2, 3L)))
@@ -80,7 +80,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
     verify(consumer, times(1)).seek(Matches((o: TopicPartition) => o.partition() == 2), ArgumentMatchers.eq(2L))
   }
 
-  it should "Set the state to the resetted offsets  when it recieved elements past the given offset" in {
+  it should "Set the state to the resetted offsets  when it received elements past the given offset" in {
     //Arrange
     val component = constructConsumer()
     when(consumer.poll(ArgumentMatchers.any())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (1, 3L), (2, 2L), (2, 3L)))

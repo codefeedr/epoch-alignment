@@ -53,7 +53,7 @@ object TestCollector extends LazyLogging {
 
 
   def collect(nr:Int)(myOwnIntegerObject: MyOwnIntegerObject): Unit = {
-    logger.info(s"${nr} recieved ${myOwnIntegerObject}")
+    logger.info(s"${nr} received ${myOwnIntegerObject}")
     this.synchronized {
       collectedData += Tuple2(nr, myOwnIntegerObject)
     }
@@ -144,7 +144,7 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
   }
 
   /*
-  it should "be able to recieve data from multiple sinks" taggedAs(Slow, KafkaTest) in async {
+  it should "be able to receive data from multiple sinks" taggedAs(Slow, KafkaTest) in async {
     val subjectNode = subjectLibrary.getSubject(testSubjectName)
     assert(!await(subjectNode.exists()))
     //Create the subject here, to prevent the multiple source environments from racing on creating it

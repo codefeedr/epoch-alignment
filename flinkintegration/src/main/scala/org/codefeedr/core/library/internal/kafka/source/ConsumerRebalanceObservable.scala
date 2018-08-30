@@ -2,10 +2,12 @@ package org.codefeedr.core.library.internal.kafka.source
 
 import java.util
 
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.common.TopicPartition
 import rx.lang.scala.{Observable, Subject}
 import rx.lang.scala.subjects.ReplaySubject
+
 import scala.collection.JavaConverters._
 /**
   * Rx Wrapper around rebalance events from Kafka
@@ -52,9 +54,17 @@ trait ConsumerRebalanceObservable {
 /**
   * Rx Wrapper around rebalance events from kafka
   */
-class RebalanceListenerImpl extends ConsumerRebalanceListener with ConsumerRebalanceObservable
+class RebalanceListenerImpl extends ConsumerRebalanceListener with ConsumerRebalanceObservable with LazyLogging
 {
-  override def onPartitionsRevoked(partitions: util.Collection[TopicPartition]): Unit = partitionsRevoked.onNext(partitions.asScala)
+  override def onPartitionsRevoked(partitions: util.Collection[TopicPartition]): Unit = {
+    val p = partitions.asScala
+    logger.debug(s"Got partitions revoked event: $p")
+    partitionsRevoked.onNext(p)
+  }
 
-  override def onPartitionsAssigned(partitions: util.Collection[TopicPartition]): Unit = partitionsAssigned.onNext(partitions.asScala)
+  override def onPartitionsAssigned(partitions: util.Collection[TopicPartition]): Unit = {
+    val p = partitions.asScala
+    logger.debug(s"Got partitions assigned event: $p")
+    partitionsAssigned.onNext(p)
+  }
 }

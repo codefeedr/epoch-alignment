@@ -117,6 +117,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     * @param newOffsets offsets to update the state with
     */
   private def updateOffsetState(newOffsets: Map[Int, Long]): Unit = synchronized {
+    logger.debug(s"New offsets in $name: $newOffsets")
     state = KafkaSourceConsumerState(state.assignment, Some(
       newOffsets.foldLeft(state.getOffsets)((currentOffsets, po) => {
         val partition = po._1
@@ -156,6 +157,9 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
 
       //Update assignment and offsets
       state = KafkaSourceConsumerState(newPartitions, Some(newStateOffsets))
+
+      //Reset the value
+      newPartitions = None
     }
   }
 
