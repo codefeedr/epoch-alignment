@@ -19,7 +19,6 @@ before_cache:
 cache:
   directories:
     - $HOME/.ivy2/cache
-    - $HOME/.sbt
 
 
 before_install:
