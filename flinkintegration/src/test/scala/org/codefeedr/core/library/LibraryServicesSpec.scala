@@ -2,7 +2,6 @@ package org.codefeedr.core.library
 
 import java.io.{ByteArrayOutputStream, ObjectOutputStream}
 
-import org.codefeedr.configuration.TestComponent
 import org.scalatest.FlatSpec
 
 import scala.util.Success
