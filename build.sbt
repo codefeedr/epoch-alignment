@@ -1,8 +1,6 @@
 import sbt.Keys.libraryDependencies
 
 
-
-
 lazy val settings = Seq(
   organization := "org.codefeedr",
   version := "0.1.0-SNAPSHOT",

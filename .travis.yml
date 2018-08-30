@@ -29,7 +29,7 @@ matrix:
   include:
     - env: SCALA_VERSION=2.11.12
       os: linux
-      jdk: oraclejdk8
+      jdk: openjdk8
 
 
 before_script:
