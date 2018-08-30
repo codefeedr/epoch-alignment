@@ -38,7 +38,7 @@ before_script:
 
 script:
   - sbt package
-  - sbt 'set parallelExecution in ThisBuild := false' "testOnly org.codefeedr.core.* org.codefeedr.util.*"
+  - sbt 'set parallelExecution in ThisBuild := false' test
   - sbt scalafmt::test
 
 #deploy:
