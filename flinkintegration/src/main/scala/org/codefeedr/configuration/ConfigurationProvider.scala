@@ -1,11 +1,10 @@
 package org.codefeedr.configuration
 
 
-import org.codefeedr.util.OptionExtensions.DebuggableOption
-import com.typesafe.scalalogging.{LazyLogging, Logger}
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.api.scala.ExecutionEnvironment
-import org.slf4j.LoggerFactory
+import org.codefeedr.util.OptionExtensions.DebuggableOption
 
 import scala.collection.JavaConverters._
 
@@ -75,6 +74,8 @@ trait FlinkConfigurationProviderComponent extends ConfigurationProviderComponent
     @transient @volatile private var _parameterTool: Option[ParameterTool] = None
     @transient lazy val parameterTool: ParameterTool = getParameterTool
 
+
+
     /**
       * Sets the configuration
       *
@@ -122,17 +123,6 @@ trait FlinkConfigurationProviderComponent extends ConfigurationProviderComponent
         .map(ParameterTool.fromPropertiesFile)
 
 
-    /**
-      * Loads the parametertool from the execution environment
-      *
-      * @return the parametertool
-      */
-    private def loadEnvironment(): ParameterTool = {
-      logger.debug("Retrieving parameters from the execution environment")
-      val env = ExecutionEnvironment.getExecutionEnvironment
-      ParameterTool.fromMap(env.getConfig.getGlobalJobParameters.toMap)
-    }
-
 
     /**
       * Reads the parameterTool from the codefeedr.properties file, execution environment, or the explicitly initialized parametertool
@@ -144,19 +134,11 @@ trait FlinkConfigurationProviderComponent extends ConfigurationProviderComponent
       requested = true
       val pt = _parameterTool.getOrElse[ParameterTool]({
         loadPropertiesFile() match {
-          case Some(pt) => {
-            setJobParameters(pt)
-            pt
+          case Some(pTool) =>
+            setJobParameters(pTool)
+            pTool
+          case None => throw new IllegalArgumentException("Cannot retrieve job parameters because no global job parameters were set. Did you forget to set a \"codefeedr.properties\" file when running outside of the Flink execution environment?")
           }
-          case None => {
-            logger.debug("Retrieving parameters from the execution environment")
-            val jobParams = Option(ExecutionEnvironment.getExecutionEnvironment.getConfig.getGlobalJobParameters)
-            jobParams match {
-              case Some(jp) => ParameterTool.fromMap(jp.toMap)
-              case None => throw new IllegalArgumentException("Cannot retrieve job parameters because no global job parameters were set. Did you forget to set a \"codefeedr.properties\" file when running outside of the Flink execution environment?")
-            }
-          }
-        }
       })
       //TODO: Maybe only print this in debug mode? This might expose username/password
       logger.info(s"Configuration initialized with values: \n ${pt.toMap.asScala.toString}")

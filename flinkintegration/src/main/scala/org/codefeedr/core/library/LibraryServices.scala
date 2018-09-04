@@ -19,7 +19,6 @@
 
 package org.codefeedr.core.library
 
-import com.typesafe.config.{Config, ConfigFactory}
 import org.codefeedr.configuration._
 import org.codefeedr.core.engine.query.StreamComposerFactoryComponent
 import org.codefeedr.core.library.internal.kafka.KafkaControllerComponent

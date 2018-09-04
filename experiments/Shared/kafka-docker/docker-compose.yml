@@ -2,10 +2,12 @@ version: '2'
 services:
   zookeeper:
     image: wurstmeister/zookeeper
+    restart: on-failure
     ports:
       - "2181:2181"
   kafka:
     build: .
+    restart: on-failure
     ports:
       - "9092:9092"
     environment:
