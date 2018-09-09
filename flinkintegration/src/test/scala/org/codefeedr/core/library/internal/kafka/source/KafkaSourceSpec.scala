@@ -50,6 +50,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
 
   override def beforeEach(): Unit = {
+    super.beforeEach()
     subjectNode = mock[SubjectNode]
     jobNode = mock[JobNode]
     ctx = mock[SourceFunction.SourceContext[SampleObject]]

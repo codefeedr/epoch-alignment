@@ -33,6 +33,7 @@ import org.codefeedr.util.futureExtensions._
 class ZkClientSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll {
 
   override def afterEach(): Unit = {
+    super.afterEach()
     Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
   }
 

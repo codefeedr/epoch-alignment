@@ -91,6 +91,7 @@ class ZkCollectionNodeSpec  extends LibraryServiceSpec with Matchers with Before
     * After each test, make sure to clean the zookeeper store
     */
   override def beforeEach(): Unit = {
+    super.beforeEach()
     Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
   }
 
@@ -98,6 +99,7 @@ class ZkCollectionNodeSpec  extends LibraryServiceSpec with Matchers with Before
     * After each test, make sure to clean the zookeeper store
     */
   override def afterEach(): Unit = {
+    super.afterEach()
     Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
   }
 }

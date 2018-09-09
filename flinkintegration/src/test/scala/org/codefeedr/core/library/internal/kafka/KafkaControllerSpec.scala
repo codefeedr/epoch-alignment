@@ -40,10 +40,12 @@ class KafkaControllerSpec extends LibraryServiceSpec with Matchers with BeforeAn
   private def createTestTopic(): String = s"TestTopic-${UUID.randomUUID()}"
 
   override def beforeEach(): Unit = {
+    super.beforeEach()
     Await.ready(subjectLibrary.initialize(),Duration(5, SECONDS))
   }
 
   override def afterEach(): Unit = {
+    super.afterEach()
     Await.ready(zkClient.deleteRecursive("/"), Duration(5, SECONDS))
 
   }

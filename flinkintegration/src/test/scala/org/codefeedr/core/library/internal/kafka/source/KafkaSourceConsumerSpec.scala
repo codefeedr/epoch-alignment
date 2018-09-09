@@ -23,6 +23,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
 
 
   override def beforeEach() = {
+    super.beforeEach()
     consumer = mock[KafkaConsumer[RecordSourceTrail, Row]]
   }
 

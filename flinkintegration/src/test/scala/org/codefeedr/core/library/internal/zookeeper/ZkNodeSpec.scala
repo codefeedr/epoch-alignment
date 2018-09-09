@@ -14,7 +14,7 @@ import scala.concurrent.{Await, Future}
 /**
   * Testclass for  [[ZkNode]]
   */
-class ZkNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with LazyLogging{
+class ZkNodeSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with LazyLogging{
 
   "ZkNode.Create(data)" should "Create the node with data" in async {
     val root = new TestRoot()

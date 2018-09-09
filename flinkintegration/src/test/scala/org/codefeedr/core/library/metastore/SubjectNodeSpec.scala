@@ -21,6 +21,7 @@ class SubjectNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAf
     * After each test, make sure to clean the zookeeper store
     */
   override def afterEach(): Unit = {
+    super.afterEach()
     Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
   }
 }

@@ -103,6 +103,7 @@ class SourceAlignmentSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAn
 
 
   override def beforeEach(): Unit = {
+    super.beforeEach()
     sourceNode = mock[QuerySourceNode]
     syncStateNode = mock[SourceSynchronizationStateNode]
     sourceEpochs = mock[SourceEpochCollection]

@@ -25,6 +25,7 @@ class EpochStateManagerSpec extends AsyncFlatSpec with MockitoSugar with BeforeA
   implicit val zkClient:ZkClient = mock[ZkClient]
 
   override def beforeEach(): Unit = {
+    super.beforeEach()
     epochCollectionNode = mock[EpochCollectionNode]
     epochNode = mock[EpochNode]
     epochPartitions = mock[EpochPartitionCollection]

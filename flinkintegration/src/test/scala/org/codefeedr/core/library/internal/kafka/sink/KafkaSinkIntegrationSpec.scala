@@ -83,11 +83,13 @@ class KafkaSinkIntegrationSpec extends LibraryServiceSpec with BeforeAndAfterEac
     assert(!await(subjectNode.getSinks().getState()))
   }
   override def beforeEach(): Unit = {
+    super.beforeEach()
     Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
     Await.ready(subjectLibrary.initialize(),Duration(1, SECONDS))
   }
 
   override def afterEach(): Unit = {
+    super.afterEach()
     Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
     Await.ready(subjectLibrary.initialize(),Duration(1, SECONDS))
   }

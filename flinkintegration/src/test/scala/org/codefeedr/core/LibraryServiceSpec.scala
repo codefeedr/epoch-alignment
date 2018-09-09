@@ -19,11 +19,16 @@
 
 package org.codefeedr.core
 
-import org.scalatest.AsyncFlatSpec
+import org.apache.flink.api.java.utils.ParameterTool
+import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 
 /**
   * Base spec class that has asyncflatspec with libraryServices
   */
-class LibraryServiceSpec extends AsyncFlatSpec with IntegrationTestLibraryServices {
-
+class LibraryServiceSpec extends AsyncFlatSpec with IntegrationTestLibraryServices with BeforeAndAfterAll{
+  override def beforeAll(): Unit = {
+    //Initialize the configuration component with the codefeedr.properties file
+    configurationProvider.initConfiguration(ParameterTool.fromArgs(new Array[String](0)),Some("codefeedr.properties"))
+    super.beforeAll()
+  }
 }

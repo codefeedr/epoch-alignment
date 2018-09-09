@@ -310,6 +310,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     * Create new mock objects in beforeEach
     */
   override def beforeEach(): Unit = {
+    super.beforeEach()
     subjectNode = mock[SubjectNode]
     jobNode = mock[JobNode]
     subjectType = mock[SubjectType]

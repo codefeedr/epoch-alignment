@@ -36,7 +36,7 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
   private var completePromise = Promise[Unit]()
 
   override def beforeEach(): Unit = {
-
+    super.beforeEach()
     subjectNode = mock[SubjectNode]
 
     sourceCollectionNode = mock[QuerySourceCollection]

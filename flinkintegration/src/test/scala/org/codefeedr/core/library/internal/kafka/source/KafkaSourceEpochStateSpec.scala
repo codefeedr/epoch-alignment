@@ -159,6 +159,7 @@ class KafkaSourceEpochStateSpec extends AsyncFlatSpec with MockitoSugar with Bef
 
 
   override def beforeEach(): Unit = {
+    super.beforeEach()
     sourceEpochCollection = mock[SourceEpochCollection]
     epochCollection = mock[EpochCollectionNode]
     subjectNode = mock[SubjectNode]

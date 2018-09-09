@@ -56,11 +56,13 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
   val parallelism: Int = 2
 
   override def beforeEach(): Unit = {
+    super.beforeEach()
     Await.ready(subjectLibrary.initialize(), Duration(5, SECONDS))
     Await.ready(zkClient.deleteRecursive("/"), Duration(5, SECONDS))
   }
 
   override def afterEach(): Unit = {
+    super.afterEach()
     Await.ready(zkClient.deleteRecursive("/"), Duration(5, SECONDS))
   }
 
