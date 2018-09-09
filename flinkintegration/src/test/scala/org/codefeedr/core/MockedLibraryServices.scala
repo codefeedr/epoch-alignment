@@ -5,7 +5,7 @@ import org.codefeedr.configuration._
 import org.codefeedr.core.library.internal.kafka.sink.{KafkaProducerFactory, KafkaProducerFactoryComponent}
 import org.codefeedr.core.library.internal.kafka.source.{KafkaConsumerFactory, KafkaConsumerFactoryComponent}
 import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkClientComponent}
-import org.codefeedr.core.library.metastore.{SubjectLibrary, SubjectLibraryComponent}
+import org.codefeedr.core.library.metastore.SubjectLibraryComponent
 
 //Mockito
 import org.mockito.ArgumentMatchers

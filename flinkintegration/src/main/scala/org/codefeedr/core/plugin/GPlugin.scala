@@ -18,8 +18,9 @@
  */
 package org.codefeedr.core.plugin
 
+import org.codefeedr.core.library.CodefeedrComponents
 import org.codefeedr.core.library.internal.zookeeper.ZkClientComponent
-import org.codefeedr.core.library.internal.{Job, Plugin}
+import org.codefeedr.core.library.internal.{JobComponent, Plugin}
 import org.codefeedr.core.library.metastore.SubjectLibraryComponent
 
 import scala.concurrent.Future
@@ -27,19 +28,30 @@ import scala.concurrent._
 import ExecutionContext.Implicits.global
 import async.Async._
 
-class GPlugin extends Plugin { this: SubjectLibraryComponent with ZkClientComponent =>
-  override def setupJobs: Future[List[Job[_, _]]] = async {
-    //setup events job
+class GPlugin extends
+  CodefeedrComponents
+  with EventsJobFactoryComponent
+  with RetrieveCommitsJobComponent
+  with JobComponent
+  with Plugin {
 
-    val eventsJob = new EventsJob(1)
-    await(eventsJob.setupType())
+    override def setupJobs: Future[List[Job[_, _]]] = async {
+      //setup events job
 
-    //setup commit retrieval job
-    val retrieveJob = new RetrieveCommitsJob()
-    await(retrieveJob.setupType())
-    retrieveJob.setSource(eventsJob)
+      val eventsJob = createEventsJob(1)
+      await(eventsJob.setupType())
 
-    eventsJob :: retrieveJob :: Nil
-  }
+      //setup commit retrieval job
+      val retrieveJob = createRetrieveCommitsJob()
+      await(retrieveJob.setupType())
+      retrieveJob.setSource(eventsJob)
+
+      eventsJob :: retrieveJob :: Nil
+    }
+
+
 
 }
+
+
+

@@ -138,15 +138,15 @@ class ZkNodeBaseSpec extends LibraryServiceSpec with Matchers with BeforeAndAfte
 }
 
 
-class TestRootBase extends ZkNodeBase("TestRoot") {
+class TestRootBase(implicit override val zkClient: ZkClient) extends ZkNodeBase("TestRoot") {
   override def parent(): ZkNodeBase = null
   override def path(): String = s"/$name"
 }
 
-class TestConfigNodeBase(name: String, p: ZkNodeBase) extends ZkNodeBase(name) {
+class TestConfigNodeBase(name: String, p: ZkNodeBase)(implicit override val zkClient: ZkClient) extends ZkNodeBase(name) {
   override def parent(): ZkNodeBase = p
 }
 
-class TestConfigNodeWithPostCreateBase(name: String, parent: ZkNodeBase, pc: () => Future[Unit]) extends ZkNode(name, parent) {
+class TestConfigNodeWithPostCreateBase(name: String, parent: ZkNodeBase, pc: () => Future[Unit])(implicit override val zkClient: ZkClient) extends ZkNode(name, parent) {
   override def postCreate(): Future[Unit] = pc()
 }

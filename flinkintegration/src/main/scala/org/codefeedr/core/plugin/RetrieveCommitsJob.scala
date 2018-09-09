@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.apache.flink.streaming.api.datastream.{AsyncDataStream => JavaAsyncDataStream}
-import org.codefeedr.core.library.internal.{Job, Plugin}
+import org.codefeedr.core.library.internal.{JobComponent, Plugin}
 import org.apache.flink.streaming.api.scala._
 import org.codefeedr.core.library.SubjectFactoryComponent
 import org.codefeedr.core.library.internal.kafka.source.KafkaConsumerFactoryComponent
@@ -30,28 +30,36 @@ import org.codefeedr.core.library.metastore.SubjectLibraryComponent
 import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, PushEvent, SimpleCommit}
 import org.codefeedr.plugins.github.operators.GetOrAddCommit
 
-class RetrieveCommitsJob extends Job[PushEvent, Commit]("retrieve_commits") {
+
+trait RetrieveCommitsJobComponent {
   this: SubjectLibraryComponent
     with SubjectFactoryComponent
     with KafkaConsumerFactoryComponent
+    with JobComponent
   =>
 
-  /**
-    * Setups a stream for the given environment.
-    *
-    * @param env the environment to setup the stream on.
-    * @return the prepared datastream.
-    */
-  override def getStream(env: StreamExecutionEnvironment): DataStream[Commit] = {
-    val stream = env
-      .addSource(source)
-      .flatMap(event => event.payload.commits.map(x => (event.repo.name, SimpleCommit(x.sha))))
+  def createRetrieveCommitsJob() = new RetrieveCommitsJob()
 
-    //work around for not existing RichAsyncFunction in Scala
-    val getCommit = new GetOrAddCommit //get or add commit to mongo
-    val finalStream =
-      JavaAsyncDataStream.unorderedWait(stream.javaStream, getCommit, 10, TimeUnit.SECONDS, 50)
+  class RetrieveCommitsJob extends Job[PushEvent, Commit]("retrieve_commits") {
 
-    new org.apache.flink.streaming.api.scala.DataStream(finalStream)
+    /**
+      * Setups a stream for the given environment.
+      *
+      * @param env the environment to setup the stream on.
+      * @return the prepared datastream.
+      */
+    override def getStream(env: StreamExecutionEnvironment): DataStream[Commit] = {
+      val stream = env
+        .addSource(source)
+        .flatMap(event => event.payload.commits.map(x => (event.repo.name, SimpleCommit(x.sha))))
+
+      //work around for not existing RichAsyncFunction in Scala
+      val getCommit = new GetOrAddCommit //get or add commit to mongo
+      val finalStream =
+        JavaAsyncDataStream.unorderedWait(stream.javaStream, getCommit, 10, TimeUnit.SECONDS, 50)
+
+      new org.apache.flink.streaming.api.scala.DataStream(finalStream)
+    }
   }
+
 }

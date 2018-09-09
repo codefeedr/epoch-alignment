@@ -169,7 +169,7 @@ class ZkCollectionStateNodeSpec  extends LibraryServiceSpec with Matchers with B
 
 
 
-class TestCollectionStateNode(name: String, parent: ZkNodeBase)
+class TestCollectionStateNode(name: String, parent: ZkNodeBase)(implicit override val zkClient: ZkClient)
   extends ZkCollectionNode[TestCollectionStateChildNode,Unit](name, parent, (n, p) => new TestCollectionStateChildNode(n,p))
   with ZkCollectionStateNode[TestCollectionStateChildNode,Unit,String, String,String] {
   /**
@@ -203,7 +203,7 @@ class TestCollectionStateNode(name: String, parent: ZkNodeBase)
   }
 }
 
-class TestCollectionStateChildNode(name: String, parent: ZkNodeBase)
+class TestCollectionStateChildNode(name: String, parent: ZkNodeBase)(implicit override val zkClient: ZkClient)
   extends ZkNode[String](name, parent)
   with ZkStateNode[String,String] {
   /**

@@ -27,5 +27,4 @@ import org.scalatest.AsyncFlatSpec
   */
 class LibraryServiceSpec extends AsyncFlatSpec with IntegrationTestLibraryServices {
 
-
 }

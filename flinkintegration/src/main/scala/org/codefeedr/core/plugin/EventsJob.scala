@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.apache.flink.streaming.api.datastream.{AsyncDataStream => JavaAsyncDataStream}
-import org.codefeedr.core.library.internal.{Job, Plugin}
+import org.codefeedr.core.library.internal.{JobComponent, Plugin}
 import org.apache.flink.api.scala._
 import org.codefeedr.core.library.SubjectFactoryComponent
 import org.codefeedr.core.library.internal.kafka.source.KafkaConsumerFactoryComponent
@@ -32,35 +32,38 @@ import org.codefeedr.plugins.github.input.GitHubSource
 import org.codefeedr.plugins.github.operators.GetOrAddPushEvent
 import org.json4s.DefaultFormats
 
-import scala.reflect.ClassTag
-import scala.reflect.runtime.{universe => ru}
 
-class EventsJob(maxRequests: Int) extends Job[Event, PushEvent]("events_job") {
+trait EventsJobFactoryComponent {
   this: SubjectLibraryComponent
     with SubjectFactoryComponent
     with KafkaConsumerFactoryComponent
+    with JobComponent
   =>
 
-  /**
-    * Setups a stream for the given environment.
-    *
-    * @param env the environment to setup the stream on.
-    * @return the prepared datastream.
-    */
-  override def getStream(env: StreamExecutionEnvironment): DataStream[PushEvent] = {
-    val source = new GitHubSource(maxRequests)
-    val stream =
-      env.addSource(source).filter(_.`type` == "PushEvent").map { x =>
-        implicit val formats = DefaultFormats
-        PushEvent(x.id, x.repo, x.actor, x.org, x.payload.extract[Payload], x.public, x.created_at)
-      }
+  def createEventsJob(maxRequests:Int) = new EventsJob(maxRequests)
 
-    //work around for not existing RichAsyncFunction in Scala
-    val asyncFunction = new GetOrAddPushEvent
-    val finalStream =
-      JavaAsyncDataStream.unorderedWait(stream.javaStream, asyncFunction, 10, TimeUnit.SECONDS, 50)
+  class EventsJob(maxRequests: Int) extends Job[Event, PushEvent]("events_job") {
+    /**
+      * Setups a stream for the given environment.
+      *
+      * @param env the environment to setup the stream on.
+      * @return the prepared datastream.
+      */
+    override def getStream(env: StreamExecutionEnvironment): DataStream[PushEvent] = {
+      val source = new GitHubSource(maxRequests)
+      val stream =
+        env.addSource(source).filter(_.`type` == "PushEvent").map { x =>
+          implicit val formats = DefaultFormats
+          PushEvent(x.id, x.repo, x.actor, x.org, x.payload.extract[Payload], x.public, x.created_at)
+        }
 
-    new org.apache.flink.streaming.api.scala.DataStream(finalStream)
+      //work around for not existing RichAsyncFunction in Scala
+      val asyncFunction = new GetOrAddPushEvent
+      val finalStream =
+        JavaAsyncDataStream.unorderedWait(stream.javaStream, asyncFunction, 10, TimeUnit.SECONDS, 50)
+
+      new org.apache.flink.streaming.api.scala.DataStream(finalStream)
+    }
   }
-
 }
+

@@ -171,8 +171,8 @@ class ZkNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEa
 }
 
 
-class TestConfigNode(name: String, parent: ZkNodeBase) extends ZkNode[MyConfig](name, parent)
+class TestConfigNode(name: String, parent: ZkNodeBase)(implicit override val zkClient: ZkClient) extends ZkNode[MyConfig](name, parent)
 
-class TestConfigNodeWithPostCreate(name: String, parent: ZkNodeBase, pc: () => Future[Unit]) extends ZkNode[MyConfig](name, parent) {
+class TestConfigNodeWithPostCreate(name: String, parent: ZkNodeBase, pc: () => Future[Unit])(implicit override val zkClient: ZkClient) extends ZkNode[MyConfig](name, parent) {
   override def postCreate(): Future[Unit] = pc()
 }

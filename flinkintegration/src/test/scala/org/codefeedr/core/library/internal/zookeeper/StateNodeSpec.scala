@@ -16,7 +16,6 @@ import scala.reflect.ClassTag
   * Testclass for  [[ZkStateNode]]
   */
 class ZkStateNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with LazyLogging{
-
   "ZkStateNode.GetStateNode()" should "return the ckNode representing the state" in async {
     val root = new TestRoot()
     val child = new TestStateNode("child", root)
@@ -93,14 +92,16 @@ class ZkStateNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAf
 }
 
 
+
+
 case class MyConfig(s: String)
 
-class TestRoot extends ZkNodeBase("TestRoot") {
+class TestRoot(implicit zkClient: ZkClient) extends ZkNodeBase("TestRoot")(zkClient) {
   override def parent(): ZkNodeBase = null
   override def path(): String = s"/$name"
 }
 
-class TestStateNode(name: String, parent: ZkNodeBase) extends ZkNode[MyConfig](name, parent) with ZkStateNode[MyConfig,String] {
+class TestStateNode(name: String, parent: ZkNodeBase)(implicit override val zkClient: ZkClient) extends ZkNode[MyConfig](name, parent) with ZkStateNode[MyConfig,String] {
   /**
     * The base class needs to expose the typeTag, no typeTag constraints can be put on traits
     *

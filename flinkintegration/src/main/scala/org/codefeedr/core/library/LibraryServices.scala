@@ -68,7 +68,7 @@ trait CodefeedrComponents extends Serializable
     with EpochStateManagerComponent {
 
   @transient lazy override val zkClient:ZkClient = new ZkClientImpl()
-  @transient lazy override val subjectLibrary = new SubjectLibrary()
+  @transient lazy override val subjectLibrary:SubjectLibrary = new SubjectLibrary()
 
   @transient lazy override val subjectFactory = new SubjectFactoryController()
   @transient lazy override val streamComposerFactory = new StreamComposerFactory()

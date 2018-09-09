@@ -1,6 +1,6 @@
 package org.codefeedr.core.library.internal.kafka.sink
 
-import org.codefeedr.core.library.internal.zookeeper.ZkNode
+import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkNode}
 import org.codefeedr.core.library.metastore._
 import org.codefeedr.model.zookeeper.{EpochCollection, Partition}
 import org.codefeedr.util.MockitoExtensions
@@ -22,6 +22,7 @@ class EpochStateManagerSpec extends AsyncFlatSpec with MockitoSugar with BeforeA
   var epochNode : EpochNode = _
   var epochPartitions : EpochPartitionCollection = _
   var epochStateManager: EpochStateManager = new EpochStateManager()
+  implicit val zkClient:ZkClient = mock[ZkClient]
 
   override def beforeEach(): Unit = {
     epochCollectionNode = mock[EpochCollectionNode]

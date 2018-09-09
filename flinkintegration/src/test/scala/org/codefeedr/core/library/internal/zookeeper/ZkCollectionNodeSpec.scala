@@ -102,7 +102,7 @@ class ZkCollectionNodeSpec  extends LibraryServiceSpec with Matchers with Before
   }
 }
 
-class TestCollectionNode(name: String, parent: ZkNodeBase) extends ZkCollectionNode[TestCollectionChildNode,Unit](name, parent, (n, p) => new TestCollectionChildNode(n,p))
+class TestCollectionNode(name: String, parent: ZkNodeBase)(implicit override val zkClient: ZkClient) extends ZkCollectionNode[TestCollectionChildNode,Unit](name, parent, (n, p) => new TestCollectionChildNode(n,p))
 
-class TestCollectionChildNode(name: String, parent: ZkNodeBase) extends ZkNode[String](name, parent)
+class TestCollectionChildNode(name: String, parent: ZkNodeBase)(implicit override val zkClient: ZkClient) extends ZkNode[String](name, parent)
 
