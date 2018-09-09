@@ -10,7 +10,7 @@ import org.codefeedr.model.zookeeper.Producer
 
 import scala.concurrent.Future
 
-class ProducerCollection(subjectName: String, parent: ZkNodeBase)
+class ProducerCollection(subjectName: String, parent: ZkNodeBase)(implicit override val zkClient: ZkClient)
     extends ZkCollectionNode[ProducerNode, Unit]("producers",
                                                  parent,
                                                  (name, parent) => new ProducerNode(name, parent))

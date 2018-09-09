@@ -22,8 +22,9 @@ import com.typesafe.scalalogging.{LazyLogging, Logger}
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
-import org.codefeedr.core.library.internal.kafka.source.{KafkaGenericTrailedSource, KafkaRowSource}
-import org.codefeedr.core.library.metastore.{SubjectLibrary, SubjectNode}
+import org.codefeedr.core.library.SubjectFactoryComponent
+import org.codefeedr.core.library.internal.kafka.source.{KafkaConsumerFactoryComponent, KafkaGenericTrailedSource, KafkaRowSource}
+import org.codefeedr.core.library.metastore.{SubjectLibraryComponent, SubjectNode}
 import org.codefeedr.model.SubjectType
 
 import scala.concurrent._
@@ -42,11 +43,15 @@ import scala.reflect.runtime.{universe => ru}
 abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.TypeTag: ClassTag](
     name: String)
     extends LazyLogging {
+    this: SubjectLibraryComponent
+    with SubjectFactoryComponent
+    with KafkaConsumerFactoryComponent
+    =>
 
   var subjectType: SubjectType = _
   //HACK: Direct call to libraryServices
-  lazy val subjectNode = LibraryServices.subjectLibrary.getSubject(subjectType.name)
-  lazy val jobNode = LibraryServices.subjectLibrary.getJob(name)
+  lazy val subjectNode = subjectLibrary.getSubject(subjectType.name)
+  lazy val jobNode = subjectLibrary.getJob(name)
 
   var source: RichSourceFunction[Input] = _
 
@@ -71,19 +76,18 @@ abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.Type
   def compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit] = async {
     val sinkName = s"composedsink_${queryId}"
     //HACK: Direct call to libraryServices
-    val sink = await(LibraryServices.subjectFactory.getSink[Output](sinkName, queryId))
+    val sink = await(subjectFactory.getSink[Output](sinkName, queryId))
     val stream = getStream(env)
     stream.addSink(sink)
   }
 
   /**
     * Makes sure the subjectType is created
-    * @param subjectLibrary
-    * @return
+        * @return
     */
-  def setupType(subjectLibrary: SubjectLibrary): Future[Unit] = {
+  def setupType(): Future[Unit] = {
     subjectType = SubjectTypeFactory.getSubjectType[Output]
-    LibraryServices.subjectFactory.create(subjectType).map(_ => ())
+    subjectFactory.create(subjectType).map(_ => ())
   }
 
   def setSource(job: Job[_, Input]) = {
@@ -91,13 +95,13 @@ abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.Type
     source = new KafkaGenericTrailedSource[Input](
       job.subjectNode,
       job.jobNode,
-      LibraryServices.kafkaConsumerFactory,
-      LibraryServices.subjectFactory.getUnTransformer[Input](subjectType),
+      kafkaConsumerFactory,
+      subjectFactory.getUnTransformer[Input](subjectType),
       job.subjectType.uuid
     )
   }
 
-  def startJob(subjectLibrary: SubjectLibrary) = async {
+  def startJob() = async {
     val env = StreamExecutionEnvironment.createLocalEnvironment(getParallelism)
     logger.debug(s"Composing env for ${subjectType.name}")
     await(compose(env, s"$name"))

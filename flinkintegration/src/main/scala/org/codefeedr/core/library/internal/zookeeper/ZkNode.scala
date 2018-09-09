@@ -37,8 +37,8 @@ import scala.concurrent.duration._
   * @param name name of the current node
   * @param p the parent
   */
-class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)
-    extends ZkNodeBase(name)
+class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)(implicit override val zkClient: ZkClient)
+    extends ZkNodeBase(name)(zkClient)
     with PartialFunction[Unit, Future[TData]]
     with LazyLogging {
 
@@ -123,5 +123,5 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)
 }
 
 object ZkNode {
-  def apply[TData: ClassTag](name: String, parent: ZkNodeBase) = new ZkNode[TData](name, parent)
+  def apply[TData: ClassTag](name: String, parent: ZkNodeBase)(implicit zkClient:ZkClient) = new ZkNode[TData](name, parent)
 }

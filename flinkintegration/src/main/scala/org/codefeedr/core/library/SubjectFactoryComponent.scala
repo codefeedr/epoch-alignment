@@ -87,7 +87,7 @@ trait SubjectFactoryComponent {
                                           jobNode,
                                           kafkaProducerFactory,
                                           epochStateManager,
-                                          sinkId)
+                                          sinkId)(getTransformer[TData](subjectNode.getDataSync().get))
     }
 
     def getTrailedSink(subjectType: SubjectType,
@@ -134,7 +134,7 @@ trait SubjectFactoryComponent {
     /**
       * Get a generic sink for the given type
       *
-      * @param subjectType subject to obtain the sink for
+
       * @return
       */
     /*

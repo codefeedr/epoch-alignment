@@ -25,7 +25,7 @@ import org.codefeedr.core.library.internal.kafka.KafkaControllerComponent
 import org.codefeedr.core.library.internal.kafka.sink.{EpochStateManager, EpochStateManagerComponent, KafkaProducerFactoryComponent}
 import org.codefeedr.core.library.internal.kafka.source.KafkaConsumerFactoryComponent
 import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkClientComponent}
-import org.codefeedr.core.library.metastore.{SubjectLibrary, SubjectLibraryComponent}
+import org.codefeedr.core.library.metastore.SubjectLibraryComponent
 
 
 /**
@@ -77,3 +77,7 @@ trait CodefeedrComponents extends Serializable
 
 }
 
+
+//HACK: Making all singleton components available in the static context
+//Note that due to serialization/deserialization these components are not guaranteed singletons!
+object LibraryServices extends CodefeedrComponents with Serializable {}

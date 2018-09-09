@@ -18,7 +18,7 @@ import scala.reflect.ClassTag
   * This class contains services to obtain more detailed information about kafka partitions,
   * consumers (kafkasources) consuming these sources and their offsets
   */
-class SubjectNode(subjectName: String, parent: ZkNodeBase)
+class SubjectNode(subjectName: String, parent: ZkNodeBase)(implicit override val zkClient: ZkClient)
     extends ZkNode[SubjectType](subjectName, parent)
     with ZkStateNode[SubjectType, Boolean]
     with LazyLogging {

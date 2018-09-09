@@ -1,6 +1,6 @@
 package org.codefeedr.core.library.metastore
 
-import org.codefeedr.core.library.internal.zookeeper.{ZkCollectionNode, ZkNode, ZkNodeBase}
+import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkCollectionNode, ZkNode, ZkNodeBase}
 import org.codefeedr.model.zookeeper.EpochCollection
 
 import scala.async.Async.{async, await}
@@ -12,7 +12,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * Contains epoch mappings to offset pet job
   * @param parent
   */
-class EpochCollectionNode(parent: ZkNodeBase)
+class EpochCollectionNode(parent: ZkNodeBase)(implicit override val zkClient: ZkClient)
     extends ZkCollectionNode[EpochNode, EpochCollection]("epochs",
                                                          parent,
                                                          (n, p) => new EpochNode(n.toInt, p)) {

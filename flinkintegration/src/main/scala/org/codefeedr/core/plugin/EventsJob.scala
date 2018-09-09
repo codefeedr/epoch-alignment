@@ -24,6 +24,9 @@ import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironm
 import org.apache.flink.streaming.api.datastream.{AsyncDataStream => JavaAsyncDataStream}
 import org.codefeedr.core.library.internal.{Job, Plugin}
 import org.apache.flink.api.scala._
+import org.codefeedr.core.library.SubjectFactoryComponent
+import org.codefeedr.core.library.internal.kafka.source.KafkaConsumerFactoryComponent
+import org.codefeedr.core.library.metastore.SubjectLibraryComponent
 import org.codefeedr.plugins.github.clients.GitHubProtocol.{Event, Payload, PushEvent}
 import org.codefeedr.plugins.github.input.GitHubSource
 import org.codefeedr.plugins.github.operators.GetOrAddPushEvent
@@ -33,6 +36,10 @@ import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
 class EventsJob(maxRequests: Int) extends Job[Event, PushEvent]("events_job") {
+  this: SubjectLibraryComponent
+    with SubjectFactoryComponent
+    with KafkaConsumerFactoryComponent
+  =>
 
   /**
     * Setups a stream for the given environment.

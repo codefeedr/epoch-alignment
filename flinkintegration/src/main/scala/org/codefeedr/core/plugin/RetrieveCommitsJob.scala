@@ -24,10 +24,17 @@ import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironm
 import org.apache.flink.streaming.api.datastream.{AsyncDataStream => JavaAsyncDataStream}
 import org.codefeedr.core.library.internal.{Job, Plugin}
 import org.apache.flink.streaming.api.scala._
+import org.codefeedr.core.library.SubjectFactoryComponent
+import org.codefeedr.core.library.internal.kafka.source.KafkaConsumerFactoryComponent
+import org.codefeedr.core.library.metastore.SubjectLibraryComponent
 import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, PushEvent, SimpleCommit}
 import org.codefeedr.plugins.github.operators.GetOrAddCommit
 
 class RetrieveCommitsJob extends Job[PushEvent, Commit]("retrieve_commits") {
+  this: SubjectLibraryComponent
+    with SubjectFactoryComponent
+    with KafkaConsumerFactoryComponent
+  =>
 
   /**
     * Setups a stream for the given environment.

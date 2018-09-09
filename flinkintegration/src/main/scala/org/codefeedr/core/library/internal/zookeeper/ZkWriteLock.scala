@@ -8,7 +8,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class ZkWriteLock(path: String) extends BaseLock with LazyLogging {
+class ZkWriteLock(path: String)(implicit override val zkClient: ZkClient) extends BaseLock with LazyLogging {
   //Some local values
   private val lockCollectionNode = s"$path"
 
@@ -67,7 +67,7 @@ class ZkWriteLock(path: String) extends BaseLock with LazyLogging {
 }
 
 object ZkWriteLock {
-  def open(path: String): Future[ZkWriteLock] = {
+  def open(path: String)(implicit zkClient: ZkClient): Future[ZkWriteLock] = {
     val lock = new ZkWriteLock(path)
     lock.awaitOpen.map(_ => lock)
   }

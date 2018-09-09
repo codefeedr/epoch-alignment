@@ -1,15 +1,11 @@
 package org.codefeedr.core.library.metastore
 
-import org.codefeedr.core.library.internal.zookeeper.{
-  ZkCollectionNode,
-  ZkCollectionStateNode,
-  ZkNodeBase
-}
+import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkCollectionNode, ZkCollectionStateNode, ZkNodeBase}
 import org.codefeedr.model.zookeeper.QuerySource
 
 import scala.concurrent.Future
 
-class QuerySourceCollection(parent: ZkNodeBase)
+class QuerySourceCollection(parent: ZkNodeBase)(implicit override val zkClient: ZkClient)
     extends ZkCollectionNode[QuerySourceNode, Unit](
       "sources",
       parent,

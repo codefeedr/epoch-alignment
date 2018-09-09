@@ -1,11 +1,11 @@
 package org.codefeedr.core.library.metastore
-import org.codefeedr.core.library.internal.zookeeper.{ZkCollectionNode, ZkNodeBase}
+import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkCollectionNode, ZkNodeBase}
 import org.codefeedr.model.zookeeper.EpochCollection
 
 import scala.async.Async.{async, await}
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-class SourceEpochCollection(parent: ZkNodeBase)
+class SourceEpochCollection(parent: ZkNodeBase)(implicit override val zkClient: ZkClient)
     extends ZkCollectionNode[SourceEpochNode, EpochCollection](
       "epochs",
       parent,

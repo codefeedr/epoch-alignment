@@ -1,14 +1,9 @@
 package org.codefeedr.core.library.metastore
 
-import org.codefeedr.core.library.internal.zookeeper.{
-  ZkClientComponent,
-  ZkCollectionNode,
-  ZkCollectionStateNode,
-  ZkNodeBase
-}
+import org.codefeedr.core.library.internal.zookeeper._
 import org.codefeedr.model.zookeeper.Consumer
 
-class ConsumerCollection(subjectName: String, parent: ZkNodeBase)
+class ConsumerCollection(subjectName: String, parent: ZkNodeBase)(implicit override val zkClient: ZkClient)
     extends ZkCollectionNode[ConsumerNode, Unit]("consumers",
                                                  parent,
                                                  (name, parent) => new ConsumerNode(name, parent))

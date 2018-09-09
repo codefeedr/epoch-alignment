@@ -1,9 +1,9 @@
 package org.codefeedr.core.library.metastore
 
-import org.codefeedr.core.library.internal.zookeeper.{ZkNode, ZkNodeBase, ZkStateNode}
+import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkNode, ZkNodeBase, ZkStateNode}
 import org.codefeedr.model.zookeeper.Partition
 
-import scala.async.Async.{await, async}
+import scala.async.Async.{async, await}
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.reflect.ClassTag
@@ -13,7 +13,7 @@ import scala.reflect.ClassTag
   * @param epoch
   * @param parent
   */
-class EpochNode(epoch: Int, parent: ZkNodeBase)
+class EpochNode(epoch: Int, parent: ZkNodeBase)(implicit override val zkClient: ZkClient)
     extends ZkNode[Epoch](s"$epoch", parent)
     with ZkStateNode[Epoch, Boolean] {
 

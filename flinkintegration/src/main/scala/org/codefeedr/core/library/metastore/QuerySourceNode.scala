@@ -1,7 +1,7 @@
 package org.codefeedr.core.library.metastore
 
 import com.typesafe.scalalogging.LazyLogging
-import org.codefeedr.core.library.internal.zookeeper.{ZkNode, ZkNodeBase, ZkStateNode}
+import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkNode, ZkNodeBase, ZkStateNode}
 import org.codefeedr.model.zookeeper.{QuerySink, QuerySource}
 
 import scala.async.Async.{async, await}
@@ -10,7 +10,7 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 
 /** Creating a querySourceNode will create its "skeleton" */
-class QuerySourceNode(name: String, parent: ZkNodeBase)
+class QuerySourceNode(name: String, parent: ZkNodeBase)(implicit override val zkClient: ZkClient)
     extends ZkNode[QuerySource](name, parent)
     with ZkStateNode[QuerySource, Boolean]
     with LazyLogging {

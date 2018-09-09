@@ -8,7 +8,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.immutable
 import scala.concurrent.Future
 
-class SubjectCollectionNode(parent: ZkNodeBase)
+class SubjectCollectionNode(parent: ZkNodeBase)(implicit override val zkClient: ZkClient)
     extends ZkCollectionNode[SubjectNode, Unit]("Subjects",
                                                 parent,
                                                 (name, parent) => new SubjectNode(name, parent)) {

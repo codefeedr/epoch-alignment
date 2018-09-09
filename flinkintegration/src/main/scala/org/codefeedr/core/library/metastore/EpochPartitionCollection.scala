@@ -1,13 +1,9 @@
 package org.codefeedr.core.library.metastore
 
-import org.codefeedr.core.library.internal.zookeeper.{
-  ZkCollectionNode,
-  ZkCollectionStateNode,
-  ZkNodeBase
-}
+import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkCollectionNode, ZkCollectionStateNode, ZkNodeBase}
 import org.codefeedr.model.zookeeper.Partition
 
-class EpochPartitionCollection(parent: ZkNodeBase)
+class EpochPartitionCollection(parent: ZkNodeBase)(implicit override val zkClient: ZkClient)
     extends ZkCollectionNode[EpochPartition, Unit]("partitions",
                                                    parent,
                                                    (n, p) => new EpochPartition(n, p))

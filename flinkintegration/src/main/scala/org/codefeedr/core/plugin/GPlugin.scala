@@ -32,11 +32,11 @@ class GPlugin extends Plugin { this: SubjectLibraryComponent with ZkClientCompon
     //setup events job
 
     val eventsJob = new EventsJob(1)
-    await(eventsJob.setupType(subjectLibrary))
+    await(eventsJob.setupType())
 
     //setup commit retrieval job
     val retrieveJob = new RetrieveCommitsJob()
-    await(retrieveJob.setupType(subjectLibrary))
+    await(retrieveJob.setupType())
     retrieveJob.setSource(eventsJob)
 
     eventsJob :: retrieveJob :: Nil

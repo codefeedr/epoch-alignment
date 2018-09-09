@@ -11,7 +11,7 @@ import scala.reflect.ClassTag
 class ZkCollectionNode[TNode <: ZkNodeBase, TData: ClassTag](
     name: String,
     p: ZkNodeBase,
-    childConstructor: (String, ZkNodeBase) => TNode)
+    childConstructor: (String, ZkNodeBase) => TNode)(implicit override val zkClient: ZkClient)
     extends ZkNode[TData](name, p)
     with LazyLogging {
 

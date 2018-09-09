@@ -46,7 +46,7 @@ abstract class Plugin { this: ZkClientComponent with SubjectLibraryComponent =>
 
   def run() = async {
     await(startPlugin())
-    await(Future.sequence(jobs.map(_.startJob(subjectLibrary))))
+    await(Future.sequence(jobs.map(_.startJob())))
     await(stopPlugin())
   }
 }

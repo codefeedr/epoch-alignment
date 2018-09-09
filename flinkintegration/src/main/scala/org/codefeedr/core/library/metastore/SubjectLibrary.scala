@@ -21,57 +21,67 @@ package org.codefeedr.core.library.metastore
 
 import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.core.library.internal.SubjectTypeFactory
+import org.codefeedr.core.library.internal.zookeeper.ZkClientComponent
 
 import scala.reflect.runtime.{universe => ru}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
-/**
-  * ThreadSafe, Async
-  * This class contains services to obtain data about subjects and kafka topics
-  *
-  * Created by Niels on 14/07/2017.
-  */
-class SubjectLibrary extends LazyLogging {
-  private lazy val root: MetaRootNode = new MetaRootNode()
-  private lazy val subjects: SubjectCollectionNode = root.getSubjects()
-  private lazy val jobs: JobNodeCollection = root.getJobs()
+
+trait SubjectLibraryComponent {
+  this:ZkClientComponent
+  =>
+
+  val subjectLibrary:SubjectLibrary
 
   /**
-    * Initalisation method
+    * ThreadSafe, Async
+    * This class contains services to obtain data about subjects and kafka topics
     *
-    * @return true when initialisation is done
+    * Created by Niels on 14/07/2017.
     */
-  def initialize(): Future[Boolean] =
-    subjects.create().map(_ => true)
+  class SubjectLibrary extends LazyLogging {
+    private lazy val root: MetaRootNode = new MetaRootNode()
+    private lazy val subjects: SubjectCollectionNode = root.getSubjects()
+    private lazy val jobs: JobNodeCollection = root.getJobs()
 
-  /**
-    * Retrieves the nodes representing all registered subjects
-    * @return
-    */
-  def getSubjects(): SubjectCollectionNode = subjects
+    /**
+      * Initalisation method
+      *
+      * @return true when initialisation is done
+      */
+    def initialize(): Future[Boolean] =
+      subjects.create().map(_ => true)
 
-  /**
-    * Retrieves a node representing a single subject of the given name
-    * Does not validate if the subject exists
-    * @param subjectName name of the subject
-    * @return
-    */
-  def getSubject(subjectName: String): SubjectNode = subjects.getChild(subjectName)
+    /**
+      * Retrieves the nodes representing all registered subjects
+      * @return
+      */
+    def getSubjects(): SubjectCollectionNode = subjects
 
-  /**
-    * Get the subjectNode based on generic type
-    * Uses reflection to obtain name, and then the node
-    * @tparam T
-    * @return
-    */
-  def getSubject[T: ClassTag](): SubjectNode = getSubject(SubjectTypeFactory.getSubjectName[T])
+    /**
+      * Retrieves a node representing a single subject of the given name
+      * Does not validate if the subject exists
+      * @param subjectName name of the subject
+      * @return
+      */
+    def getSubject(subjectName: String): SubjectNode = subjects.getChild(subjectName)
 
-  /**
-    * Retrieves the jobNode for a job of the given name
-    * @param name name of the job
-    * @return a jobNode
-    */
-  def getJob(name: String): JobNode = jobs.getChild(name)
+    /**
+      * Get the subjectNode based on generic type
+      * Uses reflection to obtain name, and then the node
+      * @tparam T
+      * @return
+      */
+    def getSubject[T: ClassTag](): SubjectNode = getSubject(SubjectTypeFactory.getSubjectName[T])
+
+    /**
+      * Retrieves the jobNode for a job of the given name
+      * @param name name of the job
+      * @return a jobNode
+      */
+    def getJob(name: String): JobNode = jobs.getChild(name)
+  }
+
 }

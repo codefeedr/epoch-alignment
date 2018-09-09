@@ -15,7 +15,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * No guaranteed behavior after calling close()
   * Following guideline on https://zookeeper.apache.org/doc/r3.1.2/recipes.html
   */
-class ZkReadLock(path: String) extends BaseLock with LazyLogging {
+class ZkReadLock(path: String)(implicit override val zkClient: ZkClient) extends BaseLock with LazyLogging {
   //Some local values
   private val lockCollectionNode = s"$path"
 
@@ -69,7 +69,7 @@ class ZkReadLock(path: String) extends BaseLock with LazyLogging {
 }
 
 object ZkReadLock {
-  def open(path: String): Future[ZkReadLock] = {
+  def open(path: String)(implicit zkClient: ZkClient): Future[ZkReadLock] = {
     val lock = new ZkReadLock(path)
     lock.awaitOpen.map(_ => lock)
   }

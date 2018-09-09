@@ -46,7 +46,7 @@ import scala.reflect.ClassTag
 trait ZkClientComponent {
   this: ZookeeperConfigurationComponent =>
 
-  val zkClient:ZkClient
+  implicit val zkClient:ZkClient
 
   /**
     * ZkClient class

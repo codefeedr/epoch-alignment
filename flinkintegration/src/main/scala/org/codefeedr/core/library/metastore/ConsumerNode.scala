@@ -1,11 +1,6 @@
 package org.codefeedr.core.library.metastore
 
-import org.codefeedr.core.library.internal.zookeeper.{
-  ZkClientComponent,
-  ZkNode,
-  ZkNodeBase,
-  ZkStateNode
-}
+import org.codefeedr.core.library.internal.zookeeper._
 import org.codefeedr.model.zookeeper.Consumer
 
 import scala.async.Async.{async, await}
@@ -13,7 +8,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
-class ConsumerNode(name: String, parent: ZkNodeBase)
+class ConsumerNode(name: String, parent: ZkNodeBase)(implicit override val zkClient: ZkClient)
     extends ZkNode[Consumer](name, parent)
     with ZkStateNode[Consumer, Boolean] {
   override def postCreate(): Future[Unit] =

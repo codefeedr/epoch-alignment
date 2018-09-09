@@ -6,7 +6,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 /**
   * Base class for read and write locks
   */
-abstract class BaseLock(implicit  val zkClient: ZkClient) {
+abstract class BaseLock(implicit val zkClient: ZkClient) {
   protected val promise = Promise[Unit]()
   protected val connector = zkClient.getConnector()
   var isOpen: Boolean = false
