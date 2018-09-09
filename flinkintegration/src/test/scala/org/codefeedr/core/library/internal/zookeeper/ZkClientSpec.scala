@@ -19,7 +19,6 @@
 
 package org.codefeedr.core.library.internal.zookeeper
 
-import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.library.metastore.MetaRootNode
 import org.codefeedr.core.LibraryServiceSpec
 import org.scalatest._

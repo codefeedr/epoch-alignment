@@ -21,8 +21,7 @@ package org.codefeedr.core.plugin
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
-import org.codefeedr.core.library.LibraryServices
-import org.codefeedr.core.library.internal.kafka.sink.KafkaTableSink
+import org.codefeedr.core.library.SubjectFactoryComponent
 import org.codefeedr.core.library.internal.{AbstractPlugin, SubjectTypeFactory}
 import org.codefeedr.model.SubjectType
 
@@ -39,6 +38,7 @@ import scala.reflect.runtime.{universe => ru}
 abstract class SimplePlugin[TData: ru.TypeTag: ClassTag](useTrailedSink: Boolean = false)
     extends AbstractPlugin
     with LazyLogging {
+  this:SubjectFactoryComponent =>
 
   /**
     * Method to implement as plugin to expose a datastream
@@ -62,9 +62,9 @@ abstract class SimplePlugin[TData: ru.TypeTag: ClassTag](useTrailedSink: Boolean
     val sinkName = s"composedsink_${queryId}"
     //HACK: Direct call to libraryServices
     val sink = if (useTrailedSink) {
-      await(LibraryServices.subjectFactory.getGenericTrailedSink[TData](sinkName, queryId))
+      await(subjectFactory.getGenericTrailedSink[TData](sinkName, queryId))
     } else {
-      await(LibraryServices.subjectFactory.getSink[TData](sinkName, queryId))
+      await(subjectFactory.getSink[TData](sinkName, queryId))
     }
 
     logger.debug(s"Got sink. Creating stream")
@@ -78,7 +78,7 @@ abstract class SimplePlugin[TData: ru.TypeTag: ClassTag](useTrailedSink: Boolean
     * @return a future when the call has completed
     */
   def createSubject(): Future[Unit] =
-    LibraryServices.subjectFactory.create[TData]().map(_ => ())
+    subjectFactory.create[TData]().map(_ => ())
 
   /**
     * Deletes an existing registration of the subject, and creates a new one
@@ -87,6 +87,6 @@ abstract class SimplePlugin[TData: ru.TypeTag: ClassTag](useTrailedSink: Boolean
     * @return A future that completes when the operation is done
     */
   def reCreateSubject(): Future[Unit] =
-    LibraryServices.subjectFactory.reCreate[TData]().map(_ => ())
+    subjectFactory.reCreate[TData]().map(_ => ())
 
 }

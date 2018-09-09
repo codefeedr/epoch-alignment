@@ -85,7 +85,7 @@ class TableApiIntegrationSpec extends FullIntegrationSpec{
       //Perform a Flink SQL Query
       val sqlResult  = tableEnv.sqlQuery("SELECT SUM(id), grp FROM my_table GROUP BY grp")
       //Write query results to a new custom kafka table sink
-      sqlResult.writeToSink(KafkaTableSink("my_sum",queryJobNode.name, "testSink"))
+      sqlResult.writeToSink(kafkaTableSinkFactory.create("my_sum",queryJobNode.name, "testSink"))
       //Run the environment with TABLE API Query
       this.runEnvironment(env)
 

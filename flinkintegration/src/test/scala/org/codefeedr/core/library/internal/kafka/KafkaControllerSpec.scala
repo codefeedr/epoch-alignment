@@ -24,7 +24,6 @@ package org.codefeedr.core.library.internal.kafka
 import java.util.UUID
 
 import org.codefeedr.core.library.internal.zookeeper.ZkClient
-import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.LibraryServiceSpec
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach, Matchers}
 

@@ -19,7 +19,6 @@
 
 package org.codefeedr.core
 
-import org.codefeedr.core.library.LibraryServices
 import org.scalatest.AsyncFlatSpec
 
 /**
