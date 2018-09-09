@@ -22,7 +22,6 @@ import com.typesafe.scalalogging.{LazyLogging, Logger}
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
-import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.library.internal.kafka.source.{KafkaGenericTrailedSource, KafkaRowSource}
 import org.codefeedr.core.library.metastore.{SubjectLibrary, SubjectNode}
 import org.codefeedr.model.SubjectType

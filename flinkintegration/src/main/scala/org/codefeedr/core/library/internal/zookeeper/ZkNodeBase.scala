@@ -1,7 +1,6 @@
 package org.codefeedr.core.library.internal.zookeeper
 
 import com.typesafe.scalalogging.LazyLogging
-import org.codefeedr.core.library.LibraryServices
 
 import scala.async.Async.{async, await}
 import scala.concurrent.Future
@@ -11,9 +10,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * Non-generic base class for all ZkNodes
   * @param name
   */
-abstract class ZkNodeBase(val name: String) extends Serializable with LazyLogging {
-  //HACK: Static access to zkClient
-  @transient protected lazy val zkClient = LibraryServices.zkClient
+abstract class ZkNodeBase(val name: String)(implicit val zkClient: ZkClient) extends Serializable with LazyLogging {
+
 
   def parent(): ZkNodeBase
 

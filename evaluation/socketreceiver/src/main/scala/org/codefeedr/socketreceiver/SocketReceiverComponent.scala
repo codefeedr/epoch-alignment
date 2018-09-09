@@ -31,7 +31,7 @@ trait SocketReceiverComponent {
 
     /**
       * Creates a new streamexectutionenvironment and deploys the job using the passed configuration
-      * @param pt
+      * @param pt configuration to deploy with
       */
       def deploy(pt:ParameterTool):Unit = {
         configurationProvider.initConfiguration(pt)
@@ -45,8 +45,6 @@ trait SocketReceiverComponent {
       * @return
       */
     private def createTopology(env:StreamExecutionEnvironment) = {
-
-
       //Put runIdentifier in MDC so we can filter results in ELK.
       MDC.put("RUN_INCREMENT", configurationProvider.get("RUN_INCREMENT"))
       //TODO: Find some better name or way to identify the job

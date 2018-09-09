@@ -77,7 +77,3 @@ trait CodefeedrComponents extends Serializable
 
 }
 
-
-//HACK: Making all singleton components available in the static context
-//Note that due to serialization/deserialization these components are not guaranteed singletons!
-object LibraryServices extends CodefeedrComponents with Serializable {}

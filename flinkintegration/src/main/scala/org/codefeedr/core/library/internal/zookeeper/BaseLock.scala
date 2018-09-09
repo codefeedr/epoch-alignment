@@ -1,15 +1,12 @@
 package org.codefeedr.core.library.internal.zookeeper
 
-import org.codefeedr.core.library.LibraryServices
-
 import scala.concurrent.{Future, Promise}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
   * Base class for read and write locks
   */
-abstract class BaseLock {
-  @transient protected lazy val zkClient = LibraryServices.zkClient
+abstract class BaseLock(implicit  val zkClient: ZkClient) {
   protected val promise = Promise[Unit]()
   protected val connector = zkClient.getConnector()
   var isOpen: Boolean = false

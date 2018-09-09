@@ -22,7 +22,7 @@ trait ConfigurationProviderComponent {
       *
       * @param configuration custom configuration to initialize with
       */
-    def initConfiguration(configuration: ParameterTool): Unit
+    def initConfiguration(configuration: ParameterTool, propertiesFile:Option[String] = None): Unit
 
     /**
       * Retrieve the parameterTool for the global configuration
@@ -71,7 +71,7 @@ trait FlinkConfigurationProviderComponent extends ConfigurationProviderComponent
     //All these variables are transient, because the configuration provider should
     // re-initialize after deserialization, and use the configuration from the execution environment
     @transient @volatile private var requested = false
-    @transient @volatile private var _parameterTool: Option[ParameterTool] = None
+    @volatile private var _parameterTool: Option[ParameterTool] = None
     @transient lazy val parameterTool: ParameterTool = getParameterTool
 
 
@@ -79,47 +79,31 @@ trait FlinkConfigurationProviderComponent extends ConfigurationProviderComponent
     /**
       * Sets the configuration
       *
-      * @param configuration custom configuration to initialzie with
+      * @param configuration custom configuration to initialize with
+      * @param propertiesFile name of properties file to additionally initialize with
       */
-    def initConfiguration(configuration: ParameterTool) {
+    def initConfiguration(configuration: ParameterTool, propertiesFile:Option[String] = None):Unit = {
       if (requested) {
         //Just to validate, the configuration is not modified after it has already been retrieved by some component
         throw new IllegalStateException("Cannot set parametertool after parametertool was already requested")
       }
-
-      setJobParameters(configuration)
-
       //Store parameter tool in the static context
       //Needed to also make the components work when there is no stream execution environment
-      logger.debug("Setting parameter tool")
-      _parameterTool = Some(configuration)
 
-    }
-
-
-    /**
-      * Sets the parametertool as jobParameter
-      *
-      * @param pt parametertool to set
-      */
-    private def setJobParameters(pt: ParameterTool): Unit = {
-      try {
-        val env = ExecutionEnvironment.getExecutionEnvironment
-        env.getConfig.setGlobalJobParameters(pt)
-      } catch {
-        case e: Exception => logger.warn(s"Cannot retrieve execution environment. Did you use this configuration provider outside a job? Error: ${e.getMessage}", e)
+      logger.debug("Initialized parameter tool")
+      _parameterTool = propertiesFile.flatMap(loadPropertiesFile) match {
+        case Some(p) => Some(p.mergeWith(configuration))
+        case None => Some(configuration)
       }
     }
-
-
     /**
       * Attempts to load the codefeedr.properties file
-      *
+      * @param fileName Name of the properties file to load
       * @return A paremetertool if the file was found, none otherwise
       */
-    private def loadPropertiesFile(): Option[ParameterTool] =
-      Option(getClass.getResourceAsStream("/codefeedr.properties"))
-        .info("Loading codefeedr.properties file", "No codefeedr.properties resource file found.")
+    private def loadPropertiesFile(fileName:String): Option[ParameterTool] =
+      Option(getClass.getResourceAsStream(fileName))
+        .info(s"Loading $fileName file", s"No $fileName resource file found.")
         .map(ParameterTool.fromPropertiesFile)
 
 
@@ -130,20 +114,11 @@ trait FlinkConfigurationProviderComponent extends ConfigurationProviderComponent
       *
       * @return
       */
-    private def getParameterTool: ParameterTool = {
-      requested = true
-      val pt = _parameterTool.getOrElse[ParameterTool]({
-        loadPropertiesFile() match {
-          case Some(pTool) =>
-            setJobParameters(pTool)
-            pTool
-          case None => throw new IllegalArgumentException("Cannot retrieve job parameters because no global job parameters were set. Did you forget to set a \"codefeedr.properties\" file when running outside of the Flink execution environment?")
-          }
-      })
-      //TODO: Maybe only print this in debug mode? This might expose username/password
-      logger.info(s"Configuration initialized with values: \n ${pt.toMap.asScala.toString}")
-      pt
-    }
+    private def getParameterTool: ParameterTool =
+      _parameterTool match {
+        case Some(p) => p
+        case None => throw new IllegalArgumentException("Cannot retrieve parametertool before calling initialize. Make sure to call initConfiguration as soon as possible in your application, and make sure this ConfigurationProviderComponent gets serialized with the Flink job")
+      }
 
     /**
       * Tries to key the value for the given key from the parametertool

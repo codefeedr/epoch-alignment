@@ -1,7 +1,6 @@
 package org.codefeedr.core.library.internal.kafka.sink
 
 import org.apache.flink.types.Row
-import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
 import org.codefeedr.model._
 
