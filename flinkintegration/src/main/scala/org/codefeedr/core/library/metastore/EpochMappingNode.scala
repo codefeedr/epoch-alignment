@@ -4,11 +4,9 @@ import org.codefeedr.core.library.internal.zookeeper._
 
 trait EpochMappingNode extends ZkNode[EpochMapping]
 
-trait EpochMappingNodeComponent extends ZkCollectionNodeComponent {
-  this: ZkClientComponent =>
+trait EpochMappingNodeComponent extends ZkCollectionNodeComponent { this: ZkClientComponent =>
 
   class EpochMappingNodeImpl(subject: String, parent: ZkNodeBase)
-    extends ZkNodeImpl[EpochMapping](subject, parent)
-      with EpochMappingNode
-  {}
+      extends ZkNodeImpl[EpochMapping](subject, parent)
+      with EpochMappingNode {}
 }

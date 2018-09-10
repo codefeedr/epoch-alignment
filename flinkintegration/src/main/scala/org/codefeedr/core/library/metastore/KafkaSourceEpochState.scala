@@ -7,8 +7,6 @@ import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-
-
 /**
   * Class used when creating a synchronized source
   * @param subjectNode node describing the subject the source is subscribed on

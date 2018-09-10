@@ -5,7 +5,8 @@ import org.codefeedr.model.zookeeper.QuerySource
 
 import scala.concurrent.Future
 
-trait QuerySourceCollection extends ZkCollectionStateNode[QuerySourceNode, Unit, QuerySource, Boolean, Boolean] {
+trait QuerySourceCollection
+    extends ZkCollectionStateNode[QuerySourceNode, Unit, QuerySource, Boolean, Boolean] {
 
   def initial(): Boolean
 
@@ -14,17 +15,16 @@ trait QuerySourceCollection extends ZkCollectionStateNode[QuerySourceNode, Unit,
   def reduceAggregate(left: Boolean, right: Boolean): Boolean
 }
 
-
 trait QuerySourceCollectionComponent extends ZkCollectionStateNodeComponent {
-  this:ZkClientComponent
-  with QuerySourceNodeComponent =>
+  this: ZkClientComponent with QuerySourceNodeComponent =>
 
   class QuerySourceCollectionImpl(parent: ZkNodeBase)
-    extends ZkCollectionNodeImpl[QuerySourceNode, Unit](
-      "sources",
-      parent,
-      (name, parent) => new QuerySourceNodeImpl(name, parent))
-      with ZkCollectionStateNodeImpl[QuerySourceNode, Unit, QuerySource, Boolean, Boolean] with QuerySourceCollection {
+      extends ZkCollectionNodeImpl[QuerySourceNode, Unit](
+        "sources",
+        parent,
+        (name, parent) => new QuerySourceNodeImpl(name, parent))
+      with ZkCollectionStateNodeImpl[QuerySourceNode, Unit, QuerySource, Boolean, Boolean]
+      with QuerySourceCollection {
 
     override def initial(): Boolean = false
 

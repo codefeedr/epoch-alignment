@@ -7,7 +7,7 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 trait ZkNodeBase {
-  val name:String
+  val name: String
 
   def parent(): ZkNodeBase
 
@@ -100,19 +100,17 @@ trait ZkNodeBase {
   def asyncWriteLock[TResult](a: () => Future[TResult]): Future[TResult]
 }
 
-
-
-trait ZkNodeBaseComponent {
-  this: ZkClientComponent =>
-
+trait ZkNodeBaseComponent { this: ZkClientComponent =>
 
   /**
     * Non-generic base class for all ZkNodes
     *
     * @param name
     */
-  abstract class ZkNodeBaseImpl(val name: String) extends Serializable with LazyLogging with ZkNodeBase {
-
+  abstract class ZkNodeBaseImpl(val name: String)
+      extends Serializable
+      with LazyLogging
+      with ZkNodeBase {
 
     override def path(): String = s"${parent().path()}/$name"
 
@@ -147,10 +145,11 @@ trait ZkNodeBaseComponent {
       * @return a future that resolves when the node has been deleted
       */
     override def delete(): Future[Unit] =
-      exists().flatMap(b => if (b) {
-        zkClient.Delete(path)
-      } else {
-        Future.successful(())
+      exists().flatMap(b =>
+        if (b) {
+          zkClient.Delete(path)
+        } else {
+          Future.successful(())
       })
 
     /**
@@ -159,10 +158,11 @@ trait ZkNodeBaseComponent {
       * @return a future that resolves when the node has been deleted
       */
     override def deleteRecursive(): Future[Unit] =
-      exists().flatMap(b => if (b) {
-        zkClient.deleteRecursive(path)
-      } else {
-        Future.successful(())
+      exists().flatMap(b =>
+        if (b) {
+          zkClient.deleteRecursive(path)
+        } else {
+          Future.successful(())
       })
 
     /**

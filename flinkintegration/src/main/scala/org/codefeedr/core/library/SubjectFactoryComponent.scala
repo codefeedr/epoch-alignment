@@ -43,7 +43,7 @@ import scala.concurrent.{Await, Future}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-trait SubjectFactoryComponent extends Serializable{
+trait SubjectFactoryComponent extends Serializable {
   this: SubjectLibraryComponent
     with KafkaProducerFactoryComponent
     with KafkaConsumerFactoryComponent

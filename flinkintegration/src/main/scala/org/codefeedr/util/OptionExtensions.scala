@@ -12,12 +12,11 @@ object OptionExtensions {
 
   implicit class DebuggableOption[T](o: Option[T]) {
 
-    private def log(f:String => Unit,hasValue:String,noValue:String):Option[T] =
+    private def log(f: String => Unit, hasValue: String, noValue: String): Option[T] =
       o match {
-        case Some(_) => f(hasValue);o
-        case None => f(noValue);o
+        case Some(_) => f(hasValue); o
+        case None => f(noValue); o
       }
-
 
     /**
       * Prints a value dependent if the option has a value
@@ -26,12 +25,12 @@ object OptionExtensions {
       * @param noValue
       * @return
       */
-    def info(hasValue:String, noValue:String):Option[T] =
+    def info(hasValue: String, noValue: String): Option[T] =
       log(v => {
-        if(logger.isInfoEnabled) {
+        if (logger.isInfoEnabled) {
           logger.info(hasValue)
         }
-      },hasValue,noValue)
+      }, hasValue, noValue)
 
     /**
       * Debugs a value dependent if the option has a value
@@ -39,10 +38,11 @@ object OptionExtensions {
       * @param noValue value to debug if the option has no value
       * @return
       */
-      def debug(hasValue:String, noValue:String): Option[T] = log(v => {
-        if(logger.isDebugEnabled()) {
+    def debug(hasValue: String, noValue: String): Option[T] =
+      log(v => {
+        if (logger.isDebugEnabled()) {
           logger.debug(hasValue)
         }
-      },hasValue,noValue)
+      }, hasValue, noValue)
   }
 }

@@ -1,9 +1,11 @@
 package org.codefeedr.core.library.metastore
 
-import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkClientComponent, ZkNodeBase, ZkNodeBaseComponent}
-
-
-
+import org.codefeedr.core.library.internal.zookeeper.{
+  ZkClient,
+  ZkClientComponent,
+  ZkNodeBase,
+  ZkNodeBaseComponent
+}
 
 trait MetaRootNode extends ZkNodeBase {
 
@@ -16,11 +18,9 @@ trait MetaRootNode extends ZkNodeBase {
   def getJobs(): JobNodeCollection
 }
 
-
 trait MetaRootNodeComponent extends ZkNodeBaseComponent {
-  this:ZkClientComponent
-  with JobNodeCollectionComponent
-  with SubjectCollectionNodeComponent =>
+  this: ZkClientComponent with JobNodeCollectionComponent with SubjectCollectionNodeComponent =>
+
   /**
     * Root node used for zookeeper configuration
     */

@@ -9,8 +9,9 @@ import scala.collection.mutable
 import scala.concurrent.duration.{Duration, MILLISECONDS}
 import scala.concurrent.{Future, Promise}
 
-
-trait ZkCollectionStateNode[TChildNode <: ZkStateNode[TChild,TChildState],TData, TChild, TChildState, TAggregateState] extends ZkCollectionNode[TChildNode,TData]{
+trait ZkCollectionStateNode[
+    TChildNode <: ZkStateNode[TChild, TChildState], TData, TChild, TChildState, TAggregateState]
+    extends ZkCollectionNode[TChildNode, TData] {
 
   def getChildren(): Future[Iterable[TChildNode]]
 
@@ -50,16 +51,16 @@ trait ZkCollectionStateNode[TChildNode <: ZkStateNode[TChild,TChildState],TData,
   def watchStateAggregate(f: TChildState => Boolean): Future[Boolean]
 }
 
+trait ZkCollectionStateNodeComponent extends ZkCollectionNodeComponent { this: ZkClientComponent =>
 
-trait ZkCollectionStateNodeComponent extends ZkCollectionNodeComponent {
-  this:ZkClientComponent =>
   /**
     * Class managing scala collection state
     */
   trait ZkCollectionStateNodeImpl[
-  TChildNode <: ZkStateNode[TChild,TChildState], TData, TChild, TChildState, TAggregateState]
-    extends ZkCollectionNodeImpl[TChildNode, TData]
-      with LazyLogging with ZkCollectionStateNode[TChildNode, TData,TChild, TChildState, TAggregateState] {
+      TChildNode <: ZkStateNode[TChild, TChildState], TData, TChild, TChildState, TAggregateState]
+      extends ZkCollectionNodeImpl[TChildNode, TData]
+      with LazyLogging
+      with ZkCollectionStateNode[TChildNode, TData, TChild, TChildState, TAggregateState] {
 
     override def getState(): Future[TAggregateState] = async {
       val consumerNodes = await(getChildren())
@@ -93,7 +94,7 @@ trait ZkCollectionStateNodeComponent extends ZkCollectionNodeComponent {
     * @tparam TChildState Type of the childs state
     */
   private class AggregateWatch[TChildNode <: ZkStateNode[TChild, TChildState], TChild, TChildState](
-                                                                                                     f: TChildState => Boolean) {
+      f: TChildState => Boolean) {
     private val lock = new Object()
     private val p = Promise[Boolean]
     //Contains the current state
@@ -121,20 +122,20 @@ trait ZkCollectionStateNodeComponent extends ZkCollectionNodeComponent {
         .observeData()
         .map(s => f(s))
         .subscribe(o =>
-          synchronized {
-            stateMap.update(childNode.name, o)
-            if (o) {
-              checkFinish()
-            }
-          },
-          error => {
-            p.failure(error)
-            cleanup()
-          },
-          () => {
-            remove(childNode.name)
-            checkFinish()
-          })
+                     synchronized {
+                       stateMap.update(childNode.name, o)
+                       if (o) {
+                         checkFinish()
+                       }
+                   },
+                   error => {
+                     p.failure(error)
+                     cleanup()
+                   },
+                   () => {
+                     remove(childNode.name)
+                     checkFinish()
+                   })
       subscriptionMap += childNode.name -> subscription
     }
 
@@ -149,7 +150,7 @@ trait ZkCollectionStateNodeComponent extends ZkCollectionNodeComponent {
 
     /*
       Removes a child from the internal state
-   */
+     */
     private def remove(child: String) = {
       stateMap.remove(child)
       if (!subscriptionMap(child).isUnsubscribed) {

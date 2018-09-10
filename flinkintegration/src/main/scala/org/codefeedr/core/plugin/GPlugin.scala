@@ -28,30 +28,25 @@ import scala.concurrent._
 import ExecutionContext.Implicits.global
 import async.Async._
 
-class GPlugin extends
-  CodefeedrComponents
-  with EventsJobFactoryComponent
-  with RetrieveCommitsJobComponent
-  with JobComponent
-  with Plugin {
+class GPlugin
+    extends CodefeedrComponents
+    with EventsJobFactoryComponent
+    with RetrieveCommitsJobComponent
+    with JobComponent
+    with Plugin {
 
-    override def setupJobs: Future[List[Job[_, _]]] = async {
-      //setup events job
+  override def setupJobs: Future[List[Job[_, _]]] = async {
+    //setup events job
 
-      val eventsJob = createEventsJob(1)
-      await(eventsJob.setupType())
+    val eventsJob = createEventsJob(1)
+    await(eventsJob.setupType())
 
-      //setup commit retrieval job
-      val retrieveJob = createRetrieveCommitsJob()
-      await(retrieveJob.setupType())
-      retrieveJob.setSource(eventsJob)
+    //setup commit retrieval job
+    val retrieveJob = createRetrieveCommitsJob()
+    await(retrieveJob.setupType())
+    retrieveJob.setSource(eventsJob)
 
-      eventsJob :: retrieveJob :: Nil
-    }
-
-
+    eventsJob :: retrieveJob :: Nil
+  }
 
 }
-
-
-

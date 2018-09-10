@@ -5,21 +5,20 @@ import org.codefeedr.model.zookeeper.Consumer
 
 import scala.concurrent.Future
 
-
 trait ConsumerCollection
-  extends ZkCollectionNode[ConsumerNode, Unit]
-  with ZkCollectionStateNode[ConsumerNode, Unit, Consumer, Boolean, Boolean]{
+    extends ZkCollectionNode[ConsumerNode, Unit]
+    with ZkCollectionStateNode[ConsumerNode, Unit, Consumer, Boolean, Boolean] {
   def querySource(): QuerySourceNode = parent().asInstanceOf[QuerySourceNode]
 }
 
 trait ConsumerCollectionComponent extends ZkCollectionStateNodeComponent {
-  this:ZkClientComponent
-  with ConsumerNodeComponent =>
+  this: ZkClientComponent with ConsumerNodeComponent =>
 
   class ConsumerCollectionImpl(subjectName: String, parent: ZkNodeBase)
-    extends ZkCollectionNodeImpl[ConsumerNode, Unit]("consumers",
-      parent,
-      (name, parent) => new ConsumerNodeImpl(name, parent))
+      extends ZkCollectionNodeImpl[ConsumerNode, Unit](
+        "consumers",
+        parent,
+        (name, parent) => new ConsumerNodeImpl(name, parent))
       with ZkCollectionStateNodeImpl[ConsumerNode, Unit, Consumer, Boolean, Boolean]
       with ConsumerCollection {
 

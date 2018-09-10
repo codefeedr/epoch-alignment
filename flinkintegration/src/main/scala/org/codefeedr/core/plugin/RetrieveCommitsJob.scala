@@ -30,13 +30,11 @@ import org.codefeedr.core.library.metastore.SubjectLibraryComponent
 import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, PushEvent, SimpleCommit}
 import org.codefeedr.plugins.github.operators.GetOrAddCommit
 
-
 trait RetrieveCommitsJobComponent {
   this: SubjectLibraryComponent
     with SubjectFactoryComponent
     with KafkaConsumerFactoryComponent
-    with JobComponent
-  =>
+    with JobComponent =>
 
   def createRetrieveCommitsJob() = new RetrieveCommitsJob()
 

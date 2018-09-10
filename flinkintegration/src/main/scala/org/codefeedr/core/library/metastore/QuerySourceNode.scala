@@ -9,7 +9,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
-trait QuerySourceNode extends ZkStateNode[QuerySource, Boolean]{
+trait QuerySourceNode extends ZkStateNode[QuerySource, Boolean] {
 
   def getConsumers(): ConsumerCollection
 
@@ -40,21 +40,19 @@ trait QuerySourceNode extends ZkStateNode[QuerySource, Boolean]{
   def updateState(): Future[Unit]
 }
 
-
 trait QuerySourceNodeComponent extends ZkStateNodeComponent {
   this: ZkClientComponent
-  with ConsumerCollectionComponent
-  with SourceEpochCollectionComponent
-  with SourceSynchronizationStateNodeComponent
-  with QuerySourceCommandNodeComponent
-  =>
-
+    with ConsumerCollectionComponent
+    with SourceEpochCollectionComponent
+    with SourceSynchronizationStateNodeComponent
+    with QuerySourceCommandNodeComponent =>
 
   /** Creating a querySourceNode will create its "skeleton" */
   class QuerySourceNodeImpl(name: String, parent: ZkNodeBase)
-    extends ZkNodeImpl[QuerySource](name, parent)
+      extends ZkNodeImpl[QuerySource](name, parent)
       with ZkStateNodeImpl[QuerySource, Boolean]
-      with LazyLogging with QuerySourceNode {
+      with LazyLogging
+      with QuerySourceNode {
 
     override def getConsumers(): ConsumerCollection = new ConsumerCollectionImpl("consumers", this)
 
@@ -65,7 +63,8 @@ trait QuerySourceNodeComponent extends ZkStateNodeComponent {
       */
     override def getEpochs(): SourceEpochCollection = new SourceEpochCollectionImpl(this)
 
-    override def getSyncState(): SourceSynchronizationStateNode = new SourceSynchronizationStateNodeImpl(this)
+    override def getSyncState(): SourceSynchronizationStateNode =
+      new SourceSynchronizationStateNodeImpl(this)
 
     /** Retrieve the node that can be used to give instructions to this node */
     override def getCommandNode(): QuerySourceCommandNode = new QuerySourceCommandNodeImpl(this)

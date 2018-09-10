@@ -9,13 +9,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.async.Async.{async, await}
 import scala.concurrent.Future
 
-
-
 /**
   * Class providing logic relevant for the alignment of a source
   */
-class SourceAlignment(sourceNode: QuerySourceNode)
-    extends LazyLogging {
+class SourceAlignment(sourceNode: QuerySourceNode) extends LazyLogging {
 
   /** SyncState node of the source*/
   private lazy val syncState = sourceNode.getSyncState()

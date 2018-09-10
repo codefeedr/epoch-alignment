@@ -5,9 +5,8 @@ import org.codefeedr.model.zookeeper.Partition
 
 trait ConsumerPartitionNode extends ZkNode[Partition]
 
-trait ConsumerPartitionComponent extends ZkNodeComponent {
-  this:ZkClientComponent =>
+trait ConsumerPartitionComponent extends ZkNodeComponent { this: ZkClientComponent =>
   class ConsumerPartitionNodeImpl(name: String, parent: ZkNodeBase)
-    extends ZkNodeImpl[Partition](name, parent)
-    with ConsumerPartitionNode {}
+      extends ZkNodeImpl[Partition](name, parent)
+      with ConsumerPartitionNode {}
 }

@@ -5,7 +5,6 @@ import scala.reflect.ClassTag
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
 
-
 trait ZkStateNode[TNode, TState] extends ZkNode[TNode] {
 
   /**
@@ -68,14 +67,9 @@ trait ZkStateNode[TNode, TState] extends ZkNode[TNode] {
   def watchState(f: TState => Boolean): Future[TState]
 }
 
+trait ZkStateNodeComponent extends ZkNodeComponent { this: ZkClientComponent =>
 
-
-trait ZkStateNodeComponent extends ZkNodeComponent {
-  this: ZkClientComponent =>
-
-
-  trait ZkStateNodeImpl[TNode, TState]
-    extends ZkNodeImpl[TNode] with ZkStateNode[TNode, TState] {
+  trait ZkStateNodeImpl[TNode, TState] extends ZkNodeImpl[TNode] with ZkStateNode[TNode, TState] {
 
     /**
       * Override postcreate to create initial state

@@ -5,9 +5,7 @@ import rx.lang.scala.Observable
 
 import scala.reflect.ClassTag
 
-
-
-trait ZkQueueNode[TNode, TElement] extends ZkNode[TNode]{
+trait ZkQueueNode[TNode, TElement] extends ZkNode[TNode] {
 
   implicit def tag: ClassTag[TElement]
 
@@ -28,9 +26,7 @@ trait ZkQueueNode[TNode, TElement] extends ZkNode[TNode]{
   def observe(): Observable[TElement]
 }
 
-
-trait ZkQueueNodeComponent extends ZkNodeComponent {
-  this:ZkClientComponent =>
+trait ZkQueueNodeComponent extends ZkNodeComponent { this: ZkClientComponent =>
 
   /**
     * Implementation of a queue around a zknode
@@ -57,7 +53,8 @@ trait ZkQueueNodeComponent extends ZkNodeComponent {
       *
       * @return
       */
-    override def observe(): Observable[TElement] = queue.observe().map(GenericDeserialiser[TElement])
+    override def observe(): Observable[TElement] =
+      queue.observe().map(GenericDeserialiser[TElement])
   }
 
 }

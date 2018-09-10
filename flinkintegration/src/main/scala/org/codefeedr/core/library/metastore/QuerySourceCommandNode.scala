@@ -8,15 +8,14 @@ import scala.reflect.ClassTag
 
 trait QuerySourceCommandNode extends ZkQueueNode[Unit, SourceCommand]
 
-trait QuerySourceCommandNodeComponent extends ZkQueueNodeComponent {
-  this:ZkClientComponent =>
+trait QuerySourceCommandNodeComponent extends ZkQueueNodeComponent { this: ZkClientComponent =>
 
   class QuerySourceCommandNodeImpl(p: ZkNodeBase)
-    extends ZkNodeImpl[Unit]("commands", p)
+      extends ZkNodeImpl[Unit]("commands", p)
       with ZkQueueNodeImpl[Unit, SourceCommand]
       with QuerySourceCommandNode {
 
-      override implicit def tag: ClassTag[SourceCommand] = classTag[SourceCommand]
+    override implicit def tag: ClassTag[SourceCommand] = classTag[SourceCommand]
   }
 
 }

@@ -28,14 +28,12 @@ import org.codefeedr.core.library.SubjectFactoryComponent
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-
 trait CollectionPluginFactoryComponent extends SimplePluginComponent {
-  this:SubjectFactoryComponent =>
+  this: SubjectFactoryComponent =>
 
-  def createCollectionPlugin[TData: ru.TypeTag: ClassTag: TypeInformation](data: Array[TData],
-                                                                           useTrailedSink: Boolean =
-                                                                           false): CollectionPlugin[TData]
-
+  def createCollectionPlugin[TData: ru.TypeTag: ClassTag: TypeInformation](
+      data: Array[TData],
+      useTrailedSink: Boolean = false): CollectionPlugin[TData]
 
   /**
     * A simple collection plugin that registers a static dataset as plugin
@@ -44,9 +42,8 @@ trait CollectionPluginFactoryComponent extends SimplePluginComponent {
     */
   class CollectionPlugin[TData: ru.TypeTag: ClassTag: TypeInformation](data: Array[TData],
                                                                        useTrailedSink: Boolean =
-                                                                       false)
-    extends SimplePlugin[TData](useTrailedSink) {
-
+                                                                         false)
+      extends SimplePlugin[TData](useTrailedSink) {
 
     /**
       * Method to implement as plugin to expose a datastream
@@ -65,4 +62,3 @@ trait CollectionPluginFactoryComponent extends SimplePluginComponent {
   }
 
 }
-

@@ -2,7 +2,11 @@ package org.codefeedr.core.library.internal.kafka.source
 
 import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.core.library.internal.kafka.OffsetUtils
-import org.codefeedr.core.library.metastore.{KafkaSourceEpochState, SubjectNode, SynchronizationState}
+import org.codefeedr.core.library.metastore.{
+  KafkaSourceEpochState,
+  SubjectNode,
+  SynchronizationState
+}
 import org.codefeedr.model.zookeeper.{Consumer, EpochCollection, Partition, QuerySource}
 
 import scala.async.Async.{async, await}

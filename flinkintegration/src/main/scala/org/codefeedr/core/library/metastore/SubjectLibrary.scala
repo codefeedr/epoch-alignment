@@ -28,13 +28,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
+trait SubjectLibraryComponent { this: ZkClientComponent with MetaRootNodeComponent =>
 
-trait SubjectLibraryComponent {
-  this:ZkClientComponent
-  with MetaRootNodeComponent
-  =>
-
-  val subjectLibrary:SubjectLibrary
+  val subjectLibrary: SubjectLibrary
 
   /**
     * ThreadSafe, Async

@@ -26,18 +26,15 @@ trait SourceEpochCollection extends ZkCollectionNode[SourceEpochNode, EpochColle
   def getEpoch(e: Int): SourceEpochNode
 }
 
-
-
 trait SourceEpochCollectionComponent extends ZkCollectionStateNodeComponent {
-  this: ZkClientComponent
-  with SourceEpochNodeComponent =>
-
+  this: ZkClientComponent with SourceEpochNodeComponent =>
 
   class SourceEpochCollectionImpl(parent: ZkNodeBase)
-    extends ZkCollectionNodeImpl[SourceEpochNode, EpochCollection](
-      "epochs",
-      parent,
-      (n, p) => new SourceEpochNodeImpl(n.toInt, p)) with SourceEpochCollection {
+      extends ZkCollectionNodeImpl[SourceEpochNode, EpochCollection](
+        "epochs",
+        parent,
+        (n, p) => new SourceEpochNodeImpl(n.toInt, p))
+      with SourceEpochCollection {
 
     /**
       * Retrieves the latest known completed checkpoint for this source.

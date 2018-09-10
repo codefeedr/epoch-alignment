@@ -34,14 +34,14 @@ import scala.concurrent.{Future, Promise}
 import scala.async.Async.{async, await}
 import scala.util.{Failure, Success}
 
-
-trait KafkaControllerComponent {
-  this: KafkaConfigurationComponent =>
+trait KafkaControllerComponent { this: KafkaConfigurationComponent =>
   val kafkaController: KafkaController
+
   /**
     * low level object to control the connected kafka
     */
   class KafkaController() extends LazyLogging {
+
     /**
       * Perform a method on the kafka admin. Using a managed resource to dispose of the admin client after use
       *
@@ -51,8 +51,10 @@ trait KafkaControllerComponent {
       */
     private def apply[T](method: AdminClient => T): T = synchronized {
       (managed(AdminClient.create(kafkaConfiguration.getAdminProperties)) map method).tried match {
-        case Failure(error) => throw new Exception(
-            "Error while connecting to Kafka. Is kafka running and the configuration correct?",error)
+        case Failure(error) =>
+          throw new Exception(
+            "Error while connecting to Kafka. Is kafka running and the configuration correct?",
+            error)
         case Success(value) => value
       }
     }
@@ -81,7 +83,7 @@ trait KafkaControllerComponent {
       * @param name Topic to guarantee
       * @return
       */
-    def guaranteeTopic(name: String, partitions: Option[Int] = None): Future[Unit] =async {
+    def guaranteeTopic(name: String, partitions: Option[Int] = None): Future[Unit] = async {
       val topics = await(getTopics())
       if (!topics.contains(name)) {
         await(createTopic(name, partitions))
@@ -128,7 +130,8 @@ trait KafkaControllerComponent {
       *
       * @return a set of unit for the destroyed topics
       */
-    def destroy(): Future[Set[Unit]] = getTopics().flatMap(o => Future.sequence(o.map(deleteTopic)))
+    def destroy(): Future[Set[Unit]] =
+      getTopics().flatMap(o => Future.sequence(o.map(deleteTopic)))
   }
 
 }

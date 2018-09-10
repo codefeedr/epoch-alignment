@@ -10,26 +10,26 @@ import org.apache.flink.streaming.api.scala._
 import org.codefeedr.core.library.SubjectFactoryComponent
 import org.codefeedr.serde.ghtorrent._
 
-
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.reflect.ClassTag
 import scala.reflect._
 import scala.reflect.runtime.{universe => ru}
 
-trait WebSocketJsonPluginComponent extends SimplePluginComponent {
-  this:SubjectFactoryComponent =>
+trait WebSocketJsonPluginComponent extends SimplePluginComponent { this: SubjectFactoryComponent =>
 
-  def createWebSocketJsonPlugin[TData: ru.TypeTag: ClassTag: Serde](url: String,
-                                                                    subject: String,
-                                                                    batchSize: Int): WebSocketJsonPlugin[TData]
+  def createWebSocketJsonPlugin[TData: ru.TypeTag: ClassTag: Serde](
+      url: String,
+      subject: String,
+      batchSize: Int): WebSocketJsonPlugin[TData]
 
   class WebSocketJsonPlugin[TData: ru.TypeTag: ClassTag: Serde](url: String,
                                                                 subject: String,
                                                                 batchSize: Int)
-    extends SimplePlugin[TData] {
+      extends SimplePlugin[TData] {
 
-    @transient private lazy val targetType = classTag[TData].runtimeClass.asInstanceOf[Class[TData]]
+    @transient private lazy val targetType =
+      classTag[TData].runtimeClass.asInstanceOf[Class[TData]]
     @transient implicit lazy val typeInfo: TypeInformation[TData] = TypeInformation.of(targetType)
     @transient private lazy val source = WebSocketSourceFunction(url, subject, batchSize)
 
@@ -70,7 +70,8 @@ trait WebSocketJsonPluginComponent extends SimplePluginComponent {
     }
   }
 
-  class WebSocketPlugin(url: String, subject: String, batchSize: Int) extends SimplePlugin[String] {
+  class WebSocketPlugin(url: String, subject: String, batchSize: Int)
+      extends SimplePlugin[String] {
     @transient private lazy val source = WebSocketSourceFunction(url, subject, batchSize)
 
     override def getStream(env: StreamExecutionEnvironment): DataStream[String] =
@@ -78,4 +79,3 @@ trait WebSocketJsonPluginComponent extends SimplePluginComponent {
   }
 
 }
-

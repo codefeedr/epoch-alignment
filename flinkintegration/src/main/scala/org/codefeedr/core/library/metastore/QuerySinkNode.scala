@@ -9,8 +9,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
-
-trait QuerySinkNode extends ZkStateNode[QuerySink, Boolean]{
+trait QuerySinkNode extends ZkStateNode[QuerySink, Boolean] {
 
   def querySinkCollection(): QuerySinkCollection
 
@@ -33,17 +32,17 @@ trait QuerySinkNode extends ZkStateNode[QuerySink, Boolean]{
   def updateState(): Future[Unit]
 }
 
-
-trait QuerySinkNodeComponent extends ZkStateNodeComponent{
-  this:ZkClientComponent
-  with ProducerCollectionNodeComponent =>
+trait QuerySinkNodeComponent extends ZkStateNodeComponent {
+  this: ZkClientComponent with ProducerCollectionNodeComponent =>
 
   class QuerySinkNodeImpl(name: String, parent: ZkNodeBase)
-    extends ZkNodeImpl[QuerySink](name, parent)
+      extends ZkNodeImpl[QuerySink](name, parent)
       with ZkStateNodeImpl[QuerySink, Boolean]
-      with LazyLogging with QuerySinkNode {
+      with LazyLogging
+      with QuerySinkNode {
 
-    override def querySinkCollection(): QuerySinkCollection = parent().asInstanceOf[QuerySinkCollection]
+    override def querySinkCollection(): QuerySinkCollection =
+      parent().asInstanceOf[QuerySinkCollection]
 
     override def getProducers(): ProducerCollection = new ProducerCollectionImpl("producers", this)
 

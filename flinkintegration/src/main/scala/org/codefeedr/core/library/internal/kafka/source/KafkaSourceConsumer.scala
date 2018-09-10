@@ -1,6 +1,5 @@
 package org.codefeedr.core.library.internal.kafka.source
 
-
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.consumer.{ConsumerRecord, KafkaConsumer}
 import org.apache.kafka.common.TopicPartition
@@ -16,21 +15,22 @@ trait KafkaSourceMapper[TElement, TValue, TKey] {
   def transform(value: TValue, key: TKey): TElement
 }
 
+case class KafkaSourceConsumerState(assignment: Option[Iterable[TopicPartition]],
+                                    offsets: Option[Map[Int, Long]]) {
 
-case class KafkaSourceConsumerState(assignment: Option[Iterable[TopicPartition]], offsets: Option[Map[Int, Long]]) {
   /**
     * Retrieves the current assignment, or empty collection if no assignment exists yet
     * @return
     */
-  def getAssignment: Iterable[TopicPartition] = assignment.getOrElse(Iterable.empty[TopicPartition])
+  def getAssignment: Iterable[TopicPartition] =
+    assignment.getOrElse(Iterable.empty[TopicPartition])
 
   /**
     * Retrieves the current offsets, or an empty map if no offsets are available yet
     * @return
     */
-  def getOffsets = offsets.getOrElse(Map.empty[Int,Long])
+  def getOffsets = offsets.getOrElse(Map.empty[Int, Long])
 }
-
 
 /**
   * Class performing the polling of kafka for a KafkaSource
@@ -39,8 +39,7 @@ case class KafkaSourceConsumerState(assignment: Option[Iterable[TopicPartition]]
 class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
                                                   topic: String,
                                                   consumer: KafkaConsumer[TKey, TValue])
-  extends LazyLogging {
-  this: KafkaSourceMapper[TElement, TValue, TKey] =>
+    extends LazyLogging { this: KafkaSourceMapper[TElement, TValue, TKey] =>
 
   //Timeout when polling kafka. TODO: Move to configuration
   private lazy val pollTimeout = 1000
@@ -50,6 +49,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     * Make sure to lock when writing to this value
     */
   @volatile private var newPartitions: Option[Iterable[TopicPartition]] = None
+
   /**
     * Current state of the source consumer
     * Modified during poll loop
@@ -107,7 +107,6 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     updateOffsetState(r.toMap)
     resetConsumer(resetSet, seekOffsets)
 
-
   }
 
   /**
@@ -118,19 +117,22 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     */
   private def updateOffsetState(newOffsets: Map[Int, Long]): Unit = synchronized {
     logger.debug(s"New offsets in $name: $newOffsets")
-    state = KafkaSourceConsumerState(state.assignment, Some(
-      newOffsets.foldLeft(state.getOffsets)((currentOffsets, po) => {
-        val partition = po._1
-        val offset = po._2
-        if (currentOffsets.get(partition).exists(offset < _)) {
-          logger.warn(s"$name received data from offsets lower than the existing offset. Partition: $partition, new offset: $offset, old offset: ${currentOffsets.get(partition).get}")
-        }
-        logger.debug(s"Updating offset in $name with $partition -> $offset (${
-          state.assignment.exists(o => o.exists(o2 => o2.partition() == partition))
-        })")
-        currentOffsets + (partition -> offset)
-      })
-    ))
+    state = KafkaSourceConsumerState(
+      state.assignment,
+      Some(
+        newOffsets.foldLeft(state.getOffsets)((currentOffsets, po) => {
+          val partition = po._1
+          val offset = po._2
+          if (currentOffsets.get(partition).exists(offset < _)) {
+            logger.warn(
+              s"$name received data from offsets lower than the existing offset. Partition: $partition, new offset: $offset, old offset: ${currentOffsets.get(partition).get}")
+          }
+          logger.debug(s"Updating offset in $name with $partition -> $offset (${state.assignment
+            .exists(o => o.exists(o2 => o2.partition() == partition))})")
+          currentOffsets + (partition -> offset)
+        })
+      )
+    )
     logger.debug(s"New state in $name: $state")
   }
 
@@ -146,10 +148,8 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
         .filterNot(o => state.getOffsets.keys.toSet.contains(o.partition()))
         .map(tp => tp.partition() -> -1l)
 
-
-      logger.debug(s"$name removing offsets from state ${
-        state.getOffsets.filterNot(o => newPartitions.get.map(_.partition()).exists(_ == o._1))
-      }")
+      logger.debug(s"$name removing offsets from state ${state.getOffsets.filterNot(o =>
+        newPartitions.get.map(_.partition()).exists(_ == o._1))}")
 
       logger.debug(s"$name assigning new offsets $newOffsets")
 
@@ -160,8 +160,6 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
 
       //Update assignment and offsets
       state = KafkaSourceConsumerState(newPartitions, Some(newStateOffsets))
-
-
 
       //Reset the value
       newPartitions = None
@@ -177,8 +175,8 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     newPartitions = Some(partitions)
   }
 
-
-  private[source] def resetConsumer(partitions: Seq[Int], offsets: PartialFunction[Int, Long]): Unit = {
+  private[source] def resetConsumer(partitions: Seq[Int],
+                                    offsets: PartialFunction[Int, Long]): Unit = {
     if (partitions.nonEmpty) {
       logger.debug(s"Perfoming a seek on $name")
       partitions.foreach(partition => {
@@ -195,14 +193,18 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     * TODO: Determine what to do when the assignment changes later during the process, after a call to this method was made
     * @param offsets p offsets to reset to
     */
-  def setPosition(offsets:Map[Int,Long]): Unit = synchronized {
+  def setPosition(offsets: Map[Int, Long]): Unit = synchronized {
     val seekSet = state.assignment match {
-      case Some(v) => v.map(o => (o,offsets.lift.apply(o.partition())))
-      case none => throw new NotImplementedError("Cannot set position when no assignment has been made yet. Need to implement a handler if this is required")
+      case Some(v) => v.map(o => (o, offsets.lift.apply(o.partition())))
+      case none =>
+        throw new NotImplementedError(
+          "Cannot set position when no assignment has been made yet. Need to implement a handler if this is required")
     }
     seekSet.foreach {
-      case (tp,Some(offset)) => consumer.seek(tp,offset)
-      case (tp, none) => throw new IllegalStateException(s"Cannot set position, because no offset was passed for TP ${tp.topic()}${tp.partition()}.")
+      case (tp, Some(offset)) => consumer.seek(tp, offset)
+      case (tp, none) =>
+        throw new IllegalStateException(
+          s"Cannot set position, because no offset was passed for TP ${tp.topic()}${tp.partition()}.")
     }
     updateOffsetState(offsets.filter(p => seekSet.exists(tp => tp._1.partition() == p._1)))
   }
@@ -238,7 +240,6 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     */
   def getCurrentOffsets: Map[Int, Long] = state.getOffsets
 
-
   /**
     * Retrieves the current position on the assigned partitions of the consumer
     *
@@ -262,7 +263,6 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
       .map(o => o._1.partition() -> (o._2.toLong - 1))
       .toMap
 
-
   /**
     * Returns if the current offsets has passed the reference offset
     *
@@ -272,11 +272,13 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     *         False if the consumer is behind on one or more assigned partitions
     */
   def higherOrEqual(reference: PartialFunction[Int, Long]): Option[Boolean] =
-    state.offsets.map(offset => offset.forall(o => hasPassedReference(reference)(o._1,o._2)))
+    state.offsets.map(offset => offset.forall(o => hasPassedReference(reference)(o._1, o._2)))
 
-  private def hasPassedReference(referenceSet:PartialFunction[Int,Long])(partition: Int, currentOffset:Long): Boolean =
-    referenceSet.andThen((reference:Long) => reference <= currentOffset).applyOrElse(partition, (_:Int)=> true)
-
+  private def hasPassedReference(
+      referenceSet: PartialFunction[Int, Long])(partition: Int, currentOffset: Long): Boolean =
+    referenceSet
+      .andThen((reference: Long) => reference <= currentOffset)
+      .applyOrElse(partition, (_: Int) => true)
 
   /**
     * Closes the kafka consumer
@@ -286,11 +288,11 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
   }
 }
 
-
 /**
   * Companion object for Kafka Source consumer, with initialization logic
   */
 object KafkaSourceConsumer {
+
   /**
     * Construct a new KafkaSourceConsumer
     *
@@ -301,16 +303,20 @@ object KafkaSourceConsumer {
     * @tparam TKey     Type of key in Kafka
     * @return
     */
-  def apply[TElement, TValue: ClassTag, TKey: ClassTag](name: String, sourceUuid: String, topic: String)(mapper: KafkaSourceMapper[TElement, TValue, TKey])(consumerFactory: KafkaConsumerFactory) = {
+  def apply[TElement, TValue: ClassTag, TKey: ClassTag](name: String,
+                                                        sourceUuid: String,
+                                                        topic: String)(
+      mapper: KafkaSourceMapper[TElement, TValue, TKey])(consumerFactory: KafkaConsumerFactory) = {
     val kafkaConsumer = consumerFactory.create[TKey, TValue](sourceUuid)
     //TODO: Subscribe
     val rebalanceListener = new RebalanceListenerImpl()
     kafkaConsumer.subscribe(Iterable(topic).asJavaCollection, rebalanceListener)
 
-    val sourceConsumer = new KafkaSourceConsumer[TElement, TValue, TKey](name, topic, kafkaConsumer)
+    val sourceConsumer =
+      new KafkaSourceConsumer[TElement, TValue, TKey](name, topic, kafkaConsumer)
       with KafkaSourceMapper[TElement, TValue, TKey] {
-      override def transform(value: TValue, key: TKey): TElement = mapper.transform(value, key)
-    }
+        override def transform(value: TValue, key: TKey): TElement = mapper.transform(value, key)
+      }
 
     wire(rebalanceListener, sourceConsumer)
     sourceConsumer
@@ -325,10 +331,10 @@ object KafkaSourceConsumer {
     * @tparam TValue   Type of the value in Kafka
     * @tparam TKey     Type of key in Kafka
     */
-  private def wire[TElement, TValue, TKey](observable: ConsumerRebalanceObservable, kafkaConsumer: KafkaSourceConsumer[TElement, TValue, TKey]) {
+  private def wire[TElement, TValue, TKey](
+      observable: ConsumerRebalanceObservable,
+      kafkaConsumer: KafkaSourceConsumer[TElement, TValue, TKey]) {
     observable.observePartitions().subscribe(kafkaConsumer.onNewAssignment(_))
   }
 
 }
-
-

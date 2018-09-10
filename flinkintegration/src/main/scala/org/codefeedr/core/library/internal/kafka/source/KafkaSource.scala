@@ -61,7 +61,7 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
     subjectNode: SubjectNode,
     JobNode: JobNode,
     kafkaConsumerFactory: KafkaConsumerFactory)
-    //Flink interfaces
+//Flink interfaces
     extends RichSourceFunction[TElement]
     with ResultTypeQueryable[TElement]
     with CheckpointedFunction
@@ -71,11 +71,12 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
     with LazyLogging
     with Serializable
     //
-    with KafkaSourceMapper[TElement,TValue,TKey]
-{
+    with KafkaSourceMapper[TElement, TValue, TKey] {
 
-  @transient protected lazy val consumer: KafkaSourceConsumer[TElement, TValue, TKey] with KafkaSourceMapper[TElement, TValue, TKey] =
-    KafkaSourceConsumer[TElement, TValue, TKey](s"Consumer $getLabel",sourceUuid,topic)(this)(kafkaConsumerFactory)
+  @transient protected lazy val consumer
+    : KafkaSourceConsumer[TElement, TValue, TKey] with KafkaSourceMapper[TElement, TValue, TKey] =
+    KafkaSourceConsumer[TElement, TValue, TKey](s"Consumer $getLabel", sourceUuid, topic)(this)(
+      kafkaConsumerFactory)
 
   //Unique id of the source the instance of this kafka source belongs to
   val sourceUuid: String
@@ -87,7 +88,6 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
 
   //Manager of this source. This should "cleanly" be done by composition, but we cannot do so because this source is "constructed" by Flink
   @transient private[kafka] var manager: KafkaSourceManager = _
-
 
   //Running state
   @transient
@@ -112,7 +112,6 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
   @transient private[kafka] lazy val finalSourceEpochOffsets =
     Await.result(manager.getEpochOffsets(finalSourceEpoch), 1.seconds)
   @transient private[kafka] var checkpointingMode: Option[CheckpointingMode] = _
-
 
   @transient private[kafka] lazy val checkpointOffsets = mutable.Map[Long, Map[Int, Long]]()
   @transient private var checkpointedState: ListState[KafkaSourceStateContainer] = _
@@ -356,8 +355,11 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
         case Some(true) =>
           logger.debug(s"$getLabel is cancelling after checkpoint $currentCheckpoint completed.")
           finalCheckpointId = currentCheckpoint
-        case Some(false) => logger.debug(s"$getLabel is not cancelling because it has not reached end offsets")
-        case None => logger.debug(s"$getLabel is not cancelling because the consumer has not yet been assigned")
+        case Some(false) =>
+          logger.debug(s"$getLabel is not cancelling because it has not reached end offsets")
+        case None =>
+          logger.debug(
+            s"$getLabel is not cancelling because the consumer has not yet been assigned")
       }
     }
   }
@@ -367,7 +369,8 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
     * @param checkpointId id of the the checkpoint to notify the completion of
     */
   override def notifyCheckpointComplete(checkpointId: Long): Unit = {
-    logger.debug(s"$getLabel got checkpoint completion notification for checkpoint $checkpointId. Final checkpoint: $finalCheckpointId")
+    logger.debug(
+      s"$getLabel got checkpoint completion notification for checkpoint $checkpointId. Final checkpoint: $finalCheckpointId")
     //Check if the final checkpoint completed
     if (checkpointId >= finalCheckpointId) {
       logger.debug(s"$getLabel is stopping, final checkpoint $checkpointId completed")
@@ -449,7 +452,7 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
         while (!consumer.higherOrEqual(alignmentOffsets).getOrElse(false)) {
           logger.debug(
             s"Perfoming synchronized poll loop in $getLabel.\r\n Offsets: ${consumer.getCurrentOffsets}.\r\n Desired: $alignmentOffsets")
-            consumer.poll(ctx.collect, alignmentOffsets)
+          consumer.poll(ctx.collect, alignmentOffsets)
         }
       }
     }

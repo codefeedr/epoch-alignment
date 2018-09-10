@@ -31,18 +31,15 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-trait SimplePluginComponent {
-  this:SubjectFactoryComponent =>
-
+trait SimplePluginComponent { this: SubjectFactoryComponent =>
 
   /**
     * Implement this class to expose a simple plugin
     * Created by Niels on 04/08/2017.
     */
   abstract class SimplePlugin[TData: ru.TypeTag: ClassTag](useTrailedSink: Boolean = false)
-    extends AbstractPlugin
+      extends AbstractPlugin
       with LazyLogging {
-
 
     /**
       * Method to implement as plugin to expose a datastream
@@ -95,6 +92,4 @@ trait SimplePluginComponent {
 
   }
 
-
 }
-

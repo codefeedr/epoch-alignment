@@ -7,17 +7,19 @@ import org.codefeedr.model._
 
 import scala.reflect.ClassTag
 
-class GenericTrailedRecordSink[TElement: ClassTag](subjectNode: SubjectNode,
-                                                   jobNode: JobNode,
-                                                   kafkaProducerFactory: KafkaProducerFactory,
-                                                   epochStateManager: EpochStateManager,
-                                                    override val sinkUuid: String)(subjectFactoryComponent: SubjectFactoryComponent)
+class GenericTrailedRecordSink[TElement: ClassTag](
+    subjectNode: SubjectNode,
+    jobNode: JobNode,
+    kafkaProducerFactory: KafkaProducerFactory,
+    epochStateManager: EpochStateManager,
+    override val sinkUuid: String)(subjectFactoryComponent: SubjectFactoryComponent)
     extends KafkaSink[TElement, Row, RecordSourceTrail](subjectNode,
                                                         jobNode,
                                                         kafkaProducerFactory,
                                                         epochStateManager) {
 
-  @transient private lazy val transformer = subjectFactoryComponent.subjectFactory.getTransformer[TElement](subjectType)
+  @transient private lazy val transformer =
+    subjectFactoryComponent.subjectFactory.getTransformer[TElement](subjectType)
 
   override def transform(value: TElement): (RecordSourceTrail, Row) = {
 

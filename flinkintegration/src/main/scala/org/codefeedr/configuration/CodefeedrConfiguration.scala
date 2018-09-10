@@ -1,15 +1,12 @@
 package org.codefeedr.configuration
 
-
-
-trait CodefeedrConfigurationComponent {
-  this:ConfigurationProviderComponent =>
+trait CodefeedrConfigurationComponent { this: ConfigurationProviderComponent =>
 
   /*
-  * Make sure to use lazy here, because configuration needs to be initialized
-  * Should find a different solution for that
+   * Make sure to use lazy here, because configuration needs to be initialized
+   * Should find a different solution for that
    *  */
-  lazy val codefeedrConfiguration:CodefeedrConfiguration = CodefeedrConfiguration(
+  lazy val codefeedrConfiguration: CodefeedrConfiguration = CodefeedrConfiguration(
     partitionCount = configurationProvider.getInt("codefeedr.kafka.partition.count"),
     producerCount = configurationProvider.getInt("codefeedr.kafka.producer.count")
   )
@@ -25,6 +22,6 @@ trait CodefeedrConfigurationComponent {
   *                       5 is the same used in flink's native kafka source implementation
   */
 case class CodefeedrConfiguration(
-                                 partitionCount:Int=4,
-                                 producerCount:Int=5
-                                 )
+    partitionCount: Int = 4,
+    producerCount: Int = 5
+)

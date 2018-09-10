@@ -7,8 +7,7 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.reflect.ClassTag
 
-
-trait EpochNode extends ZkStateNode[Epoch, Boolean]{
+trait EpochNode extends ZkStateNode[Epoch, Boolean] {
 
   /**
     * Retrieves the partitions that belong to this epoch
@@ -45,12 +44,10 @@ trait EpochNode extends ZkStateNode[Epoch, Boolean]{
   def initialState(): Boolean
 }
 
-
-
 trait EpochNodeComponent extends ZkStateNodeComponent {
   this: ZkClientComponent
-  with EpochMappingCollectionComponent
-  with EpochPartitionCollectionComponent =>
+    with EpochMappingCollectionComponent
+    with EpochPartitionCollectionComponent =>
 
   /**
     * Node representing a single epoch under a source
@@ -59,8 +56,9 @@ trait EpochNodeComponent extends ZkStateNodeComponent {
     * @param parent
     */
   class EpochNodeImpl(epoch: Int, parent: ZkNodeBase)
-    extends ZkNodeImpl[Epoch](s"$epoch", parent)
-      with ZkStateNodeImpl[Epoch, Boolean] with EpochNode {
+      extends ZkNodeImpl[Epoch](s"$epoch", parent)
+      with ZkStateNodeImpl[Epoch, Boolean]
+      with EpochNode {
 
     /**
       * Retrieves the partitions that belong to this epoch
@@ -83,7 +81,7 @@ trait EpochNodeComponent extends ZkStateNodeComponent {
           o =>
             Future.sequence(
               o.map(o => o.getData().map(o => o.get))
-            )
+          )
         )
     }
 

@@ -28,23 +28,24 @@ trait ConsumerNode extends ZkStateNode[Consumer, Boolean] {
   def setState(state: Boolean): Future[Unit]
 }
 
-
 trait ConsumerNodeComponent extends ZkStateNodeComponent {
-  this:ZkClientComponent
-  with SourceSynchronizationStateNodeComponent =>
+  this: ZkClientComponent with SourceSynchronizationStateNodeComponent =>
 
   class ConsumerNodeImpl(name: String, parent: ZkNodeBase)
-    extends ZkNodeImpl[Consumer](name, parent)
-      with ZkStateNodeImpl[Consumer, Boolean] with ConsumerNode {
+      extends ZkNodeImpl[Consumer](name, parent)
+      with ZkStateNodeImpl[Consumer, Boolean]
+      with ConsumerNode {
     override def postCreate(): Future[Unit] =
       for {
         _ <- super.postCreate()
         _ <- getSyncState().create()
       } yield {}
 
-    override def getSyncState(): SourceSynchronizationStateNode = new SourceSynchronizationStateNodeImpl(this)
+    override def getSyncState(): SourceSynchronizationStateNode =
+      new SourceSynchronizationStateNodeImpl(this)
 
-    override def consumerCollection(): ConsumerCollection = parent().asInstanceOf[ConsumerCollection]
+    override def consumerCollection(): ConsumerCollection =
+      parent().asInstanceOf[ConsumerCollection]
 
     override def typeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
 

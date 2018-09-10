@@ -21,7 +21,7 @@ package org.codefeedr.core.library.internal.kafka
 
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.types.Row
-import org.codefeedr.core.library.internal.kafka.source.{KafkaConsumerFactory, KafkaSource }
+import org.codefeedr.core.library.internal.kafka.source.{KafkaConsumerFactory, KafkaSource}
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
 import org.codefeedr.model.{Record, RecordSourceTrail, TrailedRecord}
 

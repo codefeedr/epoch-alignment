@@ -93,10 +93,7 @@ trait ZkNode[TData] extends ZkNodeBase {
   def apply(v1: Unit): Future[TData]
 }
 
-
-
-trait ZkNodeComponent extends ZkNodeBaseComponent{
-  this: ZkClientComponent =>
+trait ZkNodeComponent extends ZkNodeBaseComponent { this: ZkClientComponent =>
 
   /**
     * ZkNode, represents a node on zookeeper
@@ -106,11 +103,10 @@ trait ZkNodeComponent extends ZkNodeBaseComponent{
     * @param p    the parent
     */
   class ZkNodeImpl[TData: ClassTag](name: String, val p: ZkNodeBase)
-    extends ZkNodeBaseImpl(name)
+      extends ZkNodeBaseImpl(name)
       with PartialFunction[Unit, Future[TData]]
-      with LazyLogging with ZkNode[TData]
-      {
-
+      with LazyLogging
+      with ZkNode[TData] {
 
     override def parent(): ZkNodeBase = p
 
@@ -159,7 +155,8 @@ trait ZkNodeComponent extends ZkNodeBaseComponent{
       * @param data data object to set
       * @return a future that resolves when the data has been set
       */
-    override def setData(data: TData): Future[Unit] = zkClient.setData[TData](path(), data).map(_ => Unit)
+    override def setData(data: TData): Future[Unit] =
+      zkClient.setData[TData](path(), data).map(_ => Unit)
 
     /**
       * Create the child of the node with the given name
@@ -168,7 +165,8 @@ trait ZkNodeComponent extends ZkNodeBaseComponent{
       * @tparam TChild type exposed by the childnode
       * @return
       */
-    override def getChild[TChild: ClassTag](name: String): ZkNode[TChild] = new ZkNodeImpl[TChild](name, this)
+    override def getChild[TChild: ClassTag](name: String): ZkNode[TChild] =
+      new ZkNodeImpl[TChild](name, this)
 
     /**
       * Creates a future that watches the node until the data matches the given condition
@@ -195,8 +193,8 @@ trait ZkNodeComponent extends ZkNodeBaseComponent{
   }
 
   object ZkNode {
-    def apply[TData: ClassTag](name: String, parent: ZkNodeBase)(implicit zkClient:ZkClient) = new ZkNodeImpl[TData](name, parent)
+    def apply[TData: ClassTag](name: String, parent: ZkNodeBase)(implicit zkClient: ZkClient) =
+      new ZkNodeImpl[TData](name, parent)
   }
 
 }
-

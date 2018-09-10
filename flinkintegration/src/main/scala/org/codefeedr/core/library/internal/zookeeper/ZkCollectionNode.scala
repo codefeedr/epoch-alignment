@@ -8,9 +8,7 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.reflect.ClassTag
 
-
-
-trait ZkCollectionNode[TNode <: ZkNodeBase,TData] extends ZkNode[TData] {
+trait ZkCollectionNode[TNode <: ZkNodeBase, TData] extends ZkNode[TData] {
 
   def parent(): ZkNodeBase
 
@@ -46,16 +44,15 @@ trait ZkCollectionNode[TNode <: ZkNodeBase,TData] extends ZkNode[TData] {
   def observeNewChildren(): Observable[TNode]
 }
 
-
-trait ZkCollectionNodeComponent extends ZkNodeComponent {
-  this:ZkClientComponent =>
+trait ZkCollectionNodeComponent extends ZkNodeComponent { this: ZkClientComponent =>
 
   class ZkCollectionNodeImpl[TNode <: ZkNodeBase, TData: ClassTag](
-                                                                name: String,
-                                                                p: ZkNodeBase,
-                                                                childConstructor: (String, ZkNodeBase) => TNode)
-    extends ZkNodeImpl[TData](name, p)
-      with LazyLogging with ZkCollectionNode[TNode,TData] {
+      name: String,
+      p: ZkNodeBase,
+      childConstructor: (String, ZkNodeBase) => TNode)
+      extends ZkNodeImpl[TData](name, p)
+      with LazyLogging
+      with ZkCollectionNode[TNode, TData] {
 
     override def parent(): ZkNodeBase = p
 
@@ -87,15 +84,15 @@ trait ZkCollectionNodeComponent extends ZkNodeComponent {
       * @return
       */
     override def observeNewChildren(): Observable[TNode] =
-    //Hack: We should place waiting logic based on type of node elsewhere...
+      //Hack: We should place waiting logic based on type of node elsewhere...
       zkClient
         .observeNewChildren(path())
         .map(o => childConstructor(o, this))
         .flatMap(o =>
           o match {
-            case s: ZkStateNode[_,_] =>
+            case s: ZkStateNode[_, _] =>
               Observable.from(s.awaitChild(s.getStateNode().name)).map(o => s.asInstanceOf[TNode])
             case a => Observable.from(Future.successful(a))
-          })
+        })
   }
 }

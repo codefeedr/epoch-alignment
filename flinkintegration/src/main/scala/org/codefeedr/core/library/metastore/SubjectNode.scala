@@ -11,8 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
-
-trait SubjectNode extends ZkStateNode[SubjectType,Boolean]{
+trait SubjectNode extends ZkStateNode[SubjectType, Boolean] {
 
   /**
     * Override to create child nodes
@@ -107,23 +106,21 @@ trait SubjectNode extends ZkStateNode[SubjectType,Boolean]{
   def initialState(): Boolean
 }
 
-
 trait SubjectNodeComponent extends ZkStateNodeComponent {
   this: ZkClientComponent
-  with QuerySinkCollectionComponent
-  with QuerySourceCollectionComponent
-  with EpochCollectionNodeComponent
-  =>
-
+    with QuerySinkCollectionComponent
+    with QuerySourceCollectionComponent
+    with EpochCollectionNodeComponent =>
 
   /**
     * This class contains services to obtain more detailed information about kafka partitions,
     * consumers (kafkasources) consuming these sources and their offsets
     */
   class SubjectNodeImpl(subjectName: String, parent: ZkNodeBase)
-    extends ZkNodeImpl[SubjectType](subjectName, parent)
+      extends ZkNodeImpl[SubjectType](subjectName, parent)
       with ZkStateNodeImpl[SubjectType, Boolean]
-      with LazyLogging with SubjectNode {
+      with LazyLogging
+      with SubjectNode {
 
     /**
       * Override to create child nodes

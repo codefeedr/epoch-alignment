@@ -39,7 +39,7 @@ before_script:
 script:
   - sbt package
   - sbt 'set parallelExecution in ThisBuild := false' "project flinkintegration" test
-  - sbt scalafmt::test
+  - sbt "project flinkintegration" scalafmt::test
 
 #deploy:
 #  provider: script

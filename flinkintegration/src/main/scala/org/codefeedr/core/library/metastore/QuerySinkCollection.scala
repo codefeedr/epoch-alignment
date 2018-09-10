@@ -5,7 +5,8 @@ import org.codefeedr.model.zookeeper.QuerySink
 
 import scala.concurrent.Future
 
-trait QuerySinkCollection extends ZkCollectionStateNode[QuerySinkNode, Unit, QuerySink, Boolean, Boolean] {
+trait QuerySinkCollection
+    extends ZkCollectionStateNode[QuerySinkNode, Unit, QuerySink, Boolean, Boolean] {
 
   def subject(): SubjectNode
 
@@ -16,17 +17,16 @@ trait QuerySinkCollection extends ZkCollectionStateNode[QuerySinkNode, Unit, Que
   def reduceAggregate(left: Boolean, right: Boolean): Boolean
 }
 
-
 trait QuerySinkCollectionComponent extends ZkCollectionStateNodeComponent {
-  this:ZkClientComponent
-  with QuerySinkNodeComponent =>
+  this: ZkClientComponent with QuerySinkNodeComponent =>
 
   class QuerySinkCollectionImpl(parent: ZkNodeBase)
-    extends ZkCollectionNodeImpl[QuerySinkNode, Unit](
-      "sinks",
-      parent,
-      (name, parent) => new QuerySinkNodeImpl(name, parent))
-      with ZkCollectionStateNodeImpl[QuerySinkNode, Unit, QuerySink, Boolean, Boolean] with QuerySinkCollection {
+      extends ZkCollectionNodeImpl[QuerySinkNode, Unit](
+        "sinks",
+        parent,
+        (name, parent) => new QuerySinkNodeImpl(name, parent))
+      with ZkCollectionStateNodeImpl[QuerySinkNode, Unit, QuerySink, Boolean, Boolean]
+      with QuerySinkCollection {
 
     override def subject(): SubjectNode = parent().asInstanceOf[SubjectNode]
 

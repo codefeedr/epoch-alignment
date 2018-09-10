@@ -38,6 +38,4 @@ object Util {
     stream.toByteArray
   }
 
-
-
 }

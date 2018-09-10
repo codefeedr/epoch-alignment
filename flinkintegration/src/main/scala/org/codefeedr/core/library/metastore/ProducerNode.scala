@@ -18,14 +18,13 @@ trait ProducerNode extends ZkStateNode[Producer, Boolean] {
   def setState(state: Boolean): Future[Unit]
 }
 
-
-trait ProducerNodeComponent extends ZkStateNodeComponent {
-  this:ZkClientComponent =>
+trait ProducerNodeComponent extends ZkStateNodeComponent { this: ZkClientComponent =>
 
   class ProducerNodeImpl(name: String, parent: ZkNodeBase)
-    extends ZkNodeImpl[Producer](name, parent)
+      extends ZkNodeImpl[Producer](name, parent)
       with ZkStateNodeImpl[Producer, Boolean]
-      with LazyLogging with ProducerNode {
+      with LazyLogging
+      with ProducerNode {
 
     override def typeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
 

@@ -5,8 +5,8 @@ import org.codefeedr.model.zookeeper.Producer
 
 import scala.concurrent.Future
 
-
-trait ProducerCollection extends ZkCollectionStateNode[ProducerNode, Unit, Producer, Boolean, Boolean] {
+trait ProducerCollection
+    extends ZkCollectionStateNode[ProducerNode, Unit, Producer, Boolean, Boolean] {
 
   def initial(): Boolean
 
@@ -15,17 +15,16 @@ trait ProducerCollection extends ZkCollectionStateNode[ProducerNode, Unit, Produ
   def reduceAggregate(left: Boolean, right: Boolean): Boolean
 }
 
-
 trait ProducerCollectionNodeComponent extends ZkCollectionStateNodeComponent {
-  this:ZkClientComponent
-  with ProducerNodeComponent
-  =>
+  this: ZkClientComponent with ProducerNodeComponent =>
 
   class ProducerCollectionImpl(subjectName: String, parent: ZkNodeBase)
-    extends ZkCollectionNodeImpl[ProducerNode, Unit]("producers",
-      parent,
-      (name, parent) => new ProducerNodeImpl(name, parent))
-      with ZkCollectionStateNodeImpl[ProducerNode, Unit, Producer, Boolean, Boolean] with ProducerCollection {
+      extends ZkCollectionNodeImpl[ProducerNode, Unit](
+        "producers",
+        parent,
+        (name, parent) => new ProducerNodeImpl(name, parent))
+      with ZkCollectionStateNodeImpl[ProducerNode, Unit, Producer, Boolean, Boolean]
+      with ProducerCollection {
 
     override def initial(): Boolean = false
 

@@ -28,10 +28,8 @@ import org.codefeedr.core.library.internal.kafka.KafkaDeserialiser
 
 import scala.reflect.ClassTag
 
-trait KafkaConsumerFactoryComponent {
-  this:KafkaConfigurationComponent =>
+trait KafkaConsumerFactoryComponent { this: KafkaConfigurationComponent =>
   val kafkaConsumerFactory: KafkaConsumerFactory
-
 
   /**
     * Created by Niels on 14/07/2017.
@@ -45,18 +43,19 @@ trait KafkaConsumerFactoryComponent {
       * @tparam TData Data type used to send to kafka
       * @return
       */
-    override def create[TKey: ClassTag, TData: ClassTag](group: String): KafkaConsumer[TKey, TData] = {
+    override def create[TKey: ClassTag, TData: ClassTag](
+        group: String): KafkaConsumer[TKey, TData] = {
       //Kafka consumer constructor is not thread safe!
       val properties = kafkaConfiguration.getConsumerProperties
 
-      properties.setProperty("group.id",group)
+      properties.setProperty("group.id", group)
       //Only read committed records
       //properties.setProperty("isolation.level", "read_committed")
       logger.debug(s"Creating consumer in group $group")
       properties.setProperty("enable.auto.commit", "false") //Disable auto commit because we use manual commit
       new KafkaConsumer[TKey, TData](properties,
-        new KafkaDeserialiser[TKey],
-        new KafkaDeserialiser[TData])
+                                     new KafkaDeserialiser[TKey],
+                                     new KafkaDeserialiser[TData])
 
     }
   }
@@ -74,4 +73,3 @@ trait KafkaConsumerFactory {
     */
   def create[TKey: ClassTag, TData: ClassTag](group: String): KafkaConsumer[TKey, TData]
 }
-

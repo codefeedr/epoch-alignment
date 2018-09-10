@@ -27,11 +27,7 @@ import ExecutionContext.Implicits.global
 import async.Async._
 import scala.concurrent.duration.{Duration, SECONDS}
 
-trait Plugin {
-  this: ZkClientComponent
-    with SubjectLibraryComponent
-    with JobComponent
-  =>
+trait Plugin { this: ZkClientComponent with SubjectLibraryComponent with JobComponent =>
 
   var jobs: List[Job[_, _]] = List()
 

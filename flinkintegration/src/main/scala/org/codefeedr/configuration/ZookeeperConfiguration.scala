@@ -1,10 +1,8 @@
 package org.codefeedr.configuration
 
+trait ZookeeperConfigurationComponent { this: ConfigurationProviderComponent =>
 
-trait ZookeeperConfigurationComponent {
-  this: ConfigurationProviderComponent =>
-
-  val zookeeperConfiguration:ZookeeperConfiguration
+  val zookeeperConfiguration: ZookeeperConfiguration
 }
 
 /**
@@ -14,9 +12,7 @@ trait ZookeeperConfigurationComponent {
   * @param sessionTimeout sessionTimeout to zookeeper, in seconds
   */
 case class ZookeeperConfiguration(
-                                 connectionString:String,
-                                 connectionTimeout:Int=5,
-                                 sessionTimeout:Int=30
-                                 )
-
-
+    connectionString: String,
+    connectionTimeout: Int = 5,
+    sessionTimeout: Int = 30
+)

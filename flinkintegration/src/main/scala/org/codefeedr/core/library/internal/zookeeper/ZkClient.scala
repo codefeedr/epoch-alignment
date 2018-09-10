@@ -43,10 +43,9 @@ import rx.lang.scala.observables.{AsyncOnSubscribe, SyncOnSubscribe}
 
 import scala.reflect.ClassTag
 
-trait ZkClientComponent {
-  this: ZookeeperConfigurationComponent =>
+trait ZkClientComponent { this: ZookeeperConfigurationComponent =>
 
-  implicit val zkClient:ZkClient
+  implicit val zkClient: ZkClient
 
   /**
     * ZkClient class
@@ -204,7 +203,9 @@ trait ZkClientComponent {
       * @tparam T the object to serialise and set on the node
       * @return a future that resolves into the path to the node once the set has been completed
       */
-    override def setData[T: ClassTag](path: String, data: T, ctx: Option[Any] = None): Future[String] = {
+    override def setData[T: ClassTag](path: String,
+                                      data: T,
+                                      ctx: Option[Any] = None): Future[String] = {
       val resultPromise = Promise[String]
       logger.debug(s"SetData called on path $path")
       zk.setData(
@@ -246,7 +247,10 @@ trait ZkClientComponent {
             ZkClientException(KeeperException.create(error), Option(path), Option(stat), ctx))
         case error =>
           p.failure(
-            ZkClientException(KeeperException.create(error, path), Option(path), Option(stat), ctx))
+            ZkClientException(KeeperException.create(error, path),
+                              Option(path),
+                              Option(stat),
+                              ctx))
 
       }
     }
@@ -259,7 +263,9 @@ trait ZkClientComponent {
       * @tparam T type of the data
       * @return
       */
-    override def createWithData[T: ClassTag](path: String, data: T, ctx: Option[Any] = None): Future[Unit] =
+    override def createWithData[T: ClassTag](path: String,
+                                             data: T,
+                                             ctx: Option[Any] = None): Future[Unit] =
       create(path, GenericSerialiser(data), ctx)
 
     /**
@@ -267,7 +273,9 @@ trait ZkClientComponent {
       * @param path the path to the node to create
       * @return a future that resolves when the node has been created
       */
-    override def create(path: String, data: Array[Byte] = null, ctx: Option[Any] = None): Future[Unit] =
+    override def create(path: String,
+                        data: Array[Byte] = null,
+                        ctx: Option[Any] = None): Future[Unit] =
       async {
         logger.debug(s"Creating zknode on $path")
         val p = path.lastIndexOf("/")
@@ -342,7 +350,9 @@ trait ZkClientComponent {
       * @param cb callback to call
       * @return the watcher
       */
-    override def getRecursiveChildWatcher(p: String, cb: ChildrenCallback, cbDelete: () => Unit): Watcher =
+    override def getRecursiveChildWatcher(p: String,
+                                          cb: ChildrenCallback,
+                                          cbDelete: () => Unit): Watcher =
       new Watcher {
         override def process(event: WatchedEvent): Unit = {
           event.getType match {
@@ -360,7 +370,8 @@ trait ZkClientComponent {
       * @param subscriber the subscriber interested in the data
       * @return
       */
-    override def getRecursiveDataWatcher[T: ClassTag](p: String, subscriber: Subscriber[T]): Watcher = {
+    override def getRecursiveDataWatcher[T: ClassTag](p: String,
+                                                      subscriber: Subscriber[T]): Watcher = {
       new Watcher {
         override def process(event: WatchedEvent): Unit = {
           //Only process event if the subscriber is still interested
@@ -369,9 +380,9 @@ trait ZkClientComponent {
               case EventType.NodeDeleted => subscriber.onCompleted()
               case EventType.NodeDataChanged =>
                 zk.getData(p,
-                  getRecursiveDataWatcher(p, subscriber),
-                  getDataCallback(subscriber),
-                  None)
+                           getRecursiveDataWatcher(p, subscriber),
+                           getDataCallback(subscriber),
+                           None)
               case _ => throw new Exception(s"Got unimplemented event: ${event.getType}")
             }
           }
@@ -400,11 +411,17 @@ trait ZkClientComponent {
       * @param ctx
       * @return
       */
-    override def getError(code: KeeperException.Code, path: String, stat: Stat, ctx: Any): ZkClientException =
+    override def getError(code: KeeperException.Code,
+                          path: String,
+                          stat: Stat,
+                          ctx: Any): ZkClientException =
       if (path == null) {
         ZkClientException(KeeperException.create(code), Option(path), Option(stat), Some(ctx))
       } else {
-        ZkClientException(KeeperException.create(code, path), Option(path), Option(stat), Some(ctx))
+        ZkClientException(KeeperException.create(code, path),
+                          Option(path),
+                          Option(stat),
+                          Some(ctx))
       }
 
     /**
@@ -548,15 +565,15 @@ trait ZkClientComponent {
               case error if path == null =>
                 p.failure(
                   ZkClientException(KeeperException.create(error),
-                    Option(path),
-                    Option(stat),
-                    Some(c)))
+                                    Option(path),
+                                    Option(stat),
+                                    Some(c)))
               case error =>
                 p.failure(
                   ZkClientException(KeeperException.create(error, path),
-                    Option(path),
-                    Option(stat),
-                    Some(c)))
+                                    Option(path),
+                                    Option(stat),
+                                    Some(c)))
             }
           }
         },
@@ -606,9 +623,9 @@ trait ZkClientComponent {
                 case error =>
                   p.failure(
                     ZkClientException(KeeperException.create(error, path),
-                      Option(path),
-                      None,
-                      Some(ctx)))
+                                      Option(path),
+                                      None,
+                                      Some(ctx)))
               }
             }
           }
@@ -692,15 +709,15 @@ trait ZkClientComponent {
                 case error if path == null =>
                   p.failure(
                     ZkClientException(KeeperException.create(error),
-                      Option(path),
-                      Option(stat),
-                      Some(ctx)))
+                                      Option(path),
+                                      Option(stat),
+                                      Some(ctx)))
                 case error =>
                   p.failure(
                     ZkClientException(KeeperException.create(error, path),
-                      Option(path),
-                      Option(stat),
-                      Some(ctx)))
+                                      Option(path),
+                                      Option(stat),
+                                      Some(ctx)))
               }
             } else {
               logger.debug(s"Not handling callback on $path. Promise completed.")
@@ -714,11 +731,6 @@ trait ZkClientComponent {
   }
 }
 
-
-
-
-
-
 trait ZkClient {
 
   /**
@@ -728,7 +740,7 @@ trait ZkClient {
     * @param s string to prepend
     * @return
     */
-  def prependPath(s: String):String
+  def prependPath(s: String): String
 
   /**
     * Closes the connection to the zkClient
@@ -826,7 +838,9 @@ trait ZkClient {
     * @param cb callback to call
     * @return the watcher
     */
-  def getRecursiveChildWatcher(p: String, cb: AsyncCallback.ChildrenCallback, cbDelete: () => Unit): Watcher
+  def getRecursiveChildWatcher(p: String,
+                               cb: AsyncCallback.ChildrenCallback,
+                               cbDelete: () => Unit): Watcher
 
   /**
     * Gets a recursive data watcher that calls the callback whenever the data of the node modifies

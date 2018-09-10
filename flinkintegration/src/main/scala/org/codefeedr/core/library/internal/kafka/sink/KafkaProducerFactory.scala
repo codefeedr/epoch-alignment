@@ -26,25 +26,21 @@ import org.codefeedr.core.library.internal.kafka.KafkaSerialiser
 
 import scala.reflect.ClassTag
 
-trait KafkaProducerFactoryComponent {
-  this:KafkaConfigurationComponent =>
-    val kafkaProducerFactory: KafkaProducerFactory
-
+trait KafkaProducerFactoryComponent { this: KafkaConfigurationComponent =>
+  val kafkaProducerFactory: KafkaProducerFactory
 
   /**
     * Created by Niels on 11/07/2017.
     */
-  class KafkaProducerFactoryImpl
-    extends LazyLogging
-      with KafkaProducerFactory
-      with Serializable {
-    def create[TKey: ClassTag, TData: ClassTag](transactionalId: String): KafkaProducer[TKey, TData] = {
+  class KafkaProducerFactoryImpl extends LazyLogging with KafkaProducerFactory with Serializable {
+    def create[TKey: ClassTag, TData: ClassTag](
+        transactionalId: String): KafkaProducer[TKey, TData] = {
       val properties = kafkaConfiguration.getProducerProperties
       logger.debug(s"Creating producer with id $transactionalId")
       properties.setProperty("transactional.id", transactionalId)
       val producer = new KafkaProducer[TKey, TData](properties,
-        new KafkaSerialiser[TKey],
-        new KafkaSerialiser[TData])
+                                                    new KafkaSerialiser[TKey],
+                                                    new KafkaSerialiser[TData])
 
       producer.initTransactions()
       producer.flush()
@@ -53,8 +49,6 @@ trait KafkaProducerFactoryComponent {
   }
 
 }
-
-
 
 trait KafkaProducerFactory extends Serializable {
 
@@ -68,5 +62,3 @@ trait KafkaProducerFactory extends Serializable {
     */
   def create[TKey: ClassTag, TData: ClassTag](transactionalId: String): KafkaProducer[TKey, TData]
 }
-
-

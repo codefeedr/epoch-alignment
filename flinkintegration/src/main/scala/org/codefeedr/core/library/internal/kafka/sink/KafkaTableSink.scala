@@ -38,7 +38,8 @@ import scala.concurrent.duration._
 class KafkaTableSink(subjectNode: SubjectNode,
                      jobNode: JobNode,
                      sinkId: String,
-                     sink: SinkFunction[tuple.Tuple2[lang.Boolean, Row]])(implicit val factory:KafkaTableSinkFactory)
+                     sink: SinkFunction[tuple.Tuple2[lang.Boolean, Row]])(
+    implicit val factory: KafkaTableSinkFactory)
     extends RetractStreamTableSink[Row] {
 
   @transient lazy val subjectType: SubjectType = subjectNode.getDataSync().get
@@ -91,12 +92,10 @@ trait KafkaTableSinkFactory {
   def create(subjectName: String, jobName: String, sinkId: String): KafkaTableSink
 }
 
-
 trait KafkaTableSinkFactoryComponent {
-  this:SubjectLibraryComponent
-  with SubjectFactoryComponent =>
+  this: SubjectLibraryComponent with SubjectFactoryComponent =>
 
-  implicit val kafkaTableSinkFactory:KafkaTableSinkFactory
+  implicit val kafkaTableSinkFactory: KafkaTableSinkFactory
 
   class KafkaTableSinkFactoryImpl extends KafkaTableSinkFactory {
 

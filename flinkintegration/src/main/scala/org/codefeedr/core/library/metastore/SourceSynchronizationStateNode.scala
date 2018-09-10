@@ -13,16 +13,14 @@ case class SynchronizationState(state: KafkaSourceState.Value)
 
 trait SourceSynchronizationStateNode extends ZkNode[SynchronizationState]
 
-trait SourceSynchronizationStateNodeComponent extends ZkNodeComponent {
-  this: ZkClientComponent =>
-
+trait SourceSynchronizationStateNodeComponent extends ZkNodeComponent { this: ZkClientComponent =>
 
   class SourceSynchronizationStateNodeImpl(parent: ZkNodeBase)
-    extends ZkNodeImpl[SynchronizationState]("syncstate", parent)
-    with SourceSynchronizationStateNode {
+      extends ZkNodeImpl[SynchronizationState]("syncstate", parent)
+      with SourceSynchronizationStateNode {
     /*
   By default create it in the unsynchronized state
-   */
+     */
     override def create(): Future[String] =
       super.create(SynchronizationState(KafkaSourceState.UnSynchronized)).map(_ => "syncstate")
   }

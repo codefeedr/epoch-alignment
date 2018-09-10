@@ -32,17 +32,16 @@ import org.codefeedr.plugins.github.input.GitHubSource
 import org.codefeedr.plugins.github.operators.GetOrAddPushEvent
 import org.json4s.DefaultFormats
 
-
 trait EventsJobFactoryComponent {
   this: SubjectLibraryComponent
     with SubjectFactoryComponent
     with KafkaConsumerFactoryComponent
-    with JobComponent
-  =>
+    with JobComponent =>
 
-  def createEventsJob(maxRequests:Int) = new EventsJob(maxRequests)
+  def createEventsJob(maxRequests: Int) = new EventsJob(maxRequests)
 
   class EventsJob(maxRequests: Int) extends Job[Event, PushEvent]("events_job") {
+
     /**
       * Setups a stream for the given environment.
       *
@@ -54,16 +53,25 @@ trait EventsJobFactoryComponent {
       val stream =
         env.addSource(source).filter(_.`type` == "PushEvent").map { x =>
           implicit val formats = DefaultFormats
-          PushEvent(x.id, x.repo, x.actor, x.org, x.payload.extract[Payload], x.public, x.created_at)
+          PushEvent(x.id,
+                    x.repo,
+                    x.actor,
+                    x.org,
+                    x.payload.extract[Payload],
+                    x.public,
+                    x.created_at)
         }
 
       //work around for not existing RichAsyncFunction in Scala
       val asyncFunction = new GetOrAddPushEvent
       val finalStream =
-        JavaAsyncDataStream.unorderedWait(stream.javaStream, asyncFunction, 10, TimeUnit.SECONDS, 50)
+        JavaAsyncDataStream.unorderedWait(stream.javaStream,
+                                          asyncFunction,
+                                          10,
+                                          TimeUnit.SECONDS,
+                                          50)
 
       new org.apache.flink.streaming.api.scala.DataStream(finalStream)
     }
   }
 }
-

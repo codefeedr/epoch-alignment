@@ -7,8 +7,7 @@ import scala.async.Async.{async, await}
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-
-trait EpochCollectionNode extends ZkCollectionNode[EpochNode, EpochCollection]{
+trait EpochCollectionNode extends ZkCollectionNode[EpochNode, EpochCollection] {
 
   /**
     * Retrieves the latest known completed checkpoint for this subject.
@@ -22,10 +21,8 @@ trait EpochCollectionNode extends ZkCollectionNode[EpochNode, EpochCollection]{
   def getChild(epoch: Long): EpochNode
 }
 
-
 trait EpochCollectionNodeComponent extends ZkCollectionNodeComponent {
-  this: ZkClientComponent
-  with EpochNodeComponent =>
+  this: ZkClientComponent with EpochNodeComponent =>
 
   /**
     * Epoch collection node
@@ -34,9 +31,11 @@ trait EpochCollectionNodeComponent extends ZkCollectionNodeComponent {
     * @param parent
     */
   class EpochCollectionNodeImpl(parent: ZkNodeBase)
-    extends ZkCollectionNodeImpl[EpochNode, EpochCollection]("epochs",
-      parent,
-      (n, p) => new EpochNodeImpl(n.toInt, p)) with EpochCollectionNode {
+      extends ZkCollectionNodeImpl[EpochNode, EpochCollection](
+        "epochs",
+        parent,
+        (n, p) => new EpochNodeImpl(n.toInt, p))
+      with EpochCollectionNode {
 
     /**
       * Retrieves the latest known completed checkpoint for this subject.
