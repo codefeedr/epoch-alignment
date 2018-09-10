@@ -178,7 +178,6 @@ class ZkNodeSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEac
   override lazy val zookeeperConfiguration: ZookeeperConfiguration = libraryServices.zookeeperConfiguration
   override lazy val configurationProvider: ConfigurationProvider = libraryServices.configurationProvider
 
-  case class MyConfig(s: String)
 
 
   class TestConfigNode(name: String, parent: ZkNodeBase) extends ZkNodeImpl[MyConfig](name, parent)
@@ -194,3 +193,5 @@ class ZkNodeSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEac
     Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
   }
 }
+
+case class MyConfig(s: String)

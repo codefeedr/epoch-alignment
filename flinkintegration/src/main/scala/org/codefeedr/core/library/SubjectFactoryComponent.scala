@@ -43,13 +43,16 @@ import scala.concurrent.{Await, Future}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-trait SubjectFactoryComponent {
+trait SubjectFactoryComponent extends Serializable{
   this: SubjectLibraryComponent
     with KafkaProducerFactoryComponent
     with KafkaConsumerFactoryComponent
     with KafkaControllerComponent
     with EpochStateManagerComponent =>
-  val subjectFactory: SubjectFactoryController
+
+  private val subjectFactoryComponent = this
+
+  @transient val subjectFactory: SubjectFactoryController
 
   /**
     * ThreadSafe
@@ -87,7 +90,7 @@ trait SubjectFactoryComponent {
                                           jobNode,
                                           kafkaProducerFactory,
                                           epochStateManager,
-                                          sinkId)(getTransformer[TData](subjectNode.getDataSync().get))
+                                          sinkId)(subjectFactoryComponent)
     }
 
     def getTrailedSink(subjectType: SubjectType,

@@ -30,7 +30,8 @@ import org.scalatest._
 import org.apache.flink.streaming.api.scala._
 import org.codefeedr.core.library.internal.SubjectTypeFactory
 import org.codefeedr.core.{FullIntegrationSpec, IntegrationTestLibraryServices, KafkaTest}
-import org.codefeedr.core.library.internal.zookeeper.ZkClient
+import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkClientComponent}
+import org.codefeedr.core.library.metastore.SubjectLibraryComponent
 import org.codefeedr.model.TrailedRecord
 import org.scalatest.tagobjects.Slow
 import org.slf4j.MDC
@@ -76,10 +77,12 @@ object TestCollector extends LazyLogging {
 class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
   val testSubjectName = "MyOwnIntegerObject"
 
+  override val libraryServices: MyOwnSourceQueryComponent with Object = new MyOwnSourceQueryComponent{}
+
   def CreateSourceQuery(nr: Int): Future[Unit] = {
     Future {
       blocking {
-        new MyOwnSourceQuery(nr, parallelism).run()
+        libraryServices.CreateSourceQuery(nr,parallelism).run()
       }
     }
   }
@@ -172,14 +175,19 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
   */
 }
 
+trait MyOwnSourceQueryComponent extends IntegrationTestLibraryServices {
 
-class MyOwnSourceQuery(nr: Int, parallelism: Int) extends Runnable with LazyLogging {
 
-  @transient private object Library extends IntegrationTestLibraryServices
+  def CreateSourceQuery(nr:Int, parallelism:Int):MyOwnSourceQuery =
+    new MyOwnSourceQuery(nr, parallelism)
+
+class MyOwnSourceQuery(nr: Int, parallelism: Int)
+  extends Runnable
+    with LazyLogging {
 
   override def run(): Unit = {
     val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
-    env.enableCheckpointing(1000,CheckpointingMode.EXACTLY_ONCE)
+    env.enableCheckpointing(1000, CheckpointingMode.EXACTLY_ONCE)
     val topology = createTopology(env, nr)
     Await.ready(topology, Duration(120, SECONDS))
     topology.value match {
@@ -204,14 +212,14 @@ class MyOwnSourceQuery(nr: Int, parallelism: Int) extends Runnable with LazyLogg
 
   def createTopology(env: StreamExecutionEnvironment, nr: Int): Future[Unit] = async {
     val name = UUID.randomUUID().toString
-    val jobNode = Library.subjectLibrary.getJob(name)
+    val jobNode = subjectLibrary.getJob(name)
 
     val subjectType = SubjectTypeFactory.getSubjectType[MyOwnIntegerObject]
-    val subjectNode = Library.subjectLibrary.getSubject(subjectType.name)
+    val subjectNode = subjectLibrary.getSubject(subjectType.name)
 
     //val transformer = Library.subjectFactory.getUnTransformer[MyOwnIntegerObject](subjectType)
-    val source = Library.subjectFactory.getSource[MyOwnIntegerObject](subjectNode,jobNode, s"testSource_$nr")
-    val r =() => {
+    val source = subjectFactory.getSource[MyOwnIntegerObject](subjectNode, jobNode, s"testSource_$nr")
+    val r = () => {
       val num = nr
       env
         .addSource(source)
@@ -219,4 +227,5 @@ class MyOwnSourceQuery(nr: Int, parallelism: Int) extends Runnable with LazyLogg
     }
     r()
   }
+}
 }
