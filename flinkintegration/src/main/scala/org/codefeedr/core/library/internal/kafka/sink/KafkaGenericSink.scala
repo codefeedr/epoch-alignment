@@ -19,14 +19,9 @@
 
 package org.codefeedr.core.library.internal.kafka.sink
 
-import org.apache.flink.types.Row
-import org.apache.kafka.clients.producer.ProducerRecord
-import org.codefeedr.core.library.{LibraryServices, SubjectFactoryComponent}
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
-import org.codefeedr.model.{RecordSourceTrail, SubjectType, TrailedRecord}
 
 import scala.reflect.ClassTag
-import scala.reflect.runtime.{universe => ru}
 
 /**
   * Created by Niels on 31/07/2017.

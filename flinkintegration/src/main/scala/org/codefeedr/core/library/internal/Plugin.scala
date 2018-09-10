@@ -18,7 +18,6 @@
  */
 package org.codefeedr.core.library.internal
 
-import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.library.internal.zookeeper.ZkClientComponent
 import org.codefeedr.core.library.metastore.SubjectLibraryComponent
 

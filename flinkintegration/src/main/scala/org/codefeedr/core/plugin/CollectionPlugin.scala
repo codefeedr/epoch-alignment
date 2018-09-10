@@ -22,34 +22,47 @@ package org.codefeedr.core.plugin
 import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.scala._
-import org.apache.flink.streaming.api.datastream.DataStreamSource
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
+import org.codefeedr.core.library.SubjectFactoryComponent
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-/**
-  * A simple collection plugin that registers a static dataset as plugin
-  * @param data The data of the collection
-  * @tparam TData Type of the data
-  */
-class CollectionPlugin[TData: ru.TypeTag: ClassTag: TypeInformation](data: Array[TData],
-                                                                     useTrailedSink: Boolean =
+
+trait CollectionPluginFactoryComponent extends SimplePluginComponent {
+  this:SubjectFactoryComponent =>
+
+  def createCollectionPlugin[TData: ru.TypeTag: ClassTag: TypeInformation](data: Array[TData],
+                                                                           useTrailedSink: Boolean =
+                                                                           false): CollectionPlugin[TData]
+
+
+  /**
+    * A simple collection plugin that registers a static dataset as plugin
+    * @param data The data of the collection
+    * @tparam TData Type of the data
+    */
+  class CollectionPlugin[TData: ru.TypeTag: ClassTag: TypeInformation](data: Array[TData],
+                                                                       useTrailedSink: Boolean =
                                                                        false)
     extends SimplePlugin[TData](useTrailedSink) {
 
-  /**
-    * Method to implement as plugin to expose a datastream
-    * Make sure this implementation is serializable!!!!
-    *
-    * @param env The environment to create the datastream om
-    * @return The datastream itself
-    */
-  override def getStream(env: StreamExecutionEnvironment): DataStream[TData] = {
-    val typeInfo = createTypeInformation[TData]
-    val serializer = typeInfo.createSerializer(new ExecutionConfig())
-    val function = new WaitingFromElementsFunction[TData](serializer, data)
-    env.addSource(function)
-    //env.fromCollection[TData](data)
+
+    /**
+      * Method to implement as plugin to expose a datastream
+      * Make sure this implementation is serializable!!!!
+      *
+      * @param env The environment to create the datastream om
+      * @return The datastream itself
+      */
+    override def getStream(env: StreamExecutionEnvironment): DataStream[TData] = {
+      val typeInfo = createTypeInformation[TData]
+      val serializer = typeInfo.createSerializer(new ExecutionConfig())
+      val function = new WaitingFromElementsFunction[TData](serializer, data)
+      env.addSource(function)
+      //env.fromCollection[TData](data)
+    }
   }
+
 }
+

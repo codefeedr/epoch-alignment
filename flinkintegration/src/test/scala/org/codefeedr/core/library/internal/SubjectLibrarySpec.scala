@@ -23,7 +23,6 @@ package org.codefeedr.core.library.internal
 
 import org.codefeedr.core.library.internal.zookeeper.ZkClient
 import org.codefeedr.core.{LibraryServiceSpec, ZkTest}
-import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.exceptions._
 import org.scalatest._
 import org.scalatest.tagobjects.Slow

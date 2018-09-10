@@ -33,8 +33,6 @@ import org.apache.flink.streaming.api.watermark.Watermark
 import org.codefeedr.core.engine.query.QueryTree
 import org.codefeedr.core.library.internal.SubjectTypeFactory
 import org.codefeedr.core.library.internal.kafka.KafkaTrailedRecordSource
-import org.codefeedr.core.library.internal.kafka.sink.KafkaTableSink
-import org.codefeedr.core.plugin.CollectionPlugin
 import org.codefeedr.model.{SubjectType, TrailedRecord}
 import org.scalatest.{BeforeAndAfterEach, Matchers}
 

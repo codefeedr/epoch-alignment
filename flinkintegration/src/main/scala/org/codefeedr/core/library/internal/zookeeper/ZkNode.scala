@@ -20,15 +20,12 @@
 package org.codefeedr.core.library.internal.zookeeper
 
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.zookeeper.KeeperException.NodeExistsException
-import org.codefeedr.core.library.LibraryServices
 import rx.lang.scala.Observable
 
 import scala.async.Async.{async, await}
-import scala.concurrent.{Await, Future}
-import scala.reflect.ClassTag
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
+import scala.concurrent.Future
+import scala.reflect.ClassTag
 
 /**
   * ZkNode, represents a node on zookeeper

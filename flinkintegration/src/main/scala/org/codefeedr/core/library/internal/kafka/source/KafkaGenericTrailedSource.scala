@@ -18,17 +18,11 @@
  */
 package org.codefeedr.core.library.internal.kafka.source
 
-import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
-import org.apache.flink.api.java.typeutils.TypeExtractor
-import org.codefeedr.core.library.{
-  LibraryServices,
-  SubjectFactoryComponent,
-  TypeInformationServices
-}
-import org.codefeedr.model.{RecordSourceTrail, SubjectType, TrailedRecord}
+import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.types.Row
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
+import org.codefeedr.model.{RecordSourceTrail, TrailedRecord}
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}

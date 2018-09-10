@@ -4,10 +4,7 @@ import java.lang
 import java.util.UUID
 
 import org.apache.flink.api.java.tuple
-import org.apache.flink.streaming.api.functions.sink.SinkFunction
 import org.apache.flink.types.Row
-import org.apache.kafka.clients.producer.ProducerRecord
-import org.codefeedr.core.library.LibraryServices
 import org.codefeedr.core.library.internal.KeyFactory
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
 import org.codefeedr.model._

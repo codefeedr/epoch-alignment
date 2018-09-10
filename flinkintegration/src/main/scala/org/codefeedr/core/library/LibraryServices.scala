@@ -19,6 +19,7 @@
 
 package org.codefeedr.core.library
 
+import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.codefeedr.configuration._
 import org.codefeedr.core.engine.query.StreamComposerFactoryComponent
 import org.codefeedr.core.library.internal.kafka.KafkaControllerComponent
@@ -26,6 +27,10 @@ import org.codefeedr.core.library.internal.kafka.sink.{EpochStateManager, EpochS
 import org.codefeedr.core.library.internal.kafka.source.KafkaConsumerFactoryComponent
 import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkClientComponent}
 import org.codefeedr.core.library.metastore.SubjectLibraryComponent
+import org.codefeedr.core.plugin.CollectionPluginFactoryComponent
+
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe
 
 
 /**
@@ -50,31 +55,59 @@ trait ConfigurationComponents
   @transient lazy override val kafkaProducerFactory = new KafkaProducerFactoryImpl()
 }
 
+trait AbstractCodefeedrComponents  extends Serializable
+  with ConfigurationComponents
+  with ZkClientComponent
+  with SubjectLibraryComponent
+  with KafkaControllerComponent
+
+  with KafkaConsumerFactoryComponent
+  with KafkaProducerFactoryComponent
+
+  with SubjectFactoryComponent
+  with StreamComposerFactoryComponent
+  with EpochStateManagerComponent
+  with KafkaTableSinkFactoryComponent
+
+  with CollectionPluginFactoryComponent
+{
+
+}
+
+
+
+trait PluginComponents extends Serializable
+  with AbstractCodefeedrComponents
+  with CollectionPluginFactoryComponent
+{
+  override def createCollectionPlugin[TData: universe.TypeTag : ClassTag : TypeInformation]
+  (data: Array[TData], useTrailedSink: Boolean): CollectionPlugin[TData] =
+    new CollectionPlugin[TData](data,useTrailedSink)
+
+
+
+}
 
 /**
   * General components performing all the application logic
   */
-trait CodefeedrComponents extends Serializable
-    with ConfigurationComponents
-    with ZkClientComponent
-    with SubjectLibraryComponent
-    with KafkaControllerComponent
+trait CodefeedrComponents
+  extends AbstractCodefeedrComponents
+  with PluginComponents
+{
 
-    with KafkaConsumerFactoryComponent
-    with KafkaProducerFactoryComponent
-
-    with SubjectFactoryComponent
-    with StreamComposerFactoryComponent
-    with EpochStateManagerComponent
-    with KafkaTableSinkFactoryComponent {
 
   @transient lazy override implicit val zkClient:ZkClient = new ZkClientImpl()
   @transient lazy override val subjectLibrary:SubjectLibrary = new SubjectLibrary()
 
-  @transient lazy override val kafkaTableSinkFactory = new KafkaTableSinkFactoryImpl();
+  @transient lazy override val kafkaTableSinkFactory = new KafkaTableSinkFactoryImpl()
   @transient lazy override val subjectFactory = new SubjectFactoryController()
   @transient lazy override val streamComposerFactory = new StreamComposerFactory()
   @transient lazy override val epochStateManager = new EpochStateManager()
   @transient lazy override val kafkaController = new KafkaController()
 
 }
+
+
+
+
