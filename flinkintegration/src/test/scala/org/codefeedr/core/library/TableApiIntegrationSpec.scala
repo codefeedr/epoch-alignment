@@ -71,26 +71,26 @@ class TableApiIntegrationSpec extends FullIntegrationSpec{
 
       //Execute the query environment, and obtain the typeDefinition of the result of the query
       val resultType = await(runQueryEnvironment(query))
-      val resultNode = subjectLibrary.getSubject(resultType.name)
-      val queryJobNode = subjectLibrary.getJob("tableApiTestSource")
+      val resultNode = libraryServices.subjectLibrary.getSubject(resultType.name)
+      val queryJobNode = libraryServices.subjectLibrary.getJob("tableApiTestSource")
 
       //Construct Flinks tableEnvironment
       val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
       env.enableCheckpointing(100)
       val tableEnv = TableEnvironment.getTableEnvironment(env)
       //Register a custom implemented tableSource based on the output from the previous query
-      tableEnv.registerTableSource("my_table", new KafkaTableSource(resultNode, "testSource",subjectFactory.getRowSource(resultNode,queryJobNode,"mysource")))
+      tableEnv.registerTableSource("my_table", new KafkaTableSource(resultNode, "testSource",libraryServices.subjectFactory.getRowSource(resultNode,queryJobNode,"mysource")))
 
 
       //Perform a Flink SQL Query
       val sqlResult  = tableEnv.sqlQuery("SELECT SUM(id), grp FROM my_table GROUP BY grp")
       //Write query results to a new custom kafka table sink
-      sqlResult.writeToSink(kafkaTableSinkFactory.create("my_sum",queryJobNode.name, "testSink"))
+      sqlResult.writeToSink(libraryServices.kafkaTableSinkFactory.create("my_sum",queryJobNode.name, "testSink"))
       //Run the environment with TABLE API Query
       this.runEnvironment(env)
 
       //Use the zookeeper subject library to obtain the subject created by the table api environment
-      val mySumSubject =  await(subjectLibrary.getSubjects().awaitChild("my_sum").flatMap(name => subjectLibrary.getSubject(name).getData())).get
+      val mySumSubject =  await(libraryServices.subjectLibrary.getSubjects().awaitChild("my_sum").flatMap(name => libraryServices.subjectLibrary.getSubject(name).getData())).get
 
       //Use the obtained typedefinition to collect all results
       //Validate that the results have properly been added and grouped (thus that the Table API Query has been executed properly)

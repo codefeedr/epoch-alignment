@@ -25,10 +25,14 @@ import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 /**
   * Base spec class that has asyncflatspec with libraryServices
   */
-class LibraryServiceSpec extends AsyncFlatSpec with IntegrationTestLibraryServices with BeforeAndAfterAll{
+class LibraryServiceSpec extends AsyncFlatSpec with BeforeAndAfterAll{
+
+  val libraryServices = new IntegrationTestLibraryServices{}
+  implicit lazy val zkClient = libraryServices.zkClient
+
   override def beforeAll(): Unit = {
     //Initialize the configuration component with the codefeedr.properties file
-    configurationProvider.initConfiguration(ParameterTool.fromArgs(new Array[String](0)),Some("/codefeedr.properties"))
+    libraryServices.configurationProvider.initConfiguration(ParameterTool.fromArgs(new Array[String](0)),Some("/codefeedr.properties"))
     super.beforeAll()
   }
 }

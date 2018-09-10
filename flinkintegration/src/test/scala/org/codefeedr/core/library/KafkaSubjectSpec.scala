@@ -93,7 +93,7 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
 
 
   "Kafka-Sources" should "retrieve all messages published by a source" taggedAs(Slow, KafkaTest) in async {
-    val subjectNode = subjectLibrary.getSubject(testSubjectName)
+    val subjectNode = libraryServices.subjectLibrary.getSubject(testSubjectName)
     assert(!await(subjectNode.exists()))
     //Generate some test input
     await(runSourceEnvironment[MyOwnIntegerObject](mutable.Set(1, 2, 3).map(o => MyOwnIntegerObject(o)).toArray))
@@ -120,7 +120,7 @@ class KafkaSubjectSpec extends FullIntegrationSpec with BeforeAndAfterEach {
 
 
   it should "still receive data if they are created before the sink" taggedAs(Slow, KafkaTest) in async {
-    val subjectNode = subjectLibrary.getSubject(testSubjectName)
+    val subjectNode = libraryServices.subjectLibrary.getSubject(testSubjectName)
     assert(!await(subjectNode.exists()))
 
     //Generate some test input

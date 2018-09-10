@@ -34,48 +34,48 @@ class ZkClientSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfter
 
   override def afterEach(): Unit = {
     super.afterEach()
-    Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(libraryServices.zkClient.deleteRecursive("/"), Duration(1, SECONDS))
   }
 
-  "ZkClient.Create()" should "Be able to create nodes "in async {
-    assert(!await(zkClient.exists("/ZkClientSpec/somenode")))
-    await(zkClient.create("/ZkClientSpec/somenode"))
-    assert(await(zkClient.exists("/ZkClientSpec/somenode")))
+  "libraryServices.zkClient.Create()" should "Be able to create nodes "in async {
+    assert(!await(libraryServices.zkClient.exists("/ZkClientSpec/somenode")))
+    await(libraryServices.zkClient.create("/ZkClientSpec/somenode"))
+    assert(await(libraryServices.zkClient.exists("/ZkClientSpec/somenode")))
   }
 
-  "ZkClient.Delete()" should "Be able to delete nodes "in async {
-    assert(!await(zkClient.exists("/ZkClientSpec/somenode")))
-    await(zkClient.create("/ZkClientSpec/somenode"))
-    assert(await(zkClient.exists("/ZkClientSpec/somenode")))
-    await(zkClient.Delete("/ZkClientSpec/somenode"))
-    assert(!await(zkClient.exists("/ZkClientSpec/somenode")))
+  "libraryServices.zkClient.Delete()" should "Be able to delete nodes "in async {
+    assert(!await(libraryServices.zkClient.exists("/ZkClientSpec/somenode")))
+    await(libraryServices.zkClient.create("/ZkClientSpec/somenode"))
+    assert(await(libraryServices.zkClient.exists("/ZkClientSpec/somenode")))
+    await(libraryServices.zkClient.Delete("/ZkClientSpec/somenode"))
+    assert(!await(libraryServices.zkClient.exists("/ZkClientSpec/somenode")))
   }
 
-  "ZkClient.DeleteRecursive()" should "Be able to delete nodes recursively "in async {
-    await(zkClient.create("/ZkClientSpec/somenode"))
-    assert(await(zkClient.exists("/ZkClientSpec/somenode")))
-    await(zkClient.deleteRecursive("/ZkClientSpec"))
-    assert(!await(zkClient.exists("/ZkClientSpec/somenode")))
+  "libraryServices.zkClient.DeleteRecursive()" should "Be able to delete nodes recursively "in async {
+    await(libraryServices.zkClient.create("/ZkClientSpec/somenode"))
+    assert(await(libraryServices.zkClient.exists("/ZkClientSpec/somenode")))
+    await(libraryServices.zkClient.deleteRecursive("/ZkClientSpec"))
+    assert(!await(libraryServices.zkClient.exists("/ZkClientSpec/somenode")))
   }
 
-  "ZkClient.CreateWithDate()" should "Be able to create nodes with data "in async {
-    await(zkClient.createWithData("/ZkClientSpec/somenode", "hello"))
-    assert(await(zkClient.exists("/ZkClientSpec/somenode")) )
-    assert(await(zkClient.getData[String]("/ZkClientSpec/somenode")).get == "hello")
+  "libraryServices.zkClient.CreateWithDate()" should "Be able to create nodes with data "in async {
+    await(libraryServices.zkClient.createWithData("/ZkClientSpec/somenode", "hello"))
+    assert(await(libraryServices.zkClient.exists("/ZkClientSpec/somenode")) )
+    assert(await(libraryServices.zkClient.getData[String]("/ZkClientSpec/somenode")).get == "hello")
   }
 
-  "ZkClient.SetData()" should "Be able to create nodes without data and set data"in async {
-    await(zkClient.create("/ZkClientSpec/somenode"))
-    assert(await(zkClient.exists("/ZkClientSpec/somenode")))
-    assert(await(zkClient.getData[String]("/ZkClientSpec/somenode")).isEmpty)
-    await(zkClient.setData("/ZkClientSpec/somenode", "test"))
-    assert(await(zkClient.getData[String]("/ZkClientSpec/somenode")).get =="test")
+  "libraryServices.zkClient.SetData()" should "Be able to create nodes without data and set data"in async {
+    await(libraryServices.zkClient.create("/ZkClientSpec/somenode"))
+    assert(await(libraryServices.zkClient.exists("/ZkClientSpec/somenode")))
+    assert(await(libraryServices.zkClient.getData[String]("/ZkClientSpec/somenode")).isEmpty)
+    await(libraryServices.zkClient.setData("/ZkClientSpec/somenode", "test"))
+    assert(await(libraryServices.zkClient.getData[String]("/ZkClientSpec/somenode")).get =="test")
   }
 
-  "ZkClient.GetChildren()" should "Be able to retrieve children of a node" in async {
-    await(zkClient.create("/ZkClientSpec/node1"))
-    await(zkClient.create("/ZkClientSpec/node2"))
-    val children = await(zkClient.GetChildren("/ZkClientSpec"))
+  "libraryServices.zkClient.GetChildren()" should "Be able to retrieve children of a node" in async {
+    await(libraryServices.zkClient.create("/ZkClientSpec/node1"))
+    await(libraryServices.zkClient.create("/ZkClientSpec/node2"))
+    val children = await(libraryServices.zkClient.GetChildren("/ZkClientSpec"))
     assert(children.size == 2)
     assert(children.exists(o => o == "node1"))
     assert(children.exists(o => o== "node2"))
@@ -83,29 +83,29 @@ class ZkClientSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfter
 
 
 
-  "ZkClient.AwaitChild()" should "Be able to await construction of a child" taggedAs Slow in async {
-    await(zkClient.create("/ZkClientSpec"))
-    val future = zkClient.awaitChild("/ZkClientSpec","child").map(_ => assert(true))
+  "libraryServices.zkClient.AwaitChild()" should "Be able to await construction of a child" taggedAs Slow in async {
+    await(libraryServices.zkClient.create("/ZkClientSpec"))
+    val future = libraryServices.zkClient.awaitChild("/ZkClientSpec","child").map(_ => assert(true))
     await(future.assertTimeout())
-    await(zkClient.create("/ZkClientSpec/child"))
+    await(libraryServices.zkClient.create("/ZkClientSpec/child"))
     Await.ready(future, Duration(1, SECONDS))
     assert(true)
   }
 
-  "ZkClient.AwaitRemoval()" should "Be able to await removal of a node" taggedAs Slow in async {
-    await(zkClient.create("/ZkClientSpec/somenode"))
-    val future = zkClient.awaitRemoval("/ZkClientSpec/somenode").map(_ => assert(true))
+  "libraryServices.zkClient.AwaitRemoval()" should "Be able to await removal of a node" taggedAs Slow in async {
+    await(libraryServices.zkClient.create("/ZkClientSpec/somenode"))
+    val future = libraryServices.zkClient.awaitRemoval("/ZkClientSpec/somenode").map(_ => assert(true))
     await(future.assertTimeout())
-    zkClient.Delete("/ZkClientSpec/somenode")
+    libraryServices.zkClient.Delete("/ZkClientSpec/somenode")
     await(future)
   }
 
 
-  "ZkClient.AwaitCondition()" should "Be able to await a condition based on a given method" taggedAs Slow in async {
-    await(zkClient.createWithData("/ZkClientSpec/somenode", "nothello"))
-    val future = zkClient.awaitCondition("/ZkClientSpec/somenode", (o:String) => o == "hello").map(_ => assert(true))
+  "libraryServices.zkClient.AwaitCondition()" should "Be able to await a condition based on a given method" taggedAs Slow in async {
+    await(libraryServices.zkClient.createWithData("/ZkClientSpec/somenode", "nothello"))
+    val future = libraryServices.zkClient.awaitCondition("/ZkClientSpec/somenode", (o:String) => o == "hello").map(_ => assert(true))
     await(future.assertTimeout())
-    await(zkClient.setData("/ZkClientSpec/somenode", "hello"))
+    await(libraryServices.zkClient.setData("/ZkClientSpec/somenode", "hello"))
     Await.ready(future, Duration(1, SECONDS))
     assert(true)
   }

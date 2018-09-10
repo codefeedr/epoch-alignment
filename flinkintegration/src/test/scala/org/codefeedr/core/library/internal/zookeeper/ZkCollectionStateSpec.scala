@@ -17,6 +17,7 @@ import scala.reflect.ClassTag
   */
 class ZkCollectionStateNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with LazyLogging {
 
+
   "ZkCollectionStateNode.GetState" should "return the aggregate of all states" in async {
     val root = new TestRoot()
     val collection = new TestCollectionStateNode("testCollection", root)

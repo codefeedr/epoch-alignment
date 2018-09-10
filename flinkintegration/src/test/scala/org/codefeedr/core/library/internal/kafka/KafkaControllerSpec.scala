@@ -41,37 +41,37 @@ class KafkaControllerSpec extends LibraryServiceSpec with Matchers with BeforeAn
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    Await.ready(subjectLibrary.initialize(),Duration(5, SECONDS))
+    Await.ready(libraryServices.subjectLibrary.initialize(),Duration(5, SECONDS))
   }
 
   override def afterEach(): Unit = {
     super.afterEach()
-    Await.ready(zkClient.deleteRecursive("/"), Duration(5, SECONDS))
+    Await.ready(libraryServices.zkClient.deleteRecursive("/"), Duration(5, SECONDS))
 
   }
 
   "A kafkaController" should "be able to create and delete new topics" in async {
       val testTopic = createTestTopic()
-      await(kafkaController.createTopic(testTopic))
-      assert(await(kafkaController.getTopics()).contains(testTopic))
-      await(kafkaController.deleteTopic(testTopic))
-      assert(!await(kafkaController.getTopics()).contains(testTopic))
+      await(libraryServices.kafkaController.createTopic(testTopic))
+      assert(await(libraryServices.kafkaController.getTopics()).contains(testTopic))
+      await(libraryServices.kafkaController.deleteTopic(testTopic))
+      assert(!await(libraryServices.kafkaController.getTopics()).contains(testTopic))
   }
 
   it should "create a new topic if guarantee is called and it does not exist yet" in async {
     val testTopic = createTestTopic()
-    await(kafkaController.guaranteeTopic(testTopic))
-    assert(await(kafkaController.getTopics()).contains(testTopic))
-    await(kafkaController.deleteTopic(testTopic))
-    assert(!await(kafkaController.getTopics()).contains(testTopic))
+    await(libraryServices.kafkaController.guaranteeTopic(testTopic))
+    assert(await(libraryServices.kafkaController.getTopics()).contains(testTopic))
+    await(libraryServices.kafkaController.deleteTopic(testTopic))
+    assert(!await(libraryServices.kafkaController.getTopics()).contains(testTopic))
   }
 
   it should "create a topic with the configured amount of partitions" in async {
       val testTopic = createTestTopic()
-      await(kafkaController.guaranteeTopic(testTopic))
-      assert(await(kafkaController.getTopics()).contains(testTopic))
-      val r = assert(await(kafkaController.getPartitions(testTopic)) == 4)
-      await(kafkaController.deleteTopic(testTopic))
+      await(libraryServices.kafkaController.guaranteeTopic(testTopic))
+      assert(await(libraryServices.kafkaController.getTopics()).contains(testTopic))
+      val r = assert(await(libraryServices.kafkaController.getPartitions(testTopic)) == 4)
+      await(libraryServices.kafkaController.deleteTopic(testTopic))
       r
   }
 }

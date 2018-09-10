@@ -50,12 +50,12 @@ import scala.concurrent.{Await, Future}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogging with IntegrationTestLibraryServices with BeforeAndAfterEach with MockitoSugar {
+class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogging with BeforeAndAfterEach with MockitoSugar {
   val parallelism: Int = 2
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    Await.ready(subjectLibrary.initialize(), Duration(5, SECONDS))
+    Await.ready(libraryServices.subjectLibrary.initialize(), Duration(5, SECONDS))
     Await.ready(zkClient.deleteRecursive("/"), Duration(5, SECONDS))
   }
 
@@ -71,10 +71,10 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     * @return
     */
   def awaitAllData(subject:SubjectType): Future[Array[TrailedRecord]] = async {
-    await(subjectLibrary.getSubject(subject.name).assertExists())
+    await(libraryServices.subjectLibrary.getSubject(subject.name).assertExists())
     val jobName = UUID.randomUUID().toString
-    val job = subjectLibrary.getJob(jobName)
-    val source = new KafkaTrailedRecordSource(subjectLibrary.getSubject(subject.name),job, kafkaConsumerFactory,"testsource")
+    val job = libraryServices.subjectLibrary.getJob(jobName)
+    val source = new KafkaTrailedRecordSource(libraryServices.subjectLibrary.getSubject(subject.name),job, libraryServices.kafkaConsumerFactory,"testsource")
     val result = new mutable.ArrayBuffer[TrailedRecord]()
 
 
@@ -119,19 +119,19 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     val name = UUID.randomUUID().toString
     queryEnv.enableCheckpointing(100)
     logger.debug("Creating query Composer")
-    val composer = await(streamComposerFactory.getComposer(query,name))
+    val composer = await(libraryServices.streamComposerFactory.getComposer(query,name))
     logger.debug("Composing queryEnv")
     val resultStream = composer.compose(queryEnv)
     val resultType = composer.getExposedType()
-    val node = subjectLibrary.getSubject(resultType.name)
+    val node = libraryServices.subjectLibrary.getSubject(resultType.name)
     this.synchronized {
       if (!await(node.exists())) {
-        await(subjectFactory.create(resultType))
+        await(libraryServices.subjectFactory.create(resultType))
       }
     }
 
     logger.debug(s"Composing sink for ${resultType.name}.")
-    val sink = subjectFactory.getTrailedSink(resultType,"testSink",name)
+    val sink = libraryServices.subjectFactory.getTrailedSink(resultType,"testSink",name)
     //val sink = await(subjectFactory.get(resultType, name,"testsink"))
     resultStream.addSink(sink)
 
@@ -161,8 +161,8 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
   def runSourceEnvironment[T: ru.TypeTag: ClassTag: TypeInformation](data: Array[T],useTrailedSink:Boolean = false): Future[SubjectType] = async {
     val t = SubjectTypeFactory.getSubjectType[T]
 
-    if (!await(subjectLibrary.getSubject(t.name).exists())) {
-      await(subjectFactory.create(t))
+    if (!await(libraryServices.subjectLibrary.getSubject(t.name).exists())) {
+      await(libraryServices.subjectFactory.create(t))
     }
 
 
@@ -170,7 +170,8 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
     env.enableCheckpointing(1000,CheckpointingMode.EXACTLY_ONCE)
     logger.debug(s"Composing env for ${t.name}")
-    await(new CollectionPlugin(data,useTrailedSink).compose(env, "testplugin"))
+
+    await(libraryServices.createCollectionPlugin(data,useTrailedSink).compose(env, "testplugin"))
     logger.debug(s"Starting env for ${t.name}")
     env.execute()
     logger.debug(s"Completed env for ${t.name}")

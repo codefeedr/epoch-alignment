@@ -56,12 +56,12 @@ class KafkaSinkIntegrationSpec extends LibraryServiceSpec with BeforeAndAfterEac
     val sinkId = "testSink"
 
     val subject = SubjectTypeFactory.getSubjectType[TestKafkaSinkSubject]
-    val subjectNode = await(subjectFactory.create(subject))
+    val subjectNode = await(libraryServices.subjectFactory.create(subject))
 
-    val job = subjectLibrary.getJob("testJob")
+    val job = libraryServices.subjectLibrary.getJob("testJob")
 
     //,subjectFactory.getTransformer[TestKafkaSinkSubject](subject)
-    val sink = new KafkaGenericSink[TestKafkaSinkSubject](subjectNode,job,kafkaProducerFactory,epochStateManager,sinkId)
+    val sink = new KafkaGenericSink[TestKafkaSinkSubject](subjectNode,job,libraryServices.kafkaProducerFactory,libraryServices.epochStateManager,sinkId)
     val sinkNode = subjectNode.getSinks().getChild(sinkId)
     val runtimeContext = mock[StreamingRuntimeContext]
 
@@ -89,13 +89,16 @@ class KafkaSinkIntegrationSpec extends LibraryServiceSpec with BeforeAndAfterEac
   }
 
 
+  /**
+    * Use -Dsun.io.serialization.extendedDebugInfo=true to debug why the sink is not serializable
+    */
   it should "be serializable" in async {
       //Arrange
       val sinkId = "testSink"
       val subject = SubjectTypeFactory.getSubjectType[TestKafkaSinkSubject]
-      val subjectNode = await(subjectFactory.create(subject))
-      val job = subjectLibrary.getJob("testJob")
-      val sink = new KafkaGenericSink[TestKafkaSinkSubject](subjectNode,job,kafkaProducerFactory,epochStateManager,sinkId)
+      val subjectNode = await(libraryServices.subjectFactory.create(subject))
+      val job = libraryServices.subjectLibrary.getJob("testJob")
+      val sink = new KafkaGenericSink[TestKafkaSinkSubject](subjectNode,job,libraryServices.kafkaProducerFactory,libraryServices.epochStateManager,sinkId)
 
       //Act
       //Not catching the exception is on purpose
@@ -114,13 +117,13 @@ class KafkaSinkIntegrationSpec extends LibraryServiceSpec with BeforeAndAfterEac
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
-    Await.ready(subjectLibrary.initialize(),Duration(1, SECONDS))
+    Await.ready(libraryServices.zkClient.deleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(libraryServices.subjectLibrary.initialize(),Duration(1, SECONDS))
   }
 
   override def afterEach(): Unit = {
     super.afterEach()
-    Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
-    Await.ready(subjectLibrary.initialize(),Duration(1, SECONDS))
+    Await.ready(libraryServices.zkClient.deleteRecursive("/"), Duration(1, SECONDS))
+    Await.ready(libraryServices.subjectLibrary.initialize(),Duration(1, SECONDS))
   }
 }
