@@ -42,7 +42,14 @@ trait ConfigurationModule extends Serializable
     with KafkaConfigurationComponent
     with ZookeeperConfigurationComponent
 {
-  lazy override val kafkaConfiguration: KafkaConfiguration = new KafkaConfigurationImpl()
+  //The configurationprovider is serializable
+  @transient lazy override val zookeeperConfiguration: ZookeeperConfiguration = ZookeeperConfiguration(
+    connectionString = configurationProvider.get("zookeeper.connectionString"),
+    connectionTimeout = configurationProvider.getInt("zookeeper.connectionTimeout",Some(5)),
+    sessionTimeout = configurationProvider.getInt("zookeeper.sessionTimeout",Some(30))
+  )
+  override val configurationProvider: ConfigurationProvider = new ConfigurationProviderImpl()
+  @transient lazy override val kafkaConfiguration: KafkaConfiguration = new KafkaConfigurationImpl()
 }
 
 //Serializable components that can be used inside flink operators
@@ -68,13 +75,7 @@ trait AbstractCodefeedrComponents  extends Serializable
   with StreamComposerFactoryComponent
   with EpochStateManagerComponent
   with KafkaTableSinkFactoryComponent
-
-  with CollectionPluginFactoryComponent
-{
-
-}
-
-
+{}
 
 trait PluginComponents extends Serializable
   with AbstractCodefeedrComponents
@@ -83,8 +84,6 @@ trait PluginComponents extends Serializable
   override def createCollectionPlugin[TData: universe.TypeTag : ClassTag : TypeInformation]
   (data: Array[TData], useTrailedSink: Boolean): CollectionPlugin[TData] =
     new CollectionPlugin[TData](data,useTrailedSink)
-
-
 
 }
 
@@ -95,8 +94,6 @@ trait CodefeedrComponents
   extends AbstractCodefeedrComponents
   with PluginComponents
 {
-
-
   @transient lazy override implicit val zkClient:ZkClient = new ZkClientImpl()
   @transient lazy override val subjectLibrary:SubjectLibrary = new SubjectLibrary()
 

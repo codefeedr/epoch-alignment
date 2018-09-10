@@ -21,20 +21,24 @@
 
 package org.codefeedr.core.library.internal.kafka.sink
 
+import java.io.{ByteArrayOutputStream, ObjectOutputStream}
+
 import org.apache.flink.api.common.state.{ListState, OperatorStateStore}
 import org.apache.flink.runtime.state.FunctionInitializationContext
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.codefeedr.core.LibraryServiceSpec
 import org.codefeedr.core.library.internal.SubjectTypeFactory
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
-import collection.JavaConverters._
 
+import collection.JavaConverters._
 import scala.async.Async.{async, await}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
+
+import scala.util.Success
 
 case class TestKafkaSinkSubject(prop1: String)
 
@@ -55,6 +59,7 @@ class KafkaSinkIntegrationSpec extends LibraryServiceSpec with BeforeAndAfterEac
     val subjectNode = await(subjectFactory.create(subject))
 
     val job = subjectLibrary.getJob("testJob")
+
     //,subjectFactory.getTransformer[TestKafkaSinkSubject](subject)
     val sink = new KafkaGenericSink[TestKafkaSinkSubject](subjectNode,job,kafkaProducerFactory,epochStateManager,sinkId)
     val sinkNode = subjectNode.getSinks().getChild(sinkId)
@@ -82,6 +87,31 @@ class KafkaSinkIntegrationSpec extends LibraryServiceSpec with BeforeAndAfterEac
 
     assert(!await(subjectNode.getSinks().getState()))
   }
+
+
+  it should "be serializable" in async {
+      //Arrange
+      val sinkId = "testSink"
+      val subject = SubjectTypeFactory.getSubjectType[TestKafkaSinkSubject]
+      val subjectNode = await(subjectFactory.create(subject))
+      val job = subjectLibrary.getJob("testJob")
+      val sink = new KafkaGenericSink[TestKafkaSinkSubject](subjectNode,job,kafkaProducerFactory,epochStateManager,sinkId)
+
+      //Act
+      //Not catching the exception is on purpose
+      //because you want the full stack trace of non serializable in case of a failure
+      val stream: ByteArrayOutputStream = new ByteArrayOutputStream()
+      val oos = new ObjectOutputStream(stream)
+      oos.writeObject(sink)
+      oos.close()
+      val t =Success(stream.toByteArray)
+
+      //Assert
+      assert(t.isSuccess)
+  }
+
+
+
   override def beforeEach(): Unit = {
     super.beforeEach()
     Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))

@@ -25,11 +25,12 @@ with ConfigurationProviderComponent
 with KafkaConfigurationComponent
 with ZookeeperConfigurationComponent
 {
+  override val configurationProvider:ConfigurationProvider = mock[ConfigurationProvider]
   override val zkClient: ZkClient = mock[ZkClient]
   override val subjectLibrary: SubjectLibrary = mock[SubjectLibrary]
   override val kafkaConsumerFactory: KafkaConsumerFactory = mock[KafkaConsumerFactory]
   override val kafkaProducerFactory: KafkaProducerFactory = mock[KafkaProducerFactory]
-  override val configurationProvider: ConfigurationProvider = mock[ConfigurationProvider]
+  override val zookeeperConfiguration: ZookeeperConfiguration = mock[ZookeeperConfiguration]
   override val kafkaConfiguration:KafkaConfiguration = mock[KafkaConfiguration]
 }
 

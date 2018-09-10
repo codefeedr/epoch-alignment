@@ -63,7 +63,7 @@ trait ConfigurationProviderComponent {
 }
 
 trait FlinkConfigurationProviderComponent extends ConfigurationProviderComponent {
-  val configurationProvider:ConfigurationProvider = new ConfigurationProviderImpl()
+  val configurationProvider:ConfigurationProvider
   class ConfigurationProviderImpl
     extends ConfigurationProvider
     with LazyLogging

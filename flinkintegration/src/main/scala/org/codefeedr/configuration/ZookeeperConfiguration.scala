@@ -4,11 +4,7 @@ package org.codefeedr.configuration
 trait ZookeeperConfigurationComponent {
   this: ConfigurationProviderComponent =>
 
-  lazy val zookeeperConfiguration:ZookeeperConfiguration = ZookeeperConfiguration(
-    connectionString = configurationProvider.get("zookeeper.connectionString"),
-    connectionTimeout = configurationProvider.getInt("zookeeper.connectionTimeout",Some(5)),
-    sessionTimeout = configurationProvider.getInt("zookeeper.sessionTimeout",Some(30))
-  )
+  val zookeeperConfiguration:ZookeeperConfiguration
 }
 
 /**
