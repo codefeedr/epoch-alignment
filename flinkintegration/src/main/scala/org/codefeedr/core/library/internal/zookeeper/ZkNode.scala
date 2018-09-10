@@ -27,19 +27,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
-/**
-  * ZkNode, represents a node on zookeeper
-  * Note that the node does not necessarily need to exist on zookeeper
-  *
-  * @param name name of the current node
-  * @param p the parent
-  */
-class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)(implicit override val zkClient: ZkClient)
-    extends ZkNodeBase(name)(zkClient)
-    with PartialFunction[Unit, Future[TData]]
-    with LazyLogging {
+trait ZkNode[TData] extends ZkNodeBase {
 
-  override def parent(): ZkNodeBase = p
+  def parent(): ZkNodeBase
 
   /**
     * Create a node with data
@@ -47,37 +37,21 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)(implicit override
     * @param data data to set on the created node
     * @return a future of the saved data
     */
-  def create(data: TData): Future[TData] = async {
-    //TODO: Implement proper locks
-    if (await(exists())) {
-      if (!await(getData()).get.equals(data)) {
-        throw new Exception(
-          s"Cannot create node ${path()}. The node already exists with different data")
-      }
-    }
-    await(zkClient.createWithData(path(), data))
-    await(postCreate())
-    data
-  }
+  def create(data: TData): Future[TData]
 
   /**
     * Get the data of the current node
     *
     * @return
     */
-  def getData(): Future[Option[TData]] =
-    zkClient.getData[TData](path())
+  def getData(): Future[Option[TData]]
 
   /**
     * Retrieve the data with a blocking wait
+    *
     * @return
     */
-  def getDataSync(): Option[TData] = {
-    logger.debug(s"Get data sync called on node with name $name")
-    val r = zkClient.getDataSync[TData](path())
-    logger.debug(s"Got result of getdata on node with name $name")
-    r
-  }
+  def getDataSync(): Option[TData]
 
   /**
     * Set data of the node
@@ -85,7 +59,7 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)(implicit override
     * @param data data object to set
     * @return a future that resolves when the data has been set
     */
-  def setData(data: TData): Future[Unit] = zkClient.setData[TData](path(), data).map(_ => Unit)
+  def setData(data: TData): Future[Unit]
 
   /**
     * Create the child of the node with the given name
@@ -94,7 +68,7 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)(implicit override
     * @tparam TChild type exposed by the childnode
     * @return
     */
-  def getChild[TChild: ClassTag](name: String): ZkNode[TChild] = new ZkNode[TChild](name, this)
+  def getChild[TChild: ClassTag](name: String): ZkNode[TChild]
 
   /**
     * Creates a future that watches the node until the data matches the given condition
@@ -102,23 +76,127 @@ class ZkNode[TData: ClassTag](name: String, val p: ZkNodeBase)(implicit override
     * @param condition Condition that should be true for the future to resolve
     * @return a future that resolves when the given condition is true
     */
-  def awaitCondition(condition: TData => Boolean): Future[TData] =
-    zkClient.awaitCondition(path(), condition)
+  def awaitCondition(condition: TData => Boolean): Future[TData]
 
   /**
     * Get an observable of the data of the node
     * Note that it is not guaranteed this observable contains all events (or all modifications on zookeeper)
     * Just use this observable to keep track of the state, not to pass messages
     * For messages use Kafka
+    *
     * @return
     */
-  def observeData(): Observable[TData] = zkClient.observeData[TData](path())
+  def observeData(): Observable[TData]
 
-  override def isDefinedAt(x: Unit): Boolean = true
+  def isDefinedAt(x: Unit): Boolean
 
-  override def apply(v1: Unit): Future[TData] = getData().map(o => o.get)
+  def apply(v1: Unit): Future[TData]
 }
 
-object ZkNode {
-  def apply[TData: ClassTag](name: String, parent: ZkNodeBase)(implicit zkClient:ZkClient) = new ZkNode[TData](name, parent)
+
+
+trait ZkNodeComponent extends ZkNodeBaseComponent{
+  this: ZkClientComponent =>
+
+  /**
+    * ZkNode, represents a node on zookeeper
+    * Note that the node does not necessarily need to exist on zookeeper
+    *
+    * @param name name of the current node
+    * @param p    the parent
+    */
+  class ZkNodeImpl[TData: ClassTag](name: String, val p: ZkNodeBase)
+    extends ZkNodeBaseImpl(name)
+      with PartialFunction[Unit, Future[TData]]
+      with LazyLogging with ZkNode[TData]
+      {
+
+
+    override def parent(): ZkNodeBase = p
+
+    /**
+      * Create a node with data
+      *
+      * @param data data to set on the created node
+      * @return a future of the saved data
+      */
+    override def create(data: TData): Future[TData] = async {
+      //TODO: Implement proper locks
+      if (await(exists())) {
+        if (!await(getData()).get.equals(data)) {
+          throw new Exception(
+            s"Cannot create node ${path()}. The node already exists with different data")
+        }
+      }
+      await(zkClient.createWithData(path(), data))
+      await(postCreate())
+      data
+    }
+
+    /**
+      * Get the data of the current node
+      *
+      * @return
+      */
+    override def getData(): Future[Option[TData]] =
+      zkClient.getData[TData](path())
+
+    /**
+      * Retrieve the data with a blocking wait
+      *
+      * @return
+      */
+    override def getDataSync(): Option[TData] = {
+      logger.debug(s"Get data sync called on node with name $name")
+      val r = zkClient.getDataSync[TData](path())
+      logger.debug(s"Got result of getdata on node with name $name")
+      r
+    }
+
+    /**
+      * Set data of the node
+      *
+      * @param data data object to set
+      * @return a future that resolves when the data has been set
+      */
+    override def setData(data: TData): Future[Unit] = zkClient.setData[TData](path(), data).map(_ => Unit)
+
+    /**
+      * Create the child of the node with the given name
+      *
+      * @param name name of the child to create
+      * @tparam TChild type exposed by the childnode
+      * @return
+      */
+    override def getChild[TChild: ClassTag](name: String): ZkNode[TChild] = new ZkNodeImpl[TChild](name, this)
+
+    /**
+      * Creates a future that watches the node until the data matches the given condition
+      *
+      * @param condition Condition that should be true for the future to resolve
+      * @return a future that resolves when the given condition is true
+      */
+    override def awaitCondition(condition: TData => Boolean): Future[TData] =
+      zkClient.awaitCondition(path(), condition)
+
+    /**
+      * Get an observable of the data of the node
+      * Note that it is not guaranteed this observable contains all events (or all modifications on zookeeper)
+      * Just use this observable to keep track of the state, not to pass messages
+      * For messages use Kafka
+      *
+      * @return
+      */
+    override def observeData(): Observable[TData] = zkClient.observeData[TData](path())
+
+    override def isDefinedAt(x: Unit): Boolean = true
+
+    override def apply(v1: Unit): Future[TData] = getData().map(o => o.get)
+  }
+
+  object ZkNode {
+    def apply[TData: ClassTag](name: String, parent: ZkNodeBase)(implicit zkClient:ZkClient) = new ZkNodeImpl[TData](name, parent)
+  }
+
 }
+

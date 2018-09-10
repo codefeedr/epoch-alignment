@@ -1,6 +1,7 @@
 package org.codefeedr.core.library.internal.zookeeper
 
 import com.typesafe.scalalogging.LazyLogging
+import org.codefeedr.configuration.{ConfigurationProvider, ConfigurationProviderComponent, ZookeeperConfiguration, ZookeeperConfigurationComponent}
 import org.codefeedr.core.LibraryServiceSpec
 import org.codefeedr.util.futureExtensions._
 import org.codefeedr.util.observableExtension._
@@ -15,7 +16,14 @@ import scala.reflect.ClassTag
 /**
   * Testclass for  [[ZkCollectionStateNode]]
   */
-class ZkCollectionStateNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with LazyLogging {
+class ZkCollectionStateNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with LazyLogging
+
+  with ZkStateNodeComponent
+  with ZkClientComponent
+  with ZookeeperConfigurationComponent
+  with ConfigurationProviderComponent
+  with ZkCollectionStateNodeComponent
+{
 
 
   "ZkCollectionStateNode.GetState" should "return the aggregate of all states" in async {
@@ -167,58 +175,70 @@ class ZkCollectionStateNodeSpec  extends LibraryServiceSpec with Matchers with B
     super.afterEach()
     Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
   }
-}
 
 
+  class TestRoot extends ZkNodeBaseImpl("TestRoot") {
+    override def parent(): ZkNodeBase = null
 
-class TestCollectionStateNode(name: String, parent: ZkNodeBase)(implicit override val zkClient: ZkClient)
-  extends ZkCollectionNode[TestCollectionStateChildNode,Unit](name, parent, (n, p) => new TestCollectionStateChildNode(n,p))
-  with ZkCollectionStateNode[TestCollectionStateChildNode,Unit,String, String,String] {
-  /**
-    * Initial value of the aggreagate state before the fold
-    *
-    * @return
-    */
-  override def initial(): String = null
+    override def path(): String = s"/$name"
+  }
 
-  /**
-    * Mapping from the child to the aggregate state
-    *
-    * @param child
-    * @return
-    */
-  override def mapChild(child: String): String = child
+  override val zookeeperConfiguration: ZookeeperConfiguration = libraryServices.zookeeperConfiguration
+  override val configurationProvider: ConfigurationProvider = libraryServices.configurationProvider
 
-  /**
-    * Reduce operator of the aggregation
-    *
-    * @param left
-    * @param right
-    * @return
-    */
-  override def reduceAggregate(left: String, right: String): String = {
-    if(left != null) {
-      s"$left-$right"
-    } else {
-      right
+
+  class TestCollectionStateNode(name: String, parent: ZkNodeBase)
+    extends ZkCollectionNodeImpl[TestCollectionStateChildNode,Unit](name, parent, (n, p) => new TestCollectionStateChildNode(n,p))
+      with ZkCollectionStateNodeImpl[TestCollectionStateChildNode,Unit,String, String,String] {
+    /**
+      * Initial value of the aggreagate state before the fold
+      *
+      * @return
+      */
+    override def initial(): String = null
+
+    /**
+      * Mapping from the child to the aggregate state
+      *
+      * @param child
+      * @return
+      */
+    override def mapChild(child: String): String = child
+
+    /**
+      * Reduce operator of the aggregation
+      *
+      * @param left
+      * @param right
+      * @return
+      */
+    override def reduceAggregate(left: String, right: String): String = {
+      if(left != null) {
+        s"$left-$right"
+      } else {
+        right
+      }
     }
+  }
+
+  class TestCollectionStateChildNode(name: String, parent: ZkNodeBase)
+    extends ZkNodeImpl[String](name, parent)
+      with ZkStateNodeImpl[String,String] {
+    /**
+      * The base class needs to expose the typeTag, no typeTag constraints can be put on traits
+      *
+      * @return
+      */
+    override def typeT(): ClassTag[String] = ClassTag(classOf[String])
+
+    /**
+      * The initial state of the node. State is not allowed to be empty
+      *
+      * @return
+      */
+    override def initialState(): String = s"(s_$name)"
   }
 }
 
-class TestCollectionStateChildNode(name: String, parent: ZkNodeBase)(implicit override val zkClient: ZkClient)
-  extends ZkNode[String](name, parent)
-  with ZkStateNode[String,String] {
-  /**
-    * The base class needs to expose the typeTag, no typeTag constraints can be put on traits
-    *
-    * @return
-    */
-  override def typeT(): ClassTag[String] = ClassTag(classOf[String])
 
-  /**
-    * The initial state of the node. State is not allowed to be empty
-    *
-    * @return
-    */
-  override def initialState(): String = s"(s_$name)"
-}
+

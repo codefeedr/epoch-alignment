@@ -1,6 +1,17 @@
 package org.codefeedr.core.library.metastore
 
-import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkCollectionNode, ZkNodeBase}
+import org.codefeedr.core.library.internal.zookeeper._
 
-class JobNodeCollection(parent: ZkNodeBase)(implicit override val zkClient: ZkClient)
-    extends ZkCollectionNode[JobNode, Unit]("jobs", parent, (n, p) => new JobNode(n, p)) {}
+
+trait JobNodeCollection extends ZkCollectionNode[JobNode,Unit]
+
+trait JobNodeCollectionComponent extends ZkCollectionNodeComponent {
+  this: ZkClientComponent
+  with JobNodeComponent =>
+
+
+  class JobNodeCollectionImpl(parent: ZkNodeBase)
+    extends ZkCollectionNodeImpl[JobNode, Unit]("jobs", parent, (n, p) => new JobNodeImpl(n, p))
+    with JobNodeCollection{}
+
+}

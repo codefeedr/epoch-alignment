@@ -1,6 +1,7 @@
 package org.codefeedr.core.library.internal.zookeeper
 
 import com.typesafe.scalalogging.LazyLogging
+import org.codefeedr.configuration.{ConfigurationProvider, ConfigurationProviderComponent, ZookeeperConfiguration, ZookeeperConfigurationComponent}
 import org.codefeedr.core.LibraryServiceSpec
 import org.codefeedr.util.futureExtensions._
 import org.codefeedr.util.observableExtension._
@@ -14,7 +15,13 @@ import scala.concurrent.duration.{Duration, SECONDS}
 /**
   * TestClass for [[ZkCollectionNode]]
   */
-class ZkCollectionNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with LazyLogging {
+class ZkCollectionNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with LazyLogging
+  with ZkStateNodeComponent
+  with ZkClientComponent
+  with ZookeeperConfigurationComponent
+  with ConfigurationProviderComponent
+  with ZkCollectionNodeComponent
+{
 
   "ZkCollectionNode.GetChild(name)" should "Return the ZkNode of the child of the given name, even if it does not exist" in {
     val root = new TestRoot()
@@ -102,9 +109,22 @@ class ZkCollectionNodeSpec  extends LibraryServiceSpec with Matchers with Before
     super.afterEach()
     Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
   }
+
+
+  class TestCollectionNode(name: String, parent: ZkNodeBase) extends ZkCollectionNodeImpl[TestCollectionChildNode, Unit](name, parent, (n, p) => new TestCollectionChildNode(n, p))
+
+  class TestCollectionChildNode(name: String, parent: ZkNodeBase) extends ZkNodeImpl[String](name, parent)
+
+  class TestRoot extends ZkNodeBaseImpl("TestRoot") {
+    override def parent(): ZkNodeBase = null
+
+    override def path(): String = s"/$name"
+  }
+
+
+  override val zookeeperConfiguration: ZookeeperConfiguration = libraryServices.zookeeperConfiguration
+  override val configurationProvider: ConfigurationProvider = libraryServices.configurationProvider
 }
 
-class TestCollectionNode(name: String, parent: ZkNodeBase)(implicit override val zkClient: ZkClient) extends ZkCollectionNode[TestCollectionChildNode,Unit](name, parent, (n, p) => new TestCollectionChildNode(n,p))
 
-class TestCollectionChildNode(name: String, parent: ZkNodeBase)(implicit override val zkClient: ZkClient) extends ZkNode[String](name, parent)
 

@@ -1,6 +1,7 @@
 package org.codefeedr.core.library.internal.zookeeper
 
 import com.typesafe.scalalogging.LazyLogging
+import org.codefeedr.configuration.{ConfigurationProvider, ConfigurationProviderComponent, ZookeeperConfiguration, ZookeeperConfigurationComponent}
 import org.codefeedr.core.LibraryServiceSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
 
@@ -15,7 +16,13 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.{Duration, SECONDS}
 
-class ZkQueueSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with LazyLogging{
+class ZkQueueSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with LazyLogging
+
+  with ZkStateNodeComponent
+  with ZkClientComponent
+  with ZookeeperConfigurationComponent
+  with ConfigurationProviderComponent
+{
 
   "A ZkQueue" should "expose data in the same order as pushed" in async {
     //Arrange
@@ -123,6 +130,16 @@ class ZkQueueSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEa
     //Assert
     assert(l.size == 2)
   }
+
+  class TestRoot extends ZkNodeBaseImpl("TestRoot") {
+    override def parent(): ZkNodeBase = null
+
+    override def path(): String = s"/$name"
+  }
+
+
+  override val zookeeperConfiguration: ZookeeperConfiguration = libraryServices.zookeeperConfiguration
+  override val configurationProvider: ConfigurationProvider = libraryServices.configurationProvider
 
 
   /**

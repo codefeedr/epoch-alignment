@@ -1,12 +1,13 @@
-package org.codefeedr.core.library.internal.kafka.source
+package org.codefeedr.core.library.metastore
 
 import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.core.library.internal.kafka.meta.SourceEpoch
-import org.codefeedr.core.library.metastore._
 
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+
+
 
 /**
   * Class used when creating a synchronized source

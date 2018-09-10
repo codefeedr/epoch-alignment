@@ -1,7 +1,7 @@
 package org.codefeedr.core.library.metastore
 
 import com.typesafe.scalalogging.LazyLogging
-import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkNode, ZkNodeBase, ZkStateNode}
+import org.codefeedr.core.library.internal.zookeeper._
 import org.codefeedr.model.zookeeper.{Consumer, Producer}
 
 import scala.async.Async.{async, await}
@@ -9,18 +9,34 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
-class ProducerNode(name: String, parent: ZkNodeBase)(implicit override val zkClient: ZkClient)
-    extends ZkNode[Producer](name, parent)
-    with ZkStateNode[Producer, Boolean]
-    with LazyLogging {
+trait ProducerNode extends ZkStateNode[Producer, Boolean] {
 
-  override def typeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
-  override def initialState(): Boolean = true
+  def typeT(): ClassTag[Boolean]
 
-  override def setState(state: Boolean): Future[Unit] = async {
-    logger.debug(s"Setting producer state of $name to $state")
-    await(super.setState(state))
-    await(parent.parent().asInstanceOf[QuerySinkNode].updateState())
+  def initialState(): Boolean
+
+  def setState(state: Boolean): Future[Unit]
+}
+
+
+trait ProducerNodeComponent extends ZkStateNodeComponent {
+  this:ZkClientComponent =>
+
+  class ProducerNodeImpl(name: String, parent: ZkNodeBase)
+    extends ZkNodeImpl[Producer](name, parent)
+      with ZkStateNodeImpl[Producer, Boolean]
+      with LazyLogging with ProducerNode {
+
+    override def typeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
+
+    override def initialState(): Boolean = true
+
+    override def setState(state: Boolean): Future[Unit] = async {
+      logger.debug(s"Setting producer state of $name to $state")
+      await(super.setState(state))
+      await(parent.parent().asInstanceOf[QuerySinkNode].updateState())
+    }
+
   }
 
 }

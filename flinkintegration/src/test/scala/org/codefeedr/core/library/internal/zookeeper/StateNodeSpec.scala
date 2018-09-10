@@ -2,6 +2,7 @@ package org.codefeedr.core.library.internal.zookeeper
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.zookeeper.KeeperException.NoNodeException
+import org.codefeedr.configuration._
 import org.codefeedr.core.LibraryServiceSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
 import org.codefeedr.util.futureExtensions.AssertableFuture
@@ -9,13 +10,19 @@ import org.codefeedr.util.futureExtensions.AssertableFuture
 import scala.async.Async.{async, await}
 import scala.concurrent.{Await, Future, TimeoutException}
 import scala.concurrent.duration.{Duration, MILLISECONDS, SECONDS}
-
 import scala.reflect.ClassTag
 
 /**
   * Testclass for  [[ZkStateNode]]
   */
-class ZkStateNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with LazyLogging{
+class ZkStateNodeSpec
+  extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with LazyLogging
+with ZkStateNodeComponent
+with ZkClientComponent
+with ZookeeperConfigurationComponent
+with ConfigurationProviderComponent
+{
+
   "ZkStateNode.GetStateNode()" should "return the ckNode representing the state" in async {
     val root = new TestRoot()
     val child = new TestStateNode("child", root)
@@ -90,26 +97,32 @@ class ZkStateNodeSpec  extends LibraryServiceSpec with Matchers with BeforeAndAf
     super.afterEach()
     Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
   }
+
+
+  case class MyConfig(s: String)
+  class TestRoot extends ZkNodeBaseImpl("TestRoot") {
+    override def parent(): ZkNodeBase = null
+
+    override def path(): String = s"/$name"
+  }
+  override val zookeeperConfiguration: ZookeeperConfiguration = libraryServices.zookeeperConfiguration
+  override val configurationProvider: ConfigurationProvider = libraryServices.configurationProvider
+
+  class TestStateNode(name: String, parent: ZkNodeBase) extends ZkNodeImpl[MyConfig](name, parent) with ZkStateNodeImpl[MyConfig, String] {
+    /**
+      * The base class needs to expose the typeTag, no typeTag constraints can be put on traits
+      *
+      * @return
+      */
+    override def typeT(): ClassTag[String] = ClassTag(classOf[String])
+
+    override def initialState(): String = "initialvalue"
+  }
+
+
 }
 
 
 
 
-case class MyConfig(s: String)
-
-class TestRoot(implicit zkClient: ZkClient) extends ZkNodeBase("TestRoot")(zkClient) {
-  override def parent(): ZkNodeBase = null
-  override def path(): String = s"/$name"
-}
-
-class TestStateNode(name: String, parent: ZkNodeBase)(implicit override val zkClient: ZkClient) extends ZkNode[MyConfig](name, parent) with ZkStateNode[MyConfig,String] {
-  /**
-    * The base class needs to expose the typeTag, no typeTag constraints can be put on traits
-    *
-    * @return
-    */
-  override def typeT() : ClassTag[String] = ClassTag(classOf[String])
-
-  override def initialState(): String = "initialvalue"
-}
 

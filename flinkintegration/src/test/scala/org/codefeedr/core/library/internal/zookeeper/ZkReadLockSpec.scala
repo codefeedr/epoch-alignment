@@ -1,6 +1,7 @@
 package org.codefeedr.core.library.internal.zookeeper
 
 import com.typesafe.scalalogging.LazyLogging
+import org.codefeedr.configuration.{ConfigurationProvider, ConfigurationProviderComponent, ZookeeperConfiguration, ZookeeperConfigurationComponent}
 import org.codefeedr.core.LibraryServiceSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
 
@@ -17,7 +18,13 @@ import resource.managed
   * Please do not use this test class as example implementation, it does not properly manage locks
   * It just tests its behavior!
   */
-class ZkReadLockSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with LazyLogging {
+class ZkReadLockSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with LazyLogging
+  with ZkStateNodeComponent
+  with ZkClientComponent
+  with ZookeeperConfigurationComponent
+  with ConfigurationProviderComponent
+{
+
   "ZkReadLock(path)" should "resolve if no other locks are present" in async {
     val root = new TestRoot()
     await(root.create())
@@ -63,6 +70,14 @@ class ZkReadLockSpec extends LibraryServiceSpec with Matchers with BeforeAndAfte
   }
 
 
+
+  class TestRoot extends ZkNodeBaseImpl("TestRoot") {
+    override def parent(): ZkNodeBase = null
+
+    override def path(): String = s"/$name"
+  }
+  override val zookeeperConfiguration: ZookeeperConfiguration = libraryServices.zookeeperConfiguration
+  override val configurationProvider: ConfigurationProvider = libraryServices.configurationProvider
 
   /**
     * After each test, make sure to clean the zookeeper store

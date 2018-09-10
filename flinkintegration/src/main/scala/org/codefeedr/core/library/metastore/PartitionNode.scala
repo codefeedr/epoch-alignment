@@ -1,7 +1,16 @@
 package org.codefeedr.core.library.metastore
 
-import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkNode, ZkNodeBase}
+import org.codefeedr.core.library.internal.zookeeper._
 import org.codefeedr.model.zookeeper.Partition
 
-class PartitionNode(val zk: ZkClient)(partitionNr: Int, parent: ZkNodeBase)(implicit override val zkClient: ZkClient)
-    extends ZkNode[Partition](s"$partitionNr", parent) {}
+trait PartitionNode extends ZkNode[Partition]
+
+
+trait PartitionNodeComponent extends ZkNodeComponent {
+  this: ZkClientComponent =>
+
+  class PartitionNodeImpl(val zk: ZkClient)(partitionNr: Int, parent: ZkNodeBase)
+    extends ZkNodeImpl[Partition](s"$partitionNr", parent)
+    with PartitionNode {}
+
+}

@@ -6,8 +6,17 @@ import org.codefeedr.core.library.metastore.sourcecommand.SourceCommand
 import scala.reflect._
 import scala.reflect.ClassTag
 
-class QuerySourceCommandNode(p: ZkNodeBase)(implicit override val zkClient: ZkClient)
-    extends ZkNode[Unit]("commands", p)
-    with ZkQueueNode[Unit, SourceCommand] {
-  override implicit def tag: ClassTag[SourceCommand] = classTag[SourceCommand]
+trait QuerySourceCommandNode extends ZkQueueNode[Unit, SourceCommand]
+
+trait QuerySourceCommandNodeComponent extends ZkQueueNodeComponent {
+  this:ZkClientComponent =>
+
+  class QuerySourceCommandNodeImpl(p: ZkNodeBase)
+    extends ZkNodeImpl[Unit]("commands", p)
+      with ZkQueueNodeImpl[Unit, SourceCommand]
+      with QuerySourceCommandNode {
+
+      override implicit def tag: ClassTag[SourceCommand] = classTag[SourceCommand]
+  }
+
 }

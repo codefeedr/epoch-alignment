@@ -1,7 +1,14 @@
 package org.codefeedr.core.library.metastore
 
-import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkNode, ZkNodeBase}
+import org.codefeedr.core.library.internal.zookeeper._
 
-class EpochMappingNode(subject: String, parent: ZkNodeBase)
-                      (implicit override val zkClient: ZkClient)
-    extends ZkNode[EpochMapping](subject, parent) {}
+trait EpochMappingNode extends ZkNode[EpochMapping]
+
+trait EpochMappingNodeComponent extends ZkCollectionNodeComponent {
+  this: ZkClientComponent =>
+
+  class EpochMappingNodeImpl(subject: String, parent: ZkNodeBase)
+    extends ZkNodeImpl[EpochMapping](subject, parent)
+      with EpochMappingNode
+  {}
+}

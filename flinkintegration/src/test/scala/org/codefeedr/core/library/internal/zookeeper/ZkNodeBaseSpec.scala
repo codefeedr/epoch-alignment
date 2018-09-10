@@ -1,5 +1,6 @@
 package org.codefeedr.core.library.internal.zookeeper
 
+import org.codefeedr.configuration.{ConfigurationProvider, ConfigurationProviderComponent, ZookeeperConfiguration, ZookeeperConfigurationComponent}
 import org.codefeedr.core.LibraryServiceSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers}
 
@@ -14,7 +15,16 @@ import org.codefeedr.util.futureExtensions._
 /**
   * Testing [[ZkNodeBase]]
   */
-class ZkNodeBaseSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll {
+class ZkNodeBaseSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll
+
+  with ZkStateNodeComponent
+  with ZkClientComponent
+  with ZookeeperConfigurationComponent
+  with ConfigurationProviderComponent
+{
+
+
+
   "ZkNode.Create()" should "create the node without data" in async {
     val root = new TestRootBase()
     assert(!await(root.exists()))
@@ -136,18 +146,25 @@ class ZkNodeBaseSpec extends LibraryServiceSpec with Matchers with BeforeAndAfte
     super.afterEach()
     Await.ready(zkClient.deleteRecursive("/"), Duration(1, SECONDS))
   }
-}
 
 
-class TestRootBase(implicit override val zkClient: ZkClient) extends ZkNodeBase("TestRoot") {
-  override def parent(): ZkNodeBase = null
-  override def path(): String = s"/$name"
+  override val zookeeperConfiguration: ZookeeperConfiguration = libraryServices.zookeeperConfiguration
+  override val configurationProvider: ConfigurationProvider = libraryServices.configurationProvider
+
+  class TestRootBase extends ZkNodeBaseImpl("TestRoot") {
+    override def parent(): ZkNodeBase = null
+    override def path(): String = s"/$name"
+  }
+
+  class TestConfigNodeBase(name: String, p: ZkNodeBase) extends ZkNodeBaseImpl(name) {
+    override def parent(): ZkNodeBase = p
+  }
+
+  class TestConfigNodeWithPostCreateBase(name: String, parent: ZkNodeBase, pc: () => Future[Unit]) extends ZkNodeImpl(name, parent) {
+    override def postCreate(): Future[Unit] = pc()
+  }
+
+
+
 }
 
-class TestConfigNodeBase(name: String, p: ZkNodeBase)(implicit override val zkClient: ZkClient) extends ZkNodeBase(name) {
-  override def parent(): ZkNodeBase = p
-}
-
-class TestConfigNodeWithPostCreateBase(name: String, parent: ZkNodeBase, pc: () => Future[Unit])(implicit override val zkClient: ZkClient) extends ZkNode(name, parent) {
-  override def postCreate(): Future[Unit] = pc()
-}

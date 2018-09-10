@@ -26,7 +26,7 @@ import org.codefeedr.core.library.internal.kafka.KafkaControllerComponent
 import org.codefeedr.core.library.internal.kafka.sink.{EpochStateManager, EpochStateManagerComponent, KafkaProducerFactoryComponent, KafkaTableSinkFactoryComponent}
 import org.codefeedr.core.library.internal.kafka.source.KafkaConsumerFactoryComponent
 import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkClientComponent}
-import org.codefeedr.core.library.metastore.SubjectLibraryComponent
+import org.codefeedr.core.library.metastore._
 import org.codefeedr.core.plugin.CollectionPluginFactoryComponent
 
 import scala.reflect.ClassTag
@@ -62,8 +62,44 @@ trait ConfigurationComponents
   @transient lazy override val kafkaProducerFactory = new KafkaProducerFactoryImpl()
 }
 
+//All zookeeper nodes
+trait ZookeeperComponents extends ZkClientComponent
+  with ZookeeperConfigurationComponent
+  with ConfigurationProviderComponent
+
+  with MetaRootNodeComponent
+  with SubjectCollectionNodeComponent
+  with SubjectNodeComponent
+  with JobNodeCollectionComponent
+  with JobNodeComponent
+
+  with EpochCollectionNodeComponent
+  with EpochNodeComponent
+  with EpochMappingCollectionComponent
+  with EpochMappingNodeComponent
+  with EpochPartitionCollectionComponent
+  with EpochPartitionComponent
+
+  with QuerySinkCollectionComponent
+  with QuerySinkNodeComponent
+  with ProducerCollectionNodeComponent
+  with ProducerNodeComponent
+
+  with QuerySourceCollectionComponent
+  with QuerySourceNodeComponent
+  with QuerySourceCommandNodeComponent
+  with ConsumerCollectionComponent
+  with ConsumerNodeComponent
+
+  with SourceSynchronizationStateNodeComponent
+  with SourceEpochCollectionComponent
+  with SourceEpochNodeComponent
+{}
+
 trait AbstractCodefeedrComponents  extends Serializable
   with ConfigurationComponents
+  with ZookeeperComponents
+
   with ZkClientComponent
   with SubjectLibraryComponent
   with KafkaControllerComponent

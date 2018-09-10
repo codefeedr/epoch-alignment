@@ -31,6 +31,7 @@ import scala.reflect.ClassTag
 
 trait SubjectLibraryComponent {
   this:ZkClientComponent
+  with MetaRootNodeComponent
   =>
 
   val subjectLibrary:SubjectLibrary
@@ -42,7 +43,7 @@ trait SubjectLibraryComponent {
     * Created by Niels on 14/07/2017.
     */
   class SubjectLibrary extends LazyLogging {
-    private lazy val root: MetaRootNode = new MetaRootNode()
+    private lazy val root: MetaRootNode = new MetaRootNodeImpl()
     private lazy val subjects: SubjectCollectionNode = root.getSubjects()
     private lazy val jobs: JobNodeCollection = root.getJobs()
 

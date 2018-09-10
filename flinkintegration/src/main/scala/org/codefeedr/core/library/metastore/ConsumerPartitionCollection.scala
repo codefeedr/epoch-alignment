@@ -1,11 +1,18 @@
 package org.codefeedr.core.library.metastore
 
-import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkClientComponent, ZkCollectionNode, ZkNodeBase}
+import org.codefeedr.core.library.internal.zookeeper._
 
-class ConsumerPartitionCollection(parent: ZkNodeBase)
-                                 (implicit override val zkClient: ZkClient)
-    extends ZkCollectionNode[ConsumerPartitionNode, Unit](
-      "partitions",
-      parent,
-      (n, p) => new ConsumerPartitionNode(n, p)) { this: ZkClientComponent =>
+trait ConsumerPartitionCollection extends ZkCollectionNode[ConsumerPartitionNode,Unit]
+
+trait ConsumerPartitionCollectionComponent extends ZkCollectionNodeComponent {
+      this: ZkClientComponent
+      with ConsumerPartitionComponent =>
+
+      class ConsumerPartitionCollectionImpl(parent: ZkNodeBase)
+        extends ZkCollectionNodeImpl[ConsumerPartitionNode, Unit](
+          "partitions",
+          parent,
+          (n, p) => new ConsumerPartitionNodeImpl(n, p))
+        with ConsumerPartitionCollection {
+      }
 }

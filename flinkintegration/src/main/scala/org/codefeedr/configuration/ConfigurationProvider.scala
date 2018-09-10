@@ -12,54 +12,56 @@ import scala.collection.JavaConverters._
   * This component handles the global configuration
   */
 
+
+trait ConfigurationProvider extends Serializable {
+  /**
+    * Sets the configuration
+    *
+    * @param configuration custom configuration to initialize with
+    */
+  def initConfiguration(configuration: ParameterTool, propertiesFile:Option[String] = None): Unit
+
+  /**
+    * Retrieve the parameterTool for the global configuration
+    *
+    * @return
+    */
+  def parameterTool: ParameterTool
+
+  /**
+    * Tries to key the value for the given key from the parametertool
+    *
+    * @param key key value to search for
+    * @return value if the key exists in the parameter tool, Otherwise None
+    */
+  def tryGet(key: String): Option[String]
+
+  /**
+    * Returns the value of the given key
+    * If no default value is passed and the key does not exist, an exception is thrown
+    *
+    * @param key     key to look for in the configuration
+    * @param default default value
+    * @return
+    */
+  def get(key: String, default: Option[String] = None): String
+
+  /**
+    * Returns the value of the given key
+    * If no default value is passed and the key does not exist, an exception is thrown
+    *
+    * @param key     key to look for in the configuration
+    * @param default default value
+    * @return
+    */
+  def getInt(key: String, default: Option[Int] = None): Int =
+    get(key, default.map(o => o.toString)).toInt
+}
+
 trait ConfigurationProviderComponent {
   val configurationProvider: ConfigurationProvider
 
 
-  trait ConfigurationProvider extends Serializable {
-    /**
-      * Sets the configuration
-      *
-      * @param configuration custom configuration to initialize with
-      */
-    def initConfiguration(configuration: ParameterTool, propertiesFile:Option[String] = None): Unit
-
-    /**
-      * Retrieve the parameterTool for the global configuration
-      *
-      * @return
-      */
-    def parameterTool: ParameterTool
-
-    /**
-      * Tries to key the value for the given key from the parametertool
-      *
-      * @param key key value to search for
-      * @return value if the key exists in the parameter tool, Otherwise None
-      */
-    def tryGet(key: String): Option[String]
-
-    /**
-      * Returns the value of the given key
-      * If no default value is passed and the key does not exist, an exception is thrown
-      *
-      * @param key     key to look for in the configuration
-      * @param default default value
-      * @return
-      */
-    def get(key: String, default: Option[String] = None): String
-
-    /**
-      * Returns the value of the given key
-      * If no default value is passed and the key does not exist, an exception is thrown
-      *
-      * @param key     key to look for in the configuration
-      * @param default default value
-      * @return
-      */
-    def getInt(key: String, default: Option[Int] = None): Int =
-      get(key, default.map(o => o.toString)).toInt
-  }
 }
 
 trait FlinkConfigurationProviderComponent extends ConfigurationProviderComponent {

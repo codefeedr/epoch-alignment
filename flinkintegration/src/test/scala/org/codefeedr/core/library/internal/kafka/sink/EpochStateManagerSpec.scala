@@ -120,7 +120,9 @@ class EpochStateManagerSpec extends AsyncFlatSpec with MockitoSugar with BeforeA
     when(epochNode.setData(ArgumentMatchers.any())) thenReturn Future.successful(())
     when(epochNode.getPartitionData()) thenReturn Future.successful(Array(Partition(1,100),Partition(2,200)).toIterable)
 
-    when(epochCollectionNode.parent()) thenReturn new ZkNode("testparent",null)
+
+
+    when(epochCollectionNode.parent()) thenReturn mock[ZkNode[Object]]
     when(epochCollectionNode.setData(ArgumentMatchers.any())) thenReturn Future.successful(())
 
     val epochState = new EpochState(transactionState,epochCollectionNode)
@@ -157,7 +159,7 @@ class EpochStateManagerSpec extends AsyncFlatSpec with MockitoSugar with BeforeA
     when(epochNode.setData(ArgumentMatchers.any())) thenReturn Future.successful(())
     when(epochNode.getPartitionData()) thenReturn Future.successful(Iterable(Partition(1,100),Partition(2,200)))
 
-    when(epochCollectionNode.parent()) thenReturn new ZkNode("testparent",null)
+    when(epochCollectionNode.parent()) thenReturn mock[ZkNode[Object]]
     when(epochCollectionNode.setData(ArgumentMatchers.any())) thenReturn Future.successful(())
 
     val epochState = new EpochState(transactionState,epochCollectionNode)

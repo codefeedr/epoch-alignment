@@ -2,6 +2,7 @@ package org.codefeedr.core
 
 import com.typesafe.config.Config
 import org.codefeedr.configuration._
+import org.codefeedr.core.library.ZookeeperComponents
 import org.codefeedr.core.library.internal.kafka.sink.{KafkaProducerFactory, KafkaProducerFactoryComponent}
 import org.codefeedr.core.library.internal.kafka.source.{KafkaConsumerFactory, KafkaConsumerFactoryComponent}
 import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkClientComponent}
@@ -24,6 +25,7 @@ with KafkaProducerFactoryComponent
 with ConfigurationProviderComponent
 with KafkaConfigurationComponent
 with ZookeeperConfigurationComponent
+  with ZookeeperComponents
 {
   override val configurationProvider:ConfigurationProvider = mock[ConfigurationProvider]
   override val zkClient: ZkClient = mock[ZkClient]
