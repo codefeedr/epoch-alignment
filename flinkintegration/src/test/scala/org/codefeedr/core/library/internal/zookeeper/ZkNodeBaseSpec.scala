@@ -148,8 +148,8 @@ class ZkNodeBaseSpec extends LibraryServiceSpec with Matchers with BeforeAndAfte
   }
 
 
-  override val zookeeperConfiguration: ZookeeperConfiguration = libraryServices.zookeeperConfiguration
-  override val configurationProvider: ConfigurationProvider = libraryServices.configurationProvider
+  override lazy val zookeeperConfiguration: ZookeeperConfiguration = libraryServices.zookeeperConfiguration
+  override lazy val configurationProvider: ConfigurationProvider = libraryServices.configurationProvider
 
   class TestRootBase extends ZkNodeBaseImpl("TestRoot") {
     override def parent(): ZkNodeBase = null

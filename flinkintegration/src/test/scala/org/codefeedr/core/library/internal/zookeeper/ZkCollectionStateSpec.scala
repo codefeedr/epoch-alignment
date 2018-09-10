@@ -183,8 +183,8 @@ class ZkCollectionStateNodeSpec  extends LibraryServiceSpec with Matchers with B
     override def path(): String = s"/$name"
   }
 
-  override val zookeeperConfiguration: ZookeeperConfiguration = libraryServices.zookeeperConfiguration
-  override val configurationProvider: ConfigurationProvider = libraryServices.configurationProvider
+  override lazy val zookeeperConfiguration: ZookeeperConfiguration = libraryServices.zookeeperConfiguration
+  override lazy val configurationProvider: ConfigurationProvider = libraryServices.configurationProvider
 
 
   class TestCollectionStateNode(name: String, parent: ZkNodeBase)

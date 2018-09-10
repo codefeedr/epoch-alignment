@@ -122,8 +122,8 @@ class ZkCollectionNodeSpec  extends LibraryServiceSpec with Matchers with Before
   }
 
 
-  override val zookeeperConfiguration: ZookeeperConfiguration = libraryServices.zookeeperConfiguration
-  override val configurationProvider: ConfigurationProvider = libraryServices.configurationProvider
+  override lazy val zookeeperConfiguration: ZookeeperConfiguration = libraryServices.zookeeperConfiguration
+  override lazy val configurationProvider: ConfigurationProvider = libraryServices.configurationProvider
 }
 
 

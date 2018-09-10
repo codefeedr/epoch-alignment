@@ -138,8 +138,8 @@ class ZkQueueSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEa
   }
 
 
-  override val zookeeperConfiguration: ZookeeperConfiguration = libraryServices.zookeeperConfiguration
-  override val configurationProvider: ConfigurationProvider = libraryServices.configurationProvider
+  override lazy val zookeeperConfiguration: ZookeeperConfiguration = libraryServices.zookeeperConfiguration
+  override lazy val configurationProvider: ConfigurationProvider = libraryServices.configurationProvider
 
 
   /**
