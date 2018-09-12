@@ -1,0 +1,46 @@
+---
+version: '3.6'
+
+services:
+
+# Flink jobmanager
+  jobmanager:
+    restart: always
+    image: processfive.azurecr.io/flink:1.0.0
+    volumes:
+      - "./certificates:/home/certificates"
+    expose:
+      - "6123"
+    networks: ['flink']
+    ports:
+      - "8081:8081"
+    command: jobmanager
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=jobmanager
+
+#Flink taskmanager
+  taskmanager:
+    restart: always
+    image: processfive.azurecr.io/flink:1.0.0
+    links:
+      - linkedcache
+    volumes:
+      - "./certificates:/home/certificates"
+      - type: bind
+        source: ./config/logback.xml
+        target: /opt/flink/conf/logback-console.xml
+    expose:
+      - "6121"
+      - "6122"
+    networks: ['flink']
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    links:
+      - "jobmanager:jobmanager"
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=jobmanager
+      - TASK_MANAGER_NUMBER_OF_TASK_SLOTS=4
+
+
+networks: {flink: {}}

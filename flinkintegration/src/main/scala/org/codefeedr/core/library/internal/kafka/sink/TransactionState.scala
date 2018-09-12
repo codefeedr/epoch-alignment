@@ -23,6 +23,7 @@ import scala.concurrent.{Future, Promise}
   * @param producerIndex index of the used producer
   * @param checkPointId Identification of the checkpoint that belongs to the transaction
   * @param pendingEvents Counter observing pending events
+  * @param completedEvents number of events that have been completed
   * @param awaitingCommit Boolean indicating if the transaction is awaiting events to perform a commit
   * @param offsetMap latest offsets per topicpartition for the transaction
   */
@@ -30,6 +31,7 @@ class TransactionState(
     var producerIndex: Int = 0,
     var checkPointId: Long = 0,
     @volatile var pendingEvents: Int = 0,
+    @volatile var completedEvents: Int = 0,
     @volatile var awaitingCommit: Boolean = false,
     var offsetMap: mutable.Map[Int, Long] = mutable.Map[Int, Long]()
 ) {
@@ -62,6 +64,7 @@ class TransactionState(
 
     this.synchronized {
       pendingEvents -= 1
+      completedEvents += 1
       if (awaitingCommit && pendingEvents == 0) {
         awaitCommitPromise.success(())
       }
@@ -101,6 +104,7 @@ object transactionStateSerializer extends TypeSerializerSingleton[TransactionSta
     target.writeInt(record.producerIndex)
     target.writeLong(record.checkPointId)
     target.writeInt(record.pendingEvents)
+    target.writeInt(record.completedEvents)
     target.writeBoolean(record.awaitingCommit)
     target.writeInt(record.offsetMap.size)
     record.offsetMap.foreach((tpo) => {
@@ -120,6 +124,7 @@ object transactionStateSerializer extends TypeSerializerSingleton[TransactionSta
     reuse.producerIndex = from.producerIndex
     reuse.checkPointId = from.checkPointId
     reuse.pendingEvents = from.pendingEvents
+    reuse.completedEvents = from.completedEvents
     reuse.awaitingCommit = from.awaitingCommit
     reuse.offsetMap = from.offsetMap.clone().asInstanceOf[mutable.Map[Int, Long]]
     reuse
@@ -128,6 +133,7 @@ object transactionStateSerializer extends TypeSerializerSingleton[TransactionSta
   override def copy(source: DataInputView, target: DataOutputView): Unit = {
     target.writeInt(source.readInt())
     target.writeLong(source.readLong())
+    target.writeInt(source.readInt())
     target.writeInt(source.readInt())
     target.writeBoolean(source.readBoolean())
     val size = source.readInt()
@@ -157,6 +163,7 @@ object transactionStateSerializer extends TypeSerializerSingleton[TransactionSta
     reuse.producerIndex = source.readInt()
     reuse.checkPointId = source.readLong()
     reuse.pendingEvents = source.readInt()
+    reuse.completedEvents = source.readInt()
     reuse.awaitingCommit = source.readBoolean()
     val size = source.readInt()
 

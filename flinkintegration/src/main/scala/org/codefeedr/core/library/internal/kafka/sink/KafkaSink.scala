@@ -35,8 +35,11 @@ import org.codefeedr.core.library.metastore.{JobNode, ProducerNode, QuerySinkNod
 import org.codefeedr.model._
 import org.codefeedr.model.zookeeper.{Producer, QuerySink}
 import org.codefeedr.util.Stopwatch
-import scala.collection.JavaConverters._
+import org.joda.time.DateTime
+import org.joda.time.format.ISODateTimeFormat
+import org.slf4j.MDC
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -108,6 +111,7 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
         kafkaProducerFactory.create[TKey, TValue](id)
       })
       .toList
+  @transient private lazy val fmt = ISODateTimeFormat.dateTime
 
   /**
     * Transformation method to transform an element into a key and value for kafka
@@ -268,9 +272,17 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
     getUserContext.get().availableProducers(transaction.producerIndex) = true
     logger.debug(
       s"$getLabel done committing transaction ${transaction.checkPointId}.\r\n${transaction.displayOffsets()}")
-    logger.debug(
+
+    MDC.put("event", "commit")
+    MDC.put("EntityCount", transaction.completedEvents.toString)
+    MDC.put("eventTime", DateTime.now.toString(fmt))
+    logger.info(
       s"Commit completed in ${sw.elapsed().toMillis} transaction ${transaction.checkPointId}.\r\n${transaction
         .displayOffsets()}\r\n$getLabel")
+
+    MDC.remove("event")
+    MDC.remove("EntityCount")
+    MDC.remove("eventTime")
   }
 
   /**

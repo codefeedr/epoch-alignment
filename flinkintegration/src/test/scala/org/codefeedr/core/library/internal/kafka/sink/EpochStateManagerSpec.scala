@@ -41,7 +41,7 @@ class EpochStateManagerSpec extends AsyncFlatSpec with MockitoSugar with BeforeA
 
   "EpochState.PreCommit()" should "Create the partition nodes and dependencies in zookeeper" in async {
     //Arrange
-    val transactionState = new TransactionState(0,10,0,false,mutable.Map(1 -> 10L, 2 -> 12L))
+    val transactionState = new TransactionState(0,10,0,0,false,mutable.Map(1 -> 10L, 2 -> 12L))
     val p1 = mock[EpochPartition]
     val p2 = mock[EpochPartition]
     when(epochPartitions.getChild("1")) thenReturn p1
@@ -51,7 +51,6 @@ class EpochStateManagerSpec extends AsyncFlatSpec with MockitoSugar with BeforeA
     when(p2.create(Partition(2,12l))) thenReturn Future.successful(Partition(2,12l))
 
     val epochState = new EpochState(transactionState,epochCollectionNode)
-
 
     //Act
     await(epochStateManager.preCommit(epochState))
@@ -69,7 +68,7 @@ class EpochStateManagerSpec extends AsyncFlatSpec with MockitoSugar with BeforeA
 
   it should "Also create the epoch node if it does not exist" in async {
     //Arrange
-    val transactionState = new TransactionState(0,10,0,false,mutable.Map((1) -> 10L, (2) -> 12L))
+    val transactionState = new TransactionState(0,10,0,0,false,mutable.Map((1) -> 10L, (2) -> 12L))
     val p1 = mock[EpochPartition]
     val p2 = mock[EpochPartition]
     when(epochNode.exists()) thenReturn Future(false)
@@ -104,7 +103,7 @@ class EpochStateManagerSpec extends AsyncFlatSpec with MockitoSugar with BeforeA
 
   "EpochState.Commit()" should "Set all EpochPartitions to true" in async {
     //Arrange
-    val transactionState = new TransactionState(0,10,0,false,mutable.Map((1) -> 10L, (2) -> 12L))
+    val transactionState = new TransactionState(0,10,0,0,false,mutable.Map((1) -> 10L, (2) -> 12L))
     val p1 = mock[EpochPartition]
     val p2 = mock[EpochPartition]
     when(epochPartitions.getChild("1")) thenReturn p1
@@ -143,7 +142,7 @@ class EpochStateManagerSpec extends AsyncFlatSpec with MockitoSugar with BeforeA
 
   it should "save the latest epoch offsets obtained from zookeeper on the epochnode" in async {
     //Arrange
-    val transactionState = new TransactionState(0,10,0,false,mutable.Map((1) -> 10L, (2) -> 12L))
+    val transactionState = new TransactionState(0,10,0,0,false,mutable.Map((1) -> 10L, (2) -> 12L))
     val p1 = mock[EpochPartition]
     val p2 = mock[EpochPartition]
     when(epochPartitions.getChild("1")) thenReturn p1

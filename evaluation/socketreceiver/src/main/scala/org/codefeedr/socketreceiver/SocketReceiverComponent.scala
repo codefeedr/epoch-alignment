@@ -1,7 +1,7 @@
 package org.codefeedr.socketreceiver
 
 import org.apache.flink.api.java.utils.ParameterTool
-import org.apache.flink.streaming.api.CheckpointingMode
+import org.apache.flink.streaming.api.{CheckpointingMode, TimeCharacteristic}
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.codefeedr.configuration.ConfigurationProviderComponent
 import org.apache.flink.streaming.api.scala._
@@ -12,7 +12,6 @@ import org.codefeedr.evaluation.IntTuple
 import org.slf4j.MDC
 
 import scala.concurrent.duration._
-
 import scala.concurrent.Await
 
 
@@ -27,7 +26,7 @@ trait SocketReceiverComponent {
 
   val socketReceiver:SocketReceiver
 
-  class SocketReceiver {
+  class SocketReceiver extends Serializable {
 
     /**
       * Creates a new streamexectutionenvironment and deploys the job using the passed configuration
@@ -78,7 +77,6 @@ trait SocketReceiverComponent {
       val subject = Await.result(subjectFactory.create[IntTuple](), 10.seconds)
       val sink = Await.result(subjectFactory.getSink[IntTuple]("testsink", "myjob"),
         10.seconds)
-
       env.setParallelism(1)
       env.enableCheckpointing(1000,CheckpointingMode.EXACTLY_ONCE)
       env

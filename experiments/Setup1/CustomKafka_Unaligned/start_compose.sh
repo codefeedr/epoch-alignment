@@ -23,7 +23,20 @@ echo $RUNINCREMENT > $FILE
 
 echo "Starting with run increment: ${RUNINCREMENT}"
 export RUNINCREMENT=${RUNINCREMENT}
+docker-compose up -d
 
-docker-compose up
+# Retrieve container that is running the jobmanager
+$JOBMANAGER_CONTAINER=(docker ps --filter name=jobmanager --format "{{.ID}}")
+
+Write-Host "Submitting job to container $JOBMANAGER_CONTAINER"
+
+# Submit the job to the flink cluster
+docker cp importlinkedcache.jar "${JOBMANAGER_CONTAINER}:/jobs/socketreceiver.jar"
+docker cp submitcir.sh "${JOBMANAGER_CONTAINER}:/jobs/socketreceiver.sh"
+docker exec --detach "$JOBMANAGER_CONTAINER" "/socketreceiver.sh"
+
+
+
+
 
 read -p "Press any key to continue... " -n1 -s

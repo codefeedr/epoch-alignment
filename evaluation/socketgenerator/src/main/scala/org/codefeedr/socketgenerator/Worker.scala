@@ -21,6 +21,7 @@ class Worker(config: SocketGeneratorConfig) extends LazyLogging{
   @volatile var producedElements: Long = 0
   @volatile var running: Boolean = true
   val r = scala.util.Random
+  val workerName = "SocketGenerator"
 
   def setRate(newRate: Int): Unit = {
     rate = newRate
@@ -47,8 +48,12 @@ class Worker(config: SocketGeneratorConfig) extends LazyLogging{
               val loopRate = rate
 
               MDC.put("EntityCount", loopRate.toString)
+              MDC.put("Worker", workerName)
+              MDC.put("event", "generate")
               logger.info(s"Writing $loopRate elements.")
               MDC.remove("EntityCount")
+              MDC.remove("Worker")
+              MDC.remove("event")
 
               for (i <- 1 to loopRate) {
                 outStream.write(s"${r.nextInt()}|${r.nextInt()}\n")

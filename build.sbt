@@ -41,6 +41,7 @@ lazy val dependencies = new {
   val typesafeConfigV = "1.3.1"
   val json4sV = "3.6.0-M2"
   val shapelessV = "2.3.3"
+  val jodaTimeV = "2.10"
 
   val scalaLoggingV = "3.5.0"
   val logBackV = "1.2.3"
@@ -66,6 +67,7 @@ lazy val dependencies = new {
   val scalaTime =  "codes.reactive" %% "scala-time" % scalaTimeV
   val rx = "io.reactivex" %% "rxscala" % rxV
   val json4sNative = "org.json4s" %% "json4s-native" % json4sV
+  val jodaTime = "joda-time" % "joda-time" % jodaTimeV
 
 
   //Logging
@@ -103,6 +105,7 @@ lazy val commonDependencies = Seq(
   dependencies.json4sNative,
   dependencies.typeSafeConfig,
   dependencies.shapeless,
+  dependencies.jodaTime,
 
   //Logging
   dependencies.logStash,

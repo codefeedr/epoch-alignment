@@ -21,6 +21,9 @@ package org.codefeedr.ghtorrent
 
 import java.util.Date
 
+import org.joda.time.DateTime
+
+
 /*
   Case classes representing the ghtorrent data
   For ghtorrent, see: http://ghtorrent.org/
@@ -29,6 +32,11 @@ import java.util.Date
 
   Work in progress, classes are added as needed
  */
+
+
+trait EventTime {
+  val eventTime:DateTime
+}
 
 /**
   *
