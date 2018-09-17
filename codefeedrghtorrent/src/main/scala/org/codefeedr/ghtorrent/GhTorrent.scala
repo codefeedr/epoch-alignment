@@ -85,7 +85,7 @@ case class Commit(id: Int,
                   author_id: Int,
                   committer_id: Int,
                   project_id: Int,
-                  created_at: Date,
+                  created_at: DateTime,
                   eventTime: DateTime)
     extends EventTime
 
@@ -109,6 +109,6 @@ case class Project(id: Int,
                    created_at: Date,
                    forked_from: Int,
                    deleted: Boolean,
-                   updated_at: Date,
+                   updated_at: DateTime,
                    eventTime: DateTime)
     extends EventTime

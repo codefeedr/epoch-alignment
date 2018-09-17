@@ -7,7 +7,7 @@ import org.joda.time.{DateTime, DateTimeZone}
 import org.scalatest._
 
 //Namespaces containing serialization logic
-import org.codefeedr.serde.ghtorrent._
+import org.codefeedr.serde.GhTorrent._
 import org.codefeedr.demo.ghtorrent.Serde.ops._
 
 class GhtorrentSpec extends FlatSpec {
@@ -34,14 +34,14 @@ class GhtorrentSpec extends FlatSpec {
       eventTime = DateTime.now(DateTimeZone.UTC))
 
     val serialized = user.serialize
-    val deserialized:User = serialized.deserialize
+    val deserialized = serialized.deserialize[User]
 
     assert(deserialized == user)
   }
 
   it should "be able to deserialize the string provided by the api" in {
-    val deserialized:User =
-      sampleApiString.deserialize
+    val deserialized =
+      sampleApiString.deserialize[User]
     assert(deserialized.id == 39251372)
   }
 }

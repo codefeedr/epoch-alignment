@@ -63,17 +63,16 @@
         </encoder>
     </appender>
 
+    <!--
     <appender name="STASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
         <destination>localdocker:5001</destination>
-
-        <!-- encoder is required -->
         <encoder class="net.logstash.logback.encoder.LogstashEncoder" >
             <includeMdc>true</includeMdc>
         </encoder>
     </appender>
+    -->
 
-
-    <root level="DEBUG">
+    <root level="INFO">
         <!--<appender-ref ref="STASH" />-->
         <appender-ref ref="STDOUT" />
     </root>

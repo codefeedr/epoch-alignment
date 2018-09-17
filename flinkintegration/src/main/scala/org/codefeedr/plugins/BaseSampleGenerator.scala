@@ -1,6 +1,6 @@
 package org.codefeedr.plugins
 
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, DateTimeZone}
 
 import scala.util.Random
 
@@ -12,9 +12,10 @@ import scala.util.Random
   * @param seed
   * @tparam TSource
   */
-abstract class BaseSampleGenerator[TSource](val seed:Int) {
+abstract class BaseSampleGenerator[TSource](val seed:Int)(val eventTime:DateTime = DateTime.now(DateTimeZone.UTC)) {
   private val random = new Random(seed)
 
+  protected def getEventTime:DateTime = eventTime
   protected def nextString(length:Int): String = random.alphanumeric.take(length).mkString
   protected def nextInt(maxValue:Int): Int = random.nextInt(maxValue)
 

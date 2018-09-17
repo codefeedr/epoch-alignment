@@ -22,8 +22,8 @@ object Serde {
       def serialize(implicit serde: Serde[S]): String = serde.serialize(a)
     }
 
-    implicit class DeserOps[S](val s: String) extends AnyVal {
-      def deserialize(implicit serde: Serde[S]): S = serde.deserialize(s)
+    implicit class DeserOps(val s: String) extends AnyVal {
+      def deserialize[S](implicit serde: Serde[S]): S = serde.deserialize(s)
     }
 
   }

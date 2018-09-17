@@ -7,7 +7,7 @@ import org.joda.time.{DateTime, DateTimeZone}
 
 import scala.util.Random
 
-class UserGeneratorSource(seed:Int) extends BaseSampleGenerator[User](seed) {
+class UserGenerator(seed:Int)(implicit eventTime: DateTime) extends BaseSampleGenerator[User](seed)(eventTime) {
   private val types = Array("TypeA","TypeB")
 
   /**
@@ -31,6 +31,6 @@ class UserGeneratorSource(seed:Int) extends BaseSampleGenerator[User](seed) {
     state = Some(randomOf(Constants.states)),
     city = Some(nextString(6)),
     updated_at = nextDateTime(),
-    eventTime = DateTime.now
+    eventTime = getEventTime
   )
 }

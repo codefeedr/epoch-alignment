@@ -8,7 +8,7 @@ import org.codefeedr.core.plugin.SimplePluginComponent
 import org.codefeedr.ghtorrent.User
 import org.apache.flink.streaming.api.scala._
 import org.codefeedr.core.library.SubjectFactoryComponent
-import org.codefeedr.serde.ghtorrent._
+import org.codefeedr.serde.GhTorrent._
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
