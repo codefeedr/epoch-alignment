@@ -7,8 +7,9 @@ import org.joda.time.{DateTime, DateTimeZone}
 
 import scala.util.Random
 
-class UserGenerator(seed:Int)(implicit eventTime: DateTime) extends BaseSampleGenerator[User](seed)(eventTime) {
-  private val types = Array("TypeA","TypeB")
+class UserGenerator(seed: Int)(implicit eventTime: DateTime)
+    extends BaseSampleGenerator[User](seed)(eventTime) {
+  private val types = Array("TypeA", "TypeB")
 
   /**
     * Implement to generate a random value
@@ -16,8 +17,8 @@ class UserGenerator(seed:Int)(implicit eventTime: DateTime) extends BaseSampleGe
     * @return
     */
   override def generate(): User = User(
-    id=nextInt(1000000),
-    login=nextString(6),
+    id = nextInt(1000000),
+    login = nextString(6),
     name = nextString(6),
     company = nextString(6),
     email = nextEmail,
@@ -26,7 +27,7 @@ class UserGenerator(seed:Int)(implicit eventTime: DateTime) extends BaseSampleGe
     fake = nextBoolean(),
     deleted = nextBoolean(),
     long = None,
-    lat=None,
+    lat = None,
     country_code = Some(nextString(3)),
     state = Some(randomOf(Constants.states)),
     city = Some(nextString(6)),

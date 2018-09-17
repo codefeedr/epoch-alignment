@@ -4,20 +4,20 @@ import org.joda.time.{DateTime, DateTimeZone}
 
 import scala.util.Random
 
-
 /**
   * Single use generator for a source element with the passed seed
- *
+  *
   * The base class implements a number of utilities useful when creating random elements
   * @param seed
   * @tparam TSource
   */
-abstract class BaseSampleGenerator[TSource](val seed:Int)(val eventTime:DateTime = DateTime.now(DateTimeZone.UTC)) {
+abstract class BaseSampleGenerator[TSource](val seed: Int)(val eventTime: DateTime =
+                                                             DateTime.now(DateTimeZone.UTC)) {
   private val random = new Random(seed)
 
-  protected def getEventTime:DateTime = eventTime
-  protected def nextString(length:Int): String = random.alphanumeric.take(length).mkString
-  protected def nextInt(maxValue:Int): Int = random.nextInt(maxValue)
+  protected def getEventTime: DateTime = eventTime
+  protected def nextString(length: Int): String = random.alphanumeric.take(length).mkString
+  protected def nextInt(maxValue: Int): Int = random.nextInt(maxValue)
 
   /**
     * Generates a random long value with the passed max value
@@ -25,28 +25,26 @@ abstract class BaseSampleGenerator[TSource](val seed:Int)(val eventTime:DateTime
     * @param maxValue maximum generated value
     * @return
     */
-  protected def nextLong(maxValue:Long):Long = {
+  protected def nextLong(maxValue: Long): Long = {
     var bits = 0L
     var result = 0L
     do {
       bits = (random.nextLong << 1) >>> 1
       result = bits % maxValue
-    } while ( {
+    } while ({
       bits - result + (maxValue - 1) < 0L
     })
     result
   }
-  protected def nextBoolean():Boolean = random.nextBoolean()
-  protected def nextDateTime():DateTime = new DateTime(random.nextLong())
-  protected def nextEmail:String = s"${nextString(6)}@${nextString(6)}.${nextString(3)}"
-  protected def randomOf[T](elements: Array[T]):T = elements(random.nextInt(elements.length))
-
-
+  protected def nextBoolean(): Boolean = random.nextBoolean()
+  protected def nextDateTime(): DateTime = new DateTime(random.nextLong())
+  protected def nextEmail: String = s"${nextString(6)}@${nextString(6)}.${nextString(3)}"
+  protected def randomOf[T](elements: Array[T]): T = elements(random.nextInt(elements.length))
 
   /**
     * Implement to generate a random value
     * @return
     */
-  def generate():TSource
+  def generate(): TSource
 
 }
