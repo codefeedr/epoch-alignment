@@ -5,7 +5,7 @@ import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 import org.slf4j.MDC
 
-object LogDemo extends LazyLogging{
+object LogDemo extends LazyLogging {
 
   def main(args: Array[String]) = {
     val fmt = ISODateTimeFormat.dateTime

@@ -77,6 +77,7 @@ lazy val dependencies = new {
 
   val scalaLogging = "com.typesafe.scala-logging" %% "scala-logging" % scalaLoggingV
   val scalaP = "org.json4s" % "json4s-scalap_2.11" % json4sV
+  val json4sExt = "org.json4s" %% "json4s-ext" % json4sV
   val jackson = "org.json4s" % "json4s-jackson_2.11" % json4sV
 
 
@@ -103,6 +104,7 @@ lazy val commonDependencies = Seq(
   dependencies.scalaP,
   dependencies.jackson,
   dependencies.json4sNative,
+  dependencies.json4sExt,
   dependencies.typeSafeConfig,
   dependencies.shapeless,
   dependencies.jodaTime,
@@ -138,6 +140,7 @@ lazy val connectorDependencies = Seq(
 
 //TODO: connectorDependencies should not be required in the core project!
 lazy val flinkintegration = (project in file("flinkintegration"))
+  .dependsOn(codefeedrghtorrent)
   .settings(
     settings,
     parallelExecution in Test := false,

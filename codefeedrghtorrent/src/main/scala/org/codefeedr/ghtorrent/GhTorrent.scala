@@ -23,7 +23,6 @@ import java.util.Date
 
 import org.joda.time.DateTime
 
-
 /*
   Case classes representing the ghtorrent data
   For ghtorrent, see: http://ghtorrent.org/
@@ -33,9 +32,8 @@ import org.joda.time.DateTime
   Work in progress, classes are added as needed
  */
 
-
 trait EventTime {
-  val eventTime:DateTime
+  val eventTime: DateTime
 }
 
 /**
@@ -68,7 +66,10 @@ case class User(id: Int,
                 lat: Option[Float],
                 country_code: Option[String],
                 state: Option[String],
-                city: Option[String])
+                city: Option[String],
+                updated_at: DateTime,
+                eventTime: DateTime)
+    extends EventTime
 
 /**
   * Github commit
@@ -84,7 +85,9 @@ case class Commit(id: Int,
                   author_id: Int,
                   committer_id: Int,
                   project_id: Int,
-                  created_at: Date)
+                  created_at: Date,
+                  eventTime: DateTime)
+    extends EventTime
 
 /**
   * Project on github
@@ -106,4 +109,6 @@ case class Project(id: Int,
                    created_at: Date,
                    forked_from: Int,
                    deleted: Boolean,
-                   updated_at: Date)
+                   updated_at: Date,
+                   eventTime: DateTime)
+    extends EventTime
