@@ -7,7 +7,9 @@ import org.apache.kafka.common.TopicPartition
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.parallel.immutable
+import java.time.Duration
+import java.time.temporal.ChronoUnit
+
 import scala.reflect.ClassTag
 
 trait KafkaSourceMapper[TElement, TValue, TKey] {
@@ -42,7 +44,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     extends LazyLogging { this: KafkaSourceMapper[TElement, TValue, TKey] =>
 
   //Timeout when polling kafka. TODO: Move to configuration
-  private lazy val pollTimeout = 1000
+  private lazy val pollTimeout = Duration.of(1, ChronoUnit.SECONDS)
 
   /**
     * Variable that keeps track of new the assignment of new topicPartitions

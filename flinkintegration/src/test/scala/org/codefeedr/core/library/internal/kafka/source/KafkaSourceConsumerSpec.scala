@@ -1,5 +1,7 @@
 package org.codefeedr.core.library.internal.kafka.source
 
+import java.time.Duration
+
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.types.Row
 import org.apache.kafka.clients.consumer.{ConsumerRecord, ConsumerRecords, KafkaConsumer}
@@ -30,7 +32,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
   "KafkaSourceConsumer.Poll" should "update the latest offsets that it received by polling the source" in {
     //Arrange
     val component = constructConsumer()
-    when(consumer.poll(ArgumentMatchers.anyLong())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (2, 2L)))
+    when(consumer.poll(ArgumentMatchers.any[Duration]())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (2, 2L)))
 
     //Act
     component.poll(_ => Unit)
@@ -43,7 +45,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
   it should "invoke ctx with all returned elements" in {
     //Arrange
     val component = constructConsumer()
-    when(consumer.poll(ArgumentMatchers.anyLong())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (2, 2L)))
+    when(consumer.poll(ArgumentMatchers.any[Duration]())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (2, 2L)))
     val queue = new mutable.Queue[SourceElement]
 
     //Act
@@ -56,7 +58,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
   it should "not treat elements past the given offset" in {
     //Arrange
     val component = constructConsumer()
-    when(consumer.poll(ArgumentMatchers.anyLong())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (1, 3L), (2, 2L), (2, 3L)))
+    when(consumer.poll(ArgumentMatchers.any[Duration]())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (1, 3L), (2, 2L), (2, 3L)))
     val queue = new mutable.Queue[SourceElement]
 
     //Act
@@ -71,7 +73,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
   it should "call seek when it received elements past the given offset" in {
     //Arrange
     val component = constructConsumer()
-    when(consumer.poll(ArgumentMatchers.anyLong())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (1, 3L), (2, 2L), (2, 3L)))
+    when(consumer.poll(ArgumentMatchers.any[Duration]())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (1, 3L), (2, 2L), (2, 3L)))
 
     //Act
     component.poll(_ => Unit, Map(1 -> 2, 2 -> 2))
@@ -84,7 +86,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
   it should "Set the state to the resetted offsets  when it received elements past the given offset" in {
     //Arrange
     val component = constructConsumer()
-    when(consumer.poll(ArgumentMatchers.anyLong())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (1, 3L), (2, 2L), (2, 3L)))
+    when(consumer.poll(ArgumentMatchers.any[Duration]())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (1, 3L), (2, 2L), (2, 3L)))
 
     //Act
     component.poll(_ => Unit, Map(1 -> 2, 2 -> 2))
@@ -99,7 +101,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
   it should "add a default offset when a partition is assigned, but no data has been received" in {
     //Arrange
     val component = constructConsumer()
-    when(consumer.poll(ArgumentMatchers.anyLong())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (2, 2L)))
+    when(consumer.poll(ArgumentMatchers.any[Duration]())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (2, 2L)))
     val assignment = Iterable(new TopicPartition("a", 1), new TopicPartition("a", 2), new TopicPartition("a", 3))
 
     //Act
@@ -115,13 +117,13 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
   it should "not overwrite offsets when it already received data for that partition but the assignment arrives later" in {
     //Arrange
     val component = constructConsumer()
-    when(consumer.poll(ArgumentMatchers.anyLong())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (2, 2L)))
+    when(consumer.poll(ArgumentMatchers.any[Duration]())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (2, 2L)))
     val assignment = Iterable(new TopicPartition("a", 1), new TopicPartition("a", 2), new TopicPartition("a", 3))
 
     //Act
     component.poll(_ => Unit)
     component.onNewAssignment(assignment)
-    when(consumer.poll(ArgumentMatchers.anyLong())) thenReturn constructPollResponse(Seq[(Int,Long)]())
+    when(consumer.poll(ArgumentMatchers.any[Duration]())) thenReturn constructPollResponse(Seq[(Int,Long)]())
     component.poll(_ => Unit)
 
     //Assert
@@ -132,13 +134,13 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
 
   it should "remove an offset when no longer subscribed to a topic" in {
     val component = constructConsumer()
-    when(consumer.poll(ArgumentMatchers.anyLong())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (2, 2L)))
+    when(consumer.poll(ArgumentMatchers.any[Duration]())) thenReturn constructPollResponse(Seq((1, 1L), (1, 2L), (2, 2L)))
     val assignment1 = Iterable(new TopicPartition("a", 1), new TopicPartition("a", 2), new TopicPartition("a", 3))
     val assignment2 = Iterable(new TopicPartition("a", 2), new TopicPartition("a", 3))
     //Act
     component.onNewAssignment(assignment1)
     component.poll(_ => Unit)
-    when(consumer.poll(ArgumentMatchers.anyLong())) thenReturn constructPollResponse(Seq((2, 3L)))
+    when(consumer.poll(ArgumentMatchers.any[Duration]())) thenReturn constructPollResponse(Seq((2, 3L)))
     component.onNewAssignment(assignment2)
     component.poll(_ => Unit)
 
@@ -236,7 +238,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
     val sConsumer = constructConsumer()
     val tps = partitions.map(new TopicPartition("a",_))
 
-    when(consumer.poll(ArgumentMatchers.anyLong())) thenReturn constructPollResponse(Seq[(Int,Long)]())
+    when(consumer.poll(ArgumentMatchers.any[Duration]())) thenReturn constructPollResponse(Seq[(Int,Long)]())
     sConsumer.onNewAssignment(tps)
     sConsumer.poll(_ => ())
     sConsumer

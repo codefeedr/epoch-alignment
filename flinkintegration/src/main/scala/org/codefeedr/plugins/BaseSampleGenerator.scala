@@ -11,8 +11,8 @@ import scala.util.Random
   * @param seed
   * @tparam TSource
   */
-abstract class BaseSampleGenerator[TSource](val seed: Int)(val eventTime: DateTime =
-                                                             DateTime.now(DateTimeZone.UTC)) {
+abstract class BaseSampleGenerator[TSource](val seed: Long)(val eventTime: DateTime =
+                                                              DateTime.now(DateTimeZone.UTC)) {
   private val random = new Random(seed)
 
   protected def getEventTime: DateTime = eventTime

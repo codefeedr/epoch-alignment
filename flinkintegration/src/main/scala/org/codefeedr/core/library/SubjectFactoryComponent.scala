@@ -52,7 +52,7 @@ trait SubjectFactoryComponent extends Serializable {
 
   private val subjectFactoryComponent = this
 
-  @transient val subjectFactory: SubjectFactoryController
+  val subjectFactory: SubjectFactoryController
 
   /**
     * ThreadSafe
