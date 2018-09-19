@@ -3,15 +3,12 @@ package org.codefeedr.plugins
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.state.{ListState, ListStateDescriptor}
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
-import org.apache.flink.runtime.state.{
-  CheckpointListener,
-  FunctionInitializationContext,
-  FunctionSnapshotContext
-}
+import org.apache.flink.runtime.state.{CheckpointListener, FunctionInitializationContext, FunctionSnapshotContext}
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
-import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
+import org.apache.flink.streaming.api.functions.source.{RichParallelSourceFunction, RichSourceFunction, SourceFunction}
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.codefeedr.configuration.ConfigurationProviderComponent
+import org.slf4j.MDC
 
 import scala.collection.JavaConverters._
 
@@ -44,13 +41,14 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
   class GeneratorSource[TSource](val generator: Long => BaseSampleGenerator[TSource],
                                  val seedBase: Long,
                                  val name: String)
-      extends RichSourceFunction[TSource]
+      extends RichParallelSourceFunction[TSource]
       with CheckpointedFunction
       with CheckpointListener
       with LazyLogging {
 
     @volatile private var running = true
     @volatile private var currentOffset: Long = 0
+    @volatile private var lastOffset:Long = 0
     @volatile private var currentCheckpoint: Long = 0
     @transient private lazy val parallelIndex = getRuntimeContext.getIndexOfThisSubtask
 
@@ -61,6 +59,16 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     var state: ListState[GeneratorSourceState] = _
 
     private def getLabel: String = s"GeneratorSource $name[$parallelIndex] cp($currentCheckpoint)"
+
+    private def logWithMdc(message:String, event:String): Unit = {
+      MDC.put("event", event)
+      MDC.put("operator",name)
+      MDC.put("parallelIndex", parallelIndex.toString)
+      logger.info(message)
+      MDC.remove("operator")
+      MDC.remove("parallelIndex")
+      MDC.remove("event")
+    }
 
     @transient private lazy val generationSource = 1 to generationBatchSize
 
@@ -96,6 +104,10 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     override def snapshotState(context: FunctionSnapshotContext): Unit = {
       currentCheckpoint = context.getCheckpointId
       logger.debug(s"Snapshotting state of $getLabel")
+      MDC.put("elements", s"${currentOffset-lastOffset}")
+      logWithMdc(s"$getLabel Collected ${currentOffset - lastOffset} elements. Current offset is $currentOffset","generatorSnapshot")
+      MDC.remove("elements")
+      lastOffset = currentOffset
       state.update(List(getState).asJava)
     }
 

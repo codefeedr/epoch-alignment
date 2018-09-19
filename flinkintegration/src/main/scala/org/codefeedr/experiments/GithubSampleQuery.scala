@@ -47,9 +47,9 @@ object GithubSampleQuery extends ExperimentBase {
               projectDescription = project.description
           ))
 
-    userProjects.addSink(o => Console.println(o))
+    userProjects.addSink(o => Unit)
 
-    env.execute()
+    env.execute("userProjectGenerator")
   }
 
 }
