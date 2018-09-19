@@ -1,5 +1,6 @@
 package org.codefeedr.plugins
 
+import org.codefeedr.ghtorrent.EventTime
 import org.joda.time.{DateTime, DateTimeZone}
 
 import scala.util.Random
@@ -11,11 +12,11 @@ import scala.util.Random
   * @param seed
   * @tparam TSource
   */
-abstract class BaseSampleGenerator[TSource](val seed: Long)(val eventTime: DateTime =
-                                                              DateTime.now(DateTimeZone.UTC)) {
+abstract class BaseSampleGenerator[TSource](val seed: Long) {
   private val random = new Random(seed)
+  val staticEventTime: Option[DateTime]
 
-  protected def getEventTime: DateTime = eventTime
+  protected def getEventTime: DateTime = staticEventTime.getOrElse(DateTime.now(DateTimeZone.UTC))
   protected def nextString(length: Int): String = random.alphanumeric.take(length).mkString
   protected def nextInt(maxValue: Int): Int = random.nextInt(maxValue)
 
@@ -36,8 +37,10 @@ abstract class BaseSampleGenerator[TSource](val seed: Long)(val eventTime: DateT
     })
     result
   }
+
   protected def nextBoolean(): Boolean = random.nextBoolean()
-  protected def nextDateTime(): DateTime = new DateTime(random.nextLong())
+  protected def nextDateTimeLong(): Long = random.nextLong()
+  protected def nextDateTime(): DateTime = new DateTime(nextDateTimeLong())
   protected def nextEmail: String = s"${nextString(6)}@${nextString(6)}.${nextString(3)}"
   protected def randomOf[T](elements: Array[T]): T = elements(random.nextInt(elements.length))
 
@@ -47,4 +50,24 @@ abstract class BaseSampleGenerator[TSource](val seed: Long)(val eventTime: DateT
     */
   def generate(): TSource
 
+  /**
+    * Generates a new random value, with event time
+    * @return
+    */
+  def generateWithEventTime(): (TSource, Long) = (generate(), getEventTime.getMillis)
+
+}
+
+/**
+  * Base class for generating elements containing event time
+  * Makes sure the event time from the element is used, so there is no difference between the two
+  * @param seed
+  * @tparam TSource
+  */
+abstract class BaseEventTimeGenerator[TSource <: EventTime](seed: Long)
+    extends BaseSampleGenerator[TSource](seed) {
+  override def generateWithEventTime(): (TSource, Long) = {
+    val element = generate()
+    (element, element.eventTime)
+  }
 }

@@ -30,7 +30,6 @@ object Json4sSerde {
 }
 
 object MyJsonFormats {
-
   DateTimeZone.setDefault(DateTimeZone.UTC)
 
   class IsoDateTimeFormats(fieldName: String = "someDateTimeFieldName")
@@ -41,7 +40,6 @@ object MyJsonFormats {
     def deserialize(implicit format: Formats): PartialFunction[(TypeInfo, JValue), DateTime] = {
       case (TypeInfo(DateClass, _), json) =>
         json match {
-
           case JObject(JField(`fieldName`, JString(s)) :: Nil) =>
             df.parseDateTime(s).withZone(DateTimeZone.UTC)
 

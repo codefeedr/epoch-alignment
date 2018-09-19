@@ -31,8 +31,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     */
   def createGeneratorSource[TSource](generator: Long => BaseSampleGenerator[TSource],
                                      seedBase: Long,
-                                     name: String) =
-    new GeneratorSource[TSource](generator, seedBase, name)
+                                     name: String): SourceFunction[TSource]
 
   /**
     * Base class for generators
@@ -68,8 +67,10 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     /**
       * Generates a sequence of elements of TSource, with the length of the configured generationBatchSize
       */
-    private def generate(): Seq[TSource] =
-      generationSource.map(o => generator(seedBase * (currentOffset + o)).generate()).toList
+    private def generate(): Seq[(TSource, Long)] =
+      generationSource
+        .map(o => generator(seedBase * (currentOffset + o)).generateWithEventTime())
+        .toList
 
     /**
       * @return current state of this source
@@ -83,7 +84,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
         //Collect them within the checkpoint lock, and update the current offset
         ctx.getCheckpointLock.synchronized {
           currentOffset += generationBatchSize
-          nextElements.foreach(ctx.collect)
+          nextElements.foreach(o => ctx.collectWithTimestamp(o._1, o._2))
         }
       }
     }

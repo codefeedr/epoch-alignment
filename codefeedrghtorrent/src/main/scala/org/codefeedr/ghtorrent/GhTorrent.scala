@@ -22,6 +22,7 @@ package org.codefeedr.ghtorrent
 import java.util.Date
 
 import org.joda.time.DateTime
+import org.joda.time.DateTimeZone
 
 /*
   Case classes representing the ghtorrent data
@@ -33,7 +34,9 @@ import org.joda.time.DateTime
  */
 
 trait EventTime {
-  val eventTime: DateTime
+  val eventTime: Long
+  def getEventTime:DateTime =
+    new DateTime(eventTime, DateTimeZone.UTC)
 }
 
 /**
@@ -67,8 +70,8 @@ case class User(id: Int,
                 country_code: Option[String],
                 state: Option[String],
                 city: Option[String],
-                updated_at: DateTime,
-                eventTime: DateTime)
+                updated_at: Long,
+                eventTime: Long)
     extends EventTime
 
 /**
@@ -85,8 +88,8 @@ case class Commit(id: Int,
                   author_id: Int,
                   committer_id: Int,
                   project_id: Int,
-                  created_at: DateTime,
-                  eventTime: DateTime)
+                  created_at: Long,
+                  eventTime: Long)
     extends EventTime
 
 /**
@@ -106,9 +109,9 @@ case class Project(id: Int,
                    owner_id: Int,
                    description: String,
                    language: String,
-                   created_at: DateTime,
+                   created_at: Long,
                    forked_from: Int,
                    deleted: Boolean,
-                   updated_at: DateTime,
-                   eventTime: DateTime)
+                   updated_at: Long,
+                   eventTime: Long)
     extends EventTime

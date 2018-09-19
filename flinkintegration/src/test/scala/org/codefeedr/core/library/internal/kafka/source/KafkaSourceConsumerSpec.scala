@@ -2,21 +2,18 @@ package org.codefeedr.core.library.internal.kafka.source
 
 import java.time.Duration
 
-import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.types.Row
 import org.apache.kafka.clients.consumer.{ConsumerRecord, ConsumerRecords, KafkaConsumer}
 import org.apache.kafka.common.TopicPartition
-import org.codefeedr.model.{Record, RecordSourceTrail, Source, TrailedRecord}
-import rx.lang.scala.{Observable, Subject}
-
-import scala.collection.JavaConversions._
-import scala.collection.JavaConverters._
+import org.codefeedr.model.{RecordSourceTrail, Source}
 import org.codefeedr.util.MockitoExtensions
-import org.mockito.{ArgumentMatcher, ArgumentMatchers}
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, FlatSpec}
 
+import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with MockitoSugar with MockitoExtensions {

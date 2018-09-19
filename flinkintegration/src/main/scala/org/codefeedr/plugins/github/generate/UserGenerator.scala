@@ -1,14 +1,14 @@
 package org.codefeedr.plugins.github.generate
 
 import org.codefeedr.ghtorrent._
-import org.codefeedr.plugins.BaseSampleGenerator
+import org.codefeedr.plugins.{BaseEventTimeGenerator, BaseSampleGenerator}
 import org.codefeedr.util.Constants
 import org.joda.time.{DateTime, DateTimeZone}
 
 import scala.util.Random
 
-class UserGenerator(seed: Int)(implicit eventTime: DateTime)
-    extends BaseSampleGenerator[User](seed)(eventTime) {
+class UserGenerator(seed: Long, val staticEventTime: Option[DateTime] = None)
+    extends BaseEventTimeGenerator[User](seed) {
   private val types = Array("TypeA", "TypeB")
 
   /**
@@ -17,7 +17,7 @@ class UserGenerator(seed: Int)(implicit eventTime: DateTime)
     * @return
     */
   override def generate(): User = User(
-    id = nextInt(1000000),
+    id = nextInt(100000),
     login = nextString(6),
     name = nextString(6),
     company = nextString(6),
@@ -31,7 +31,7 @@ class UserGenerator(seed: Int)(implicit eventTime: DateTime)
     country_code = Some(nextString(3)),
     state = Some(randomOf(Constants.states)),
     city = Some(nextString(6)),
-    updated_at = nextDateTime(),
-    eventTime = getEventTime
+    updated_at = nextDateTimeLong(),
+    eventTime = getEventTime.getMillis
   )
 }

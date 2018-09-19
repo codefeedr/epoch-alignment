@@ -20,6 +20,7 @@
 package org.codefeedr.core.library
 
 import org.apache.flink.api.common.typeinfo.TypeInformation
+import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.codefeedr.configuration._
 import org.codefeedr.core.engine.query.StreamComposerFactoryComponent
 import org.codefeedr.core.library.internal.kafka.KafkaControllerComponent
@@ -33,6 +34,7 @@ import org.codefeedr.core.library.internal.kafka.source.KafkaConsumerFactoryComp
 import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkClientComponent}
 import org.codefeedr.core.library.metastore._
 import org.codefeedr.core.plugin.CollectionPluginFactoryComponent
+import org.codefeedr.plugins.{BaseSampleGenerator, GeneratorSourceComponent}
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe
@@ -109,7 +111,8 @@ trait AbstractCodefeedrComponents
     with SubjectFactoryComponent
     with StreamComposerFactoryComponent
     with EpochStateManagerComponent
-    with KafkaTableSinkFactoryComponent {}
+    with KafkaTableSinkFactoryComponent
+    with GeneratorSourceComponent {}
 
 trait PluginComponents
     extends Serializable
@@ -134,5 +137,10 @@ trait CodefeedrComponents extends AbstractCodefeedrComponents with PluginCompone
   @transient lazy override val streamComposerFactory = new StreamComposerFactory()
   @transient lazy override val epochStateManager = new EpochStateManager()
   @transient lazy override val kafkaController = new KafkaController()
+
+  def createGeneratorSource[TSource](generator: Long => BaseSampleGenerator[TSource],
+                                     seedBase: Long,
+                                     name: String): SourceFunction[TSource] =
+    new GeneratorSource[TSource](generator, seedBase, name)
 
 }

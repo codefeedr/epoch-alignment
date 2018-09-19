@@ -19,7 +19,9 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FlatSpec}
   * Used for unit testing the generator source
   * @param baseSeed the element that will be exposed
   */
-class SeedGenerator(baseSeed:Long) extends BaseSampleGenerator[Long](baseSeed)(DateTime.now) {
+class SeedGenerator(baseSeed:Long) extends BaseSampleGenerator[Long](baseSeed) {
+
+  override val staticEventTime: Option[DateTime] = None
   /**
     * Implement to generate a random value
     * @return
@@ -109,5 +111,15 @@ class GeneratorSourceSpec
     when(runtimeContext.isCheckpointingEnabled) thenReturn true
   }
 
-
+  /**
+    * Create a new generatorSource with the given generator and seedBase
+    *
+    * @param generator generator of source elements
+    * @param seedBase  Base for the seed. Offset is multiplied by this value and passed as seed to the generator.
+    *                  For best results, use a 64 bit prime number
+    * @param name      Name of the source, used for logging
+    * @tparam TSource type of elements exposed by the source
+    * @return
+    */
+  override def createGeneratorSource[TSource](generator: Long => BaseSampleGenerator[TSource], seedBase: Long, name: String): SourceFunction[TSource] = ???
 }

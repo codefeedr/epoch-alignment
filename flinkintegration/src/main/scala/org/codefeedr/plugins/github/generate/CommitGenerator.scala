@@ -1,12 +1,11 @@
 package org.codefeedr.plugins.github.generate
 
 import org.codefeedr.ghtorrent._
-import org.codefeedr.plugins.BaseSampleGenerator
-import org.codefeedr.util.Constants
-import org.joda.time.{DateTime, DateTimeZone}
+import org.codefeedr.plugins.BaseEventTimeGenerator
+import org.joda.time.DateTime
 
-class CommitGenerator(seed: Int)(implicit eventTime: DateTime)
-    extends BaseSampleGenerator[Commit](seed)(eventTime) {
+class CommitGenerator(seed: Long, val staticEventTime: Option[DateTime] = None)
+    extends BaseEventTimeGenerator[Commit](seed) {
   private val types = Array("TypeA", "TypeB")
 
   /**
@@ -20,7 +19,7 @@ class CommitGenerator(seed: Int)(implicit eventTime: DateTime)
     author_id = nextInt(1000000),
     committer_id = nextInt(1000000),
     project_id = nextInt(10000),
-    created_at = nextDateTime(),
-    eventTime = getEventTime
+    created_at = nextDateTimeLong(),
+    eventTime = getEventTime.getMillis
   )
 }
