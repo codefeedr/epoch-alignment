@@ -10,10 +10,6 @@ import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
 import org.codefeedr.model._
 import org.codefeedr.util.NoEventTime._
 
-
-
-
-
 class RowSink(subjectNode: SubjectNode,
               jobNode: JobNode,
               kafkaProducerFactory: KafkaProducerFactory,
@@ -25,8 +21,6 @@ class RowSink(subjectNode: SubjectNode,
       kafkaProducerFactory,
       epochStateManager) {
   @transient lazy val keyFactory = new KeyFactory(subjectType, UUID.randomUUID())
-
-
 
   override def transform(value: tuple.Tuple2[lang.Boolean, Row]): (RecordSourceTrail, Row) = {
     val actionType = if (value.f0) ActionType.Add else ActionType.Remove

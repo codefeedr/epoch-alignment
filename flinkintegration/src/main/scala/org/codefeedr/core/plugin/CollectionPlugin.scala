@@ -32,7 +32,7 @@ import scala.reflect.runtime.{universe => ru}
 trait CollectionPluginFactoryComponent extends SimplePluginComponent {
   this: SubjectFactoryComponent =>
 
-  def createCollectionPlugin[TData: ru.TypeTag: ClassTag: TypeInformation : EventTime](
+  def createCollectionPlugin[TData: ru.TypeTag: ClassTag: TypeInformation: EventTime](
       data: Array[TData],
       useTrailedSink: Boolean = false): CollectionPlugin[TData]
 
@@ -41,9 +41,9 @@ trait CollectionPluginFactoryComponent extends SimplePluginComponent {
     * @param data The data of the collection
     * @tparam TData Type of the data
     */
-  class CollectionPlugin[TData: ru.TypeTag: ClassTag: TypeInformation : EventTime](data: Array[TData],
-                                                                       useTrailedSink: Boolean =
-                                                                         false)
+  class CollectionPlugin[TData: ru.TypeTag: ClassTag: TypeInformation: EventTime](
+      data: Array[TData],
+      useTrailedSink: Boolean = false)
       extends SimplePlugin[TData](useTrailedSink) {
 
     /**

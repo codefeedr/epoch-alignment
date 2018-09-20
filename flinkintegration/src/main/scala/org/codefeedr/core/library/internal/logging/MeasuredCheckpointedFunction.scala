@@ -6,42 +6,43 @@ import org.codefeedr.util.LazyMdcLogging
 import org.joda.time.DateTime
 import org.slf4j.MDC
 
-
-case class CheckpointMeasurement(checkpointId: Long, offset: Long, elements: Long, latency:Long)
+case class CheckpointMeasurement(checkpointId: Long, offset: Long, elements: Long, latency: Long)
 
 /**
   * Checkpointed function that measures
   */
-trait MeasuredCheckpointedFunction extends LazyMdcLogging with CheckpointedFunction{
-  def getLabel:String
+trait MeasuredCheckpointedFunction extends LazyMdcLogging with CheckpointedFunction {
+  def getLabel: String
 
-  def getLastEventTime:Long
-  def getCurrentOffset:Long
+  def getLastEventTime: Long
+  def getCurrentOffset: Long
 
-  private var lastOffset:Long = 0L
+  private var lastOffset: Long = 0L
 
-  private def getCurrentLatency:Long = DateTime.now().getMillis - getLastEventTime
+  private def getCurrentLatency: Long = DateTime.now().getMillis - getLastEventTime
 
   /**
     * Creates a snapshot of the current state with the passed checkpointId
     * Not a pure function, after calling ,the last offset is set to the current offset
     */
-  protected def snapshotMeasurement(checkPointId:Long):CheckpointMeasurement= {
+  protected def snapshotMeasurement(checkPointId: Long): CheckpointMeasurement = {
     val currentOffset = getCurrentOffset
-    val measurement = CheckpointMeasurement(checkPointId,currentOffset,currentOffset-lastOffset,getCurrentLatency)
+    val measurement = CheckpointMeasurement(checkPointId,
+                                            currentOffset,
+                                            currentOffset - lastOffset,
+                                            getCurrentLatency)
     lastOffset = currentOffset
     measurement
   }
 
-
   /**
     * Method that should be called whenever the function snapshots some state
     */
-  protected def onSnapshot(checkpointId:Long): Unit = {
+  protected def onSnapshot(checkpointId: Long): Unit = {
     val measurement = snapshotMeasurement(checkpointId)
     MDC.put("elements", s"${measurement.elements}")
     MDC.put("latency", s"${measurement.latency}")
-    logWithMdc(s"$getLabel snapshotting: ${measurement.toString}","snapshot")
+    logWithMdc(s"$getLabel snapshotting: ${measurement.toString}", "snapshot")
     MDC.remove("elements")
     MDC.remove("latency")
   }
@@ -51,7 +52,4 @@ trait MeasuredCheckpointedFunction extends LazyMdcLogging with CheckpointedFunct
     onSnapshot(currentCheckpoint)
   }
 
-
-
 }
-

@@ -24,7 +24,12 @@ import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.codefeedr.configuration._
 import org.codefeedr.core.engine.query.StreamComposerFactoryComponent
 import org.codefeedr.core.library.internal.kafka.KafkaControllerComponent
-import org.codefeedr.core.library.internal.kafka.sink.{EpochStateManager, EpochStateManagerComponent, KafkaProducerFactoryComponent, KafkaTableSinkFactoryComponent}
+import org.codefeedr.core.library.internal.kafka.sink.{
+  EpochStateManager,
+  EpochStateManagerComponent,
+  KafkaProducerFactoryComponent,
+  KafkaTableSinkFactoryComponent
+}
 import org.codefeedr.core.library.internal.kafka.source.KafkaConsumerFactoryComponent
 import org.codefeedr.core.library.internal.zookeeper.{ZkClient, ZkClientComponent}
 import org.codefeedr.core.library.metastore._
@@ -114,7 +119,8 @@ trait PluginComponents
     extends Serializable
     with AbstractCodefeedrComponents
     with CollectionPluginFactoryComponent {
-  override def createCollectionPlugin[TData: universe.TypeTag: ClassTag: TypeInformation : EventTime](
+  override def createCollectionPlugin[
+      TData: universe.TypeTag: ClassTag: TypeInformation: EventTime](
       data: Array[TData],
       useTrailedSink: Boolean): CollectionPlugin[TData] =
     new CollectionPlugin[TData](data, useTrailedSink)

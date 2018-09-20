@@ -58,7 +58,7 @@ case class KafkaSinkState(sinkId: String)
   * Serializable (with lazy initialisation)
   * Created by Niels on 11/07/2017.
   */
-abstract class KafkaSink[TSink : EventTime, TValue: ClassTag, TKey: ClassTag](
+abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
     subjectNode: SubjectNode,
     jobNode: JobNode,
     kafkaProducerFactory: KafkaProducerFactory,
@@ -71,10 +71,7 @@ abstract class KafkaSink[TSink : EventTime, TValue: ClassTag, TKey: ClassTag](
 
   protected val sinkUuid: String
 
-
-
-  @transient private var lastEventTime:Long = 0
-
+  @transient private var lastEventTime: Long = 0
 
   @transient private var checkpointedState: ListState[KafkaSinkState] = _
   @transient private[kafka] var checkpointingMode: Option[CheckpointingMode] = _
@@ -94,10 +91,8 @@ abstract class KafkaSink[TSink : EventTime, TValue: ClassTag, TKey: ClassTag](
     "parallelIndex" -> parallelIndex.toString
   )
 
-
-  override def getLastEventTime:Long = lastEventTime
+  override def getLastEventTime: Long = lastEventTime
   override def getCurrentOffset: Long = gatheredEvents
-
 
   private def getSinkState: KafkaSinkState = sinkState match {
     case None =>

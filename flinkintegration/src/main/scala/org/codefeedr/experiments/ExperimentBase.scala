@@ -14,7 +14,7 @@ trait ExperimentBase extends CodefeedrComponents {
   protected def getWindowTime: Time =
     Time.seconds(configurationProvider.getInt("window.size", Some(10)))
 
-  protected def getStateBackendPath:String = configurationProvider.get("statebackend.path")
+  protected def getStateBackendPath: String = configurationProvider.get("statebackend.path")
 
   def initialize(args: Array[String]) = {
     val pt = ParameterTool.fromArgs(args)

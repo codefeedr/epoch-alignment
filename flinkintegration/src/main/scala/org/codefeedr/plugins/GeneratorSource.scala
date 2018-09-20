@@ -3,9 +3,17 @@ package org.codefeedr.plugins
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.state.{ListState, ListStateDescriptor}
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
-import org.apache.flink.runtime.state.{CheckpointListener, FunctionInitializationContext, FunctionSnapshotContext}
+import org.apache.flink.runtime.state.{
+  CheckpointListener,
+  FunctionInitializationContext,
+  FunctionSnapshotContext
+}
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
-import org.apache.flink.streaming.api.functions.source.{RichParallelSourceFunction, RichSourceFunction, SourceFunction}
+import org.apache.flink.streaming.api.functions.source.{
+  RichParallelSourceFunction,
+  RichSourceFunction,
+  SourceFunction
+}
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.codefeedr.configuration.ConfigurationProviderComponent
 import org.codefeedr.core.library.internal.logging.MeasuredCheckpointedFunction
@@ -69,7 +77,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     @transient lazy val getMdcMap = Map(
       "operator" -> name,
       "parallelIndex" -> parallelIndex.toString
-      )
+    )
 
     @transient private lazy val generationSource = 1 to generationBatchSize
 
@@ -100,7 +108,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
       }
     }
 
-    override def snapshotState(context:FunctionSnapshotContext):Unit = {
+    override def snapshotState(context: FunctionSnapshotContext): Unit = {
       currentCheckpoint = context.getCheckpointId
       super.snapshotState(context)
       state.update(List(getState).asJava)
@@ -109,7 +117,6 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     override def cancel(): Unit = {
       running = false
     }
-
 
     override def initializeState(context: FunctionInitializationContext): Unit = {
       if (!getRuntimeContext.asInstanceOf[StreamingRuntimeContext].isCheckpointingEnabled) {
@@ -143,7 +150,6 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     override def notifyCheckpointComplete(checkpointId: Long): Unit = {
       logger.info(s"$getLabel was notified of completed checkpoint $checkpointId")
     }
-
 
   }
 

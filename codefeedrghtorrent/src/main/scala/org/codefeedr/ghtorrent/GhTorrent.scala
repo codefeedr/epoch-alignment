@@ -67,7 +67,6 @@ case class User(id: Int,
                 updated_at: Long,
                 eventTime: Long)
 
-
 /**
   * Github commit
   * @param id
@@ -84,7 +83,6 @@ case class Commit(id: Int,
                   project_id: Int,
                   created_at: Long,
                   eventTime: Long)
-
 
 /**
   * Project on github
@@ -108,4 +106,3 @@ case class Project(id: Int,
                    deleted: Boolean,
                    updated_at: Long,
                    eventTime: Long)
-

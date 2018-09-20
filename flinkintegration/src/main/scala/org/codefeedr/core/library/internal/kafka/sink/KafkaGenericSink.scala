@@ -27,11 +27,11 @@ import scala.reflect.ClassTag
 /**
   * Created by Niels on 31/07/2017.
   */
-class KafkaGenericSink[TData: ClassTag : EventTime](val subjectNode: SubjectNode,
-                                        jobNode: JobNode,
-                                        kafkaProducerFactory: KafkaProducerFactory,
-                                        epochStateManager: EpochStateManager,
-                                        override val sinkUuid: String)
+class KafkaGenericSink[TData: ClassTag: EventTime](val subjectNode: SubjectNode,
+                                                   jobNode: JobNode,
+                                                   kafkaProducerFactory: KafkaProducerFactory,
+                                                   epochStateManager: EpochStateManager,
+                                                   override val sinkUuid: String)
     extends KafkaSink[TData, TData, Object](subjectNode,
                                             jobNode,
                                             kafkaProducerFactory,

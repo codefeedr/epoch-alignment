@@ -38,7 +38,8 @@ trait SimplePluginComponent { this: SubjectFactoryComponent =>
     * Implement this class to expose a simple plugin
     * Created by Niels on 04/08/2017.
     */
-  abstract class SimplePlugin[TData: ru.TypeTag: ClassTag:EventTime](useTrailedSink: Boolean = false)
+  abstract class SimplePlugin[TData: ru.TypeTag: ClassTag: EventTime](
+      useTrailedSink: Boolean = false)
       extends AbstractPlugin
       with LazyLogging {
 

@@ -65,7 +65,7 @@ abstract class BaseSampleGenerator[TSource](val seed: Long) {
   * @param seed
   * @tparam TSource
   */
-abstract class BaseEventTimeGenerator[TSource : EventTime](seed: Long)
+abstract class BaseEventTimeGenerator[TSource: EventTime](seed: Long)
     extends BaseSampleGenerator[TSource](seed) {
   override def generateWithEventTime(): (TSource, Long) = {
     val element = generate()
