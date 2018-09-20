@@ -77,7 +77,7 @@ trait SubjectFactoryComponent extends Serializable {
       * @tparam TData
       * @return
       */
-    def getGenericTrailedSink[TData: ClassTag : EventTime](
+    def getGenericTrailedSink[TData: ClassTag](
         sinkId: String,
         jobName: String): Future[GenericTrailedRecordSink[TData]] = async {
       val (subjectNode, jobNode) = getSubjectJobNode[TData](jobName)
