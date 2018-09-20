@@ -29,7 +29,7 @@ import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.codefeedr.core.LibraryServiceSpec
 import org.codefeedr.core.library.internal.SubjectTypeFactory
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
-
+import org.codefeedr.util.NoEventTime._
 import collection.JavaConverters._
 import scala.async.Async.{async, await}
 import scala.concurrent.Await

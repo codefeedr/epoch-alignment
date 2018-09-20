@@ -23,7 +23,7 @@ package org.codefeedr.core.library
 
 import java.util.UUID
 import java.util.concurrent.Executors
-
+import org.codefeedr.util.NoEventTime._
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.streaming.api.CheckpointingMode
 import org.scalatest._

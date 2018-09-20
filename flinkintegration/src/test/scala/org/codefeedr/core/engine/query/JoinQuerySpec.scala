@@ -19,24 +19,13 @@
 
 package org.codefeedr.core.engine.query
 
-import java.util.concurrent.Executors
-
-import com.typesafe.scalalogging.LazyLogging
-import org.apache.flink.streaming.api.CheckpointingMode
-import org.scalatest._
 import org.apache.flink.streaming.api.scala._
-import org.codefeedr.core.{FullIntegrationSpec, IntegrationTestLibraryServices, KafkaTest}
-import org.codefeedr.core.library.internal.zookeeper.ZkClient
-import org.codefeedr.model.TrailedRecord
+import org.codefeedr.core.{FullIntegrationSpec, KafkaTest}
+import org.codefeedr.util.NoEventTime._
 import org.scalatest.tagobjects.Slow
 
-import scala.collection.mutable
-import scala.concurrent.{TimeoutException, _}
-import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.async.Async.{async, await}
-import scala.util.{Failure, Success}
-
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
   * Integration test for a join

@@ -23,9 +23,9 @@ import org.apache.flink.api.scala._
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.table.api.TableEnvironment
 import org.codefeedr.core.engine.query.{Join, SubjectSource}
-import org.codefeedr.core.library.internal.kafka.sink.KafkaTableSink
 import org.codefeedr.core.library.internal.kafka.source.KafkaTableSource
 import org.codefeedr.core.{FullIntegrationSpec, KafkaTest}
+import org.codefeedr.util.NoEventTime._
 import org.scalatest.tagobjects.Slow
 
 import scala.async.Async.{async, await}

@@ -10,7 +10,7 @@ import org.codefeedr.core.library.internal.zookeeper.ZkClientComponent
 import org.codefeedr.core.library.metastore.SubjectLibraryComponent
 import org.codefeedr.evaluation.IntTuple
 import org.slf4j.MDC
-
+import org.codefeedr.util.NoEventTime._
 import scala.concurrent.duration._
 import scala.concurrent.Await
 

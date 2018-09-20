@@ -9,7 +9,7 @@ import org.codefeedr.ghtorrent.User
 import org.apache.flink.streaming.api.scala._
 import org.codefeedr.core.library.SubjectFactoryComponent
 import org.codefeedr.serde.GhTorrent._
-
+import org.codefeedr.util.NoEventTime._
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.reflect.ClassTag

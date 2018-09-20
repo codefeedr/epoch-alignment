@@ -4,6 +4,7 @@ import org.apache.flink.types.Row
 import org.codefeedr.core.library.internal.kafka.sink.{EpochStateManager, KafkaProducerFactory, KafkaSink}
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
 import org.codefeedr.model.{RecordSourceTrail, TrailedRecord}
+import org.codefeedr.util.EventTime
 
 /**
   * Base class for all trailed record sources
@@ -13,7 +14,7 @@ import org.codefeedr.model.{RecordSourceTrail, TrailedRecord}
   * @param epochStateManager
   * @tparam TSink
   */
-abstract class KafkaTrailedRecordSink[TSink](subjectNode: SubjectNode,
+abstract class KafkaTrailedRecordSink[TSink : EventTime](subjectNode: SubjectNode,
                                              jobNode: JobNode,
                                              kafkaProducerFactory: KafkaProducerFactory,
                                              epochStateManager: EpochStateManager)

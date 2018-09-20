@@ -1,6 +1,5 @@
 package org.codefeedr.core.library.internal.kafka.sink
 
-import java.io.{ByteArrayOutputStream, ObjectOutputStream}
 import java.lang
 
 import org.apache.flink.api.common.state.{ListState, OperatorStateStore}
@@ -13,15 +12,14 @@ import org.apache.flink.types.Row
 import org.apache.kafka.clients.producer.{Callback, KafkaProducer, RecordMetadata}
 import org.apache.kafka.common.TopicPartition
 import org.codefeedr.core.MockedLibraryServices
-import org.codefeedr.core.library.CodefeedrComponents
 import org.codefeedr.core.library.metastore._
 import org.codefeedr.model.zookeeper.QuerySink
 import org.codefeedr.model.{RecordSourceTrail, SubjectType}
 import org.codefeedr.util.MockitoExtensions
+import org.codefeedr.util.NoEventTime._
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach}
 
 import scala.collection.JavaConverters._
-import scala.util.Success
 
 //Mockito
 import org.mockito.ArgumentMatchers

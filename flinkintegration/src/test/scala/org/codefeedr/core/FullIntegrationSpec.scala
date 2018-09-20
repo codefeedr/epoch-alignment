@@ -34,6 +34,7 @@ import org.codefeedr.core.engine.query.QueryTree
 import org.codefeedr.core.library.internal.SubjectTypeFactory
 import org.codefeedr.core.library.internal.kafka.KafkaTrailedRecordSource
 import org.codefeedr.model.{SubjectType, TrailedRecord}
+import org.codefeedr.util.EventTime
 import org.scalatest.{BeforeAndAfterEach, Matchers}
 
 import scala.collection.JavaConverters._
