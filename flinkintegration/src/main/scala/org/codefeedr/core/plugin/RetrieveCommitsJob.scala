@@ -29,6 +29,7 @@ import org.codefeedr.core.library.internal.kafka.source.KafkaConsumerFactoryComp
 import org.codefeedr.core.library.metastore.SubjectLibraryComponent
 import org.codefeedr.plugins.github.clients.GitHubProtocol.{Commit, PushEvent, SimpleCommit}
 import org.codefeedr.plugins.github.operators.GetOrAddCommit
+import org.codefeedr.plugins.github.clients.EventTimeImpl._
 
 trait RetrieveCommitsJobComponent {
   this: SubjectLibraryComponent

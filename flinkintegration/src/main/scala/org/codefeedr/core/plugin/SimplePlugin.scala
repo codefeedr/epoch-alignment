@@ -24,6 +24,7 @@ import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironm
 import org.codefeedr.core.library.SubjectFactoryComponent
 import org.codefeedr.core.library.internal.{AbstractPlugin, SubjectTypeFactory}
 import org.codefeedr.model.SubjectType
+import org.codefeedr.util.EventTime
 
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -37,7 +38,7 @@ trait SimplePluginComponent { this: SubjectFactoryComponent =>
     * Implement this class to expose a simple plugin
     * Created by Niels on 04/08/2017.
     */
-  abstract class SimplePlugin[TData: ru.TypeTag: ClassTag](useTrailedSink: Boolean = false)
+  abstract class SimplePlugin[TData: ru.TypeTag: ClassTag:EventTime](useTrailedSink: Boolean = false)
       extends AbstractPlugin
       with LazyLogging {
 

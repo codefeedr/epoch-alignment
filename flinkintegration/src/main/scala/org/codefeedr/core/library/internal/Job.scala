@@ -23,13 +23,10 @@ import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.codefeedr.core.library.SubjectFactoryComponent
-import org.codefeedr.core.library.internal.kafka.source.{
-  KafkaConsumerFactoryComponent,
-  KafkaGenericTrailedSource,
-  KafkaRowSource
-}
+import org.codefeedr.core.library.internal.kafka.source.{KafkaConsumerFactoryComponent, KafkaGenericTrailedSource, KafkaRowSource}
 import org.codefeedr.core.library.metastore.{SubjectLibraryComponent, SubjectNode}
 import org.codefeedr.model.SubjectType
+import org.codefeedr.util.EventTime
 
 import scala.concurrent._
 import ExecutionContext.Implicits.global
@@ -48,7 +45,7 @@ trait JobComponent {
     * @tparam Input
     * @tparam Output
     */
-  abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.TypeTag: ClassTag](
+  abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation, Output: ru.TypeTag: ClassTag : EventTime](
       name: String)
       extends LazyLogging {
 

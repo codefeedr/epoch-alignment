@@ -158,7 +158,7 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     * @tparam T type of the data
     * @return A future that returns when all data has been pushed to kakfa, with the subjectType that was used
     */
-  def runSourceEnvironment[T: ru.TypeTag: ClassTag: TypeInformation](data: Array[T],useTrailedSink:Boolean = false): Future[SubjectType] = async {
+  def runSourceEnvironment[T: ru.TypeTag: ClassTag: TypeInformation: EventTime](data: Array[T],useTrailedSink:Boolean = false): Future[SubjectType] = async {
     val t = SubjectTypeFactory.getSubjectType[T]
 
     if (!await(libraryServices.subjectLibrary.getSubject(t.name).exists())) {

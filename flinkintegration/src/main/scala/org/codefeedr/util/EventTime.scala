@@ -21,3 +21,10 @@ object EventTime {
     def getEventTimeDt:DateTime = EventTime[A].getEventTimeDT(a)
   }
 }
+
+
+object NoEventTime {
+  implicit def getNoEventTime[T]:EventTime[T] = new EventTime[T] {
+    override def getEventTime(a: T): Long = 0L
+  }
+}

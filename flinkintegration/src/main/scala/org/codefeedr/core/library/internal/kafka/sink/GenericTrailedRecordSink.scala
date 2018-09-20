@@ -8,7 +8,7 @@ import org.codefeedr.util.EventTime
 
 import scala.reflect.ClassTag
 
-class GenericTrailedRecordSink[TElement: ClassTag](
+class GenericTrailedRecordSink[TElement: ClassTag : EventTime](
     subjectNode: SubjectNode,
     jobNode: JobNode,
     kafkaProducerFactory: KafkaProducerFactory,

@@ -33,6 +33,7 @@ import org.codefeedr.plugins.github.clients.GitHubProtocol.{Payload, PushEvent}
 import org.codefeedr.plugins.github.input.GitHubSource
 import org.codefeedr.plugins.github.operators.GetOrAddPushEvent
 import org.json4s._
+import org.codefeedr.plugins.github.clients.EventTimeImpl._
 
 import scala.async.Async
 import scala.async.Async.await

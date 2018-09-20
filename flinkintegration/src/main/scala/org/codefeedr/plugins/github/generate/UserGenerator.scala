@@ -1,11 +1,10 @@
 package org.codefeedr.plugins.github.generate
 
 import org.codefeedr.ghtorrent._
-import org.codefeedr.plugins.{BaseEventTimeGenerator, BaseSampleGenerator}
+import org.codefeedr.plugins.BaseEventTimeGenerator
+import org.codefeedr.plugins.github.generate.EventTimeImpl._
 import org.codefeedr.util.Constants
-import org.joda.time.{DateTime, DateTimeZone}
-
-import scala.util.Random
+import org.joda.time.DateTime
 
 class UserGenerator(seed: Long, val staticEventTime: Option[DateTime] = None)
     extends BaseEventTimeGenerator[User](seed) {

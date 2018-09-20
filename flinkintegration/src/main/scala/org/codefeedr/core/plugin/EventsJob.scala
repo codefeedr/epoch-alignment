@@ -31,6 +31,7 @@ import org.codefeedr.plugins.github.clients.GitHubProtocol.{Event, Payload, Push
 import org.codefeedr.plugins.github.input.GitHubSource
 import org.codefeedr.plugins.github.operators.GetOrAddPushEvent
 import org.json4s.DefaultFormats
+import org.codefeedr.plugins.github.clients.EventTimeImpl._
 
 trait EventsJobFactoryComponent {
   this: SubjectLibraryComponent

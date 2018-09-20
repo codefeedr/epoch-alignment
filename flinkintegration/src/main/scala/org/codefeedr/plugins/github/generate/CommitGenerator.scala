@@ -3,6 +3,7 @@ package org.codefeedr.plugins.github.generate
 import org.codefeedr.ghtorrent._
 import org.codefeedr.plugins.BaseEventTimeGenerator
 import org.joda.time.DateTime
+import org.codefeedr.plugins.github.generate.EventTimeImpl._
 
 class CommitGenerator(seed: Long, val staticEventTime: Option[DateTime] = None)
     extends BaseEventTimeGenerator[Commit](seed) {

@@ -20,13 +20,14 @@
 package org.codefeedr.core.library.internal.kafka.sink
 
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
+import org.codefeedr.util.EventTime
 
 import scala.reflect.ClassTag
 
 /**
   * Created by Niels on 31/07/2017.
   */
-class KafkaGenericSink[TData: ClassTag](val subjectNode: SubjectNode,
+class KafkaGenericSink[TData: ClassTag : EventTime](val subjectNode: SubjectNode,
                                         jobNode: JobNode,
                                         kafkaProducerFactory: KafkaProducerFactory,
                                         epochStateManager: EpochStateManager,

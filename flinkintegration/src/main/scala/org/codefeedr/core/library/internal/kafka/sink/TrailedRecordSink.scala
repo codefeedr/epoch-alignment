@@ -3,6 +3,7 @@ package org.codefeedr.core.library.internal.kafka.sink
 import org.apache.flink.types.Row
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
 import org.codefeedr.model.{ActionType, Record, RecordSourceTrail, TrailedRecord}
+import org.codefeedr.util.NoEventTime._
 
 /**
   * A sink for directly dumping trailed records

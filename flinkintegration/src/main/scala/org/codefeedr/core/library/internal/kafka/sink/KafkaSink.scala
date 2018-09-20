@@ -58,7 +58,7 @@ case class KafkaSinkState(sinkId: String)
   * Serializable (with lazy initialisation)
   * Created by Niels on 11/07/2017.
   */
-abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
+abstract class KafkaSink[TSink : EventTime, TValue: ClassTag, TKey: ClassTag](
     subjectNode: SubjectNode,
     jobNode: JobNode,
     kafkaProducerFactory: KafkaProducerFactory,
@@ -97,8 +97,6 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
 
   override def getLastEventTime:Long = lastEventTime
   override def getCurrentOffset: Long = gatheredEvents
-
-  def getEventTime()
 
 
   private def getSinkState: KafkaSinkState = sinkState match {

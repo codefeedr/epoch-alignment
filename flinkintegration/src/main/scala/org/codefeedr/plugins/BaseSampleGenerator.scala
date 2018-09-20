@@ -1,5 +1,6 @@
 package org.codefeedr.plugins
 
+import org.codefeedr.util.EventTime
 import org.codefeedr.util.EventTime._
 import org.joda.time.{DateTime, DateTimeZone}
 
@@ -64,7 +65,7 @@ abstract class BaseSampleGenerator[TSource](val seed: Long) {
   * @param seed
   * @tparam TSource
   */
-abstract class BaseEventTimeGenerator[TSource](seed: Long)
+abstract class BaseEventTimeGenerator[TSource : EventTime](seed: Long)
     extends BaseSampleGenerator[TSource](seed) {
   override def generateWithEventTime(): (TSource, Long) = {
     val element = generate()
