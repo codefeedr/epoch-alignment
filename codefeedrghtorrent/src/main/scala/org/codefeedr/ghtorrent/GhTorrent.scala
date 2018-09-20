@@ -33,12 +33,6 @@ import org.joda.time.DateTimeZone
   Work in progress, classes are added as needed
  */
 
-trait EventTime {
-  val eventTime: Long
-  def getEventTime:DateTime =
-    new DateTime(eventTime, DateTimeZone.UTC)
-}
-
 /**
   *
   * @param id
@@ -72,7 +66,7 @@ case class User(id: Int,
                 city: Option[String],
                 updated_at: Long,
                 eventTime: Long)
-    extends EventTime
+
 
 /**
   * Github commit
@@ -90,7 +84,7 @@ case class Commit(id: Int,
                   project_id: Int,
                   created_at: Long,
                   eventTime: Long)
-    extends EventTime
+
 
 /**
   * Project on github
@@ -114,4 +108,4 @@ case class Project(id: Int,
                    deleted: Boolean,
                    updated_at: Long,
                    eventTime: Long)
-    extends EventTime
+

@@ -1,6 +1,6 @@
 package org.codefeedr.plugins
 
-import org.codefeedr.ghtorrent.EventTime
+import org.codefeedr.util.EventTime._
 import org.joda.time.{DateTime, DateTimeZone}
 
 import scala.util.Random
@@ -64,10 +64,10 @@ abstract class BaseSampleGenerator[TSource](val seed: Long) {
   * @param seed
   * @tparam TSource
   */
-abstract class BaseEventTimeGenerator[TSource <: EventTime](seed: Long)
+abstract class BaseEventTimeGenerator[TSource](seed: Long)
     extends BaseSampleGenerator[TSource](seed) {
   override def generateWithEventTime(): (TSource, Long) = {
     val element = generate()
-    (element, element.eventTime)
+    (element, element.getEventTime)
   }
 }

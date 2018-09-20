@@ -8,6 +8,8 @@ import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
 import org.apache.flink.streaming.api.functions.source.{RichParallelSourceFunction, RichSourceFunction, SourceFunction}
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.codefeedr.configuration.ConfigurationProviderComponent
+import org.codefeedr.core.library.internal.logging.MeasuredCheckpointedFunction
+import org.codefeedr.util.LazyMdcLogging
 import org.slf4j.MDC
 
 import scala.collection.JavaConverters._
@@ -44,13 +46,17 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
       extends RichParallelSourceFunction[TSource]
       with CheckpointedFunction
       with CheckpointListener
-      with LazyLogging {
+      with MeasuredCheckpointedFunction {
 
     @volatile private var running = true
     @volatile private var currentOffset: Long = 0
-    @volatile private var lastOffset:Long = 0
+    @volatile private var lastEventTime: Long = 0
     @volatile private var currentCheckpoint: Long = 0
     @transient private lazy val parallelIndex = getRuntimeContext.getIndexOfThisSubtask
+
+    override def getCurrentOffset: Long = currentOffset
+
+    override def getLastEventTime: Long = lastEventTime
 
     //Number of elements that is generated outside of the checkpointlock
     lazy private val generationBatchSize: Int =
@@ -58,17 +64,12 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     //Current state object
     var state: ListState[GeneratorSourceState] = _
 
-    private def getLabel: String = s"GeneratorSource $name[$parallelIndex] cp($currentCheckpoint)"
+    def getLabel: String = s"GeneratorSource $name[$parallelIndex] cp($currentCheckpoint)"
 
-    private def logWithMdc(message:String, event:String): Unit = {
-      MDC.put("event", event)
-      MDC.put("operator",name)
-      MDC.put("parallelIndex", parallelIndex.toString)
-      logger.info(message)
-      MDC.remove("operator")
-      MDC.remove("parallelIndex")
-      MDC.remove("event")
-    }
+    @transient lazy val getMdcMap = Map(
+      "operator" -> name,
+      "parallelIndex" -> parallelIndex.toString
+      )
 
     @transient private lazy val generationSource = 1 to generationBatchSize
 
@@ -93,23 +94,22 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
         ctx.getCheckpointLock.synchronized {
           currentOffset += generationBatchSize
           nextElements.foreach(o => ctx.collectWithTimestamp(o._1, o._2))
+          lastEventTime = nextElements.last._2
         }
+
       }
+    }
+
+    override def snapshotState(context:FunctionSnapshotContext):Unit = {
+      currentCheckpoint = context.getCheckpointId
+      super.snapshotState(context)
+      state.update(List(getState).asJava)
     }
 
     override def cancel(): Unit = {
       running = false
     }
 
-    override def snapshotState(context: FunctionSnapshotContext): Unit = {
-      currentCheckpoint = context.getCheckpointId
-      logger.debug(s"Snapshotting state of $getLabel")
-      MDC.put("elements", s"${currentOffset-lastOffset}")
-      logWithMdc(s"$getLabel Collected ${currentOffset - lastOffset} elements. Current offset is $currentOffset","generatorSnapshot")
-      MDC.remove("elements")
-      lastOffset = currentOffset
-      state.update(List(getState).asJava)
-    }
 
     override def initializeState(context: FunctionInitializationContext): Unit = {
       if (!getRuntimeContext.asInstanceOf[StreamingRuntimeContext].isCheckpointingEnabled) {
@@ -143,6 +143,8 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     override def notifyCheckpointComplete(checkpointId: Long): Unit = {
       logger.info(s"$getLabel was notified of completed checkpoint $checkpointId")
     }
+
+
   }
 
 }

@@ -31,10 +31,11 @@ import org.apache.flink.streaming.api.CheckpointingMode
 import org.apache.flink.streaming.api.functions.sink.{SinkFunction, TwoPhaseCommitSinkFunction}
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.apache.kafka.clients.producer.{Callback, KafkaProducer, ProducerRecord, RecordMetadata}
+import org.codefeedr.core.library.internal.logging.MeasuredCheckpointedFunction
 import org.codefeedr.core.library.metastore.{JobNode, ProducerNode, QuerySinkNode, SubjectNode}
 import org.codefeedr.model._
 import org.codefeedr.model.zookeeper.{Producer, QuerySink}
-import org.codefeedr.util.Stopwatch
+import org.codefeedr.util.{EventTime, LazyMdcLogging, Stopwatch}
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 import org.slf4j.MDC
@@ -46,6 +47,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, Promise, blocking}
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
+import org.codefeedr.util.EventTime._
 
 case class KafkaSinkState(sinkId: String)
 
@@ -56,7 +58,7 @@ case class KafkaSinkState(sinkId: String)
   * Serializable (with lazy initialisation)
   * Created by Niels on 11/07/2017.
   */
-abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
+abstract class KafkaSink[TSink : EventTime, TValue: ClassTag, TKey: ClassTag](
     subjectNode: SubjectNode,
     jobNode: JobNode,
     kafkaProducerFactory: KafkaProducerFactory,
@@ -64,10 +66,15 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
     extends TwoPhaseCommitSinkFunction[TSink, TransactionState, TransactionContext](
       transactionStateSerializer,
       transactionContextSerializer)
-    with LazyLogging
+    with MeasuredCheckpointedFunction
     with Serializable {
 
   protected val sinkUuid: String
+
+
+
+  @transient private var lastEventTime:Long = 0
+
 
   @transient private var checkpointedState: ListState[KafkaSinkState] = _
   @transient private[kafka] var checkpointingMode: Option[CheckpointingMode] = _
@@ -81,6 +88,19 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
   @transient protected lazy val sinkNode: QuerySinkNode = subjectNode.getSinks().getChild(sinkUuid)
 
   @transient private var sinkState: Option[KafkaSinkState] = None
+
+  @transient lazy val getMdcMap = Map(
+    "operator" -> getLabel,
+    "parallelIndex" -> parallelIndex.toString
+  )
+
+
+  override def getLastEventTime:Long = lastEventTime
+  override def getCurrentOffset: Long = gatheredEvents
+
+  def getEventTime()
+
+
   private def getSinkState: KafkaSinkState = sinkState match {
     case None =>
       throw new IllegalStateException(
@@ -105,7 +125,6 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
   @transient protected[sink] lazy val producerPool: List[KafkaProducer[TKey, TValue]] =
     (1 to producerPoolSize)
       .map(i => {
-
         val uuid = UUID.randomUUID().toString
         val id = s"${sinkUuid}_${getSinkState.sinkId}($uuid)_$i" //($uuid)"
         kafkaProducerFactory.create[TKey, TValue](id)
@@ -166,7 +185,6 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
         }
       }
     }
-
     if (sinkState.isEmpty) {
       sinkState = Some(KafkaSinkState(parallelIndex.toString))
       updateCheckpointedState()
@@ -210,6 +228,7 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
   override protected[sink] def currentTransaction(): TransactionState = super.currentTransaction()
 
   override def snapshotState(context: FunctionSnapshotContext): Unit = {
+    super.snapshotState(context)
     logger.info(
       s"snapshot State called on $getLabel with checkpoint ${context.getCheckpointId}\nGathered events: $gatheredEvents")
 
@@ -228,6 +247,7 @@ abstract class KafkaSink[TSink, TValue: ClassTag, TKey: ClassTag](
       s"$getLabel sending event on transaction ${transaction.checkPointId} producer ${transaction.producerIndex}")
 
     gatheredEvents += 1
+    lastEventTime = element.getEventTime
     val (key, value) = transform(element)
     val record = new ProducerRecord[TKey, TValue](topic, parallelIndex, key, value)
 

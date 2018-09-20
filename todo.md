@@ -2,6 +2,22 @@
 
 ### Build a sinple generator for sample data
 - Implement a simple query, and measure throughput
+- Per operator, measure throughput and latency
+- Generic implementation to log latency and throughput
 
-### Implement backpressure on the GeneratorSource through the zookeeper state
 
+- Think about how to deploy configuration
+
+- Define and export Kibana configuration
+
+
+### Intermediate measurements
+
+- Implement backpressure in kafkaSink
+- Align checkpoints, measure throughput
+
+
+
+
+### Advanced Measurements
+- Be able to perform a hot-swap

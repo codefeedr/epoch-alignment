@@ -4,10 +4,11 @@ import org.apache.flink.types.Row
 import org.codefeedr.core.library.SubjectFactoryComponent
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
 import org.codefeedr.model._
+import org.codefeedr.util.EventTime
 
 import scala.reflect.ClassTag
 
-class GenericTrailedRecordSink[TElement: ClassTag](
+class GenericTrailedRecordSink[TElement: ClassTag : EventTime](
     subjectNode: SubjectNode,
     jobNode: JobNode,
     kafkaProducerFactory: KafkaProducerFactory,

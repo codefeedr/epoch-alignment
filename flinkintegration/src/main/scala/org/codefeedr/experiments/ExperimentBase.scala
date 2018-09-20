@@ -36,5 +36,4 @@ trait ExperimentBase extends CodefeedrComponents {
     env.setParallelism(16)
     env
   }
-
 }

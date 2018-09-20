@@ -26,15 +26,11 @@ import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.types.Row
 import org.codefeedr.core.library.internal.kafka._
 import org.codefeedr.core.library.internal.kafka.sink._
-import org.codefeedr.core.library.internal.kafka.source.{
-  KafkaConsumerFactoryComponent,
-  KafkaGenericSource,
-  KafkaGenericTrailedSource,
-  KafkaRowSource
-}
+import org.codefeedr.core.library.internal.kafka.source.{KafkaConsumerFactoryComponent, KafkaGenericSource, KafkaGenericTrailedSource, KafkaRowSource}
 import org.codefeedr.core.library.internal.{KeyFactory, RecordTransformer, SubjectTypeFactory}
 import org.codefeedr.core.library.metastore.{JobNode, SubjectLibraryComponent, SubjectNode}
 import org.codefeedr.model.{ActionType, SubjectType, TrailedRecord}
+import org.codefeedr.util.EventTime
 
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -81,7 +77,7 @@ trait SubjectFactoryComponent extends Serializable {
       * @tparam TData
       * @return
       */
-    def getGenericTrailedSink[TData: ClassTag](
+    def getGenericTrailedSink[TData: ClassTag : EventTime](
         sinkId: String,
         jobName: String): Future[GenericTrailedRecordSink[TData]] = async {
       val (subjectNode, jobNode) = getSubjectJobNode[TData](jobName)
