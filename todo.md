@@ -3,7 +3,6 @@
 ### Build a sinple generator for sample data
 - Implement a simple query, and measure throughput
 - Per operator, measure throughput and latency
-- Generic implementation to log latency and throughput
 
 
 - Think about how to deploy configuration
