@@ -1,4 +1,4 @@
-version: '3.6'
+version: '2'
 
 services:
 
@@ -50,14 +50,13 @@ services:
       - elasticsearch
     restart: on-failure
 
-
   logspout:
     #Using the prebuilt image because it takes very long to build
     image: nvankaam/logspout
     volumes:
       - '/var/run/docker.sock:/tmp/docker.sock'
     environment:
-      ROUTE_URIS: logstash://logstash:5000
+      ROUTE_URIS: logstash://athens.ewi.tudelft.nl:5000
       LOGSTASH_TAGS: docker-elk
     depends_on:
       - logstash
