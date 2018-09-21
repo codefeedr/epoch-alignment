@@ -5,7 +5,7 @@ services:
 
 # Flink jobmanager
   jobmanager:
-    restart: always
+    restart: on-failure
     image: flink:1.5.3-alpine
     expose:
       - "6123"
@@ -18,7 +18,7 @@ services:
 
 #Flink taskmanager
   taskmanager:
-    restart: always
+    restart: on-failure
     image: flink:1.5.3-alpine
     volumes:
       - "./config/logback.xml:/opt/flink/conf/logback-console.xml"
@@ -42,7 +42,7 @@ services:
     volumes:
       - '/var/run/docker.sock:/tmp/docker.sock'
     environment:
-      ROUTE_URIS: logstash://logstash:5000
+      ROUTE_URIS: logstash://athens.ewi.tudelft.nl:5000
       LOGSTASH_TAGS: docker-elk
 
     restart: on-failure
