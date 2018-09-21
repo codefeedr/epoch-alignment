@@ -1,5 +1,5 @@
 ---
-version: '3.6'
+version: '2'
 
 services:
 
@@ -7,8 +7,6 @@ services:
   jobmanager:
     restart: always
     image: flink:1.5.3-alpine
-    volumes:
-      - "./certificates:/home/certificates"
     expose:
       - "6123"
     networks: ['flink']
@@ -23,10 +21,7 @@ services:
     restart: always
     image: flink:1.5.3-alpine
     volumes:
-      - "./certificates:/home/certificates"
-      - type: bind
-        source: ./config/logback.xml
-        target: /opt/flink/conf/logback-console.xml
+      - "./config/logback.xml:/opt/flink/conf/logback-console.xml"
     expose:
       - "6121"
       - "6122"
