@@ -6,7 +6,7 @@ services:
 # Flink jobmanager
   jobmanager:
     restart: always
-    image: processfive.azurecr.io/flink:1.0.0
+    image: flink:1.5.3-alpine
     volumes:
       - "./certificates:/home/certificates"
     expose:
@@ -21,9 +21,7 @@ services:
 #Flink taskmanager
   taskmanager:
     restart: always
-    image: processfive.azurecr.io/flink:1.0.0
-    links:
-      - linkedcache
+    image: flink:1.5.3-alpine
     volumes:
       - "./certificates:/home/certificates"
       - type: bind
