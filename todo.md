@@ -2,7 +2,7 @@
 
 ### Build a sinple generator for sample data
 - Implement a simple query, and measure throughput
-- Per operator, measure throughput and latency
+- Per relevant operator, measure throughput and latency
 
 
 - Think about how to deploy configuration
