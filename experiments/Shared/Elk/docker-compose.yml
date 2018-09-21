@@ -56,7 +56,7 @@ services:
     volumes:
       - '/var/run/docker.sock:/tmp/docker.sock'
     environment:
-      ROUTE_URIS: logstash://athens.ewi.tudelft.nl:5000
+      ROUTE_URIS: logstash://logstash:5000
       LOGSTASH_TAGS: docker-elk
     depends_on:
       - logstash
