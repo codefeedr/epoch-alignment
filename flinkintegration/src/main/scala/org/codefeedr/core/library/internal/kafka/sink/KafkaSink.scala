@@ -221,7 +221,7 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
   override protected[sink] def currentTransaction(): TransactionState = super.currentTransaction()
 
   override def snapshotState(context: FunctionSnapshotContext): Unit = {
-    super.snapshotState(context)
+
     logger.info(
       s"snapshot State called on $getLabel with checkpoint ${context.getCheckpointId}\nGathered events: $gatheredEvents")
 
@@ -230,7 +230,8 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
     currentTransaction().checkPointId = context.getCheckpointId
     logger.debug(
       s"$getLabel assigned transaction on producer ${currentTransaction().producerIndex} to checkpoint ${context.getCheckpointId}")
-    super.snapshotState(context)
+    super[TwoPhaseCommitSinkFunction].snapshotState(context)
+    super[MeasuredCheckpointedFunction].snapshotState(context)
   }
 
   override def invoke(transaction: TransactionState,

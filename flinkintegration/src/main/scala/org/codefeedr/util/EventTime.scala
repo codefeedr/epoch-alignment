@@ -6,7 +6,7 @@ import org.joda.time.{DateTime, DateTimeZone}
   * Event time type class
   * @tparam T type implementing event time
   */
-trait EventTime[T] {
+trait EventTime[T] extends Serializable {
   def getEventTime(a: T): Long
   def getEventTimeDT(a: T): DateTime =
     new DateTime(getEventTime(a), DateTimeZone.UTC)
