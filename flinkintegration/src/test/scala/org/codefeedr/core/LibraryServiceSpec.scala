@@ -32,7 +32,7 @@ class LibraryServiceSpec extends AsyncFlatSpec with BeforeAndAfterAll{
 
   override def beforeAll(): Unit = {
     //Initialize the configuration component with the codefeedr.properties file
-    libraryServices.configurationProvider.initConfiguration(ParameterTool.fromArgs(new Array[String](0)),Some("/codefeedr.properties"))
+    libraryServices.configurationProvider.initConfiguration(ParameterTool.fromArgs(new Array[String](0)))
     super.beforeAll()
   }
 }

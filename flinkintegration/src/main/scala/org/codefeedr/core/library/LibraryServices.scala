@@ -56,6 +56,7 @@ trait ConfigurationModule
       connectionTimeout = configurationProvider.getInt("zookeeper.connectionTimeout", Some(5)),
       sessionTimeout = configurationProvider.getInt("zookeeper.sessionTimeout", Some(30))
     )
+
   override val configurationProvider: ConfigurationProvider = new ConfigurationProviderImpl()
   @transient lazy override val kafkaConfiguration: KafkaConfiguration =
     new KafkaConfigurationImpl()

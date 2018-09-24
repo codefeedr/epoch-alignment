@@ -12,8 +12,6 @@ import org.apache.flink.streaming.api.scala._
   * Sample query using generated github data
   */
 object GithubSampleQuery extends ExperimentBase {
-
-  override val propertiesFileName = Some("/codefeedr.properties")
   val seed1 = 1035940093935715931L
   val seed2 = 5548464088400911859L
   val seed3 = 3985731179907005257L

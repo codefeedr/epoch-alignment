@@ -17,7 +17,7 @@ trait ConfigurationProvider extends Serializable {
     *
     * @param configuration custom configuration to initialize with
     */
-  def initConfiguration(configuration: ParameterTool, propertiesFile: Option[String] = None): Unit
+  def initConfiguration(configuration: ParameterTool): Unit
 
   /**
     * Retrieve the parameterTool for the global configuration
@@ -73,12 +73,10 @@ trait FlinkConfigurationProviderComponent extends ConfigurationProviderComponent
 
     /**
       * Sets the configuration
-      *
-      * @param configuration custom configuration to initialize with
-      * @param propertiesFile name of properties file to additionally initialize with
+      * If the passed parameterTool contains a property for "propertiesFile", this path is opened and
+      * @param arguments custom configuration to initialize with. Usually initialized from program arguments
       */
-    def initConfiguration(configuration: ParameterTool,
-                          propertiesFile: Option[String] = None): Unit = {
+    def initConfiguration(arguments: ParameterTool): Unit = {
       if (requested) {
         //Just to validate, the configuration is not modified after it has already been retrieved by some component
         throw new IllegalStateException(
@@ -86,11 +84,20 @@ trait FlinkConfigurationProviderComponent extends ConfigurationProviderComponent
       }
       //Store parameter tool in the static context
       //Needed to also make the components work when there is no stream execution environment
+      val defaultConfiguraiton = loadPropertiesFile("/codefeedr.properties") match {
+        case Some(p) => p
+        case None =>
+          throw new IllegalArgumentException(
+            "No codefeedr.properties found. Did assemly happen properly")
+      }
+
+      val propertiesFile = Option(
+        defaultConfiguraiton.mergeWith(arguments).get("propertiesFile", null))
 
       logger.debug("Initialized parameter tool")
       _parameterTool = propertiesFile.flatMap(loadPropertiesFile) match {
-        case Some(p) => Some(p.mergeWith(configuration))
-        case None => Some(configuration)
+        case Some(p) => Some(p.mergeWith(defaultConfiguraiton.mergeWith(p).mergeWith(arguments)))
+        case None => Some(defaultConfiguraiton.mergeWith(arguments))
       }
     }
 

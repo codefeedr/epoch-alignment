@@ -52,6 +52,7 @@ class CodefeedrConfigurationImplSpec extends FlatSpec {
     assert(t.isSuccess)
   }
 
+
 }
 
 

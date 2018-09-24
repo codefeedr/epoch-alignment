@@ -9,8 +9,6 @@ import org.codefeedr.core.library.CodefeedrComponents
 import org.apache.flink.runtime.state.filesystem.FsStateBackend
 
 trait ExperimentBase extends CodefeedrComponents {
-  protected val propertiesFileName: Option[String] = None
-
   protected def getWindowTime: Time =
     Time.seconds(configurationProvider.getInt("window.size", Some(10)))
 
@@ -18,7 +16,7 @@ trait ExperimentBase extends CodefeedrComponents {
 
   def initialize(args: Array[String]) = {
     val pt = ParameterTool.fromArgs(args)
-    configurationProvider.initConfiguration(pt, propertiesFileName)
+    configurationProvider.initConfiguration(pt)
   }
 
   def getStateBackend: StateBackend =
