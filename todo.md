@@ -5,9 +5,14 @@
 - Per relevant operator, measure throughput and latency
 
 
-- Think about how to deploy configuration
 
 - Define and export Kibana configuration
+
+
+### New generators
+
+- Define a query for hot pull requests (pullrequests with most message-activity)
+- Join pull requests with messages
 
 
 ### Intermediate measurements

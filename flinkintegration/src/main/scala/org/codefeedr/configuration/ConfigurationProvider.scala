@@ -140,7 +140,7 @@ trait FlinkConfigurationProviderComponent extends ConfigurationProviderComponent
     }
 
     /**
-      * @param key     key to look for in the configuration
+      * @param key key to look for in the configuration
       * @param default default value
       * @return
       */

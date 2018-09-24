@@ -106,3 +106,45 @@ case class Project(id: Int,
                    deleted: Boolean,
                    updated_at: Long,
                    eventTime: Long)
+
+
+
+
+case class PullRequest(id: Int,
+                       head_repo_id: Int,
+                       base_repo_id: Int,
+                       head_commit_id: Int,
+                       base_commit_id: Int,
+                       pullreq_id: Int,
+                       intra_brach: Boolean,
+                       eventTime: Long)
+
+case class PullRequestComment(
+                             pull_request_id:Int,
+                             user_id:Int,
+                             comment_id:String,
+                             position: Int,
+                             body: String,
+                             commit_id: Int,
+                            created_at:Long,
+                             eventTime:Long)
+
+case class Issue(id: Int,
+                 repo_id: Int,
+                 reporter_id:Int,
+                 assignee_id:Int,
+                 issue_id:Int,
+                 pull_request:Boolean,
+                 pull_request_id: Int,
+                 created_at:Long,
+                eventTime:Long
+                )
+
+case class IssueComment(
+                       issue_id:Int,
+                       user_id:Int,
+                       comment_id:Int,
+                       created_at:Long,
+                       eventTime:Long
+                       )
+
