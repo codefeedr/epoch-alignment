@@ -7,10 +7,10 @@ class ProjectGeneratorSpec extends FlatSpec {
   implicit val eventTime: DateTime = DateTime.now(DateTimeZone.UTC)
 
   "ProjectGenerator" should "Generate the same element with the same seed" in {
-    assert(new ProjectGenerator(10,Some(eventTime)).generate(1) == new ProjectGenerator(10,Some(eventTime)).generate(1))
+    assert(new ProjectGenerator(10,0,0,Some(eventTime)).generate() == new ProjectGenerator(10,0,0,Some(eventTime)).generate())
   }
 
   it should "Generate different elements with different seeds" in {
-    assert(new ProjectGenerator(10,Some(eventTime)).generate(1) != new ProjectGenerator(11,Some(eventTime)).generate(1))
+    assert(new ProjectGenerator(10,0,0,Some(eventTime)).generate() != new ProjectGenerator(11,0,0,Some(eventTime)).generate())
   }
 }

@@ -17,8 +17,6 @@ import org.apache.flink.streaming.api.functions.source.{
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.codefeedr.configuration.ConfigurationProviderComponent
 import org.codefeedr.core.library.internal.logging.MeasuredCheckpointedFunction
-import org.codefeedr.util.LazyMdcLogging
-import org.slf4j.MDC
 
 import scala.collection.JavaConverters._
 
@@ -36,7 +34,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     * @tparam TSource type of elements exposed by the source
     * @return
     */
-  def createGeneratorSource[TSource](generator: Long => BaseSampleGenerator[TSource],
+  def createGeneratorSource[TSource](generator: (Long, Long, Long) => BaseSampleGenerator[TSource],
                                      seedBase: Long,
                                      name: String): SourceFunction[TSource]
 
@@ -48,7 +46,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     *                  For best results, use a 64 bit prime number
     * @tparam TSource the type to generate
     */
-  class GeneratorSource[TSource](val generator: Long => BaseSampleGenerator[TSource],
+  class GeneratorSource[TSource](val generator: (Long, Long, Long) => BaseSampleGenerator[TSource],
                                  val seedBase: Long,
                                  val name: String)
       extends RichParallelSourceFunction[TSource]
@@ -57,9 +55,11 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
       with MeasuredCheckpointedFunction {
 
     @volatile private var running = true
-    @volatile private var currentOffset: Long = 0
-    @volatile private var lastEventTime: Long = 0
+    private var currentOffset: Long = 0
+    private var lastEventTime: Long = 0
     @volatile private var currentCheckpoint: Long = 0
+    @volatile private var waitForCp: Option[Long] = None
+
     @transient private lazy val parallelIndex = getRuntimeContext.getIndexOfThisSubtask
 
     override def getCurrentOffset: Long = currentOffset
@@ -84,9 +84,12 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     /**
       * Generates a sequence of elements of TSource, with the length of the configured generationBatchSize
       */
-    private def generate(): Seq[(TSource, Long)] =
+    private def generate(): Seq[Either[GenerationResponse, (TSource, Long)]] =
       generationSource
-        .map(o => generator(seedBase * (currentOffset + o)).generateWithEventTime(currentCheckpoint))
+        .map(
+          o =>
+            generator(seedBase * (currentOffset + o), currentCheckpoint, currentOffset + o)
+              .generateWithEventTime())
         .toList
 
     /**
@@ -100,9 +103,26 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
         val nextElements = generate()
         //Collect them within the checkpoint lock, and update the current offset
         ctx.getCheckpointLock.synchronized {
-          currentOffset += generationBatchSize
-          nextElements.foreach(o => ctx.collectWithTimestamp(o._1, o._2))
-          lastEventTime = nextElements.last._2
+          nextElements.foreach {
+            case Right(v) => {
+              lastEventTime = v._2
+              currentOffset += 1
+              ctx.collectWithTimestamp(v._1, v._2)
+            }
+            case Left(w) =>
+              w match {
+                case WaitForNextCheckpoint(nextCp) => waitForCp = Some(nextCp)
+              }
+          }
+        }
+
+        //Check if run should wait for the next checkpoint
+        while (waitForCp.nonEmpty) {
+          if (currentCheckpoint >= waitForCp.get) {
+            waitForCp = None
+          } else {
+            Thread.sleep(1)
+          }
         }
 
       }

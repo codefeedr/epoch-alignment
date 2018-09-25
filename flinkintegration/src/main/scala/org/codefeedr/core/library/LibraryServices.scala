@@ -141,7 +141,7 @@ trait CodefeedrComponents extends AbstractCodefeedrComponents with PluginCompone
   @transient lazy override val epochStateManager = new EpochStateManager()
   @transient lazy override val kafkaController = new KafkaController()
 
-  def createGeneratorSource[TSource](generator: Long => BaseSampleGenerator[TSource],
+  def createGeneratorSource[TSource](generator: (Long, Long, Long) => BaseSampleGenerator[TSource],
                                      seedBase: Long,
                                      name: String): SourceFunction[TSource] =
     new GeneratorSource[TSource](generator, seedBase, name)

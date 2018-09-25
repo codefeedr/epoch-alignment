@@ -26,9 +26,13 @@ object GithubSampleQuery extends ExperimentBase {
 
     // val commits = env.addSource(createGeneratorSource((l:Long) => new CommitGenerator(l),seed1,"CommitGenerator"))
     val users = env.addSource(
-      createGeneratorSource((l: Long) => new UserGenerator(l), seed2, "UserGenerator"))
+      createGeneratorSource((l: Long, c: Long, o: Long) => new UserGenerator(l, c, o),
+                            seed2,
+                            "UserGenerator"))
     val projects = env.addSource(
-      createGeneratorSource((l: Long) => new ProjectGenerator(l), seed3, "ProjectGenerator"))
+      createGeneratorSource((l: Long, c: Long, o: Long) => new ProjectGenerator(l, c, o),
+                            seed3,
+                            "ProjectGenerator"))
 
     val userProjects =
       users

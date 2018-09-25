@@ -14,19 +14,33 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FlatSpec}
 
 
 
+object SeedGenerator {
+  var currentGenerated:Int = 0
+}
+
 /**
   * Test generator that just exposes the passed seed
   * Used for unit testing the generator source
   * @param baseSeed the element that will be exposed
   */
-class SeedGenerator(baseSeed:Long) extends BaseSampleGenerator[Long](baseSeed) {
+class SeedGenerator(baseSeed:Long,checkpoint:Long,offset:Long, val maxCount:Int = 4, val waitForCp:Long = 1) extends BaseSampleGenerator[Long](baseSeed,checkpoint,offset) {
+
+
 
   override val staticEventTime: Option[DateTime] = None
   /**
     * Implement to generate a random value
     * @return
     */
-  override def generate(checkpoint:Long): Long = baseSeed
+  override def generate(): Either[GenerationResponse,Long] = {
+    if(SeedGenerator.currentGenerated < maxCount || checkpoint >= waitForCp) {
+      SeedGenerator.currentGenerated += 1
+      Right(baseSeed)
+    } else {
+      Left(WaitForNextCheckpoint(waitForCp))
+    }
+
+  }
 }
 
 
@@ -42,7 +56,7 @@ class GeneratorSourceSpec
   val configurationProvider:ConfigurationProvider = mock[ConfigurationProvider]
   private var sourceContext:SourceFunction.SourceContext[Long] = _
   private val runtimeContext:StreamingRuntimeContext = mock[StreamingRuntimeContext]
-  private val generator = (i:Long) => new SeedGenerator(i)
+  private val generator = (i:Long,c:Long,o:Long) => new SeedGenerator(i,c,o)
 
   "GeneratorSource.run" should "call generator with a unique seed" in {
     //Arrange
@@ -55,6 +69,32 @@ class GeneratorSourceSpec
     //Assert
     assert(collector.getElements == List(3,6,9,12))
   }
+
+  it should "wait for the next checkpoint when the generator returns GenerationResponse WaitForNextCheckpoint" in {
+    //Arrange
+    val stateStore = new TestListState[GeneratorSourceState]
+    val source = getInitializedGeneratorSource
+    source.initializeState(TestFunctionInitializationContext(isRestored = false,stateStore))
+
+    val collector = new CallbackCollector[Long](8,() => source.cancel())
+
+    //Act
+    val thread = new Thread {
+      override def run: Unit = {
+        source.run(collector)
+      }
+    }
+    thread.start()
+    thread.join(100)
+    val r1 = collector.getElements
+    source.snapshotState(new TestSnapshotContext(1))
+    thread.join(100)
+    val r2 = collector.getElements
+
+    assert(r1 == List(3,6,9,12))
+    assert(r2 == List(3,6,9,12,15,18,21,24))
+  }
+
 
   "GeneratorSource.SnapshotState" should "Store the offset of the number of collected elements" in {
     //Arrange
@@ -101,7 +141,13 @@ class GeneratorSourceSpec
     sourceGenerator
   }
 
+  override def afterEach(): Unit = {
+    SeedGenerator.currentGenerated = 0
+    super.afterEach()
+  }
+
   override def beforeEach(): Unit = {
+    SeedGenerator.currentGenerated = 0
     super.beforeEach()
   }
 
@@ -121,5 +167,5 @@ class GeneratorSourceSpec
     * @tparam TSource type of elements exposed by the source
     * @return
     */
-  override def createGeneratorSource[TSource](generator: Long => BaseSampleGenerator[TSource], seedBase: Long, name: String): SourceFunction[TSource] = ???
+  override def createGeneratorSource[TSource](generator: (Long,Long,Long) => BaseSampleGenerator[TSource], seedBase: Long, name: String): SourceFunction[TSource] = ???
 }

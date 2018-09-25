@@ -6,6 +6,21 @@ import org.joda.time.{DateTime, DateTimeZone}
 
 import scala.util.Random
 
+case class GeneratorConfiguration(
+    checkpoint: Long,
+    offset: Long,
+    parallelism: Long,
+    parallelIndex: Long
+)
+
+trait GenerationResponse {}
+
+/**
+  *
+  * @param checkpoint the checkpoint to wait for
+  */
+case class WaitForNextCheckpoint(checkpoint: Long) extends GenerationResponse
+
 /**
   * Single use generator for a source element with the passed seed
   *
@@ -13,7 +28,7 @@ import scala.util.Random
   * @param seed
   * @tparam TSource
   */
-abstract class BaseSampleGenerator[TSource](val seed: Long) {
+abstract class BaseSampleGenerator[TSource](val seed: Long, val checkpoint: Long, val offset: Long) {
   private val random = new Random(seed)
   val staticEventTime: Option[DateTime]
 
@@ -39,6 +54,40 @@ abstract class BaseSampleGenerator[TSource](val seed: Long) {
     result
   }
 
+  protected def nextLongPareto(maxValue: Long, shape: Int = 4): Long =
+    (1 to shape).map(_ => nextLong(maxValue)).min
+
+  /**
+    * Generates the next id.
+    * Currently, offset is used as ID
+    * @return
+    */
+  protected def nextId(): Long = offset
+
+  /**
+    * Generates an ID for a relation
+    * First picks a random checkpoint, with higher chances to select a recent checkpoint
+    * Next selects a random id within the checkpoint, with higher chances to select a lower checkpoint
+    * @param checkpointSetSize the number of elements that are generated for each checkpoint
+    */
+  protected def nextCheckpointRelation(checkpointSetSize: Long): Long = {
+    val checkpoint = nextCheckpoint()
+    val id = nextLongPareto(checkpointSetSize)
+    checkpoint * checkpointSetSize + id
+  }
+
+  /**
+    * Generates a random past (or current) checkpoint, with a higher chance of selecting more recent checkpoints
+    * @return
+    */
+  protected def nextCheckpoint(): Long = {
+    val cp = checkpoint - java.lang.Long.lowestOneBit(random.nextLong())
+    if (cp < 0) {
+      checkpoint
+    }
+    cp
+  }
+
   protected def nextBoolean(): Boolean = random.nextBoolean()
   protected def nextDateTimeLong(): Long = random.nextLong()
   protected def nextDateTime(): DateTime = new DateTime(nextDateTimeLong())
@@ -49,14 +98,16 @@ abstract class BaseSampleGenerator[TSource](val seed: Long) {
     * Implement to generate a random value
     * @return
     */
-  def generate(checkpoint:Long): TSource
+  def generate(): Either[GenerationResponse, TSource]
 
   /**
     * Generates a new random value, with event time
     * @return
     */
-  def generateWithEventTime(checkpoint:Long): (TSource, Long) = (generate(checkpoint), getEventTime.getMillis)
-
+  def generateWithEventTime(): Either[GenerationResponse, (TSource, Long)] = generate() match {
+    case Right(v) => Right(v, getEventTime.getMillis)
+    case Left(v) => Left(v)
+  }
 }
 
 /**
@@ -65,10 +116,14 @@ abstract class BaseSampleGenerator[TSource](val seed: Long) {
   * @param seed
   * @tparam TSource
   */
-abstract class BaseEventTimeGenerator[TSource: EventTime](seed: Long)
-    extends BaseSampleGenerator[TSource](seed) {
-  override def generateWithEventTime(checkpoint:Long): (TSource, Long) = {
-    val element = generate(checkpoint)
-    (element, element.getEventTime)
+abstract class BaseEventTimeGenerator[TSource: EventTime](seed: Long,
+                                                          checkpoint: Long,
+                                                          offset: Long)
+    extends BaseSampleGenerator[TSource](seed, checkpoint, offset) {
+  override def generateWithEventTime(): Either[GenerationResponse, (TSource, Long)] = {
+    generate() match {
+      case Right(element) => Right(element, element.getEventTime)
+      case Left(v) => Left(v)
+    }
   }
 }
