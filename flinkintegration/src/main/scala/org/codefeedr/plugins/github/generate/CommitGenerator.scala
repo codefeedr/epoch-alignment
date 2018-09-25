@@ -14,7 +14,7 @@ class CommitGenerator(seed: Long, val staticEventTime: Option[DateTime] = None)
     *
     * @return
     */
-  override def generate(): Commit = Commit(
+  override def generate(checkpoint:Long): Commit = Commit(
     id = nextInt(1000000),
     sha = nextString(16),
     author_id = nextInt(1000000),

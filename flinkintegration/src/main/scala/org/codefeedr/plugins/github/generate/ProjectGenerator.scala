@@ -14,7 +14,7 @@ class ProjectGenerator(seed: Long, val staticEventTime: Option[DateTime] = None)
     *
     * @return
     */
-  override def generate(): Project = Project(
+  override def generate(checkpoint:Long): Project = Project(
     id = nextInt(10000),
     url = nextString(16),
     owner_id = nextInt(1000000),

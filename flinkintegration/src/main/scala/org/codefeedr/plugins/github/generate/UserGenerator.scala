@@ -15,7 +15,7 @@ class UserGenerator(seed: Long, val staticEventTime: Option[DateTime] = None)
     *
     * @return
     */
-  override def generate(): User = User(
+  override def generate(checkpoint:Long): User = User(
     id = nextInt(1000000),
     login = nextString(6),
     name = nextString(6),

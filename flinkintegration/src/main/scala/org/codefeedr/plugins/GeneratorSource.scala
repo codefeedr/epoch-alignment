@@ -86,7 +86,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
       */
     private def generate(): Seq[(TSource, Long)] =
       generationSource
-        .map(o => generator(seedBase * (currentOffset + o)).generateWithEventTime())
+        .map(o => generator(seedBase * (currentOffset + o)).generateWithEventTime(currentCheckpoint))
         .toList
 
     /**

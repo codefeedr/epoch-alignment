@@ -49,13 +49,13 @@ abstract class BaseSampleGenerator[TSource](val seed: Long) {
     * Implement to generate a random value
     * @return
     */
-  def generate(): TSource
+  def generate(checkpoint:Long): TSource
 
   /**
     * Generates a new random value, with event time
     * @return
     */
-  def generateWithEventTime(): (TSource, Long) = (generate(), getEventTime.getMillis)
+  def generateWithEventTime(checkpoint:Long): (TSource, Long) = (generate(checkpoint), getEventTime.getMillis)
 
 }
 
@@ -67,8 +67,8 @@ abstract class BaseSampleGenerator[TSource](val seed: Long) {
   */
 abstract class BaseEventTimeGenerator[TSource: EventTime](seed: Long)
     extends BaseSampleGenerator[TSource](seed) {
-  override def generateWithEventTime(): (TSource, Long) = {
-    val element = generate()
+  override def generateWithEventTime(checkpoint:Long): (TSource, Long) = {
+    val element = generate(checkpoint)
     (element, element.getEventTime)
   }
 }

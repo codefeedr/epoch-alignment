@@ -26,7 +26,7 @@ class SeedGenerator(baseSeed:Long) extends BaseSampleGenerator[Long](baseSeed) {
     * Implement to generate a random value
     * @return
     */
-  override def generate(): Long = baseSeed
+  override def generate(checkpoint:Long): Long = baseSeed
 }
 
 
