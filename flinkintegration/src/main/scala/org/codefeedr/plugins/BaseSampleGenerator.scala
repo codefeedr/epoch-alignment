@@ -54,15 +54,15 @@ abstract class BaseSampleGenerator[TSource](val seed: Long, val checkpoint: Long
     result
   }
 
-  protected def nextLongPareto(maxValue: Long, shape: Int = 4): Long =
-    (1 to shape).map(_ => nextLong(maxValue)).min
+  protected def nextIntPareto(maxValue: Int, shape: Int = 4): Int =
+    (1 to shape).map(_ => nextInt(maxValue)).min
 
   /**
     * Generates the next id.
     * Currently, offset is used as ID
     * @return
     */
-  protected def nextId(): Long = offset
+  protected def nextId(): Int = offset.toInt
 
   /**
     * Generates an ID for a relation
@@ -70,9 +70,9 @@ abstract class BaseSampleGenerator[TSource](val seed: Long, val checkpoint: Long
     * Next selects a random id within the checkpoint, with higher chances to select a lower checkpoint
     * @param checkpointSetSize the number of elements that are generated for each checkpoint
     */
-  protected def nextCheckpointRelation(checkpointSetSize: Long): Long = {
+  protected def nextCheckpointRelation(checkpointSetSize: Int): Int = {
     val checkpoint = nextCheckpoint()
-    val id = nextLongPareto(checkpointSetSize)
+    val id = nextIntPareto(checkpointSetSize)
     checkpoint * checkpointSetSize + id
   }
 
@@ -80,8 +80,8 @@ abstract class BaseSampleGenerator[TSource](val seed: Long, val checkpoint: Long
     * Generates a random past (or current) checkpoint, with a higher chance of selecting more recent checkpoints
     * @return
     */
-  protected def nextCheckpoint(): Long = {
-    val cp = checkpoint - java.lang.Long.lowestOneBit(random.nextLong())
+  protected def nextCheckpoint(): Int = {
+    val cp = checkpoint.toInt - java.lang.Long.numberOfLeadingZeros(random.nextLong())
     if (cp < 0) {
       checkpoint
     }
