@@ -5,8 +5,8 @@
 
 
 ### New generators
-- 
-- Deal with parallel generators
+X Add a simple logging sink, which just logs latency and throughput statistics
+- Deal with parallel generators (especially the fixed number of events per checkpoint type generator)
 
 
 

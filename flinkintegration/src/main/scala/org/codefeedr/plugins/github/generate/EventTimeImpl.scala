@@ -28,4 +28,5 @@ object EventTimeImpl {
     new EventTime[IssueComment] {
       override def getEventTime(a: IssueComment): Long = a.eventTime
     }
+
 }
