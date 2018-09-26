@@ -29,7 +29,7 @@ class CallbackCollector[TSource](count:Int, cb:() => Unit) extends SourceFunctio
 
   override def collectWithTimestamp(element: TSource, timestamp: Long): Unit = collect(element)
 
-  override def emitWatermark(mark: Watermark): Unit = ???
+  override def emitWatermark(mark: Watermark): Unit = {}
 
   override def markAsTemporarilyIdle(): Unit = ???
 
