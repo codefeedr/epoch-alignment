@@ -83,9 +83,10 @@ abstract class BaseSampleGenerator[TSource](val seed: Long, val checkpoint: Long
   protected def nextCheckpoint(): Int = {
     val cp = checkpoint.toInt - java.lang.Long.numberOfLeadingZeros(random.nextLong())
     if (cp < 0) {
-      checkpoint
+      checkpoint.toInt
+    } else {
+      cp
     }
-    cp
   }
 
   protected def nextBoolean(): Boolean = random.nextBoolean()

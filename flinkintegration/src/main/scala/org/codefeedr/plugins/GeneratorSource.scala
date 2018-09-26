@@ -15,6 +15,7 @@ import org.apache.flink.streaming.api.functions.source.{
   SourceFunction
 }
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
+import org.apache.flink.streaming.api.watermark.Watermark
 import org.codefeedr.configuration.ConfigurationProviderComponent
 import org.codefeedr.core.library.internal.logging.MeasuredCheckpointedFunction
 
@@ -105,6 +106,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
         ctx.getCheckpointLock.synchronized {
           nextElements.foreach {
             case Right(v) => {
+              logger.debug(v._1.toString)
               lastEventTime = v._2
               currentOffset += 1
               ctx.collectWithTimestamp(v._1, v._2)
@@ -114,6 +116,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
                 case WaitForNextCheckpoint(nextCp) => waitForCp = Some(nextCp)
               }
           }
+          ctx.emitWatermark(new Watermark(lastEventTime))
         }
 
         //Check if run should wait for the next checkpoint

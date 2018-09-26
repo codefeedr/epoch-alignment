@@ -62,8 +62,7 @@
             <pattern>%d{HH:mm:ss.SSS} [%thread] [%X{envId}] %-5level %logger - %msg%n</pattern>
         </encoder>
     </appender>
-
-    <!--
+<!--
     <appender name="STASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
         <destination>localdocker:5001</destination>
         <encoder class="net.logstash.logback.encoder.LogstashEncoder" >
@@ -76,6 +75,8 @@
         <!--<appender-ref ref="STASH" />-->
         <appender-ref ref="STDOUT" />
     </root>
+    <logger name="org.codefeedr.plugins.GeneratorSourceComponent$GeneratorSource" level="INFO" />
+
 
     <logger name="org.apache.kafka" level="WARN"/>
     <logger name="org.apache.flink" level="WARN"/>
@@ -86,5 +87,8 @@
 
     <!-- If you do not place this on info level, errors that trigger a restart will not be logged-->
     <logger name="org.apache.flink.runtime.taskmanager" level="INFO" />
+
+
+
 
 </configuration>

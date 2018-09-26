@@ -30,18 +30,4 @@ class PullRequestCommentGenerator(seed: Long,
         eventTime = getEventTime.getMillis
       ))
   }
-
-  private def generatePr(): PullRequest = {
-    PullRequest(
-      id = nextId(),
-      head_repo_id = nextInt(100),
-      base_repo_id = nextInt(100),
-      head_commit_id = nextInt(100),
-      base_commit_id = nextInt(100),
-      pullreq_id = nextId(),
-      intra_brach = nextBoolean(),
-      eventTime = getEventTime.getMillis
-    )
-  }
-
 }

@@ -20,4 +20,12 @@ object EventTimeImpl {
     new EventTime[PullRequestComment] {
       override def getEventTime(a: PullRequestComment): Long = a.eventTime
     }
+  implicit val IssueEventTime: EventTime[Issue] =
+    new EventTime[Issue] {
+      override def getEventTime(a: Issue): Long = a.eventTime
+    }
+  implicit val IssueCommentEventTime: EventTime[IssueComment] =
+    new EventTime[IssueComment] {
+      override def getEventTime(a: IssueComment): Long = a.eventTime
+    }
 }

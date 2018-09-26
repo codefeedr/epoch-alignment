@@ -31,7 +31,7 @@ trait ExperimentBase extends CodefeedrComponents {
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
     env.enableCheckpointing(1000)
     env.setStateBackend(getStateBackend)
-    env.setParallelism(16)
+    env.setParallelism(1)
     env
   }
 }
