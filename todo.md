@@ -5,9 +5,7 @@
 
 
 ### New generators
-- Build an ID Generator
-- Define a query for hot pull requests (pullrequests with most message-activity)
-- Join pull requests with messages
+- 
 - Deal with parallel generators
 
 
