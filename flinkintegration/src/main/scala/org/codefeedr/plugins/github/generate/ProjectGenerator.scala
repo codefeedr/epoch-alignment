@@ -8,7 +8,7 @@ import org.codefeedr.plugins.github.generate.EventTimeImpl._
 class ProjectGenerator(seed: Long,
                        checkpoint: Long,
                        offset: Long,
-                       val staticEventTime: Option[DateTime] = None)
+                       val staticEventTime: Option[Long] = None)
     extends BaseEventTimeGenerator[Project](seed, checkpoint, offset) {
   private val types = Array("TypeA", "TypeB")
 
@@ -29,6 +29,6 @@ class ProjectGenerator(seed: Long,
         forked_from = nextInt(10000),
         deleted = nextBoolean(),
         updated_at = nextDateTimeLong(),
-        eventTime = getEventTime.getMillis
+        eventTime = getEventTime
       ))
 }

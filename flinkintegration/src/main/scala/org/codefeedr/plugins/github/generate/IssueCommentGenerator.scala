@@ -9,7 +9,7 @@ class IssueCommentGenerator(seed: Long,
                             checkpoint: Long,
                             offset: Long,
                             issuesPerCheckpoint: Int,
-                            val staticEventTime: Option[DateTime] = None)
+                            val staticEventTime: Option[Long] = None)
     extends BaseEventTimeGenerator[IssueComment](seed, checkpoint, offset) {
   private val types = Array("TypeA", "TypeB")
 
@@ -25,7 +25,7 @@ class IssueCommentGenerator(seed: Long,
         user_id = nextInt(10000),
         comment_id = nextId(),
         created_at = nextDateTimeLong(),
-        eventTime = getEventTime.getMillis
+        eventTime = getEventTime
       ))
   }
 }

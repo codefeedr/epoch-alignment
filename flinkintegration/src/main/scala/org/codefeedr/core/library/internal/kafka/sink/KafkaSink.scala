@@ -71,6 +71,7 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
 
   protected val sinkUuid: String
 
+  @transient private var lastLatency: Long = 0
   @transient private var lastEventTime: Long = 0
 
   @transient private var checkpointedState: ListState[KafkaSinkState] = _
@@ -91,7 +92,8 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
     "parallelIndex" -> parallelIndex.toString
   )
 
-  override def getLastEventTime: Long = lastEventTime
+
+  override def getLatency: Long = lastLatency
   override def getCurrentOffset: Long = gatheredEvents
 
   private def getSinkState: KafkaSinkState = sinkState match {
@@ -245,6 +247,7 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
 
     gatheredEvents += 1
     lastEventTime = element.getEventTime
+    lastLatency = System.currentTimeMillis() - lastEventTime
     val (key, value) = transform(element)
     val record = new ProducerRecord[TKey, TValue](topic, parallelIndex, key, value)
 

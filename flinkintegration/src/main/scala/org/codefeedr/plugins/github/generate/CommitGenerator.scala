@@ -8,7 +8,7 @@ import org.codefeedr.plugins.github.generate.EventTimeImpl._
 class CommitGenerator(seed: Long,
                       checkpoint: Long,
                       offset: Long,
-                      val staticEventTime: Option[DateTime] = None)
+                      val staticEventTime: Option[Long] = None)
     extends BaseEventTimeGenerator[Commit](seed, checkpoint, offset) {
   private val types = Array("TypeA", "TypeB")
 
@@ -26,6 +26,6 @@ class CommitGenerator(seed: Long,
         committer_id = nextInt(1000000),
         project_id = nextInt(10000),
         created_at = nextDateTimeLong(),
-        eventTime = getEventTime.getMillis
+        eventTime = getEventTime
       ))
 }

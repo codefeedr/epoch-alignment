@@ -27,7 +27,7 @@ class SeedGenerator(baseSeed:Long,checkpoint:Long,offset:Long, val maxCount:Int 
 
 
 
-  override val staticEventTime: Option[DateTime] = None
+  override val staticEventTime: Option[Long] = None
   /**
     * Implement to generate a random value
     * @return

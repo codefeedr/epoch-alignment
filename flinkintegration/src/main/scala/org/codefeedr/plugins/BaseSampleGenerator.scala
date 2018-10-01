@@ -30,9 +30,9 @@ case class WaitForNextCheckpoint(checkpoint: Long) extends GenerationResponse
   */
 abstract class BaseSampleGenerator[TSource](val seed: Long, val checkpoint: Long, val offset: Long) {
   private val random = new Random(seed)
-  val staticEventTime: Option[DateTime]
+  val staticEventTime: Option[Long]
 
-  protected def getEventTime: DateTime = staticEventTime.getOrElse(DateTime.now(DateTimeZone.UTC))
+  protected def getEventTime: Long = staticEventTime.getOrElse(System.currentTimeMillis())
   protected def nextString(length: Int): String = random.alphanumeric.take(length).mkString
   protected def nextInt(maxValue: Int): Int = random.nextInt(maxValue)
 
@@ -106,7 +106,7 @@ abstract class BaseSampleGenerator[TSource](val seed: Long, val checkpoint: Long
     * @return
     */
   def generateWithEventTime(): Either[GenerationResponse, (TSource, Long)] = generate() match {
-    case Right(v) => Right(v, getEventTime.getMillis)
+    case Right(v) => Right(v, getEventTime)
     case Left(v) => Left(v)
   }
 }

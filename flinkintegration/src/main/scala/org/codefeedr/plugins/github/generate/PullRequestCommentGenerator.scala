@@ -9,7 +9,7 @@ class PullRequestCommentGenerator(seed: Long,
                                   checkpoint: Long,
                                   offset: Long,
                                   pullRequestPerCheckpoint: Int,
-                                  val staticEventTime: Option[DateTime] = None)
+                                  val staticEventTime: Option[Long] = None)
     extends BaseEventTimeGenerator[PullRequestComment](seed, checkpoint, offset) {
   private val types = Array("TypeA", "TypeB")
 
@@ -28,7 +28,7 @@ class PullRequestCommentGenerator(seed: Long,
         body = nextString(50),
         commit_id = nextInt(1000000),
         created_at = nextDateTimeLong(),
-        eventTime = getEventTime.getMillis
+        eventTime = getEventTime
       ))
   }
 }

@@ -14,7 +14,7 @@ class LoggingSinkFunction[TData: EventTime](val name: String)
     extends RichSinkFunction[TData]
     with MeasuredCheckpointedFunction {
   @transient private var gatheredEvents: Long = 0
-  @transient private var lastEventTime: Long = 0
+  @transient private var lastLatency: Long = 0
 
   @transient private lazy val parallelIndex = getRuntimeContext.getIndexOfThisSubtask
   @transient lazy val getMdcMap = Map(
@@ -27,10 +27,10 @@ class LoggingSinkFunction[TData: EventTime](val name: String)
 
   override def invoke(value: TData): Unit = {
     gatheredEvents += 1
-    lastEventTime = value.getEventTime
+    lastLatency = System.currentTimeMillis() - value.getEventTime
   }
 
-  override def getLastEventTime: Long = lastEventTime
+  override def getLatency:Long = lastLatency
 
   override def getCurrentOffset: Long = gatheredEvents
 

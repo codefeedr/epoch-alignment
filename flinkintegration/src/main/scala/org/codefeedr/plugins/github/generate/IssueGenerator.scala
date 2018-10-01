@@ -10,7 +10,7 @@ class IssueGenerator(seed: Long,
                      offset: Long,
                      issuesPerCheckpoint: Int,
                      prPerCheckpoint: Int,
-                     val staticEventTime: Option[DateTime] = None)
+                     val staticEventTime: Option[Long] = None)
     extends BaseEventTimeGenerator[Issue](seed, checkpoint, offset) {
   private val types = Array("TypeA", "TypeB")
 
@@ -37,7 +37,7 @@ class IssueGenerator(seed: Long,
       pull_request = nextBoolean(),
       pull_request_id = nextCheckpointRelation(prPerCheckpoint),
       created_at = nextLong(1000),
-      eventTime = getEventTime.getMillis
+      eventTime = getEventTime
     )
   }
 

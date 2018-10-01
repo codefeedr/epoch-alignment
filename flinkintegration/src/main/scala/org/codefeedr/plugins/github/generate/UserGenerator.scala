@@ -9,7 +9,7 @@ import org.joda.time.DateTime
 class UserGenerator(seed: Long,
                     checkpoint: Long,
                     offset: Long,
-                    val staticEventTime: Option[DateTime] = None)
+                    val staticEventTime: Option[Long] = None)
     extends BaseEventTimeGenerator[User](seed, checkpoint, offset) {
   private val types = Array("TypeA", "TypeB")
 
@@ -36,6 +36,6 @@ class UserGenerator(seed: Long,
         state = Some(randomOf(Constants.states)),
         city = Some(nextString(6)),
         updated_at = nextDateTimeLong(),
-        eventTime = getEventTime.getMillis
+        eventTime = getEventTime
       ))
 }

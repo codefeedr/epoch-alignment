@@ -58,6 +58,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     @volatile private var running = true
     private var currentOffset: Long = 0
     private var lastEventTime: Long = 0
+    private var lastLatency:Long = 0
     @volatile private var currentCheckpoint: Long = 0
     @volatile private var waitForCp: Option[Long] = None
 
@@ -65,7 +66,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
 
     override def getCurrentOffset: Long = currentOffset
 
-    override def getLastEventTime: Long = lastEventTime
+    override def getLatency: Long = lastLatency
 
     //Number of elements that is generated outside of the checkpointlock
     lazy private val generationBatchSize: Int =
@@ -120,6 +121,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
                 case WaitForNextCheckpoint(nextCp) => waitForCp = Some(nextCp)
               }
           }
+          lastLatency = System.currentTimeMillis() - lastEventTime
           ctx.emitWatermark(new Watermark(lastEventTime))
         }
 

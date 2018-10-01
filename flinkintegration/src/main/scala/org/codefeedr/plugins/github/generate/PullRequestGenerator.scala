@@ -9,7 +9,7 @@ class PullRequestGenerator(seed: Long,
                            checkpoint: Long,
                            offset: Long,
                            pullRequestPerCheckpoint: Int,
-                           val staticEventTime: Option[DateTime] = None)
+                           val staticEventTime: Option[Long] = None)
     extends BaseEventTimeGenerator[PullRequest](seed, checkpoint, offset) {
   private val types = Array("TypeA", "TypeB")
 
@@ -35,7 +35,7 @@ class PullRequestGenerator(seed: Long,
       base_commit_id = nextInt(100),
       pullreq_id = nextId(),
       intra_brach = nextBoolean(),
-      eventTime = getEventTime.getMillis
+      eventTime = getEventTime
     )
   }
 

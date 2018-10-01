@@ -16,12 +16,12 @@ trait MeasuredCheckpointedFunction
     with CheckpointedFunction
     with LabeledOperator {
 
-  def getLastEventTime: Long
+  def getLatency: Long
   def getCurrentOffset: Long
 
   private var lastOffset: Long = 0L
 
-  private def getCurrentLatency: Long = DateTime.now().getMillis - getLastEventTime
+  private def getCurrentLatency: Long = getLatency
 
   /**
     * Creates a snapshot of the current state with the passed checkpointId

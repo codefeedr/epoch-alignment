@@ -4,7 +4,7 @@ import org.joda.time.{DateTime, DateTimeZone}
 import org.scalatest.FlatSpec
 
 class UserGeneratorSpec extends FlatSpec {
-  implicit val eventTime: DateTime = DateTime.now(DateTimeZone.UTC)
+  implicit val eventTime: Long = System.currentTimeMillis()
 
   "UserGenerator" should "Generate the same element with the same seed" in {
     assert(new UserGenerator(10,0,0,Some(eventTime)).generate() == new UserGenerator(10,0,0,Some(eventTime)).generate())
