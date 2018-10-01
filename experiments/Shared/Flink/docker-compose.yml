@@ -8,6 +8,8 @@ services:
     restart: on-failure
     build:
       context: flink/
+    volumes:
+      - "./config/logback.xml:/opt/flink/conf/logback-console.xml"
     expose:
       - "6123"
     networks: ['flink']
