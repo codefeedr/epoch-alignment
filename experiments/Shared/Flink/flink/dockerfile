@@ -4,10 +4,8 @@ RUN rm -f /opt/flink/lib/log4j-1.2.17.jar
 RUN rm -f /opt/flink/lib/slf4j-log4j12-1.7.7.jar
 COPY lib /opt/flink/lib/
 
-COPY start.sh /
 
-RUN chmod +x /start.sh
-
-ENTRYPOINT ["/start.sh"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
 EXPOSE 6123 8081
+
 CMD ["help"]
