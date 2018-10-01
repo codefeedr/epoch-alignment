@@ -6,7 +6,7 @@ import org.codefeedr.util.LazyMdcLogging
 import org.joda.time.DateTime
 import org.slf4j.MDC
 
-case class CheckpointMeasurement(checkpointId: Long, offset: Long, elements: Long, latency: Long)
+case class CheckpointMeasurement(checkpointId: Long, offset: Long, elements: Long, latency: Long, checkpointLatency:Long)
 
 /**
   * Checkpointed function that measures
@@ -18,6 +18,7 @@ trait MeasuredCheckpointedFunction
 
   def getLatency: Long
   def getCurrentOffset: Long
+  def getLastEventTime:Long
 
   private var lastOffset: Long = 0L
 
@@ -32,7 +33,8 @@ trait MeasuredCheckpointedFunction
     val measurement = CheckpointMeasurement(checkPointId,
                                             currentOffset,
                                             currentOffset - lastOffset,
-                                            getCurrentLatency)
+                                            getCurrentLatency,
+      System.currentTimeMillis() - getLastEventTime)
     lastOffset = currentOffset
     measurement
   }
@@ -44,11 +46,13 @@ trait MeasuredCheckpointedFunction
     val measurement = snapshotMeasurement(checkpointId)
     MDC.put("elements", s"${measurement.elements}")
     MDC.put("latency", s"${measurement.latency}")
+    MDC.put("checkpointLatency", s"${measurement.latency}")
     MDC.put("category", s"$getCategoryLabel")
     MDC.put("operator", s"$getOperatorLabel")
     logWithMdc(s"$getOperatorLabel snapshotting: ${measurement.toString}", "snapshot")
     MDC.remove("elements")
     MDC.remove("latency")
+    MDC.remove("checkpointLatency")
     MDC.remove("category")
     MDC.remove("operator")
   }

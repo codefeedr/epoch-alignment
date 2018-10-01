@@ -94,6 +94,7 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
 
 
   override def getLatency: Long = lastLatency
+  override def getLastEventTime: Long = lastEventTime
   override def getCurrentOffset: Long = gatheredEvents
 
   private def getSinkState: KafkaSinkState = sinkState match {

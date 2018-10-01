@@ -65,7 +65,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     @transient private lazy val parallelIndex = getRuntimeContext.getIndexOfThisSubtask
 
     override def getCurrentOffset: Long = currentOffset
-
+    override def getLastEventTime: Long = lastEventTime
     override def getLatency: Long = lastLatency
 
     //Number of elements that is generated outside of the checkpointlock
