@@ -15,7 +15,7 @@ class LoggingSinkFunction[TData: EventTime](val name: String)
     with MeasuredCheckpointedFunction {
   @transient private var gatheredEvents: Long = 0
   @transient private var lastLatency: Long = 0
-  @transient private var lastEventTime:Long = 0
+  @transient private var lastEventTime: Long = 0
 
   @transient private lazy val parallelIndex = getRuntimeContext.getIndexOfThisSubtask
   @transient lazy val getMdcMap = Map(
@@ -34,7 +34,7 @@ class LoggingSinkFunction[TData: EventTime](val name: String)
     lastLatency = System.currentTimeMillis() - lastEventTime
   }
 
-  override def getLatency:Long = lastLatency
+  override def getLatency: Long = lastLatency
 
   override def getCurrentOffset: Long = gatheredEvents
 

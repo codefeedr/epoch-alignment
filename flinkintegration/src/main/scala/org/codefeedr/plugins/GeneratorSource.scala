@@ -58,7 +58,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     @volatile private var running = true
     private var currentOffset: Long = 0
     private var lastEventTime: Long = 0
-    private var lastLatency:Long = 0
+    private var lastLatency: Long = 0
     @volatile private var currentCheckpoint: Long = 0
     @volatile private var waitForCp: Option[Long] = None
 

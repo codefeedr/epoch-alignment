@@ -92,7 +92,6 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
     "parallelIndex" -> parallelIndex.toString
   )
 
-
   override def getLatency: Long = lastLatency
   override def getLastEventTime: Long = lastEventTime
   override def getCurrentOffset: Long = gatheredEvents
