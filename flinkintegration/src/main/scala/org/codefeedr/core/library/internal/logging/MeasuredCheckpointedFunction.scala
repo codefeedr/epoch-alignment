@@ -46,7 +46,7 @@ trait MeasuredCheckpointedFunction
     val measurement = snapshotMeasurement(checkpointId)
     MDC.put("elements", s"${measurement.elements}")
     MDC.put("latency", s"${measurement.latency}")
-    MDC.put("checkpointLatency", s"${measurement.latency}")
+    MDC.put("checkpointLatency", s"${measurement.checkpointLatency}")
     MDC.put("category", s"$getCategoryLabel")
     MDC.put("operator", s"$getOperatorLabel")
     logWithMdc(s"$getOperatorLabel snapshotting: ${measurement.toString}", "snapshot")
