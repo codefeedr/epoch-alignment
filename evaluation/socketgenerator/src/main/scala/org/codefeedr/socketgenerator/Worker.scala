@@ -47,12 +47,12 @@ class Worker(config: SocketGeneratorConfig) extends LazyLogging{
             def run(): Unit = {
               val loopRate = rate
 
-              MDC.put("EntityCount", loopRate.toString)
-              MDC.put("Worker", workerName)
+              MDC.put("elements", loopRate.toString)
+              MDC.put("worker", workerName)
               MDC.put("event", "generate")
               logger.info(s"Writing $loopRate elements.")
-              MDC.remove("EntityCount")
-              MDC.remove("Worker")
+              MDC.remove("elements")
+              MDC.remove("worker")
               MDC.remove("event")
 
               for (i <- 1 to loopRate) {

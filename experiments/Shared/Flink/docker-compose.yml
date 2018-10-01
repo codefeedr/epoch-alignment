@@ -6,7 +6,8 @@ services:
 # Flink jobmanager
   jobmanager:
     restart: on-failure
-    image: flink:1.5.3-alpine
+    build:
+      context: flink/
     expose:
       - "6123"
     networks: ['flink']
@@ -19,7 +20,8 @@ services:
 #Flink taskmanager
   taskmanager:
     restart: on-failure
-    image: flink:1.5.3-alpine
+    build:
+      context: flink/
     volumes:
       - "./config/logback.xml:/opt/flink/conf/logback-console.xml"
     expose:

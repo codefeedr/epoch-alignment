@@ -1,7 +1,5 @@
 package org.codefeedr.experiments
 
-
-
 import org.apache.flink.api.common.restartstrategy.RestartStrategies
 import org.apache.flink.api.common.time.Time
 import org.apache.flink.api.java.utils.ParameterTool
@@ -13,7 +11,8 @@ import org.apache.flink.runtime.state.filesystem.FsStateBackend
 
 trait ExperimentBase extends CodefeedrComponents {
   protected def getWindowTime: org.apache.flink.streaming.api.windowing.time.Time =
-    org.apache.flink.streaming.api.windowing.time.Time.seconds(configurationProvider.getInt("window.size", Some(10)))
+    org.apache.flink.streaming.api.windowing.time.Time
+      .seconds(configurationProvider.getInt("window.size", Some(10)))
 
   protected def getStateBackendPath: String = configurationProvider.get("statebackend.path")
 
@@ -34,10 +33,11 @@ trait ExperimentBase extends CodefeedrComponents {
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
     env.enableCheckpointing(1000)
     //env.setStateBackend(getStateBackend)
-    env.setRestartStrategy(RestartStrategies.fixedDelayRestart(
-      0,
-      Time.seconds(60)
-    ))
+    env.setRestartStrategy(
+      RestartStrategies.fixedDelayRestart(
+        0,
+        Time.seconds(60)
+      ))
     env.setParallelism(1)
     env
   }

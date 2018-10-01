@@ -11,9 +11,6 @@
     </root>
 
 
-    <!-- Useful configuration for debugging purposes -->
-    <logger name="net.vankaam.websocket" level="INFO" />
-
     <!-- Print all communication with Vertex -->
 	<logger name="org.codefeedr.core.library.internal.kafka.sink" level="DEBUG"/>
     <logger name="org.codefeedr.core.library.internal.zookeeper" level="INFO"/>
