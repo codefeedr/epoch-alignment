@@ -6,9 +6,9 @@ services:
 # Flink jobmanager
   jobmanager:
     restart: on-failure
-    image: flink:1.5.3-alpine
-    #build:
-    #  context: flink/
+    #image: flink:1.5.3-alpine
+    build:
+      context: flink/
     volumes:
       - "./config/logback.xml:/opt/flink/conf/logback-console.xml"
     expose:
@@ -23,9 +23,9 @@ services:
 #Flink taskmanager
   taskmanager:
     restart: on-failure
-    image: flink:1.5.3-alpine
-    #build:  
-    #  context: flink/
+    #image: flink:1.5.3-alpine
+    build:  
+      context: flink/
     volumes:
       - "./config/logback.xml:/opt/flink/conf/logback-console.xml"
     expose:
