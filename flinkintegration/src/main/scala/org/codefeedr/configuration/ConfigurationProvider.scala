@@ -94,7 +94,7 @@ trait FlinkConfigurationProviderComponent extends ConfigurationProviderComponent
       val propertiesFile = Option(
         defaultConfiguraiton.mergeWith(arguments).get("propertiesFile", null))
 
-      logger.debug("Initialized parameter tool")
+      logger.info("Initialized parameter tool")
       _parameterTool = propertiesFile.flatMap(loadPropertiesFile) match {
         case Some(p) => Some(p.mergeWith(defaultConfiguraiton.mergeWith(p).mergeWith(arguments)))
         case None => Some(defaultConfiguraiton.mergeWith(arguments))
