@@ -8,6 +8,7 @@ import org.codefeedr.plugins.github.generate.EventTimeImpl._
 class IssueCommentGenerator(seed: Long,
                             checkpoint: Long,
                             offset: Long,
+                            issuesPerCheckpoint: Int,
                             val staticEventTime: Option[DateTime] = None)
     extends BaseEventTimeGenerator[IssueComment](seed, checkpoint, offset) {
   private val types = Array("TypeA", "TypeB")
@@ -20,7 +21,7 @@ class IssueCommentGenerator(seed: Long,
   override def generate(): Either[GenerationResponse, IssueComment] = {
     Right(
       IssueComment(
-        issue_id = nextCheckpointRelation(IssueGenerator.issuesPerCheckpoint),
+        issue_id = nextCheckpointRelation(issuesPerCheckpoint),
         user_id = nextInt(10000),
         comment_id = nextId(),
         created_at = nextDateTimeLong(),

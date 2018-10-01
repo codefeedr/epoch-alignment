@@ -91,7 +91,9 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
       generationSource
         .map(
           o =>
-            generator(seedBase * (currentOffset + o), currentCheckpoint, currentOffset + o)
+            generator(seedBase * (parallelIndex + 1) * (currentOffset + o),
+                      currentCheckpoint,
+                      currentOffset + o)
               .generateWithEventTime())
         .toList
 

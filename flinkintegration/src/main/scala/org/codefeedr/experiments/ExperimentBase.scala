@@ -10,11 +10,14 @@ import org.codefeedr.core.library.CodefeedrComponents
 import org.apache.flink.runtime.state.filesystem.FsStateBackend
 
 trait ExperimentBase extends CodefeedrComponents {
+
   protected def getWindowTime: org.apache.flink.streaming.api.windowing.time.Time =
     org.apache.flink.streaming.api.windowing.time.Time
       .seconds(configurationProvider.getInt("window.size", Some(10)))
 
   protected def getStateBackendPath: String = configurationProvider.get("statebackend.path")
+
+  protected def getParallelism: Int = 2
 
   def initialize(args: Array[String]) = {
     val pt = ParameterTool.fromArgs(args)
@@ -38,7 +41,7 @@ trait ExperimentBase extends CodefeedrComponents {
         0,
         Time.seconds(60)
       ))
-    env.setParallelism(1)
+    env.setParallelism(getParallelism)
     env
   }
 }

@@ -6,14 +6,7 @@ import org.apache.flink.streaming.api.windowing.assigners.EventTimeSessionWindow
 import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.streaming.api.windowing.triggers.CountTrigger
 import org.codefeedr.core.library.internal.LoggingSinkFunction
-import org.codefeedr.experiments.HotIssueQuery.{
-  createGeneratorSource,
-  getEnvironment,
-  initialize,
-  logger,
-  seed1,
-  seed2
-}
+
 import org.codefeedr.ghtorrent.IssueComment
 import org.codefeedr.plugins.github.generate._
 import org.codefeedr.plugins.github.generate.EventTimeImpl._
@@ -51,14 +44,23 @@ class HotIssueQuery extends ExperimentBase with LazyLogging {
     val idleSessionLength = Time.seconds(2)
 
     val issues = env.addSource(
-      createGeneratorSource((l: Long, c: Long, o: Long) => new IssueGenerator(l, c, o),
-                            seed1,
-                            "IssueGenerator"))
+      createGeneratorSource(
+        (l: Long, c: Long, o: Long) =>
+          new IssueGenerator(l,
+                             c,
+                             o,
+                             ExperimentConfiguration.issuesPerCheckpoint / getParallelism,
+                             ExperimentConfiguration.prPerCheckpoint),
+        HotIssueQuery.seed1,
+        "IssueGenerator"
+      ))
 
     val issueComments = env.addSource(
-      createGeneratorSource((l: Long, c: Long, o: Long) => new IssueCommentGenerator(l, c, o),
-                            seed2,
-                            "IssueCommentGenerator")
+      createGeneratorSource(
+        (l: Long, c: Long, o: Long) =>
+          new IssueCommentGenerator(l, c, o, ExperimentConfiguration.issuesPerCheckpoint),
+        HotIssueQuery.seed2,
+        "IssueCommentGenerator")
     )
 
     val hotIssues = issueComments
@@ -68,7 +70,7 @@ class HotIssueQuery extends ExperimentBase with LazyLogging {
       .trigger(CountTrigger.of(1))
       .reduce((left, right) => left.merge(right))
 
-    hotIssues.addSink(new LoggingSinkFunction[HotIssue]("loggingSink"))
+    hotIssues.addSink(new LoggingSinkFunction[HotIssue]("HotIssueSink"))
     logger.info("Submitting hot issue query job")
     env.execute("HotIssues")
 

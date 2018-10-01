@@ -8,6 +8,7 @@ import org.codefeedr.plugins.github.generate.EventTimeImpl._
 class PullRequestCommentGenerator(seed: Long,
                                   checkpoint: Long,
                                   offset: Long,
+                                  pullRequestPerCheckpoint: Int,
                                   val staticEventTime: Option[DateTime] = None)
     extends BaseEventTimeGenerator[PullRequestComment](seed, checkpoint, offset) {
   private val types = Array("TypeA", "TypeB")
@@ -20,7 +21,7 @@ class PullRequestCommentGenerator(seed: Long,
   override def generate(): Either[GenerationResponse, PullRequestComment] = {
     Right(
       PullRequestComment(
-        pull_request_id = nextCheckpointRelation(PullRequestGenerator.pullRequestPerCheckpoint),
+        pull_request_id = nextCheckpointRelation(pullRequestPerCheckpoint),
         user_id = nextInt(10000),
         comment_id = nextString(10),
         position = nextInt(100),
