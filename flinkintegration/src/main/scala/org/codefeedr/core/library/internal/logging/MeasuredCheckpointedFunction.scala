@@ -11,8 +11,10 @@ case class CheckpointMeasurement(checkpointId: Long, offset: Long, elements: Lon
 /**
   * Checkpointed function that measures
   */
-trait MeasuredCheckpointedFunction extends LazyMdcLogging with CheckpointedFunction {
-  def getLabel: String
+trait MeasuredCheckpointedFunction
+    extends LazyMdcLogging
+    with CheckpointedFunction
+    with LabeledOperator {
 
   def getLastEventTime: Long
   def getCurrentOffset: Long
@@ -42,9 +44,13 @@ trait MeasuredCheckpointedFunction extends LazyMdcLogging with CheckpointedFunct
     val measurement = snapshotMeasurement(checkpointId)
     MDC.put("elements", s"${measurement.elements}")
     MDC.put("latency", s"${measurement.latency}")
-    logWithMdc(s"$getLabel snapshotting: ${measurement.toString}", "snapshot")
+    MDC.put("category", getCategoryLabel)
+    MDC.put("operator", getOperatorLabel)
+    logWithMdc(s"$getOperatorLabel snapshotting: ${measurement.toString}", "snapshot")
     MDC.remove("elements")
     MDC.remove("latency")
+    MDC.remove("category")
+    MDC.remove("operator")
   }
 
   override def snapshotState(context: FunctionSnapshotContext): Unit = {

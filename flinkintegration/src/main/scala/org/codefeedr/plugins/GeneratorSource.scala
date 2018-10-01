@@ -73,7 +73,9 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     //Current state object
     var state: ListState[GeneratorSourceState] = _
 
-    def getLabel: String = s"GeneratorSource $name[$parallelIndex] cp($currentCheckpoint)"
+    def getLabel: String = s"$getOperatorLabel cp($currentCheckpoint)"
+    override def getOperatorLabel: String = s"$getCategoryLabel[$parallelIndex]"
+    override def getCategoryLabel: String = s"GeneratorSource $name"
 
     @transient lazy val getMdcMap = Map(
       "operator" -> name,

@@ -18,11 +18,12 @@ class LoggingSinkFunction[TData: EventTime](val name: String)
 
   @transient private lazy val parallelIndex = getRuntimeContext.getIndexOfThisSubtask
   @transient lazy val getMdcMap = Map(
-    "operator" -> getLabel,
+    "operator" -> getOperatorLabel,
     "parallelIndex" -> parallelIndex.toString
   )
 
-  override def getLabel: String = s"LoggingSink $name[$parallelIndex]"
+  override def getOperatorLabel: String = s"$getCategoryLabel[$parallelIndex]"
+  override def getCategoryLabel: String = s"LoggingSink $name"
 
   override def invoke(value: TData): Unit = {
     gatheredEvents += 1

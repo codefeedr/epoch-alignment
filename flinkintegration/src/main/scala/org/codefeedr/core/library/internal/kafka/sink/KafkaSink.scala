@@ -87,7 +87,7 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
   @transient private var sinkState: Option[KafkaSinkState] = None
 
   @transient lazy val getMdcMap = Map(
-    "operator" -> getLabel,
+    "operator" -> getOperatorLabel,
     "parallelIndex" -> parallelIndex.toString
   )
 
@@ -132,7 +132,10 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
     */
   def transform(element: TSink): (TKey, TValue)
 
-  def getLabel: String =
+  def getLabel = getOperatorLabel
+  override def getOperatorLabel: String = s"$getCategoryLabel[$parallelIndex]"
+
+  override def getCategoryLabel: String =
     s"KafkaSink ${subjectNode.name}($sinkUuid-${sinkState.map(o => o.sinkId).getOrElse("Uninitialized")})"
 
   def getFirstFreeProducerIndex() =
