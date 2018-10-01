@@ -134,6 +134,28 @@ class GeneratorSourceSpec
     assert(stateStore.get().asScala.toList.head.currentPosition == 8)
   }
 
+  "getCategoryLabel" should "return a string with the operator name" in {
+    //Arrange
+    val source = getInitializedGeneratorSource
+
+    //act
+    val label = source.getCategoryLabel
+
+    //Assert
+    assert(label == "GeneratorSource testGenerator")
+  }
+
+  "getOperatorLabel" should "return a string with the name and its parallel index" in {
+    //Arrange
+    val source = getInitializedGeneratorSource
+
+    //act
+    val label = source.getOperatorLabel
+
+    //Assert
+    assert(label == "GeneratorSource testGenerator[0]")
+  }
+
 
   private def getInitializedGeneratorSource = {
     val sourceGenerator = new GeneratorSource[Long](generator,3,"testGenerator")

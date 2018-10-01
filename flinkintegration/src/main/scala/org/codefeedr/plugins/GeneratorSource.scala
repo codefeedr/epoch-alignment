@@ -137,7 +137,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
 
     override def snapshotState(context: FunctionSnapshotContext): Unit = {
       currentCheckpoint = context.getCheckpointId
-      super.snapshotState(context)
+      super[MeasuredCheckpointedFunction].snapshotState(context)
       state.update(List(getState).asJava)
     }
 
