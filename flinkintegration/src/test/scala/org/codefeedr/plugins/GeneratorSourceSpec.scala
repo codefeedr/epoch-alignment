@@ -60,7 +60,7 @@ class GeneratorSourceSpec
 
   "GeneratorSource.run" should "call generator with a unique seed" in {
     //Arrange
-    val source = new GeneratorSource[Long](generator,3,"testGenerator")
+    val source = getInitializedGeneratorSource
     val collector = new CallbackCollector[Long](4,() => source.cancel())
 
     //Act
