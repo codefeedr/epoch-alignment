@@ -6,7 +6,7 @@ services:
 # Flink jobmanager
   jobmanager:
     restart: on-failure
-    image: flink:1.5.4-alpine
+    image: flink:1.5.3-alpine
     #build:
     #  context: flink/
     volumes:
@@ -23,7 +23,7 @@ services:
 #Flink taskmanager
   taskmanager:
     restart: on-failure
-    image: flink:1.5.4-alpine
+    image: flink:1.5.3-alpine
     #build:  
     #  context: flink/
     volumes:
