@@ -55,14 +55,15 @@ class HotIssueQuery extends ExperimentBase with LazyLogging {
         "IssueGenerator"
       ))
 
-
-    val issueComments = env.addSource(
-      createGeneratorSource(
-        (l: Long, c: Long, o: Long) =>
-          new IssueCommentGenerator(l, c, o, ExperimentConfiguration.issuesPerCheckpoint),
-        HotIssueQuery.seed2,
-        "IssueCommentGenerator")
-    ).setParallelism(2)
+    val issueComments = env
+      .addSource(
+        createGeneratorSource(
+          (l: Long, c: Long, o: Long) =>
+            new IssueCommentGenerator(l, c, o, ExperimentConfiguration.issuesPerCheckpoint),
+          HotIssueQuery.seed2,
+          "IssueCommentGenerator")
+      )
+      .setParallelism(2)
 
     val hotIssues = issueComments
       .map(o => HotIssue(o.issue_id, o.eventTime, 1))
@@ -70,7 +71,6 @@ class HotIssueQuery extends ExperimentBase with LazyLogging {
       .window(EventTimeSessionWindows.withGap(idleSessionLength))
       .trigger(CountTrigger.of(1))
       .reduce((left, right) => left.merge(right))
-
 
     hotIssues.addSink(new LoggingSinkFunction[HotIssue]("HotIssueSink"))
     logger.info("Submitting hot issue query job")
