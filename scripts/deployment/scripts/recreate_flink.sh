@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 INSTALL_ROOT=/home/nvankaam
-CODEFEEDR_SOURCES=codefeedr/repo
+CODEFEEDR_SOURCES=afstuderen
 REPO_FOLDER=$INSTALL_ROOT/$CODEFEEDR_SOURCES/codefeedr
 
 
