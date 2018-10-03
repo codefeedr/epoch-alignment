@@ -78,7 +78,7 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
     KafkaSourceConsumer[TElement, TValue, TKey](s"Consumer $getLabel", sourceUuid, topic)(this)(
       kafkaConsumerFactory)
 
-  //Unique id of the source the instance of this kafka source belongs to
+  //Unique id of the source the instance of this kafka source elongs to
   val sourceUuid: String
 
   @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"

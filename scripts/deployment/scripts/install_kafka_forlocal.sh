@@ -14,6 +14,6 @@ git checkout epochalignment
 cd $REPO_FOLDER/experiments/Shared/kafka-docker
 
 #Start docker services
-docker-compose -f docker-compose.yml up --force-recreate -d
+docker-compose -f docker-compose-zookeeper.yml up --force-recreate -d
 
 #TODO:Import XML file into kibana
