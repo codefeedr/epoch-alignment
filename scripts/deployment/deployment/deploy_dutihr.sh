@@ -3,7 +3,7 @@ INSTALL_ROOT=/home/nvankaam
 CODEFEEDR_SOURCES=codefeedr/repo
 CODEFEEDR_EXPERIMENTS=$INSTALL_ROOT/codefeedr/experiments
 REPO_FOLDER=$INSTALL_ROOT/$CODEFEEDR_SOURCES/codefeedr
-SOURCE_FOLDER=/mnt/c/Users/Niels/Documents/Studie/Afstuderen/codefeedr
+SOURCE_FOLDER=/mnt/c/Users/nvank/Documents/Afstuderen/codefeedr
 
 CURRENT_WORKDIR=`pwd`
 
