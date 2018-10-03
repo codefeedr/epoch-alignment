@@ -12,6 +12,6 @@ services:
       - "athens.ewi.tudelft.nl:9093:9092"
     environment:
       KAFKA_ADVERTISED_HOST_NAME: localhost
-      KAFKA_ZOOKEEPER_CONNECT: local_zookeeper:2182
+      KAFKA_ZOOKEEPER_CONNECT: local_zookeeper:2181
     volumes:
     - /var/run/docker.sock:/var/run/docker.sock
