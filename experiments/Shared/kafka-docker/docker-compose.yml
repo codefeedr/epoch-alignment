@@ -1,17 +1,15 @@
 version: '2'
 services:
-  zookeeper:
+  local_zookeeper:
     image: wurstmeister/zookeeper
     restart: on-failure
     ports:
-      - "2181:2181"
-  kafka:
+      - "athens.ewi.tudelft.nl:2182:2182"
+  local_kafka:
     build: .
     restart: on-failure
     ports:
-      - "9092:9092"
+      - "athens.ewi.tudelft.nl:9093:9093"
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: 192.168.99.100
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      KAFKA_ADVERTISED_HOST_NAME: localhost
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2182

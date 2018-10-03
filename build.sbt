@@ -1,4 +1,5 @@
 import sbt.Keys.libraryDependencies
+import sbtassembly.AssemblyPlugin.autoImport.assemblyOption
 
 
 lazy val settings = Seq(
@@ -16,6 +17,10 @@ lazy val settings = Seq(
   }
 )
 
+lazy val rootSettings =
+  settings ++
+    Seq(assemblyOption in assembly := (assemblyOption in assembly).value
+    .copy(includeScala = false, includeDependency = false))
 
 
 
@@ -219,12 +224,9 @@ lazy val mainRunner = project.in(file("mainRunner"))
 )
 
 lazy val root = (project in file("."))
-  .aggregate(demo, codefeedrghtorrent)
-  .dependsOn(demo,codefeedrghtorrent)
+  .aggregate(flinkintegration)
     .settings(
-      settings
-      //mainClass in run := Some("org.codefeedr.demo.ghtorrent.GhTorrentUserImporter"),
-      //mainClass in run := Some("org.codefeedr.generation.LongTupleSocketGenerator")
+      rootSettings
     )
 
 unmanagedJars in Compile += file("lib/flinkwebsocketsource_2.11-1.0.jar")
@@ -239,6 +241,3 @@ run in Compile := Defaults.runTask(fullClasspath in Compile,
 
 
 
-// exclude Scala library from assembly
-// assemblyOption in assembly := (assemblyOption in assembly).value
-//  .copy(includeScala = false)
