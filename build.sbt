@@ -1,6 +1,6 @@
 import sbt.Keys.libraryDependencies
 import sbtassembly.AssemblyPlugin.autoImport.assemblyOption
-
+import sys.process._
 
 lazy val settings = Seq(
   organization := "org.codefeedr",
@@ -14,13 +14,13 @@ lazy val settings = Seq(
   assemblyExcludedJars in assembly := {
     val cp = (fullClasspath in assembly).value
     cp filter {_.data.getName == "shapeless_2.11-2.3.3.jar"}
-  }
+  },
+  test in assembly := {},
+  assemblyOption in assembly := (assemblyOption in assembly).value
+    .copy(includeScala = false, includeDependency = false)
 )
 
-lazy val rootSettings =
-  settings ++
-    Seq(assemblyOption in assembly := (assemblyOption in assembly).value
-    .copy(includeScala = false, includeDependency = false))
+lazy val rootSettings = settings
 
 
 
@@ -223,7 +223,14 @@ lazy val mainRunner = project.in(file("mainRunner"))
   }
 )
 
+lazy val execScript = taskKey[Unit]("Execute the shell script")
+
+execScript := {
+  "bat test.sh" !
+}
+
 lazy val root = (project in file("."))
+  .dependsOn(flinkintegration)
   .aggregate(flinkintegration)
     .settings(
       rootSettings

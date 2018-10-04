@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
-INSTALL_ROOT=/home/nvankaam
-CODEFEEDR_SOURCES=codefeedr/repo
-CODEFEEDR_EXPERIMENTS=$INSTALL_ROOT/codefeedr/experiments
-REPO_FOLDER=$INSTALL_ROOT/$CODEFEEDR_SOURCES/codefeedr
+source ~/parameters.sh
 
 MAIN_CLASS=$1
 if [ -z "$1" ]
   then
     echo "No main class supplied"
 	exit 1
+  else 
+	echo "Supplied main class is \"$MAIN_CLASS\"" 
 fi
 
 ARGUMENTS=$2
@@ -18,8 +17,14 @@ if [ -z "$2" ]
 	exit 1
 fi
 
+#Build new version of codefeedr
 
 JOBMANAGER_CONTAINER=$(docker ps --filter name=jobmanager --format={{.ID}})
 
-docker cp $CODEFEEDR_EXPERIMENTS/codefeedr.jar "$JOBMANAGER_CONTAINER:/codefeedr.jar"
-docker exec -d "$JOBMANAGER_CONTAINER" flink run -c org.codefeedr.experiments.HotIssueQuery /codefeedr.jar
+
+echo "deploying to container $JOBMANAGER_CONTAINER. Copying jar"
+
+docker cp ~/codefeedr.jar "$JOBMANAGER_CONTAINER:/codefeedr.jar"
+
+echo "Jar copied, starting job"
+docker exec -d "$JOBMANAGER_CONTAINER" flink run -c $MAIN_CLASS /codefeedr.jar

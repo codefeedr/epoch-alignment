@@ -41,7 +41,7 @@ class HotIssueQuery extends ExperimentBase with LazyLogging {
     logger.info("Arguments initialized")
     val env = getEnvironment
 
-    val idleSessionLength = Time.seconds(2)
+    val idleSessionLength = Time.seconds(3)
 
     val issues = env.addSource(
       createGeneratorSource(

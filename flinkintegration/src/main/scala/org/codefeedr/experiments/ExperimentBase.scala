@@ -17,7 +17,7 @@ trait ExperimentBase extends CodefeedrComponents {
 
   protected def getStateBackendPath: String = configurationProvider.get("statebackend.path")
 
-  protected def getParallelism: Int = 6
+  protected def getParallelism: Int = 2
 
   def initialize(args: Array[String]) = {
     val pt = ParameterTool.fromArgs(args)

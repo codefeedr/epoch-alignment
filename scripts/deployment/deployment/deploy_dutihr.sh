@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
-INSTALL_ROOT=/home/nvankaam
-CODEFEEDR_SOURCES=codefeedr/repo
-CODEFEEDR_EXPERIMENTS=$INSTALL_ROOT/codefeedr/experiments
-REPO_FOLDER=$INSTALL_ROOT/$CODEFEEDR_SOURCES/codefeedr
-SOURCE_FOLDER=/mnt/c/Users/nvank/Documents/Afstuderen/codefeedr
+source ../../parameters.sh
+echo "Working dir is `pwd`"
+echo "Sources dir is $LOCAL_CODEFEEDR_SOURCES"
 
-CURRENT_WORKDIR=`pwd`
+PWD=`pwd`
 
 MAIN_CLASS=$1
 if [ -z "$1" ]
@@ -16,9 +14,6 @@ else
 	echo "Using main class $MAIN_CLASS"
 fi 
 
-
-
-
 ARGUMENTS=$2
 if [ -z "$2" ]
   then
@@ -28,15 +23,17 @@ fi
 
 #SKIP_JAR_COPY=$3
 
-
-echo "current working dir $CURRENT_WORKDIR"
-
-
 if [ -z "$SKIP_JAR_COPY" ]
 	then
-scp $SOURCE_FOLDER/codefeedr.jar nvankaam@dutihr.st.ewi.tudelft.nl:$CODEFEEDR_EXPERIMENTS/codefeedr.jar
+	
+	cd $LOCAL_CODEFEEDR_SOURCES
+	echo "Building sources in `pwd`"
+	sbt assembly
+	cp $LOCAL_ARTIFACT_FOLDER/root-assembly-0.1.0-SNAPSHOT.jar $LOCAL_CODEFEEDR_SOURCES/codefeedr.jar
+	scp $LOCAL_CODEFEEDR_SOURCES/codefeedr.jar nvankaam@dutihr.st.ewi.tudelft.nl:~/codefeedr.jar
 else
 	echo "Not copying jar because third argument was passed. Assuming jar already exists"
 fi
 
-ssh nvankaam@dutihr.st.ewi.tudelft.nl  'bash -s' < deploy_job.sh "$MAIN_CLASS $ARGUMENTS"
+cd $PWD
+ssh nvankaam@dutihr.st.ewi.tudelft.nl  'bash -s' < $LOCAL_CODEFEEDR_SOURCES/scripts/deployment/deployment/deploy_job.sh "$MAIN_CLASS $ARGUMENTS"

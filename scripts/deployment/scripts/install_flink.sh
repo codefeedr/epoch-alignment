@@ -1,19 +1,21 @@
 #!/usr/bin/env bash
-INSTALL_ROOT=/home/nvankaam
-CODEFEEDR_SOURCES=afstuderen
-REPO_FOLDER=$INSTALL_ROOT/$CODEFEEDR_SOURCES/codefeedr
+source ~/parameters.sh
 
-rm -rf $INSTALL_ROOT/$CODEFEEDR_SOURCES
-mkdir -p $INSTALL_ROOT/$CODEFEEDR_SOURCES
-cd $INSTALL_ROOT/$CODEFEEDR_SOURCES
+rm -rf $TARGET_CODEFEEDR_SOURCES
+mkdir -p $TARGET_INSTALL_ROOT
+cd $TARGET_INSTALL_ROOT
 
 git clone https://github.com/codefeedr/codefeedr.git
-cd $REPO_FOLDER
+cd $TARGET_CODEFEEDR_SOURCES
 git checkout epochalignment
 
 
-cd $REPO_FOLDER/experiments/Shared/Flink
+
+cd $TARGET_CODEFEEDR_SOURCES/experiments/Shared/Flink
+cp ~/codefeedr-deps.jar flink/lib/codefeedr-deps.jar 
+
 #Start docker services
+docker-compose build
 docker-compose up -d --force-recreate 
 docker-compose scale taskmanager=6 
 

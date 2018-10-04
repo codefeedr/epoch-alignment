@@ -1,14 +1,10 @@
 #!/usr/bin/env bash
+source ~/parameters.sh
 
-INSTALL_ROOT=/home/nvankaam
-CODEFEEDR_SOURCES=afstuderen
-REPO_FOLDER=$INSTALL_ROOT/$CODEFEEDR_SOURCES/codefeedr
-
-
-cd $REPO_FOLDER
+cd $TARGET_CODEFEEDR_SOURCES
 git pull
 
-cd $REPO_FOLDER/experiments/Shared/Flink
+cd $TARGET_CODEFEEDR_SOURCES/experiments/Shared/Flink
 #Start docker services
 docker-compose up -d --force-recreate 
 docker-compose scale taskmanager=6 
