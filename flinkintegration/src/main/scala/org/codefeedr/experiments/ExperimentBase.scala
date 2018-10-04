@@ -36,7 +36,7 @@ trait ExperimentBase extends CodefeedrComponents {
     env.getConfig.disableGenericTypes()
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
     env.enableCheckpointing(1000)
-    //env.setStateBackend(getStateBackend)
+    env.setStateBackend(getStateBackend)
     env.setRestartStrategy(
       RestartStrategies.fixedDelayRestart(
         0,
