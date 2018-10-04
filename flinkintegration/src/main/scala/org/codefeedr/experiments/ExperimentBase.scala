@@ -33,6 +33,7 @@ trait ExperimentBase extends CodefeedrComponents {
     */
   protected def getEnvironment: StreamExecutionEnvironment = {
     val env = StreamExecutionEnvironment.getExecutionEnvironment
+    env.getConfig.disableGenericTypes()
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
     env.enableCheckpointing(1000)
     //env.setStateBackend(getStateBackend)

@@ -21,7 +21,9 @@ import org.codefeedr.core.library.internal.logging.MeasuredCheckpointedFunction
 
 import scala.collection.JavaConverters._
 
-case class GeneratorSourceState(currentPosition: Long)
+class GeneratorSourceState() {
+  var currentPosition: Long = 0
+}
 
 trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
 
@@ -101,7 +103,11 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     /**
       * @return current state of this source
       */
-    private def getState = GeneratorSourceState(currentOffset)
+    private def getState = {
+      val r = new GeneratorSourceState()
+      r.currentPosition = currentOffset
+      r
+    }
 
     override def run(ctx: SourceFunction.SourceContext[TSource]): Unit = {
       while (running) {

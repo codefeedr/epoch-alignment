@@ -117,7 +117,9 @@ class GeneratorSourceSpec
   "GeneratorSource.RestoreState" should "Cause the source to start generating from the checkpointed offset" in {
     //Arrange
     val stateStore = new TestListState[GeneratorSourceState]
-    stateStore.add(GeneratorSourceState(4))
+    val state = new GeneratorSourceState()
+    state.currentPosition = 4
+    stateStore.add(state)
     val source = getInitializedGeneratorSource
     source.initializeState(TestFunctionInitializationContext(isRestored = true,stateStore))
 
