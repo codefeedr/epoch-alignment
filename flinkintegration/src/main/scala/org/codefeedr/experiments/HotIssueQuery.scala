@@ -2,11 +2,13 @@ package org.codefeedr.experiments
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.streaming.api.scala._
-import org.apache.flink.streaming.api.windowing.assigners.EventTimeSessionWindows
+import org.apache.flink.streaming.api.windowing.assigners.{
+  EventTimeSessionWindows,
+  TumblingEventTimeWindows
+}
 import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.streaming.api.windowing.triggers.CountTrigger
 import org.codefeedr.core.library.internal.LoggingSinkFunction
-
 import org.codefeedr.ghtorrent.IssueComment
 import org.codefeedr.plugins.github.generate._
 import org.codefeedr.plugins.github.generate.EventTimeImpl._
@@ -41,7 +43,7 @@ class HotIssueQuery extends ExperimentBase with LazyLogging {
     logger.info("Arguments initialized")
     val env = getEnvironment
 
-    val idleSessionLength = Time.seconds(3)
+    val windowLength = Time.seconds(3)
 
     val issues = env.addSource(
       createGeneratorSource(
@@ -63,12 +65,12 @@ class HotIssueQuery extends ExperimentBase with LazyLogging {
           HotIssueQuery.seed2,
           "IssueCommentGenerator")
       )
-      .setParallelism(2)
 
     val hotIssues = issueComments
       .map(o => HotIssue(o.issue_id, o.eventTime, 1))
       .keyBy(o => o.issueId)
-      .window(EventTimeSessionWindows.withGap(idleSessionLength))
+      .window(TumblingEventTimeWindows.of(windowLength))
+      //.window(EventTimeSessionWindows.withGap(idleSessionLength))
       .trigger(CountTrigger.of(1))
       .reduce((left, right) => left.merge(right))
 

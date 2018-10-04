@@ -81,7 +81,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     override def getCategoryLabel: String = s"GeneratorSource $name"
 
     @transient lazy val getMdcMap = Map(
-      "operator" -> name,
+      "operator" -> getOperatorLabel,
       "parallelIndex" -> parallelIndex.toString
     )
 
