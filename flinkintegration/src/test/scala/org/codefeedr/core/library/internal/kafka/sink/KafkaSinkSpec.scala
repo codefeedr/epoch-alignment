@@ -17,6 +17,7 @@ import org.codefeedr.core.library.metastore._
 import org.codefeedr.model.zookeeper.QuerySink
 import org.codefeedr.model.{RecordSourceTrail, SubjectType}
 import org.codefeedr.util.MockitoExtensions
+import org.codefeedr.util.MockitoExtensions._
 import org.codefeedr.util.NoEventTime._
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach}
 
@@ -366,6 +367,13 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
 
     when(epochStateManager.commit(ArgumentMatchers.any())) thenReturn Future.successful(())
     when(epochStateManager.preCommit(ArgumentMatchers.any())) thenReturn Future.successful(())
+
+    when(kafkaConfiguration.getTopic(ArgumentMatchers.any[SubjectType]())) thenAnswer((a:SubjectType) => {
+      Option(a) match {
+        case Some(st) =>s"codefeedr_${st.name}_${st.uuid}"
+        case None => "codefeedr_null"
+      }
+    })
   }
 
 }
