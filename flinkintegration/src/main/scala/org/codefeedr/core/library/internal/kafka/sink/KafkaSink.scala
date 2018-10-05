@@ -114,7 +114,7 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
   @transient protected lazy val producerNode: ProducerNode =
     sinkNode.getProducers().getChild(getSinkState.sinkId)
 
-  @transient protected lazy val topic = kafkaConfiguration.getTopic(subjectType)
+  @transient protected lazy val topic: String = kafkaConfiguration.getTopic(subjectType)
   //Size (amount) of kafkaProducers
   @transient private lazy val producerPoolSize: Int =
     ConfigFactory.load.getInt("codefeedr.kafka.custom.producer.count")
@@ -208,7 +208,7 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
       throw new Exception(s"Open on sink called twice: $getLabel")
     }
 
-    if (!getRuntimeContext().asInstanceOf[StreamingRuntimeContext].isCheckpointingEnabled) {
+    if (!getRuntimeContext.asInstanceOf[StreamingRuntimeContext].isCheckpointingEnabled) {
       logger.warn(
         "Started a custom sink without checkpointing enabled. The custom source is designed to work with checkpoints only.")
       checkpointingMode = None
