@@ -29,10 +29,11 @@ class HotIssueQuery extends ExperimentBase with LazyLogging {
     }
 
   def deploy(args: Array[String]): Unit = {
-    val env = getEnvironment
+
     logger.info("Initializing arguments")
-    initialize(args, env)
+    initialize(args)
     logger.info("Arguments initialized")
+    val env = getEnvironment
     val windowLength = Time.seconds(3)
 
     val issues = env.addSource(

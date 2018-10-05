@@ -29,8 +29,9 @@ class HotPullRequestQueryKafkaSource extends ExperimentBase with LazyLogging {
     }
 
   def deploy(args: Array[String]): Unit = {
+    initialize(args)
     val env = getEnvironment
-    initialize(args, env)
+
     val idleSessionLength = Time.seconds(2)
 
     val prs = env.addSource(

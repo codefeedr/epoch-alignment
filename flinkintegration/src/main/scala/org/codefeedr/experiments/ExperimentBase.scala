@@ -19,9 +19,9 @@ trait ExperimentBase extends CodefeedrComponents {
 
   protected def getParallelism: Int = 2
 
-  def initialize(args: Array[String], env: StreamExecutionEnvironment) = {
+  def initialize(args: Array[String]) = {
     val pt = ParameterTool.fromArgs(args)
-    configurationProvider.initConfiguration(pt, env.getConfig)
+    configurationProvider.initParameters(pt)
   }
 
   def getStateBackend: StateBackend =
@@ -33,7 +33,8 @@ trait ExperimentBase extends CodefeedrComponents {
     */
   protected def getEnvironment: StreamExecutionEnvironment = {
     val env = StreamExecutionEnvironment.getExecutionEnvironment
-    env.getConfig.disableGenericTypes()
+    configurationProvider.initEc(env.getConfig)
+    //env.getConfig.disableGenericTypes()
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
     env.enableCheckpointing(1000)
     env.setStateBackend(getStateBackend)
