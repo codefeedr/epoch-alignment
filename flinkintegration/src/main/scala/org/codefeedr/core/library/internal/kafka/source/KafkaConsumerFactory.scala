@@ -23,12 +23,12 @@ import java.util.{Properties, UUID}
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.consumer._
-import org.codefeedr.configuration.KafkaConfigurationComponent
+import org.codefeedr.configuration.{ConfigurationProviderComponent, KafkaConfigurationComponent}
 import org.codefeedr.core.library.internal.kafka.KafkaDeserialiser
 
 import scala.reflect.ClassTag
 
-trait KafkaConsumerFactoryComponent { this: KafkaConfigurationComponent =>
+trait KafkaConsumerFactoryComponent { this: KafkaConfigurationComponent with ConfigurationProviderComponent=>
   val kafkaConsumerFactory: KafkaConsumerFactory
 
   /**

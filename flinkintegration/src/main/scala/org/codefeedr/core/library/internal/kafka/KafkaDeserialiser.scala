@@ -116,6 +116,7 @@ package org.codefeedr.core.library.internal.kafka
 
 import java.util
 
+import org.apache.flink.api.common.ExecutionConfig
 import org.codefeedr.core.library.internal.serialisation.GenericDeserialiser
 
 import scala.reflect._
@@ -123,7 +124,7 @@ import scala.reflect._
 /**
   * Created by Niels on 14/07/2017.
   */
-class KafkaDeserialiser[T: ClassTag]()
+class KafkaDeserialiser[T: ClassTag]()(implicit val ec: ExecutionConfig)
     extends org.apache.kafka.common.serialization.Deserializer[T] {
   override def configure(configs: util.Map[String, _], isKey: Boolean): Unit = {}
 
