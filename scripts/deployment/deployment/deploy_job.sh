@@ -27,4 +27,5 @@ echo "deploying to container $JOBMANAGER_CONTAINER. Copying jar"
 docker cp ~/codefeedr.jar "$JOBMANAGER_CONTAINER:/codefeedr.jar"
 
 echo "Jar copied, starting job"
-docker exec -t "$JOBMANAGER_CONTAINER" flink run -c $MAIN_CLASS /codefeedr.jar
+#Change -d to -t when the job does not start to view eventual deployment errors
+docker exec -d "$JOBMANAGER_CONTAINER" flink run -c $MAIN_CLASS /codefeedr.jar

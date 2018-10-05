@@ -21,6 +21,8 @@ package org.codefeedr.core.library.internal.kafka
 
 import java.util
 
+import org.apache.flink.api.common.ExecutionConfig
+import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.codefeedr.core.library.internal.serialisation.GenericSerialiser
 
 import scala.reflect.ClassTag
@@ -28,10 +30,10 @@ import scala.reflect.ClassTag
 /**
   * Created by Niels on 14/07/2017.
   */
-class KafkaSerialiser[T: ClassTag] extends org.apache.kafka.common.serialization.Serializer[T] {
+class KafkaSerialiser[T: ClassTag:TypeInformation](val ec: ExecutionConfig) extends org.apache.kafka.common.serialization.Serializer[T] {
   override def configure(configs: util.Map[String, _], isKey: Boolean): Unit = {}
 
-  private lazy val genericSerialiser = new GenericSerialiser[T]()
+  private lazy val genericSerialiser = new GenericSerialiser[T](ec)
 
   override def serialize(topic: String, data: T): Array[Byte] = genericSerialiser.serialize(data)
 

@@ -1,6 +1,7 @@
 package org.codefeedr.configuration
 
 import com.typesafe.scalalogging.LazyLogging
+import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.api.scala.ExecutionEnvironment
 import org.codefeedr.util.OptionExtensions.DebuggableOption
@@ -17,7 +18,7 @@ trait ConfigurationProvider extends Serializable {
     *
     * @param configuration custom configuration to initialize with
     */
-  def initConfiguration(configuration: ParameterTool): Unit
+  def initConfiguration(configuration: ParameterTool, ec:ExecutionConfig): Unit
 
   /**
     * Retrieve the parameterTool for the global configuration
@@ -54,6 +55,12 @@ trait ConfigurationProvider extends Serializable {
     */
   def getInt(key: String, default: Option[Int] = None): Int =
     get(key, default.map(o => o.toString)).toInt
+
+  /**
+    * Retrieve the executionConfig used for the current job
+    * @return the Flink executionconfig object
+    */
+  def getExecutionConfig:ExecutionConfig
 }
 
 trait ConfigurationProviderComponent {
@@ -70,18 +77,21 @@ trait FlinkConfigurationProviderComponent extends ConfigurationProviderComponent
     @volatile private var requested = false
     @volatile private var _parameterTool: Option[ParameterTool] = None
     @transient lazy val parameterTool: ParameterTool = getParameterTool
+    private var executionConfig: Option[ExecutionConfig] = None
 
     /**
       * Sets the configuration
       * If the passed parameterTool contains a property for "propertiesFile", this path is opened and
       * @param arguments custom configuration to initialize with. Usually initialized from program arguments
       */
-    def initConfiguration(arguments: ParameterTool): Unit = {
+    def initConfiguration(arguments: ParameterTool, ec:ExecutionConfig): Unit = {
+
       if (requested) {
         //Just to validate, the configuration is not modified after it has already been retrieved by some component
         throw new IllegalStateException(
           "Cannot set parametertool after parametertool was already requested")
       }
+      executionConfig=Some(ec)
       //Store parameter tool in the static context
       //Needed to also make the components work when there is no stream execution environment
       val defaultConfiguraiton = loadPropertiesFile("/codefeedr.properties") match {
@@ -99,6 +109,11 @@ trait FlinkConfigurationProviderComponent extends ConfigurationProviderComponent
         case Some(p) => Some(p.mergeWith(defaultConfiguraiton.mergeWith(p).mergeWith(arguments)))
         case None => Some(defaultConfiguraiton.mergeWith(arguments))
       }
+    }
+
+    override def getExecutionConfig: ExecutionConfig = executionConfig match {
+      case Some(ec) => ec
+      case None => throw new IllegalStateException("Cannot retrieve executionConfig before being initialized")
     }
 
     /**

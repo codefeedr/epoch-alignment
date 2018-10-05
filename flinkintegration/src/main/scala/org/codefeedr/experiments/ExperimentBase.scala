@@ -19,9 +19,9 @@ trait ExperimentBase extends CodefeedrComponents {
 
   protected def getParallelism: Int = 2
 
-  def initialize(args: Array[String]) = {
+  def initialize(args: Array[String],env:StreamExecutionEnvironment) = {
     val pt = ParameterTool.fromArgs(args)
-    configurationProvider.initConfiguration(pt)
+    configurationProvider.initConfiguration(pt,env.getConfig)
   }
 
   def getStateBackend: StateBackend =
