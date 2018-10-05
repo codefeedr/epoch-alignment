@@ -14,6 +14,8 @@ case class CM[TConfig <: AnyRef](m: String => TConfig, d: Option[TConfig])
 
 trait KafkaConfigurationComponent extends Serializable { this: ConfigurationProviderComponent =>
 
+
+
   val kafkaConfiguration: KafkaConfiguration
 
   class KafkaConfigurationImpl extends KafkaConfiguration with LazyLogging {

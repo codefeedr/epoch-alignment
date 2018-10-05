@@ -21,12 +21,13 @@ package org.codefeedr.core.library.internal.kafka.sink
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.producer.KafkaProducer
-import org.codefeedr.configuration.KafkaConfigurationComponent
+import org.codefeedr.configuration.{ConfigurationProviderComponent, KafkaConfigurationComponent}
 import org.codefeedr.core.library.internal.kafka.KafkaSerialiser
 
 import scala.reflect.ClassTag
 
-trait KafkaProducerFactoryComponent { this: KafkaConfigurationComponent =>
+trait KafkaProducerFactoryComponent {
+  this: KafkaConfigurationComponent with ConfigurationProviderComponent=>
   val kafkaProducerFactory: KafkaProducerFactory
 
   /**

@@ -42,7 +42,7 @@ class HotIssueQueryKafkaSink extends ExperimentBase with LazyLogging {
     Await.result(async {
       await(subjectFactory.reCreate[HotIssue]())
       await(subjectFactory.getSink[HotIssue]("HotIssueSink", "HotIssueGenerator"))
-    }, 5 seconds)
+    }, 5.seconds)
 
   def deploy(args: Array[String]): Unit = {
 

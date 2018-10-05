@@ -33,8 +33,8 @@ trait SocketReceiverComponent {
       * @param pt configuration to deploy with
       */
       def deploy(pt:ParameterTool):Unit = {
-        configurationProvider.initConfiguration(pt)
         val env = StreamExecutionEnvironment.getExecutionEnvironment
+        configurationProvider.initConfiguration(pt,env.getConfig)
         createTopology(env)
       }
 

@@ -1,10 +1,13 @@
 package org.codefeedr.configuration
 
+import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.api.java.utils.ParameterTool
 import org.scalatest.FlatSpec
+import org.scalatest.mockito.MockitoSugar
+
 import scala.collection.JavaConverters._
 
-class ConfigurationProviderSpec extends FlatSpec with FlinkConfigurationProviderComponent {
+class ConfigurationProviderSpec extends FlatSpec with FlinkConfigurationProviderComponent with MockitoSugar{
 
 
   "initConfiguration" should "read default values from codefeedr.properties" in {
@@ -13,7 +16,7 @@ class ConfigurationProviderSpec extends FlatSpec with FlinkConfigurationProvider
 
     //Act
     val initialPt = ParameterTool.fromMap(Map.empty[String,String].asJava)
-    component.initConfiguration(initialPt)
+    component.initConfiguration(initialPt,mock[ExecutionConfig])
 
     //Assert
     assert(component.get("test.value") == "default")
@@ -28,7 +31,7 @@ class ConfigurationProviderSpec extends FlatSpec with FlinkConfigurationProvider
     val initialPt = ParameterTool.fromMap(Map(
       "propertiesFile" -> "/test.properties"
     ).asJava)
-    component.initConfiguration(initialPt)
+    component.initConfiguration(initialPt,mock[ExecutionConfig])
 
     //Assert
     assert(component.get("test.value") == "testvalue")
@@ -44,7 +47,7 @@ class ConfigurationProviderSpec extends FlatSpec with FlinkConfigurationProvider
       "propertiesFile" -> "/test.properties",
       "test.value" -> "override"
     ).asJava)
-    component.initConfiguration(initialPt)
+    component.initConfiguration(initialPt,mock[ExecutionConfig])
 
     //Assert
     assert(component.get("test.value") == "override")

@@ -1,5 +1,6 @@
 package org.codefeedr.core.library.internal.zookeeper
 
+import org.codefeedr.configuration.ConfigurationProviderComponent
 import org.codefeedr.core.library.internal.serialisation.{GenericDeserialiser, GenericSerialiser}
 import rx.lang.scala.Observable
 
@@ -26,7 +27,7 @@ trait ZkQueueNode[TNode, TElement] extends ZkNode[TNode] {
   def observe(): Observable[TElement]
 }
 
-trait ZkQueueNodeComponent extends ZkNodeComponent { this: ZkClientComponent =>
+trait ZkQueueNodeComponent extends ZkNodeComponent { this: ZkClientComponent with ConfigurationProviderComponent =>
 
   /**
     * Implementation of a queue around a zknode

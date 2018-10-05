@@ -65,7 +65,7 @@ trait ConfigurationProvider extends Serializable {
 
 trait ConfigurationProviderComponent {
   val configurationProvider: ConfigurationProvider
-
+  @transient implicit lazy val ec:ExecutionConfig = configurationProvider.getExecutionConfig
 }
 
 trait FlinkConfigurationProviderComponent extends ConfigurationProviderComponent {

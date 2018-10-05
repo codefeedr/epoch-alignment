@@ -30,10 +30,10 @@ import scala.reflect.ClassTag
 /**
   * Created by Niels on 14/07/2017.
   */
-class KafkaSerialiser[T: ClassTag:TypeInformation](val ec: ExecutionConfig) extends org.apache.kafka.common.serialization.Serializer[T] {
+class KafkaSerialiser[T: ClassTag]()(implicit val ec: ExecutionConfig) extends org.apache.kafka.common.serialization.Serializer[T] {
   override def configure(configs: util.Map[String, _], isKey: Boolean): Unit = {}
 
-  private lazy val genericSerialiser = new GenericSerialiser[T](ec)
+  private lazy val genericSerialiser = new GenericSerialiser[T]()(implicitly[ClassTag[T]],ec)
 
   override def serialize(topic: String, data: T): Array[Byte] = genericSerialiser.serialize(data)
 
