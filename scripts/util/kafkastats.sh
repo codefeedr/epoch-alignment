@@ -29,5 +29,5 @@ kafka-topics.sh  --zookeeper "$ZOOKEEPER" --describe --topic codefeedr.*
 
 
 # Messages in topic
-TOPIC="codefeedr_HotIssue_ae327cf4-0006-47ab-abb2-a35986c87e6b"
+TOPIC="codefeedr_HotIssue_d5177e81-b8cf-4340-ba13-fd7703b9bfd8"
 kafka-run-class.sh kafka.tools.GetOffsetShell --broker-list localhost:9092 --topic $TOPIC --time -1 --offsets 1 | awk -F ":" '{sum += $3} END {print sum}'

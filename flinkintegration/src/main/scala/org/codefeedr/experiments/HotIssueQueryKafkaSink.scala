@@ -72,6 +72,7 @@ class HotIssueQueryKafkaSink extends ExperimentBase with LazyLogging {
           HotIssueQuery.seed2,
           "IssueCommentGenerator")
       )
+      .setParallelism(1)
 
     val hotIssues = issueComments
       .map(o => HotIssue(o.issue_id, o.eventTime, 1))
@@ -80,6 +81,7 @@ class HotIssueQueryKafkaSink extends ExperimentBase with LazyLogging {
       //.window(EventTimeSessionWindows.withGap(idleSessionLength))
       .trigger(CountTrigger.of(1))
       .reduce((left, right) => left.merge(right))
+      .setParallelism(2)
 
     val sink = registerAndGetSink()
 

@@ -69,7 +69,7 @@ trait KafkaControllerComponent { this: KafkaConfigurationComponent =>
       */
     def createTopic(name: String, partitions: Option[Int] = None): Future[Unit] = {
       val usedPartitions = partitions.getOrElse[Int](kafkaConfiguration.defaultPartitions)
-      logger.debug(s"Creating kafka topic $name with $usedPartitions partitions")
+      logger.info(s"Creating kafka topic $name with $usedPartitions partitions")
       val topic = new NewTopic(name, usedPartitions, 1)
       val topicSet = Iterable(topic).asJavaCollection
       Future {
