@@ -24,6 +24,7 @@ import java.util.UUID
 import org.apache.flink.streaming.api.functions.sink.SinkFunction
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.types.Row
+import org.codefeedr.configuration.KafkaConfigurationComponent
 import org.codefeedr.core.library.internal.kafka._
 import org.codefeedr.core.library.internal.kafka.sink._
 import org.codefeedr.core.library.internal.kafka.source.{
@@ -49,7 +50,8 @@ trait SubjectFactoryComponent extends Serializable {
     with KafkaProducerFactoryComponent
     with KafkaConsumerFactoryComponent
     with KafkaControllerComponent
-    with EpochStateManagerComponent =>
+    with EpochStateManagerComponent
+    with KafkaConfigurationComponent =>
 
   private val subjectFactoryComponent = this
 
@@ -73,7 +75,12 @@ trait SubjectFactoryComponent extends Serializable {
       async {
         val (subjectNode, jobNode) = getSubjectJobNode[TData](jobName)
         await(validateSubject(subjectNode))
-        new KafkaGenericSink(subjectNode, jobNode, kafkaProducerFactory, epochStateManager, sinkId)
+        new KafkaGenericSink(subjectNode,
+                             jobNode,
+                             kafkaConfiguration,
+                             kafkaProducerFactory,
+                             epochStateManager,
+                             sinkId)
       }
 
     /**
@@ -90,6 +97,7 @@ trait SubjectFactoryComponent extends Serializable {
       await(validateSubject(subjectNode))
       new GenericTrailedRecordSink[TData](subjectNode,
                                           jobNode,
+                                          kafkaConfiguration,
                                           kafkaProducerFactory,
                                           epochStateManager,
                                           sinkId)(subjectFactoryComponent)
@@ -99,7 +107,12 @@ trait SubjectFactoryComponent extends Serializable {
                        sinkId: String,
                        jobName: String): TrailedRecordSink = {
       val (subjectNode, jobNode) = getSubjectJobNode(subjectType.name, jobName)
-      new TrailedRecordSink(subjectNode, jobNode, kafkaProducerFactory, epochStateManager, sinkId)
+      new TrailedRecordSink(subjectNode,
+                            jobNode,
+                            kafkaConfiguration,
+                            kafkaProducerFactory,
+                            epochStateManager,
+                            sinkId)
     }
 
     /**
@@ -166,7 +179,12 @@ trait SubjectFactoryComponent extends Serializable {
     def getRowSink(subjectType: SubjectType, jobName: String, sinkId: String): RowSink = {
       val subjectNode = subjectLibrary.getSubject(subjectType.name)
       val jobNode = subjectLibrary.getJob(jobName)
-      new RowSink(subjectNode, jobNode, kafkaProducerFactory, epochStateManager, sinkId)
+      new RowSink(subjectNode,
+                  jobNode,
+                  kafkaConfiguration,
+                  kafkaProducerFactory,
+                  epochStateManager,
+                  sinkId)
     }
 
     /**
@@ -205,18 +223,26 @@ trait SubjectFactoryComponent extends Serializable {
     def getRowSource(subjectNode: SubjectNode,
                      jobNode: JobNode,
                      sourceId: String): SourceFunction[Row] = {
-      new KafkaRowSource(subjectNode, jobNode, kafkaConsumerFactory, sourceId)
+      new KafkaRowSource(subjectNode, jobNode, kafkaConfiguration, kafkaConsumerFactory, sourceId)
     }
 
     def getSource[TSource: ClassTag: ru.TypeTag](subjectNode: SubjectNode,
                                                  jobNode: JobNode,
                                                  sinkId: String) =
-      new KafkaGenericSource[TSource](subjectNode, jobNode, kafkaConsumerFactory, sinkId)
+      new KafkaGenericSource[TSource](subjectNode,
+                                      jobNode,
+                                      kafkaConfiguration,
+                                      kafkaConsumerFactory,
+                                      sinkId)
 
     def getTrailedSource(subjectNode: SubjectNode,
                          jobNode: JobNode,
                          sinkId: String): SourceFunction[TrailedRecord] = {
-      new KafkaTrailedRecordSource(subjectNode, jobNode, kafkaConsumerFactory, sinkId)
+      new KafkaTrailedRecordSource(subjectNode,
+                                   jobNode,
+                                   kafkaConfiguration,
+                                   kafkaConsumerFactory,
+                                   sinkId)
     }
 
     /**
@@ -264,7 +290,7 @@ trait SubjectFactoryComponent extends Serializable {
       */
     private def guaranteeTopic(st: SubjectType): Future[Unit] = {
       kafkaController
-        .guaranteeTopic(s"${st.name}_${st.uuid}")
+        .guaranteeTopic(kafkaConfiguration.getTopic(st))
     }
 
     /**

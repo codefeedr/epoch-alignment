@@ -5,6 +5,7 @@ import java.util.UUID
 
 import org.apache.flink.api.java.tuple
 import org.apache.flink.types.Row
+import org.codefeedr.configuration.KafkaConfiguration
 import org.codefeedr.core.library.internal.KeyFactory
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
 import org.codefeedr.model._
@@ -12,12 +13,14 @@ import org.codefeedr.util.NoEventTime._
 
 class RowSink(subjectNode: SubjectNode,
               jobNode: JobNode,
+              kafkaConfiguration: KafkaConfiguration,
               kafkaProducerFactory: KafkaProducerFactory,
               epochStateManager: EpochStateManager,
               override val sinkUuid: String)
     extends KafkaSink[tuple.Tuple2[lang.Boolean, Row], Row, RecordSourceTrail](
       subjectNode,
       jobNode,
+      kafkaConfiguration,
       kafkaProducerFactory,
       epochStateManager) {
   @transient lazy val keyFactory = new KeyFactory(subjectType, UUID.randomUUID())

@@ -11,6 +11,7 @@ import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.apache.flink.types.Row
 import org.apache.kafka.clients.producer.{Callback, KafkaProducer, RecordMetadata}
 import org.apache.kafka.common.TopicPartition
+import org.codefeedr.configuration.KafkaConfiguration
 import org.codefeedr.core.MockedLibraryServices
 import org.codefeedr.core.library.metastore._
 import org.codefeedr.model.zookeeper.QuerySink
@@ -301,7 +302,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     * @return
     */
   private def getTestSink(): TestKafkaSink = {
-    val sink = new TestKafkaSink(subjectNode,jobNode,producerFactory,epochStateManager)
+    val sink = new TestKafkaSink(subjectNode,jobNode,kafkaConfiguration,producerFactory,epochStateManager)
     sink.setRuntimeContext(runtimeContext)
     sink.initializeState(initCtx)
     sink
@@ -374,7 +375,7 @@ class SampleObject {
 
 }
 
-class TestKafkaSink(node:SubjectNode, jobNode: JobNode,kafkaProducerFactory: KafkaProducerFactory,epochStateManager:EpochStateManager) extends KafkaSink[SampleObject,Row,RecordSourceTrail](node,jobNode,kafkaProducerFactory,epochStateManager)  {
+class TestKafkaSink(node:SubjectNode, jobNode: JobNode,kafkaConfiguration: KafkaConfiguration,kafkaProducerFactory: KafkaProducerFactory,epochStateManager:EpochStateManager) extends KafkaSink[SampleObject,Row,RecordSourceTrail](node,jobNode,kafkaConfiguration,kafkaProducerFactory,epochStateManager)  {
 
   override protected val sinkUuid: String = "testsink"
 

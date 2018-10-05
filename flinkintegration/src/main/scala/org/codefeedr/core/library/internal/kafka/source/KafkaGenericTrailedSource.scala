@@ -21,6 +21,7 @@ package org.codefeedr.core.library.internal.kafka.source
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.types.Row
+import org.codefeedr.configuration.KafkaConfiguration
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
 import org.codefeedr.model.{RecordSourceTrail, TrailedRecord}
 
@@ -30,10 +31,14 @@ import scala.reflect.runtime.{universe => ru}
 class KafkaGenericTrailedSource[T: ru.TypeTag: ClassTag: TypeInformation](
     subjectNode: SubjectNode,
     jobNode: JobNode,
+    kafkaConfiguration: KafkaConfiguration,
     kafkaConsumerFactory: KafkaConsumerFactory,
     transformer: TrailedRecord => T,
     override val sourceUuid: String)
-    extends KafkaSource[T, Row, RecordSourceTrail](subjectNode, jobNode, kafkaConsumerFactory) {
+    extends KafkaSource[T, Row, RecordSourceTrail](subjectNode,
+                                                   jobNode,
+                                                   kafkaConfiguration,
+                                                   kafkaConsumerFactory) {
 
   /**
     * Get typeinformation of the returned type

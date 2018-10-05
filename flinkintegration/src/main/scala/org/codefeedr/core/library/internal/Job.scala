@@ -22,6 +22,7 @@ import com.typesafe.scalalogging.{LazyLogging, Logger}
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
+import org.codefeedr.configuration.KafkaConfigurationComponent
 import org.codefeedr.core.library.SubjectFactoryComponent
 import org.codefeedr.core.library.internal.kafka.source.{
   KafkaConsumerFactoryComponent,
@@ -40,7 +41,10 @@ import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
 trait JobComponent {
-  this: SubjectLibraryComponent with SubjectFactoryComponent with KafkaConsumerFactoryComponent =>
+  this: SubjectLibraryComponent
+    with SubjectFactoryComponent
+    with KafkaConsumerFactoryComponent
+    with KafkaConfigurationComponent =>
 
   /**
     * TODO: Refactor this class to depend on the traits used from libraryservices, instead of directly calling libraryservices
@@ -104,6 +108,7 @@ trait JobComponent {
       source = new KafkaGenericTrailedSource[Input](
         job.subjectNode,
         job.jobNode,
+        kafkaConfiguration,
         kafkaConsumerFactory,
         subjectFactory.getUnTransformer[Input](subjectType),
         job.subjectType.uuid

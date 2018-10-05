@@ -37,7 +37,7 @@ import scala.concurrent.duration.{Duration, SECONDS}
   */
 class KafkaControllerSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEach {
 
-  private def createTestTopic(): String = s"TestTopic-${UUID.randomUUID()}"
+  private def createTestTopic(): String = s"codefeedr_TestTopic-${UUID.randomUUID()}"
 
   override def beforeEach(): Unit = {
     super.beforeEach()

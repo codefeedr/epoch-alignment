@@ -1,7 +1,9 @@
 package org.codefeedr.core.library.internal.kafka.source
 
 import org.apache.flink.api.common.typeinfo.TypeInformation
+import org.codefeedr.configuration.KafkaConfiguration
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
+
 import scala.reflect._
 
 /**
@@ -16,9 +18,13 @@ import scala.reflect._
 class KafkaGenericSource[TElement](
     subjectNode: SubjectNode,
     jobNode: JobNode,
+    kafkaConfiguration: KafkaConfiguration,
     kafkaConsumerFactory: KafkaConsumerFactory,
     override val sourceUuid: String)(implicit ct: ClassTag[TElement])
-    extends KafkaSource[TElement, TElement, Object](subjectNode, jobNode, kafkaConsumerFactory) {
+    extends KafkaSource[TElement, TElement, Object](subjectNode,
+                                                    jobNode,
+                                                    kafkaConfiguration,
+                                                    kafkaConsumerFactory) {
 
   override def transform(value: TElement, key: Object): TElement = value
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-MAINCLASS=org.codefeedr.experiments.HotIssueQueryKafkaSink
+MAINCLASS=org.codefeedr.experiments.HotIssueQuery
 ARGUMENTS="--name something"
 cd ../
 

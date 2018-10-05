@@ -2,6 +2,7 @@ package org.codefeedr.configuration
 import java.util.Properties
 
 import com.typesafe.scalalogging.LazyLogging
+import org.codefeedr.model.SubjectType
 
 import scala.collection.immutable
 import scala.collection.JavaConverters._
@@ -44,6 +45,9 @@ trait KafkaConfigurationComponent extends Serializable { this: ConfigurationProv
     def getProducerProperties: Properties = toKafkaConfiguration(producerMapping)
 
     def defaultPartitions: Int = configurationProvider.tryGet("partitions").getOrElse("4").toInt
+
+    override def getTopic(subjectName: String, subjectUuid: String): String =
+      s"codefeedr_${subjectName}_$subjectUuid"
 
     /**
       * Uses the mapping and the
@@ -96,4 +100,19 @@ trait KafkaConfiguration extends Serializable {
     * @return The amount of partitions that should be used as default when creating a kafka topic
     */
   def defaultPartitions: Int
+
+  /**
+    * Uses subjectuuid and subjectname to generate a name for the kafa subject
+    * @param subjectName name of the codefeedr subject
+    * @param subjectUuid unique identifier generated for the subject
+    * @return
+    */
+  def getTopic(subjectName: String, subjectUuid: String): String
+
+  /**
+    * Retrieve the topic name in kafka based on subjectType
+    * @param subjectType type to retrieve the topic for
+    * @return
+    */
+  def getTopic(subjectType: SubjectType): String = getTopic(subjectType.name, subjectType.uuid)
 }

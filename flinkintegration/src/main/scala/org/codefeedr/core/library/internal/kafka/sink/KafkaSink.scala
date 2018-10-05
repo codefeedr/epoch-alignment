@@ -22,7 +22,6 @@ package org.codefeedr.core.library.internal.kafka.sink
 import java.util.{Optional, UUID}
 
 import com.typesafe.config.ConfigFactory
-import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.state.{ListState, ListStateDescriptor}
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
 import org.apache.flink.configuration.Configuration
@@ -31,11 +30,13 @@ import org.apache.flink.streaming.api.CheckpointingMode
 import org.apache.flink.streaming.api.functions.sink.{SinkFunction, TwoPhaseCommitSinkFunction}
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.apache.kafka.clients.producer.{Callback, KafkaProducer, ProducerRecord, RecordMetadata}
+import org.codefeedr.configuration.KafkaConfiguration
 import org.codefeedr.core.library.internal.logging.MeasuredCheckpointedFunction
 import org.codefeedr.core.library.metastore.{JobNode, ProducerNode, QuerySinkNode, SubjectNode}
 import org.codefeedr.model._
 import org.codefeedr.model.zookeeper.{Producer, QuerySink}
-import org.codefeedr.util.{EventTime, LazyMdcLogging, Stopwatch}
+import org.codefeedr.util.EventTime._
+import org.codefeedr.util.{EventTime, Stopwatch}
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 import org.slf4j.MDC
@@ -44,12 +45,13 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Promise, blocking}
+import scala.concurrent.{Await, Promise}
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
-import org.codefeedr.util.EventTime._
 
-case class KafkaSinkState(sinkId: String)
+class KafkaSinkState() {
+  var sinkId: String = ""
+}
 
 /**
   * A simple kafka sink, pushing all records to a kafka topic of the given subjecttype
@@ -61,6 +63,7 @@ case class KafkaSinkState(sinkId: String)
 abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
     subjectNode: SubjectNode,
     jobNode: JobNode,
+    kafkaConfiguration: KafkaConfiguration,
     kafkaProducerFactory: KafkaProducerFactory,
     epochStateManager: EpochStateManager)
     extends TwoPhaseCommitSinkFunction[TSink, TransactionState, TransactionContext](
@@ -111,7 +114,7 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
   @transient protected lazy val producerNode: ProducerNode =
     sinkNode.getProducers().getChild(getSinkState.sinkId)
 
-  @transient protected lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
+  @transient protected lazy val topic = kafkaConfiguration.getTopic(subjectType)
   //Size (amount) of kafkaProducers
   @transient private lazy val producerPoolSize: Int =
     ConfigFactory.load.getInt("codefeedr.kafka.custom.producer.count")
@@ -184,7 +187,11 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
       }
     }
     if (sinkState.isEmpty) {
-      sinkState = Some(KafkaSinkState(parallelIndex.toString))
+      sinkState = Some({
+        val r = new KafkaSinkState()
+        r.sinkId = parallelIndex.toString
+        r
+      })
       updateCheckpointedState()
     }
     super.initializeState(context)

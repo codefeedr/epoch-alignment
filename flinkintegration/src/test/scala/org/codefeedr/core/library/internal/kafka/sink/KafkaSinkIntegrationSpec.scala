@@ -61,7 +61,7 @@ class KafkaSinkIntegrationSpec extends LibraryServiceSpec with BeforeAndAfterEac
     val job = libraryServices.subjectLibrary.getJob("testJob")
 
     //,subjectFactory.getTransformer[TestKafkaSinkSubject](subject)
-    val sink = new KafkaGenericSink[TestKafkaSinkSubject](subjectNode,job,libraryServices.kafkaProducerFactory,libraryServices.epochStateManager,sinkId)
+    val sink = new KafkaGenericSink[TestKafkaSinkSubject](subjectNode,job,libraryServices.kafkaConfiguration,libraryServices.kafkaProducerFactory,libraryServices.epochStateManager,sinkId)
     val sinkNode = subjectNode.getSinks().getChild(sinkId)
     val runtimeContext = mock[StreamingRuntimeContext]
 
@@ -98,7 +98,7 @@ class KafkaSinkIntegrationSpec extends LibraryServiceSpec with BeforeAndAfterEac
       val subject = SubjectTypeFactory.getSubjectType[TestKafkaSinkSubject]
       val subjectNode = await(libraryServices.subjectFactory.create(subject))
       val job = libraryServices.subjectLibrary.getJob("testJob")
-      val sink = new KafkaGenericSink[TestKafkaSinkSubject](subjectNode,job,libraryServices.kafkaProducerFactory,libraryServices.epochStateManager,sinkId)
+      val sink = new KafkaGenericSink[TestKafkaSinkSubject](subjectNode,job,libraryServices.kafkaConfiguration,libraryServices.kafkaProducerFactory,libraryServices.epochStateManager,sinkId)
 
       //Act
       //Not catching the exception is on purpose

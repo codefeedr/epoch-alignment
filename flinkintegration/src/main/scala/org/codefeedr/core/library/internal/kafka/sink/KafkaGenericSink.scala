@@ -19,6 +19,7 @@
 
 package org.codefeedr.core.library.internal.kafka.sink
 
+import org.codefeedr.configuration.KafkaConfiguration
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
 import org.codefeedr.util.EventTime
 
@@ -29,11 +30,13 @@ import scala.reflect.ClassTag
   */
 class KafkaGenericSink[TData: ClassTag: EventTime](val subjectNode: SubjectNode,
                                                    jobNode: JobNode,
+                                                   kafkaConfiguration: KafkaConfiguration,
                                                    kafkaProducerFactory: KafkaProducerFactory,
                                                    epochStateManager: EpochStateManager,
                                                    override val sinkUuid: String)
     extends KafkaSink[TData, TData, Object](subjectNode,
                                             jobNode,
+                                            kafkaConfiguration,
                                             kafkaProducerFactory,
                                             epochStateManager) {
 

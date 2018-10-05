@@ -33,7 +33,7 @@ import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.apache.kafka.common.TopicPartition
-import org.codefeedr.core.library.internal.kafka.OffsetUtils
+import org.codefeedr.configuration.{KafkaConfiguration, KafkaConfigurationComponent}
 import org.codefeedr.core.library.metastore.sourcecommand.{KafkaSourceCommand, SourceCommand}
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
 import org.codefeedr.model.SubjectType
@@ -60,6 +60,7 @@ case class KafkaSourceStateContainer(instanceId: String, offsets: Map[Int, Long]
 abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
     subjectNode: SubjectNode,
     JobNode: JobNode,
+    kafkaConfiguration: KafkaConfiguration,
     kafkaConsumerFactory: KafkaConsumerFactory)
 //Flink interfaces
     extends RichSourceFunction[TElement]
@@ -81,7 +82,9 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
   //Unique id of the source the instance of this kafka source elongs to
   val sourceUuid: String
 
-  @transient private lazy val topic = s"${subjectType.name}_${subjectType.uuid}"
+  @transient private lazy val topic =
+    kafkaConfiguration.getTopic(subjectType)
+
   //@transient private lazy val closePromise: Promise[Unit] = Promise[Unit]()
   @transient protected lazy val subjectType: SubjectType =
     Await.result(subjectNode.getData(), 5.seconds).get

@@ -1,8 +1,9 @@
 package org.codefeedr.core.library.internal.kafka.sink
 
 import org.apache.flink.types.Row
+import org.codefeedr.configuration.KafkaConfiguration
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
-import org.codefeedr.model.{ActionType, Record, RecordSourceTrail, TrailedRecord}
+import org.codefeedr.model.{RecordSourceTrail, TrailedRecord}
 import org.codefeedr.util.NoEventTime._
 
 /**
@@ -15,11 +16,13 @@ import org.codefeedr.util.NoEventTime._
   */
 class TrailedRecordSink(subjectNode: SubjectNode,
                         jobNode: JobNode,
+                        kafkaConfiguration: KafkaConfiguration,
                         kafkaProducerFactory: KafkaProducerFactory,
                         epochStateManager: EpochStateManager,
                         override val sinkUuid: String)
     extends KafkaSink[TrailedRecord, Row, RecordSourceTrail](subjectNode,
                                                              jobNode,
+                                                             kafkaConfiguration,
                                                              kafkaProducerFactory,
                                                              epochStateManager) {
 

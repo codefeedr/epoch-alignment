@@ -7,6 +7,7 @@ import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.apache.flink.types.Row
 import org.apache.kafka.clients.consumer.KafkaConsumer
+import org.codefeedr.configuration.KafkaConfiguration
 import org.codefeedr.core.MockedLibraryServices
 import org.codefeedr.core.library.metastore._
 import org.codefeedr.core.library.metastore.sourcecommand.{KafkaSourceCommand, SourceCommand}
@@ -493,7 +494,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   }
 
   def constructSource(): TestKafkaSource = {
-    val source = new TestKafkaSource(subjectNode,jobNode,consumerFactory,consumer)
+    val source = new TestKafkaSource(subjectNode,jobNode,kafkaConfiguration,consumerFactory,consumer)
     //Override the default manager
     source.manager = manager
     source
@@ -506,8 +507,8 @@ class SampleObject {
 
 }
 
-class TestKafkaSource(node: SubjectNode,jobNode: JobNode,kafkaConsumerFactory: KafkaConsumerFactory, mockedConsumer:KafkaSourceConsumer[SampleObject,SampleObject,Object]with KafkaSourceMapper[SampleObject,SampleObject,Object])
-  extends KafkaSource[SampleObject,SampleObject,Object](node,jobNode,kafkaConsumerFactory) {
+class TestKafkaSource(node: SubjectNode,jobNode: JobNode,kafkaConfiguration: KafkaConfiguration,kafkaConsumerFactory: KafkaConsumerFactory, mockedConsumer:KafkaSourceConsumer[SampleObject,SampleObject,Object]with KafkaSourceMapper[SampleObject,SampleObject,Object])
+  extends KafkaSource[SampleObject,SampleObject,Object](node,jobNode,kafkaConfiguration,kafkaConsumerFactory) {
 
   override val sourceUuid: String = "testuuid"
 
