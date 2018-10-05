@@ -48,7 +48,7 @@ class HotIssueQueryKafkaSink extends ExperimentBase with LazyLogging {
 
     val env = getEnvironment
     logger.info("Initializing arguments")
-    initialize(args,env)
+    initialize(args, env)
     Await.ready(subjectLibrary.initialize(), Duration(5, SECONDS))
     logger.info("Arguments initialized")
     val windowLength = Time.seconds(3)

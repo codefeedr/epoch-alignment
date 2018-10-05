@@ -28,57 +28,56 @@ import org.apache.flink.core.memory.DataOutputSerializer
 
 import scala.reflect.ClassTag
 
-class GenericSerialiser[T: ClassTag]()(implicit val ec:ExecutionConfig) {
+class GenericSerialiser[T: ClassTag]()(implicit val ec: ExecutionConfig) {
   @transient private lazy val outputSerializer = new DataOutputSerializer(16)
   @transient private lazy val ct = implicitly[ClassTag[T]]
-  @transient implicit lazy val ti:TypeInformation[T] = TypeInformation.of(ct.runtimeClass.asInstanceOf[Class[T]])
+  @transient implicit lazy val ti: TypeInformation[T] =
+    TypeInformation.of(ct.runtimeClass.asInstanceOf[Class[T]])
   @transient private lazy val serializer: TypeSerializer[T] = ti.createSerializer(ec)
 
   private val serializeInternal: (T) => Array[Byte] = {
+
     /**
       * Prevent deserialisation of something that already is a byte array, as those are also not serialized
       */
-      if (classOf[Array[Byte]].isAssignableFrom(ct.getClass)) { data: T =>
-        data.asInstanceOf[Array[Byte]]
-      }  else {
-      data:T => serializeValue(data)
-      }
+    if (classOf[Array[Byte]].isAssignableFrom(ct.getClass)) { data: T =>
+      data.asInstanceOf[Array[Byte]]
+    } else { data: T =>
+      serializeValue(data)
     }
+  }
 
-    def serializeValue(element: T): Array[Byte] = { // if the value is null, its serialized value is null as well.
-      try {
-        serializer.serialize(element, outputSerializer)
-      }
-      catch {
-        case e: IOException =>
-          throw new RuntimeException("Unable to serialize record", e)
-      }
-      var res = outputSerializer.getByteArray
-      if (res.length != outputSerializer.length) {
-        val n = new Array[Byte](outputSerializer.length)
-        System.arraycopy(res, 0, n, 0, outputSerializer.length)
-        res = n
-      }
-      outputSerializer.clear
-      res
+  def serializeValue(element: T): Array[Byte] = { // if the value is null, its serialized value is null as well.
+    try {
+      serializer.serialize(element, outputSerializer)
+    } catch {
+      case e: IOException =>
+        throw new RuntimeException("Unable to serialize record", e)
     }
-
-
-    /**
-      * Serialize the element to byte array
-      * @param data the data to serialize
-      * @return the data as bytearray
-      */
-    def serialize(data: T): Array[Byte] = serializeInternal(data)
+    var res = outputSerializer.getByteArray
+    if (res.length != outputSerializer.length) {
+      val n = new Array[Byte](outputSerializer.length)
+      System.arraycopy(res, 0, n, 0, outputSerializer.length)
+      res = n
+    }
+    outputSerializer.clear
+    res
   }
 
   /**
-    * Serialise the given object to byte array
+    * Serialize the element to byte array
+    * @param data the data to serialize
+    * @return the data as bytearray
     */
-  object GenericSerialiser {
-      def apply[TData: ClassTag](
-          tData: TData)(implicit executionConfig: ExecutionConfig): Array[Byte] =
-        new GenericSerialiser[TData]()(implicitly[ClassTag[TData]],executionConfig).serialize(tData)
+  def serialize(data: T): Array[Byte] = serializeInternal(data)
+}
 
-    }
+/**
+  * Serialise the given object to byte array
+  */
+object GenericSerialiser {
+  def apply[TData: ClassTag](tData: TData)(
+      implicit executionConfig: ExecutionConfig): Array[Byte] =
+    new GenericSerialiser[TData]()(implicitly[ClassTag[TData]], executionConfig).serialize(tData)
 
+}

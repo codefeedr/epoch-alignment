@@ -18,7 +18,7 @@ trait ConfigurationProvider extends Serializable {
     *
     * @param configuration custom configuration to initialize with
     */
-  def initConfiguration(configuration: ParameterTool, ec:ExecutionConfig): Unit
+  def initConfiguration(configuration: ParameterTool, ec: ExecutionConfig): Unit
 
   /**
     * Retrieve the parameterTool for the global configuration
@@ -60,12 +60,12 @@ trait ConfigurationProvider extends Serializable {
     * Retrieve the executionConfig used for the current job
     * @return the Flink executionconfig object
     */
-  def getExecutionConfig:ExecutionConfig
+  def getExecutionConfig: ExecutionConfig
 }
 
 trait ConfigurationProviderComponent {
   val configurationProvider: ConfigurationProvider
-  @transient implicit lazy val ec:ExecutionConfig = configurationProvider.getExecutionConfig
+  @transient implicit lazy val ec: ExecutionConfig = configurationProvider.getExecutionConfig
 }
 
 trait FlinkConfigurationProviderComponent extends ConfigurationProviderComponent {
@@ -84,14 +84,14 @@ trait FlinkConfigurationProviderComponent extends ConfigurationProviderComponent
       * If the passed parameterTool contains a property for "propertiesFile", this path is opened and
       * @param arguments custom configuration to initialize with. Usually initialized from program arguments
       */
-    def initConfiguration(arguments: ParameterTool, ec:ExecutionConfig): Unit = {
+    def initConfiguration(arguments: ParameterTool, ec: ExecutionConfig): Unit = {
 
       if (requested) {
         //Just to validate, the configuration is not modified after it has already been retrieved by some component
         throw new IllegalStateException(
           "Cannot set parametertool after parametertool was already requested")
       }
-      executionConfig=Some(ec)
+      executionConfig = Some(ec)
       //Store parameter tool in the static context
       //Needed to also make the components work when there is no stream execution environment
       val defaultConfiguraiton = loadPropertiesFile("/codefeedr.properties") match {
@@ -113,7 +113,8 @@ trait FlinkConfigurationProviderComponent extends ConfigurationProviderComponent
 
     override def getExecutionConfig: ExecutionConfig = executionConfig match {
       case Some(ec) => ec
-      case None => throw new IllegalStateException("Cannot retrieve executionConfig before being initialized")
+      case None =>
+        throw new IllegalStateException("Cannot retrieve executionConfig before being initialized")
     }
 
     /**

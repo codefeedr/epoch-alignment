@@ -79,7 +79,7 @@ object GithubSampleQuery extends ExperimentBase with LazyLogging {
   def main(args: Array[String]): Unit = {
     val env = getEnvironment
 
-    initialize(args,env)
+    initialize(args, env)
     // val commits = env.addSource(createGeneratorSource((l:Long) => new CommitGenerator(l),seed1,"CommitGenerator"))
     val pullRequests = env.addSource(
       createGeneratorSource((l: Long, c: Long, o: Long) => new PullRequestGenerator(l, c, o, 1000),

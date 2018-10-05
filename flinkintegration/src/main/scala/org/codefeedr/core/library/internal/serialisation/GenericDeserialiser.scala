@@ -26,7 +26,7 @@ import org.apache.flink.core.memory.DataInputDeserializer
 
 import scala.reflect.ClassTag
 
-class GenericDeserialiser[T: ClassTag](implicit val ec:ExecutionConfig)  {
+class GenericDeserialiser[T: ClassTag](implicit val ec: ExecutionConfig) {
   @transient private lazy val inputDeserializer = new DataInputDeserializer()
   @transient private lazy val ct = implicitly[ClassTag[T]]
   @transient implicit lazy val ti: TypeInformation[T] =
@@ -39,12 +39,13 @@ class GenericDeserialiser[T: ClassTag](implicit val ec:ExecutionConfig)  {
       */
     if (classOf[Array[Byte]].isAssignableFrom(ct.getClass)) { data: Array[Byte] =>
       data.asInstanceOf[T]
-    } else { data: Array[Byte] => deserialize(data)
+    } else { data: Array[Byte] =>
+      deserialize(data)
     }
 
   /**
     * Serialize the element to byte array
- *
+    *
     * @param data the data to serialize
     * @return the data as bytearray
     */
@@ -61,6 +62,7 @@ class GenericDeserialiser[T: ClassTag](implicit val ec:ExecutionConfig)  {
   */
 object GenericDeserialiser {
   def apply[TData: ClassTag](data: Array[Byte])(implicit executionConfig: ExecutionConfig): TData = {
-    new GenericDeserialiser[TData]()(implicitly[ClassTag[TData]],executionConfig).deserialize(data)
+    new GenericDeserialiser[TData]()(implicitly[ClassTag[TData]], executionConfig)
+      .deserialize(data)
   }
 }

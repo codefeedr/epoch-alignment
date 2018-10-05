@@ -28,7 +28,8 @@ import org.codefeedr.core.library.internal.kafka.KafkaDeserialiser
 
 import scala.reflect.ClassTag
 
-trait KafkaConsumerFactoryComponent { this: KafkaConfigurationComponent with ConfigurationProviderComponent=>
+trait KafkaConsumerFactoryComponent {
+  this: KafkaConfigurationComponent with ConfigurationProviderComponent =>
   val kafkaConsumerFactory: KafkaConsumerFactory
 
   /**

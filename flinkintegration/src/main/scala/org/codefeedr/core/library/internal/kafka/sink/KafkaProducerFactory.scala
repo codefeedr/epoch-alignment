@@ -27,7 +27,7 @@ import org.codefeedr.core.library.internal.kafka.KafkaSerialiser
 import scala.reflect.ClassTag
 
 trait KafkaProducerFactoryComponent {
-  this: KafkaConfigurationComponent with ConfigurationProviderComponent=>
+  this: KafkaConfigurationComponent with ConfigurationProviderComponent =>
   val kafkaProducerFactory: KafkaProducerFactory
 
   /**

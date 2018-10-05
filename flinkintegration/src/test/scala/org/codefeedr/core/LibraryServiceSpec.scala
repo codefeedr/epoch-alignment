@@ -20,6 +20,7 @@
 package org.codefeedr.core
 
 import org.apache.flink.api.java.utils.ParameterTool
+import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 
 /**
@@ -32,7 +33,7 @@ class LibraryServiceSpec extends AsyncFlatSpec with BeforeAndAfterAll{
 
   override def beforeAll(): Unit = {
     //Initialize the configuration component with the codefeedr.properties file
-    libraryServices.configurationProvider.initConfiguration(ParameterTool.fromArgs(new Array[String](0)),null)
+    libraryServices.configurationProvider.initConfiguration(ParameterTool.fromArgs(new Array[String](0)), StreamExecutionEnvironment.getExecutionEnvironment.getConfig)
     super.beforeAll()
   }
 }

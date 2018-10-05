@@ -9,7 +9,8 @@ import scala.reflect.ClassTag
 
 trait QuerySourceCommandNode extends ZkQueueNode[Unit, SourceCommand]
 
-trait QuerySourceCommandNodeComponent extends ZkQueueNodeComponent { this: ZkClientComponent with ConfigurationProviderComponent =>
+trait QuerySourceCommandNodeComponent extends ZkQueueNodeComponent {
+  this: ZkClientComponent with ConfigurationProviderComponent =>
 
   class QuerySourceCommandNodeImpl(p: ZkNodeBase)
       extends ZkNodeImpl[Unit]("commands", p)

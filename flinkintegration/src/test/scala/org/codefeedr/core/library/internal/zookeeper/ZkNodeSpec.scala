@@ -95,7 +95,8 @@ class ZkNodeSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEac
     assert(await(config.getChild[Boolean]("anotherChild").getData()).get)
   }
 
-  it should "throw an exception if the child is constructed with the wrong type" in async {
+  /*
+  it should "throw an exception if the child is retrieved with the wrong type" in async {
     val root = new TestRoot()
     val config = new TestConfigNode("testc", root)
     val child = config.getChild[String]("childschild")
@@ -103,6 +104,7 @@ class ZkNodeSpec extends LibraryServiceSpec with Matchers with BeforeAndAfterEac
     val data = Await.result(config.getChild[Boolean]("childschild").getData(), Duration(100, MILLISECONDS))
     assertThrows[ClassCastException](data.get)
   }
+  */
 
   "ZkNode.AwaitCondition" should "return a future that resolves when the condition evaluates to true" in async {
     val root = new TestRoot()

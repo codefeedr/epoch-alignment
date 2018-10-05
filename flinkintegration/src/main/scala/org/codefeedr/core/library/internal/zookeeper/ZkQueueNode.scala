@@ -27,7 +27,8 @@ trait ZkQueueNode[TNode, TElement] extends ZkNode[TNode] {
   def observe(): Observable[TElement]
 }
 
-trait ZkQueueNodeComponent extends ZkNodeComponent { this: ZkClientComponent with ConfigurationProviderComponent =>
+trait ZkQueueNodeComponent extends ZkNodeComponent {
+  this: ZkClientComponent with ConfigurationProviderComponent =>
 
   /**
     * Implementation of a queue around a zknode

@@ -31,7 +31,10 @@ import org.apache.zookeeper.Watcher.Event._
 import org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE
 import org.apache.zookeeper._
 import org.apache.zookeeper.data.Stat
-import org.codefeedr.configuration.{ConfigurationProviderComponent, ZookeeperConfigurationComponent}
+import org.codefeedr.configuration.{
+  ConfigurationProviderComponent,
+  ZookeeperConfigurationComponent
+}
 import org.codefeedr.core.library.internal.serialisation.{GenericDeserialiser, GenericSerialiser}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -43,7 +46,8 @@ import rx.lang.scala.observables.{AsyncOnSubscribe, SyncOnSubscribe}
 
 import scala.reflect.ClassTag
 
-trait ZkClientComponent { this: ZookeeperConfigurationComponent with ConfigurationProviderComponent=>
+trait ZkClientComponent {
+  this: ZookeeperConfigurationComponent with ConfigurationProviderComponent =>
 
   implicit val zkClient: ZkClient
 
