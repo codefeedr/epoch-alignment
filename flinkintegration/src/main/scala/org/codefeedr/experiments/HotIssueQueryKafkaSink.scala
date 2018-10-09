@@ -70,7 +70,9 @@ class HotIssueQueryKafkaSink extends ExperimentBase with LazyLogging {
           (l: Long, c: Long, o: Long) =>
             new IssueCommentGenerator(l, c, o, ExperimentConfiguration.issuesPerCheckpoint),
           HotIssueQuery.seed2,
-          "IssueCommentGenerator")
+          "IssueCommentGenerator",
+          Some(1L)
+        )
       )
       .setParallelism(1)
 
@@ -85,7 +87,7 @@ class HotIssueQueryKafkaSink extends ExperimentBase with LazyLogging {
 
     val sink = registerAndGetSink()
 
-    hotIssues.addSink(sink)
+    hotIssues.addSink(sink).setParallelism(6)
     logger.info("Submitting hot issue query job")
     env.execute("HotIssues")
 

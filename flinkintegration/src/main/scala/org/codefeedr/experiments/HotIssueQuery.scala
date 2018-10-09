@@ -65,7 +65,7 @@ class HotIssueQuery extends ExperimentBase with LazyLogging {
       .trigger(CountTrigger.of(1))
       .reduce((left, right) => left.merge(right))
 
-    hotIssues.addSink(new LoggingSinkFunction[HotIssue]("HotIssueSink"))
+    hotIssues.addSink(new LoggingSinkFunction[HotIssue]("HotIssueSink")).setParallelism(6)
     logger.info("Submitting hot issue query job")
     env.execute("HotIssues")
 

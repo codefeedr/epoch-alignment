@@ -3,6 +3,11 @@
 ### Build a sinple generator for sample data
 V Define and export Kibana configuration
 
+
+- Event generation throttling
+-
+
+
 ### Intermediate measurements
 
 

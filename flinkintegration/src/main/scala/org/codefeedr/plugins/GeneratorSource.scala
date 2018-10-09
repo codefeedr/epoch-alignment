@@ -37,9 +37,11 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     * @tparam TSource type of elements exposed by the source
     * @return
     */
-  def createGeneratorSource[TSource](generator: (Long, Long, Long) => BaseSampleGenerator[TSource],
-                                     seedBase: Long,
-                                     name: String): SourceFunction[TSource]
+  def createGeneratorSource[TSource](
+      generator: (Long, Long, Long) => BaseSampleGenerator[TSource],
+      seedBase: Long,
+      name: String,
+      eventsPerMillisecond: Option[Long] = None): SourceFunction[TSource]
 
   /**
     * Base class for generators
@@ -47,17 +49,21 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     * @param generator Seeded generator for elements
     * @param seedBase  Base for the seed. Offset is multiplied by this value and passed as seed to the generator.
     *                  For best results, use a 64 bit prime number
+    * @param eventsPerMillisecond optional limit for the amount of events that should be generated per millisecond
     * @tparam TSource the type to generate
     */
   class GeneratorSource[TSource](val generator: (Long, Long, Long) => BaseSampleGenerator[TSource],
                                  val seedBase: Long,
-                                 val name: String)
+                                 val name: String,
+                                 val eventsPerMillisecond: Option[Long] = None)
       extends RichParallelSourceFunction[TSource]
       with CheckpointedFunction
       with CheckpointListener
       with MeasuredCheckpointedFunction {
 
     @volatile private var running = true
+    @transient private lazy val startTime = System.currentTimeMillis()
+    private var startOffset: Long = 0
     private var currentOffset: Long = 0
     private var lastEventTime: Long = 0
     private var lastLatency: Long = 0
@@ -116,12 +122,11 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
         //Collect them within the checkpoint lock, and update the current offset
         ctx.getCheckpointLock.synchronized {
           nextElements.foreach {
-            case Right(v) => {
+            case Right(v) =>
               logger.debug(v._1.toString)
               lastEventTime = v._2
               currentOffset += 1
               ctx.collectWithTimestamp(v._1, v._2)
-            }
             case Left(w) =>
               w match {
                 case WaitForNextCheckpoint(nextCp) => waitForCp = Some(nextCp)
@@ -129,6 +134,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
           }
           lastLatency = System.currentTimeMillis() - lastEventTime
           ctx.emitWatermark(new Watermark(lastEventTime))
+          limitThroughput()
         }
 
         //Check if run should wait for the next checkpoint
@@ -140,6 +146,22 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
           }
         }
 
+      }
+    }
+
+    /**
+      * Limits the eventgeneration if needed
+      */
+    private def limitThroughput(): Unit = {
+      eventsPerMillisecond match {
+        case Some(v) =>
+          val elapsed = System.currentTimeMillis() - startTime
+          val expectedEvents = elapsed * v
+          if (expectedEvents < currentOffset - startOffset) {
+            logger.debug("Throttling event generation")
+            Thread.sleep(Math.max(generationBatchSize / v, 1))
+          }
+        case None =>
       }
     }
 
@@ -177,6 +199,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
               "Cannot restore GeneratorSource with less than one state")
           case _ =>
             currentOffset = states.head.currentPosition
+            startOffset = currentOffset
             logger.info(s"Initialized $getLabel with offset $currentOffset")
         }
       }
