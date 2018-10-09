@@ -28,7 +28,7 @@ object HotPullRequestQueryBase {
   */
 class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
 
-  protected val windowLength = Time.seconds(3)
+  @transient lazy protected val windowLength = Time.seconds(3)
 
   implicit val HotIssueEventTime: EventTime[HotIssue] =
     new EventTime[HotIssue] {

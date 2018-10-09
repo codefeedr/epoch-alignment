@@ -71,7 +71,7 @@
     </appender>
     -->
 
-    <root level="DEBUG">
+    <root level="INFO">
         <!--<appender-ref ref="STASH" />-->
         <appender-ref ref="STDOUT" />
     </root>

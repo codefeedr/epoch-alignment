@@ -14,28 +14,11 @@ import scala.concurrent.duration.{Duration, SECONDS}
 
 trait ExperimentBase extends CodefeedrComponents {
 
-  protected def getWindowTime: org.apache.flink.streaming.api.windowing.time.Time =
-    org.apache.flink.streaming.api.windowing.time.Time
-      .seconds(configurationProvider.getInt("window.size", Some(10)))
-
   protected def getStateBackendPath: String = configurationProvider.get("statebackend.path")
 
   protected def getParallelism: Int = 2
 
-  def initialize(args: Array[String]) = {
-    val pt = ParameterTool.fromArgs(args)
-    configurationProvider.initParameters(pt)
-    Await.ready(subjectLibrary.initialize(), Duration(5, SECONDS))
-  }
-
-  def getStateBackend: StateBackend =
-    new FsStateBackend(getStateBackendPath, true)
-
-  /**
-    * Creates a new stream stream execution environment with some default configuration
-    * @return
-    */
-  protected lazy val getEnvironment: StreamExecutionEnvironment = {
+  @transient protected lazy val getEnvironment: StreamExecutionEnvironment = {
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     configurationProvider.initEc(env.getConfig)
     //env.getConfig.disableGenericTypes()
@@ -50,4 +33,19 @@ trait ExperimentBase extends CodefeedrComponents {
     env.setParallelism(getParallelism)
     env
   }
+
+  def initialize(args: Array[String]) = {
+    val pt = ParameterTool.fromArgs(args)
+    configurationProvider.initParameters(pt)
+    Await.ready(subjectLibrary.initialize(), Duration(5, SECONDS))
+  }
+
+  def getStateBackend: StateBackend =
+    new FsStateBackend(getStateBackendPath, true)
+
+  /**
+  * Creates a new stream stream execution environment with some default configuration
+  * @return
+  */
+
 }
