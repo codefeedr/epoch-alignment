@@ -4,12 +4,12 @@ services:
     image: wurstmeister/zookeeper
     restart: on-failure
     ports:
-      - "172.16.45.114:2181:2181"
+      - "athens.ewi.tudelft.nl:2181:2181"
   kafka:
     build: .
     restart: on-failure
     ports:
-      - "172.16.45.114:9092:9092"
+      - "athens.ewi.tudelft.nl:9092:9092"
     environment:
       KAFKA_ADVERTISED_HOST_NAME: athens.ewi.tudelft.nl
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181

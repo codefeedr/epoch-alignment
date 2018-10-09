@@ -1,7 +1,16 @@
 #!/usr/bin/env bash
 
+#Connect to the flink machine
+ssh nvankaam@dutihr.st.ewi.tudelft.nl
+
+
+
 #Connect to installation machine kafka
 ssh nvankaam@athens.ewi.tudelft.nl
+#Or with the direct ip
+ssh nvankaam@131.180.119.50
+
+
 
 #Select container that is running kafka
 KAFKA_CONTAINER=$(docker ps --filter name=_kafka --format={{.ID}})
