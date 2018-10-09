@@ -14,7 +14,7 @@ git checkout epochalignment
 cd $REPO_FOLDER/experiments/Shared/kafka-docker
 
 #Start docker services
-docker-compose -f docker-compose-experiment.yml up --force-recreate -d
+docker-compose -f docker-compose-experiment.yml up --force-recreate -d  --remove-orphans
 
 #Start ELK stack
 cd $REPO_FOLDER/experiments/Shared/Elk

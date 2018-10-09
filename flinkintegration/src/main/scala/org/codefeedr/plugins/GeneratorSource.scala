@@ -134,9 +134,9 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
           }
           lastLatency = System.currentTimeMillis() - lastEventTime
           ctx.emitWatermark(new Watermark(lastEventTime))
-          limitThroughput()
         }
 
+        limitThroughput()
         //Check if run should wait for the next checkpoint
         while (waitForCp.nonEmpty) {
           if (currentCheckpoint >= waitForCp.get) {

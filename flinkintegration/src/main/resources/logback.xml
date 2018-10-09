@@ -71,7 +71,7 @@
     </appender>
     -->
 
-    <root level="INFO">
+    <root level="DEBUG">
         <!--<appender-ref ref="STASH" />-->
         <appender-ref ref="STDOUT" />
     </root>
@@ -82,7 +82,7 @@
     <logger name="org.apache.flink" level="WARN"/>
     <logger name="org.apache.zookeeper" level="WARN"/>
 
-    <logger name="org.codefeedr.core.library.internal.kafka.sink" level="WARN"/>
+    <logger name="org.codefeedr.core.library.internal.kafka.sink" level="DEBUG"/>
     <logger name="org.codefeedr.core.library.internal.zookeeper" level="WARN"/>
 
     <!-- If you do not place this on info level, errors that trigger a restart will not be logged-->

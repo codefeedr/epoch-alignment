@@ -21,12 +21,7 @@ object HotIssueQuery extends ExperimentBase with LazyLogging {
 
 }
 
-class HotIssueQuery extends ExperimentBase with LazyLogging {
-
-  implicit val HotIssueEventTime: EventTime[HotIssue] =
-    new EventTime[HotIssue] {
-      override def getEventTime(a: HotIssue): Long = a.latestEvent
-    }
+class HotIssueQuery extends HotPullRequestQueryBase {
 
   def deploy(args: Array[String]): Unit = {
 
@@ -34,41 +29,13 @@ class HotIssueQuery extends ExperimentBase with LazyLogging {
     initialize(args)
     logger.info("Arguments initialized")
     val env = getEnvironment
-    val windowLength = Time.seconds(3)
 
-    val issues = env.addSource(
-      createGeneratorSource(
-        (l: Long, c: Long, o: Long) =>
-          new IssueGenerator(l,
-                             c,
-                             o,
-                             ExperimentConfiguration.issuesPerCheckpoint / getParallelism,
-                             ExperimentConfiguration.prPerCheckpoint),
-        HotIssueQuery.seed1,
-        "IssueGenerator"
-      ))
-
-    val issueComments = env
-      .addSource(
-        createGeneratorSource(
-          (l: Long, c: Long, o: Long) =>
-            new IssueCommentGenerator(l, c, o, ExperimentConfiguration.issuesPerCheckpoint),
-          HotIssueQuery.seed2,
-          "IssueCommentGenerator")
-      )
-
-    val hotIssues = issueComments
-      .map(o => HotIssue(o.issue_id, o.eventTime, 1))
-      .keyBy(o => o.issueId)
-      .window(TumblingEventTimeWindows.of(windowLength))
-      //.window(EventTimeSessionWindows.withGap(idleSessionLength))
-      .trigger(CountTrigger.of(1))
-      .reduce((left, right) => left.merge(right))
-
-    hotIssues.addSink(new LoggingSinkFunction[HotIssue]("HotIssueSink")).setParallelism(6)
+    val source = issueComments()
+    val hotIssues = getHotIssues(source)
+    val sink = new LoggingSinkFunction[HotIssue]("HotIssueSink")
+    hotIssues.addSink(sink)
     logger.info("Submitting hot issue query job")
     env.execute("HotIssues")
-
   }
 
 }

@@ -9,6 +9,9 @@ import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.codefeedr.core.library.CodefeedrComponents
 import org.apache.flink.runtime.state.filesystem.FsStateBackend
 
+import scala.concurrent.Await
+import scala.concurrent.duration.{Duration, SECONDS}
+
 trait ExperimentBase extends CodefeedrComponents {
 
   protected def getWindowTime: org.apache.flink.streaming.api.windowing.time.Time =
@@ -22,6 +25,7 @@ trait ExperimentBase extends CodefeedrComponents {
   def initialize(args: Array[String]) = {
     val pt = ParameterTool.fromArgs(args)
     configurationProvider.initParameters(pt)
+    Await.ready(subjectLibrary.initialize(), Duration(5, SECONDS))
   }
 
   def getStateBackend: StateBackend =
@@ -31,7 +35,7 @@ trait ExperimentBase extends CodefeedrComponents {
     * Creates a new stream stream execution environment with some default configuration
     * @return
     */
-  protected def getEnvironment: StreamExecutionEnvironment = {
+  protected lazy val getEnvironment: StreamExecutionEnvironment = {
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     configurationProvider.initEc(env.getConfig)
     //env.getConfig.disableGenericTypes()
