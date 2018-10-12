@@ -3,7 +3,6 @@ package org.codefeedr.experiments
 import org.codefeedr.core.library.internal.LoggingSinkFunction
 import org.codefeedr.experiments.model.HotPr
 
-
 object HotPullrequestKafkaSource {
 
   def main(args: Array[String]): Unit = {
@@ -22,16 +21,13 @@ class HotPullrequestKafkaSource extends HotPullRequestQueryBase {
     logger.info("Arguments initialized")
     val env = getEnvironment
 
-
     val pullRequestComments = getPullRequestComments()
-
 
     val hotIssues = getHotIssueKafkaSource()
 
-
     val hotPrs = getHotPullRequests(pullRequestComments)
 
-    val merged = mergeHotPullRequest(hotPrs,hotIssues)
+    val merged = mergeHotPullRequest(hotPrs, hotIssues)
 
     //val sink = new LoggingSinkFunction[HotPr]("HotPrSink")
     val sink = new LoggingSinkFunction[HotPr]("IssueSink")

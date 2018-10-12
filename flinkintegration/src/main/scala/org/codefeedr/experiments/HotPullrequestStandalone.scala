@@ -27,12 +27,11 @@ class HotPullrequestStandalone extends HotPullRequestQueryBase {
 
     //val issuePrs = getIssueCommentPullrequest(issues,issueComments)
     val discussions = getDiscussions(issueComments)
-    val hotIssues = getHotIssues(discussions,issues)
-
+    val hotIssues = getHotIssues(discussions, issues)
 
     val hotPrs = getHotPullRequests(pullRequestComments)
 
-    val merged = mergeHotPullRequest(hotPrs,hotIssues)
+    val merged = mergeHotPullRequest(hotPrs, hotIssues)
 
     //val sink = new LoggingSinkFunction[HotPr]("HotPrSink")
     val sink = new LoggingSinkFunction[HotPr]("IssueSink")

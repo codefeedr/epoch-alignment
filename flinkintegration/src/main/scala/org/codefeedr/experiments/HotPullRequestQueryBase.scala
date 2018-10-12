@@ -3,13 +3,21 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.streaming.api.functions.co.CoFlatMapFunction
 import org.apache.flink.streaming.api.functions.sink.SinkFunction
 import org.apache.flink.streaming.api.scala._
-import org.apache.flink.streaming.api.windowing.assigners.{EventTimeSessionWindows, TumblingEventTimeWindows}
+import org.apache.flink.streaming.api.windowing.assigners.{
+  EventTimeSessionWindows,
+  TumblingEventTimeWindows
+}
 import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.streaming.api.windowing.triggers.CountTrigger
 import org.apache.flink.util.Collector
 import org.codefeedr.experiments.model.{HotIssue, HotPr, IssueCommentPr}
 import org.codefeedr.ghtorrent.{Issue, IssueComment, PullRequest, PullRequestComment}
-import org.codefeedr.plugins.github.generate.{IssueCommentGenerator, IssueGenerator, PullRequestCommentGenerator, PullRequestGenerator}
+import org.codefeedr.plugins.github.generate.{
+  IssueCommentGenerator,
+  IssueGenerator,
+  PullRequestCommentGenerator,
+  PullRequestGenerator
+}
 import org.codefeedr.util.EventTime
 
 import scala.async.Async.{async, await}
@@ -105,7 +113,7 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
 
   /**
     * Takes a stream of issueComments and composes it into a stream of hotIssues
- *
+    *
     * @param input stream of issuecomments
     * @param parallelism parallelism of the job
     * @return
@@ -144,8 +152,7 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
       .equalTo(o => o.issue_id)
       .window(TumblingEventTimeWindows.of(issueJoinWindowLenght))
       .trigger(CountTrigger.of(1))
-      .apply(
-        (i, c) => IssueCommentPr(i.id, i.pull_request_id, Math.max(i.eventTime, c.eventTime)))
+      .apply((i, c) => IssueCommentPr(i.id, i.pull_request_id, Math.max(i.eventTime, c.eventTime)))
       .setParallelism(parallelism)
   }
 
@@ -175,9 +182,10 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
     * @param parallelism parallelism of each created operator
     * @return
     */
-  protected def getHotIssues(discussions: DataStream[HotIssue],
-                             issues: DataStream[Issue],
-                             parallelism: Int = getEnvironment.getParallelism): DataStream[HotIssue] = {
+  protected def getHotIssues(
+      discussions: DataStream[HotIssue],
+      issues: DataStream[Issue],
+      parallelism: Int = getEnvironment.getParallelism): DataStream[HotIssue] = {
     issues
       .map(o => HotIssue(o.issue_id, o.eventTime, 0, Some(o.pull_request_id)))
       .union(discussions)
@@ -192,7 +200,7 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
 
   /**
     *   Merges two streams of hotPullrequests in a windowed join
- *
+    *
     * @param pullrequests input stream of aggregated pullrequest comment counts
     * @param hotIssues input stream of hot issues
     * @param parallelism parallelism of operators
