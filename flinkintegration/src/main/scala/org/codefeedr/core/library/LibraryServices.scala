@@ -144,7 +144,8 @@ trait CodefeedrComponents extends AbstractCodefeedrComponents with PluginCompone
   def createGeneratorSource[TSource](generator: (Long, Long, Long) => BaseSampleGenerator[TSource],
                                      seedBase: Long,
                                      name: String,
-                                     eventsPerMillisecond: Option[Long]): SourceFunction[TSource] =
-    new GeneratorSource[TSource](generator, seedBase, name, eventsPerMillisecond)
+                                     eventsPerMillisecond: Option[Long],
+                                     enableLogging: Boolean = true): SourceFunction[TSource] =
+    new GeneratorSource[TSource](generator, seedBase, name, eventsPerMillisecond, enableLogging)
 
 }

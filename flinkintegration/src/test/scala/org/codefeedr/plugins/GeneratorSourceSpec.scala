@@ -191,5 +191,5 @@ class GeneratorSourceSpec
     * @tparam TSource type of elements exposed by the source
     * @return
     */
-  override def createGeneratorSource[TSource](generator: (Long,Long,Long) => BaseSampleGenerator[TSource], seedBase: Long, name: String,eventsPerMillisecond:Option[Long] = None): SourceFunction[TSource] = ???
+  override def createGeneratorSource[TSource](generator: (Long,Long,Long) => BaseSampleGenerator[TSource], seedBase: Long, name: String,eventsPerMillisecond:Option[Long] = None,enableLogging:Boolean = true): SourceFunction[TSource] = ???
 }

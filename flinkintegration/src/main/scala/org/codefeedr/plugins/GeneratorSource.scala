@@ -37,11 +37,11 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     * @tparam TSource type of elements exposed by the source
     * @return
     */
-  def createGeneratorSource[TSource](
-      generator: (Long, Long, Long) => BaseSampleGenerator[TSource],
-      seedBase: Long,
-      name: String,
-      eventsPerMillisecond: Option[Long] = None): SourceFunction[TSource]
+  def createGeneratorSource[TSource](generator: (Long, Long, Long) => BaseSampleGenerator[TSource],
+                                     seedBase: Long,
+                                     name: String,
+                                     eventsPerMillisecond: Option[Long] = None,
+                                     enableLogging: Boolean = true): SourceFunction[TSource]
 
   /**
     * Base class for generators
@@ -55,7 +55,8 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
   class GeneratorSource[TSource](val generator: (Long, Long, Long) => BaseSampleGenerator[TSource],
                                  val seedBase: Long,
                                  val name: String,
-                                 val eventsPerMillisecond: Option[Long] = None)
+                                 val eventsPerMillisecond: Option[Long] = None,
+                                 override protected val enableLoging: Boolean = true)
       extends RichParallelSourceFunction[TSource]
       with CheckpointedFunction
       with CheckpointListener

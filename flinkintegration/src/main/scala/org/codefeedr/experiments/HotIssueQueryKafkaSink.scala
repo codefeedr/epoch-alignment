@@ -17,7 +17,7 @@ class HotIssueQueryKafkaSink extends HotPullRequestQueryBase {
     logger.info("Arguments initialized")
     val env = getEnvironment
 
-    val source = issueComments()
+    val source = getIssueComments()
     val hotIssues = getHotIssues(source)
     val sink = getHotIssueKafkaSink()
     hotIssues.addSink(sink)

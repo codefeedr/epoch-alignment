@@ -28,6 +28,8 @@ trait MeasuredCheckpointedFunction
 
   private def getCurrentLatency: Long = getLatency
 
+  protected val enableLoging: Boolean = true
+
   /**
     * Creates a snapshot of the current state with the passed checkpointId
     * Not a pure function, after calling ,the last offset is set to the current offset
@@ -46,7 +48,7 @@ trait MeasuredCheckpointedFunction
   /**
     * Method that should be called whenever the function snapshots some state
     */
-  protected def onSnapshot(checkpointId: Long): Unit = {
+  protected def onSnapshot(checkpointId: Long): Unit = if (enableLoging) {
     val measurement = snapshotMeasurement(checkpointId)
     val operatorLabel = getOperatorLabel
     MDC.put("elements", s"${measurement.elements}")
