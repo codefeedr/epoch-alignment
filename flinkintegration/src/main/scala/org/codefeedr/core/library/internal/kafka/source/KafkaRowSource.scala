@@ -24,6 +24,7 @@ import org.codefeedr.configuration.KafkaConfiguration
 import org.codefeedr.core.library.TypeInformationServices
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
 import org.codefeedr.model.RecordSourceTrail
+import org.codefeedr.util.NoEventTime._
 
 /**
   * KafkaSource that exposes a subject as stream of table API rows

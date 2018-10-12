@@ -30,13 +30,16 @@ import org.apache.flink.runtime.state.{
 }
 import org.apache.flink.streaming.api.CheckpointingMode
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
-import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
+import org.apache.flink.streaming.api.functions.source.{RichParallelSourceFunction, SourceFunction}
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.apache.kafka.common.TopicPartition
-import org.codefeedr.configuration.{KafkaConfiguration, KafkaConfigurationComponent}
+import org.codefeedr.configuration.KafkaConfiguration
+import org.codefeedr.core.library.internal.logging.MeasuredCheckpointedFunction
 import org.codefeedr.core.library.metastore.sourcecommand.{KafkaSourceCommand, SourceCommand}
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
 import org.codefeedr.model.SubjectType
+import org.codefeedr.util.EventTime
+import org.codefeedr.util.EventTime._
 
 import scala.async.Async.{async, await}
 import scala.collection.JavaConverters._
@@ -57,22 +60,28 @@ case class KafkaSourceStateContainer(instanceId: String, offsets: Map[Int, Long]
   * Because this class needs to be serializable and the LibraryServices are not, no dependency injection structure can be used here :(
   * Created by Niels on 18/07/2017.
   */
-abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
+abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag](
     subjectNode: SubjectNode,
     JobNode: JobNode,
     kafkaConfiguration: KafkaConfiguration,
     kafkaConsumerFactory: KafkaConsumerFactory)
 //Flink interfaces
-    extends RichSourceFunction[TElement]
+    extends RichParallelSourceFunction[TElement]
     with ResultTypeQueryable[TElement]
     with CheckpointedFunction
     with CheckpointListener
     //Internal services
     with GenericKafkaSource
+    with MeasuredCheckpointedFunction
     with LazyLogging
     with Serializable
     //
     with KafkaSourceMapper[TElement, TValue, TKey] {
+
+  @transient lazy val getMdcMap = Map(
+    "operator" -> getOperatorLabel,
+    "parallelIndex" -> parallelIndex.toString
+  )
 
   @transient protected lazy val consumer
     : KafkaSourceConsumer[TElement, TValue, TKey] with KafkaSourceMapper[TElement, TValue, TKey] =
@@ -125,11 +134,22 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
   @transient private lazy val parallelIndex = getRuntimeContext.getIndexOfThisSubtask
   @transient private var sourceState: Option[KafkaSourceStateContainer] = None
 
+  @transient private var lastLatency: Long = 0
+  @transient private var lastEventTime: Long = 0
+  @transient private var gatheredEvents: Long = 0
+
+  override def getLatency: Long = lastLatency
+  override def getLastEventTime: Long = lastEventTime
+  override def getCurrentOffset: Long = gatheredEvents
+
   /**
     * Get a display label for this source
     * @return
     */
-  def getLabel: String =
+  def getLabel: String = getOperatorLabel
+  override def getOperatorLabel: String = s"$getCategoryLabel[$parallelIndex]"
+
+  def getCategoryLabel: String =
     s"KafkaSource ${subjectNode.name}($sourceUuid--${sourceState.map(o => o.instanceId).getOrElse("Uninitialized")})"
 
   private def getSourceState: KafkaSourceStateContainer = sourceState match {
@@ -240,6 +260,7 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
 
   //Called when starting a new checkpoint
   override def snapshotState(context: FunctionSnapshotContext): Unit = {
+    super[MeasuredCheckpointedFunction].snapshotState(context)
     val epochId = context.getCheckpointId
     logger.debug(s"Snapshotting epoch $epochId on $getLabel")
 
@@ -283,18 +304,16 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
     //TODO: Should we synchronize here? Technically it is required, but with current usage conflicts cannot occur.
     //If this state transition logic becomes more complex, we should synchronize it with the write operations to stateTransition
     stateTransition match {
-      case KafkaSourceStateTransition.Aborting => {
+      case KafkaSourceStateTransition.Aborting =>
         stateTransition = KafkaSourceStateTransition.None
         if (state != KafkaSourceState.UnSynchronized) {
           manager.notifyAbort()
           state = KafkaSourceState.UnSynchronized
         }
-      }
-      case KafkaSourceStateTransition.CatchUp => {
+      case KafkaSourceStateTransition.CatchUp =>
         stateTransition = KafkaSourceStateTransition.None
         state = KafkaSourceState.CatchingUp
         manager.startedCatchingUp()
-      }
       case _ =>
     }
   }
@@ -392,7 +411,7 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
       throw new Exception(s"Cannot run $getLabel before calling initialize.")
     }
     manager.initializeRun()
-    manager.cancel.onComplete(o => cancelAsync())
+    manager.cancel.onComplete(_ => cancelAsync())
 
     logger.debug(s"Source $getLabel started running.")
     started = true
@@ -435,7 +454,11 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
 
     ctx.getCheckpointLock.synchronized {
       while (queue.nonEmpty) {
-        ctx.collect(queue.dequeue())
+        val element = queue.dequeue()
+        ctx.collect(element)
+        gatheredEvents += 1
+        lastEventTime = element.getEventTime
+        lastLatency = System.currentTimeMillis() - lastEventTime
       }
     }
   }
@@ -455,7 +478,11 @@ abstract class KafkaSource[TElement, TValue: ClassTag, TKey: ClassTag](
         while (!consumer.higherOrEqual(alignmentOffsets).getOrElse(false)) {
           logger.debug(
             s"Perfoming synchronized poll loop in $getLabel.\r\n Offsets: ${consumer.getCurrentOffsets}.\r\n Desired: $alignmentOffsets")
-          consumer.poll(ctx.collect, alignmentOffsets)
+          consumer.poll(element => {
+            ctx.collect(element)
+            lastEventTime = element.getEventTime
+            lastLatency = System.currentTimeMillis() - lastEventTime
+          }, alignmentOffsets)
         }
       }
     }

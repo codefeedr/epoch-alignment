@@ -24,11 +24,12 @@ import org.apache.flink.types.Row
 import org.codefeedr.configuration.KafkaConfiguration
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
 import org.codefeedr.model.{RecordSourceTrail, TrailedRecord}
+import org.codefeedr.util.EventTime
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 
-class KafkaGenericTrailedSource[T: ru.TypeTag: ClassTag: TypeInformation](
+class KafkaGenericTrailedSource[T: ru.TypeTag: ClassTag: TypeInformation: EventTime](
     subjectNode: SubjectNode,
     jobNode: JobNode,
     kafkaConfiguration: KafkaConfiguration,

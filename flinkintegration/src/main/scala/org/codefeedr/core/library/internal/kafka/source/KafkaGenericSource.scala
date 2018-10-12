@@ -3,6 +3,7 @@ package org.codefeedr.core.library.internal.kafka.source
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.codefeedr.configuration.KafkaConfiguration
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
+import org.codefeedr.util.EventTime
 
 import scala.reflect._
 
@@ -15,7 +16,7 @@ import scala.reflect._
   * @param ct classtag of the generic type
   * @tparam TElement entity type of the source
   */
-class KafkaGenericSource[TElement](
+class KafkaGenericSource[TElement: EventTime](
     subjectNode: SubjectNode,
     jobNode: JobNode,
     kafkaConfiguration: KafkaConfiguration,

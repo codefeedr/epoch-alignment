@@ -6,7 +6,7 @@ import org.codefeedr.experiments.model.HotPr
 object HotPullrequestKafkaSource {
 
   def main(args: Array[String]): Unit = {
-    val query = new HotPullrequestStandalone()
+    val query = new HotPullrequestKafkaSource()
     query.deploy(args)
   }
 

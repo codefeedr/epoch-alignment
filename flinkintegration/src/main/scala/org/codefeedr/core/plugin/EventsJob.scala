@@ -41,6 +41,7 @@ trait EventsJobFactoryComponent {
 
   def createEventsJob(maxRequests: Int) = new EventsJob(maxRequests)
 
+  import org.codefeedr.util.NoEventTime._
   class EventsJob(maxRequests: Int) extends Job[Event, PushEvent]("events_job") {
 
     /**

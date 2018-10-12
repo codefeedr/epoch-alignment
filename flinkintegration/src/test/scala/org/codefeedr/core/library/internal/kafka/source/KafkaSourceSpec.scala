@@ -506,6 +506,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 class SampleObject {
 
 }
+import org.codefeedr.util.NoEventTime._
 
 class TestKafkaSource(node: SubjectNode,jobNode: JobNode,kafkaConfiguration: KafkaConfiguration,kafkaConsumerFactory: KafkaConsumerFactory, mockedConsumer:KafkaSourceConsumer[SampleObject,SampleObject,Object]with KafkaSourceMapper[SampleObject,SampleObject,Object])
   extends KafkaSource[SampleObject,SampleObject,Object](node,jobNode,kafkaConfiguration,kafkaConsumerFactory) {

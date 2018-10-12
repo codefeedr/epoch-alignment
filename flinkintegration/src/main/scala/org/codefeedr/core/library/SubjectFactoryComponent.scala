@@ -234,9 +234,9 @@ trait SubjectFactoryComponent extends Serializable {
       new KafkaRowSource(subjectNode, jobNode, kafkaConfiguration, kafkaConsumerFactory, sourceId)
     }
 
-    def getSource[TSource: ClassTag: ru.TypeTag](subjectNode: SubjectNode,
-                                                 jobNode: JobNode,
-                                                 sinkId: String) =
+    def getSource[TSource: ClassTag: ru.TypeTag: EventTime](subjectNode: SubjectNode,
+                                                            jobNode: JobNode,
+                                                            sinkId: String) =
       new KafkaGenericSource[TSource](subjectNode,
                                       jobNode,
                                       kafkaConfiguration,

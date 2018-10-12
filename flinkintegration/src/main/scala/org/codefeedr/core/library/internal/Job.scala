@@ -20,7 +20,11 @@ package org.codefeedr.core.library.internal
 
 import com.typesafe.scalalogging.{LazyLogging, Logger}
 import org.apache.flink.api.common.typeinfo.TypeInformation
-import org.apache.flink.streaming.api.functions.source.RichSourceFunction
+import org.apache.flink.streaming.api.functions.source.{
+  RichParallelSourceFunction,
+  RichSourceFunction,
+  SourceFunction
+}
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.codefeedr.configuration.KafkaConfigurationComponent
 import org.codefeedr.core.library.SubjectFactoryComponent
@@ -53,7 +57,7 @@ trait JobComponent {
     * @tparam Input
     * @tparam Output
     */
-  abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation,
+  abstract class Job[Input: ru.TypeTag: ClassTag: TypeInformation: EventTime,
   Output: ru.TypeTag: ClassTag: EventTime](name: String)
       extends LazyLogging {
 
@@ -62,7 +66,7 @@ trait JobComponent {
     lazy val subjectNode = subjectLibrary.getSubject(subjectType.name)
     lazy val jobNode = subjectLibrary.getJob(name)
 
-    var source: RichSourceFunction[Input] = _
+    var source: SourceFunction[Input] = _
 
     /**
       * Returns the amount of parallel workers.

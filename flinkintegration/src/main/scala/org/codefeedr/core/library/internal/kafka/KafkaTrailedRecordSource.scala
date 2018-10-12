@@ -25,6 +25,7 @@ import org.codefeedr.configuration.KafkaConfiguration
 import org.codefeedr.core.library.internal.kafka.source.{KafkaConsumerFactory, KafkaSource}
 import org.codefeedr.core.library.metastore.{JobNode, SubjectNode}
 import org.codefeedr.model.{RecordSourceTrail, TrailedRecord}
+import org.codefeedr.util.NoEventTime._
 
 class KafkaTrailedRecordSource(subjectNode: SubjectNode,
                                jobNode: JobNode,
