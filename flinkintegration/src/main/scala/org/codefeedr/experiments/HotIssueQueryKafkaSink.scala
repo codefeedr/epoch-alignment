@@ -18,9 +18,13 @@ class HotIssueQueryKafkaSink extends HotPullRequestQueryBase {
     val env = getEnvironment
 
     val source = getIssueComments()
-    val hotIssues = getHotIssues(source)
+    val issues = getIssues()
+
+    val discussions = getDiscussions(source)
+    val hotIssues = getHotIssues(discussions,issues)
+
     val sink = getHotIssueKafkaSink()
-    hotIssues.addSink(sink)
+    hotIssues.addSink(sink).setParallelism(getKafkaParallelism)
     logger.info("Submitting hot issue query job")
     env.execute("HotIssues")
 

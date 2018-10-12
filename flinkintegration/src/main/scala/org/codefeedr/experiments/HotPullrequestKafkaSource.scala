@@ -1,9 +1,10 @@
 package org.codefeedr.experiments
-import com.typesafe.scalalogging.LazyLogging
-import org.codefeedr.core.library.internal.LoggingSinkFunction
-import org.codefeedr.experiments.model.{HotIssue, HotPr, IssueCommentPr}
 
-object HotPullrequestStandalone {
+import org.codefeedr.core.library.internal.LoggingSinkFunction
+import org.codefeedr.experiments.model.HotPr
+
+
+object HotPullrequestKafkaSource {
 
   def main(args: Array[String]): Unit = {
     val query = new HotPullrequestStandalone()
@@ -12,7 +13,7 @@ object HotPullrequestStandalone {
 
 }
 
-class HotPullrequestStandalone extends HotPullRequestQueryBase {
+class HotPullrequestKafkaSource extends HotPullRequestQueryBase {
 
   def deploy(args: Array[String]): Unit = {
 
@@ -21,13 +22,11 @@ class HotPullrequestStandalone extends HotPullRequestQueryBase {
     logger.info("Arguments initialized")
     val env = getEnvironment
 
-    val issueComments = getIssueComments()
-    val issues = getIssues()
+
     val pullRequestComments = getPullRequestComments()
 
-    //val issuePrs = getIssueCommentPullrequest(issues,issueComments)
-    val discussions = getDiscussions(issueComments)
-    val hotIssues = getHotIssues(discussions,issues)
+
+    val hotIssues = getHotIssueKafkaSource()
 
 
     val hotPrs = getHotPullRequests(pullRequestComments)

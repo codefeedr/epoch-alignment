@@ -27,12 +27,7 @@ import org.apache.flink.types.Row
 import org.codefeedr.configuration.KafkaConfigurationComponent
 import org.codefeedr.core.library.internal.kafka._
 import org.codefeedr.core.library.internal.kafka.sink._
-import org.codefeedr.core.library.internal.kafka.source.{
-  KafkaConsumerFactoryComponent,
-  KafkaGenericSource,
-  KafkaGenericTrailedSource,
-  KafkaRowSource
-}
+import org.codefeedr.core.library.internal.kafka.source.{KafkaConsumerFactoryComponent, KafkaGenericSource, KafkaGenericTrailedSource, KafkaRowSource}
 import org.codefeedr.core.library.internal.{KeyFactory, RecordTransformer, SubjectTypeFactory}
 import org.codefeedr.core.library.metastore.{JobNode, SubjectLibraryComponent, SubjectNode}
 import org.codefeedr.model.{ActionType, SubjectType, TrailedRecord}
@@ -82,6 +77,13 @@ trait SubjectFactoryComponent extends Serializable {
                              epochStateManager,
                              sinkId)
       }
+
+    def getSource[TData: ClassTag: ru.TypeTag : EventTime](sinkId: String,
+                                            jobName: String): Future[SourceFunction[TData]] = async {
+      val (subjectNode, jobNode) = getSubjectJobNode[TData](jobName)
+      await(validateSubject(subjectNode))
+      getSource[TData](subjectNode,jobNode,sinkId)
+    }
 
     /**
       * Retrieve a trailed record sink for the given generic type
