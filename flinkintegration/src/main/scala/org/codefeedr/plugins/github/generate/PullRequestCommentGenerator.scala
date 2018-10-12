@@ -23,9 +23,9 @@ class PullRequestCommentGenerator(seed: Long,
       PullRequestComment(
         pull_request_id = nextCheckpointRelation(pullRequestPerCheckpoint),
         user_id = nextInt(10000),
-        comment_id = nextString(10),
+        comment_id = "",//nextString(10),
         position = nextInt(100),
-        body = nextString(50),
+        body = "",//nextString(50),
         commit_id = nextInt(1000000),
         created_at = nextDateTimeLong(),
         eventTime = getEventTime
