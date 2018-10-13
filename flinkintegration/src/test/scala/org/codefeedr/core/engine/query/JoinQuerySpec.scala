@@ -56,6 +56,7 @@ class JoinQuerySpec extends FullIntegrationSpec {
       //Validate that the data is actually sent
       assert(await(awaitAllData(objectType)).size == 3)
       assert(await(awaitAllData(groupType)).size == 1)
+      logger.debug("Got all separate data")
       //Perform the query and assert
       val resultType = await(runQueryEnvironment(query))
 

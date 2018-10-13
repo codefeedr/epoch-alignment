@@ -19,6 +19,8 @@
 
 package org.codefeedr.core.engine.query
 
+import java.util.UUID
+
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment, _}
 import org.codefeedr.core.library.SubjectFactoryComponent
@@ -84,9 +86,10 @@ trait StreamComposerFactoryComponent {
       //HACK: hard coded id
       override def compose(env: StreamExecutionEnvironment): DataStream[TrailedRecord] = {
         env.addSource(
-          subjectFactory.getTrailedSource(subjectLibrary.getSubject(subjectType.name),
-                                          subjectLibrary.getJob(jobName),
-                                          s"composedsource_${subjectType.name}"))
+          subjectFactory.getTrailedSource(
+            subjectLibrary.getSubject(subjectType.name),
+            subjectLibrary.getJob(jobName),
+            s"composedsource_${subjectType.name}_${UUID.randomUUID()}"))
       }
 
       /**

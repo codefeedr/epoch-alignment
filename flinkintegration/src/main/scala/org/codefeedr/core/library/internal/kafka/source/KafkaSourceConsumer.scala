@@ -46,6 +46,8 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
   //Timeout when polling kafka. TODO: Move to configuration
   private lazy val pollTimeout = Duration.of(1, ChronoUnit.SECONDS)
 
+  private def getLabel = name
+
   /**
     * Variable that keeps track of new the assignment of new topicPartitions
     * Make sure to lock when writing to this value
@@ -82,22 +84,14 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
   private def poll(cb: TElement => Unit,
                    shouldInclude: ConsumerRecord[TKey, TValue] => Boolean,
                    seekOffsets: PartialFunction[Int, Long]): Unit = {
-    updateAssignments()
 
     logger.debug(s"$name started polling")
     val data = consumer.poll(pollTimeout).iterator().asScala
     logger.debug(s"$name completed polling")
-    val r = mutable.Map[Int, Long]()
     val resetSet = ArrayBuffer[Int]()
     data.foreach(o => {
       if (shouldInclude(o)) {
         cb(transform(o.value(), o.key()))
-        val partition = o.partition()
-        val offset = o.offset()
-        logger.debug(s"Processing $partition -> $offset ")
-        if (!r.contains(partition) || r(partition) < offset) {
-          r(partition) = offset
-        }
       } else {
         //If we should not include it, we need to reset the consumer after this poll
         val partition = o.partition()
@@ -106,7 +100,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
         }
       }
     })
-    updateOffsetState(r.toMap)
+    updateOffsetState()
     resetConsumer(resetSet, seekOffsets)
 
   }
@@ -117,24 +111,24 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     * Most code is just to provice debug information of the current state
     * @param newOffsets offsets to update the state with
     */
-  private def updateOffsetState(newOffsets: Map[Int, Long]): Unit = synchronized {
-    logger.debug(s"New offsets in $name: $newOffsets")
-    state = KafkaSourceConsumerState(
-      state.assignment,
-      Some(
-        newOffsets.foldLeft(state.getOffsets)((currentOffsets, po) => {
-          val partition = po._1
-          val offset = po._2
-          if (currentOffsets.get(partition).exists(offset < _)) {
-            logger.warn(
-              s"$name received data from offsets lower than the existing offset. Partition: $partition, new offset: $offset, old offset: ${currentOffsets.get(partition).get}")
-          }
-          logger.debug(s"Updating offset in $name with $partition -> $offset (${state.assignment
-            .exists(o => o.exists(o2 => o2.partition() == partition))})")
-          currentOffsets + (partition -> offset)
-        })
-      )
-    )
+  private def updateOffsetState(): Unit = synchronized {
+    //Obtain current assignment
+    val assignment = consumer.assignment().asScala
+
+    //Build offset collection
+    val newOffsets = assignment
+      .map(o =>
+        o.partition() -> {
+          val p = consumer.position(o) - 2
+          if (p < -1) {
+            -1
+          } else
+            p
+      })
+      .toMap
+
+    logger.debug(s"New offsets in $getLabel: $newOffsets")
+    state = KafkaSourceConsumerState(Some(assignment), Some(newOffsets))
     logger.debug(s"New state in $name: $state")
   }
 
@@ -145,17 +139,19 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     */
   private def updateAssignments(): Unit = synchronized {
     if (newPartitions.nonEmpty) {
+      logger.debug(s"received new partitions $newPartitions in $getLabel")
 
       val newOffsets = newPartitions.get
         .filterNot(o => state.getOffsets.keys.toSet.contains(o.partition()))
-        .map(tp => tp.partition() -> -1l)
+        .map(tp => tp.partition() -> Option(consumer.position(tp)).getOrElse(-1l))
 
-      logger.debug(s"$name removing offsets from state ${state.getOffsets.filterNot(o =>
-        newPartitions.get.map(_.partition()).exists(_ == o._1))}")
+      logger.debug(s"$name removing offsets from state ${state.getOffsets.filter(o =>
+        !newPartitions.get.map(_.partition()).exists(_ == o._1))}")
 
       logger.debug(s"$name assigning new offsets $newOffsets")
 
       //Remove offsets, and add newly assigned partitions to the offset map
+
       val newStateOffsets =
         state.getOffsets
           .filter(o => newPartitions.get.map(_.partition()).exists(_ == o._1)) ++ newOffsets
@@ -208,7 +204,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
         throw new IllegalStateException(
           s"Cannot set position, because no offset was passed for TP ${tp.topic()}${tp.partition()}.")
     }
-    updateOffsetState(offsets.filter(p => seekSet.exists(tp => tp._1.partition() == p._1)))
+    updateOffsetState()
   }
 
   /**
@@ -336,7 +332,9 @@ object KafkaSourceConsumer {
   private def wire[TElement, TValue, TKey](
       observable: ConsumerRebalanceObservable,
       kafkaConsumer: KafkaSourceConsumer[TElement, TValue, TKey]) {
-    observable.observePartitions().subscribe(kafkaConsumer.onNewAssignment(_))
+    //TODO: Wire on reassignment of partitions is disabled for now, because we probably don't need it.
+    //TODO: Remove implementation in the future
+    //observable.observePartitions().subscribe(kafkaConsumer.onNewAssignment(_))
   }
 
 }

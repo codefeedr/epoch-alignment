@@ -75,7 +75,7 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     await(libraryServices.subjectLibrary.getSubject(subject.name).assertExists())
     val jobName = UUID.randomUUID().toString
     val job = libraryServices.subjectLibrary.getJob(jobName)
-    val source = new KafkaTrailedRecordSource(libraryServices.subjectLibrary.getSubject(subject.name),job,libraryServices.kafkaConfiguration, libraryServices.kafkaConsumerFactory,"testsource")
+    val source = new KafkaTrailedRecordSource(libraryServices.subjectLibrary.getSubject(subject.name),job,libraryServices.kafkaConfiguration, libraryServices.kafkaConsumerFactory,s"testsource_$jobName")
     val result = new mutable.ArrayBuffer[TrailedRecord]()
 
 
