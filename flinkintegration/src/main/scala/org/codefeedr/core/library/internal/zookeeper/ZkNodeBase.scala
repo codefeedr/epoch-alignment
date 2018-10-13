@@ -127,8 +127,11 @@ trait ZkNodeBaseComponent { this: ZkClientComponent =>
       * @return a future of the path used
       */
     override def create(): Future[String] = async {
+      logger.trace(s"Creating zkNode ${path()}")
       await(zkClient.create(path()))
+      logger.trace(s"Calling postcreate of ${path()}")
       await(postCreate())
+      logger.trace(s"Done with postcreate of ${path()}")
       path()
     }
 

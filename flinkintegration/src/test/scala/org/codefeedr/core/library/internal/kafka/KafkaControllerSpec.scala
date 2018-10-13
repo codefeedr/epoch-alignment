@@ -41,6 +41,7 @@ class KafkaControllerSpec extends LibraryServiceSpec with Matchers with BeforeAn
 
   override def beforeEach(): Unit = {
     super.beforeEach()
+    Await.ready(libraryServices.zkClient.deleteRecursive("/"), Duration(5, SECONDS))
     Await.ready(libraryServices.subjectLibrary.initialize(),Duration(5, SECONDS))
   }
 

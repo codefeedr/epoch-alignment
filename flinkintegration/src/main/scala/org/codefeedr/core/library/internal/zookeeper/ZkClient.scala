@@ -29,6 +29,7 @@ import org.apache.zookeeper.KeeperException.Code
 import org.apache.zookeeper.Watcher.Event
 import org.apache.zookeeper.Watcher.Event._
 import org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE
+import org.apache.zookeeper.ZooKeeper.States
 import org.apache.zookeeper._
 import org.apache.zookeeper.data.Stat
 import org.codefeedr.configuration.{
@@ -45,6 +46,10 @@ import rx.lang.scala._
 import rx.lang.scala.observables.{AsyncOnSubscribe, SyncOnSubscribe}
 
 import scala.reflect.ClassTag
+
+object ZkClientImpl {
+  @transient var zk: ZooKeeper = _
+}
 
 trait ZkClientComponent {
   this: ZookeeperConfigurationComponent with ConfigurationProviderComponent =>
@@ -66,38 +71,46 @@ trait ZkClientComponent {
 
     @transient private lazy val connectPromise: Promise[Unit] = Promise[Unit]()
 
-    @transient private var zk: ZooKeeper = _
+    //@transient private var zk: ZooKeeper = _
 
     //A zkClient should always be connected
     //More clean solutions introduce a lot of complexity for very little performance gain
     Await.ready(connect(), connectTimeout)
+
+    private def zk: ZooKeeper = ZkClientImpl.zk
 
     /**
       * Connect to the zookeeper server
       * If already connected, reconnects
       * @return a future that resolves when a connection has been made
       */
-    private def connect(): Future[Unit] = {
-      logger.info(s"Connecting to zookeeper on $connectionString")
+    private def connect(forceReconnect: Boolean = false): Future[Unit] = {
+
       //If zookeeper already assigned first close existing connection
-      if (zk != null) {
+      if (ZkClientImpl.zk != null && (ZkClientImpl.zk.getState != States.CONNECTED || forceReconnect)) {
+        logger.warn("Zookeeper connection was not connected. Closing and retrying")
         close()
       }
 
-      zk = new ZooKeeper(
-        connectionString,
-        sessionTimeout.toMillis.toInt,
-        new Watcher {
-          override def process(event: WatchedEvent): Unit = {
-            event.getState match {
-              case KeeperState.SyncConnected => connectPromise.completeWith(create(""))
-              case KeeperState.Expired => connect()
-              case _ =>
+      if (ZkClientImpl.zk == null || ZkClientImpl.zk.getState != States.CONNECTED) {
+        logger.info(s"Connecting to zookeeper on $connectionString")
+        ZkClientImpl.zk = new ZooKeeper(
+          connectionString,
+          sessionTimeout.toMillis.toInt,
+          new Watcher {
+            override def process(event: WatchedEvent): Unit = {
+              event.getState match {
+                case KeeperState.SyncConnected => connectPromise.completeWith(create(""))
+                case KeeperState.Expired => connect()
+                case _ =>
+              }
             }
           }
-        }
-      )
-      connectPromise.future
+        )
+        connectPromise.future
+      } else {
+        Future.successful[Unit]()
+      }
     }
 
     private def getDataCallback[T: ClassTag](subscriber: Subscriber[T]): DataCallback =

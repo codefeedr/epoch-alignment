@@ -118,14 +118,19 @@ trait ZkNodeComponent extends ZkNodeBaseComponent { this: ZkClientComponent =>
       */
     override def create(data: TData): Future[TData] = async {
       //TODO: Implement proper locks
+      logger.trace(s"Checking if node ${path()} exists")
       if (await(exists())) {
+        logger.trace(s"Checking if data on node ${path()} is equal")
         if (!await(getData()).get.equals(data)) {
           throw new Exception(
             s"Cannot create node ${path()}. The node already exists with different data")
         }
       }
+      logger.trace(s"Creating node with data on ${path()}")
       await(zkClient.createWithData(path(), data))
+      logger.trace(s"Calling post-create on ${path()}")
       await(postCreate())
+      logger.trace(s"Done calling post-create on ${path()}")
       data
     }
 
