@@ -3,6 +3,7 @@ package org.codefeedr.core.library.internal.kafka.source
 import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.core.library.internal.kafka.OffsetUtils
 import org.codefeedr.core.library.metastore.{
+  ConsumerState,
   KafkaSourceEpochState,
   SubjectNode,
   SynchronizationState
@@ -24,14 +25,20 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
                          instanceUuid: String)
     extends LazyLogging {
 
-  private val sourceNode = subjectNode.getSources().getChild(sourceUuid)
-  private val consumerNode = sourceNode.getConsumers().getChild(instanceUuid)
+  private val sourceCollectionNode = subjectNode.getSources()
+  private val sourceNode = sourceCollectionNode.getChild(sourceUuid)
+  private val consumerCollectionNode = sourceNode.getConsumers()
+  private val consumerNode = consumerCollectionNode.getChild(instanceUuid)
   private val syncStateNode = consumerNode.getSyncState()
   private lazy val sourceEpochCollections = sourceNode.getEpochs()
   private lazy val subjectEpochs = subjectNode.getEpochs()
   private lazy val kafkaSourceEpochState = new KafkaSourceEpochState(subjectNode, sourceNode)
 
+  private lazy val timeout = Duration(5, SECONDS)
+
   lazy val cancel: Future[Unit] = subjectNode.awaitClose()
+
+  private def getLabel = s"SourceManager ${consumerNode.path()}"
 
   /**
     * Called from the kafkaSource when a run is initialized
@@ -41,9 +48,13 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     val initialConsumer = Consumer(instanceUuid, null, System.currentTimeMillis())
 
     //Update zookeeper state blocking, because the source cannot start until the proper zookeeper state has been configured
-    Await.result(sourceNode.create(QuerySource(sourceUuid)), Duration(5, SECONDS))
-    Await.result(consumerNode.create(initialConsumer), Duration(5, SECONDS))
+    Await.result(sourceNode.create(QuerySource(sourceUuid)), timeout)
+    Await.result(consumerNode.create(initialConsumer), timeout)
 
+  }
+
+  def getState: ConsumerState = {
+    Await.result(consumerNode.getState(), timeout).get
   }
 
   /**
@@ -51,7 +62,8 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     */
   def finalizeRun(): Unit = {
     //Finally unsubscribe from the library
-    Await.result(consumerNode.setState(false), Duration(5, SECONDS))
+    val state = getState
+    Await.result(consumerNode.setState(ConsumerState(state.finalEpoch, open = false)), timeout)
   }
 
   /**
@@ -161,4 +173,46 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
   def nextSourceEpoch(epoch: Long): Future[Iterable[Partition]] = async {
     await(kafkaSourceEpochState.nextSourceEpoch(epoch)).partitions
   }
+
+  /**
+    * Retrieves the final checkpoint id from the zookeeper state, or None if no checkpoint id was agreed on
+    * @return the agreed final checkpoint id, or none if no final checkpoint was agreed on
+    */
+  def getVerifiedFinalCheckpoint: Option[Long] = {
+    logger.trace(s"consumer states are: $getConsumerState")
+    val aggregateState = await(consumerCollectionNode.getState())
+    logger.trace(s"consumer aggregate state is: $aggregateState")
+    aggregateState.finalEpoch
+  }
+
+  private def getConsumerState: String = {
+    val children = await(consumerCollectionNode.getChildren())
+    val states = children.map(o => (o, await(o.getState())))
+    s"\r\n${states.map(o => s"${o._1.name}: ${o._2}").mkString("\r\n")}\r\n"
+  }
+
+  /**
+    *   Notifies the zookeeper state that the current source is done
+    * @param currentCheckpoint
+    */
+  def sourceIsDone(currentCheckpoint: Long): Unit = {
+    val lock = await(consumerCollectionNode.writeLock())
+    try {
+      val aggregateState = await(consumerCollectionNode.getState())
+      if (aggregateState.finalEpoch.nonEmpty) {
+        logger.info(
+          s"Not updating final checkpoint in $getLabel to $currentCheckpoint because final checkpoint ${aggregateState.finalEpoch.get} was already assigned")
+      } else {
+        logger.info(s"updating final checkpoint in $getLabel to $currentCheckpoint")
+        await(consumerNode.setState(ConsumerState(Some(currentCheckpoint), open = true)))
+      }
+    } finally {
+      lock.close()
+    }
+  }
+
+  private def await[T](future: Future[T]): T = {
+    Await.result(future, timeout)
+  }
+
 }

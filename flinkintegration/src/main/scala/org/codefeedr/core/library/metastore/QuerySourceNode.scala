@@ -94,10 +94,10 @@ trait QuerySourceNodeComponent extends ZkStateNodeComponent {
       //Only perform update if the source nod was not active.
       if (currentState) {
         val childState = await(getConsumers().getState())
-        if (!childState) {
+        if (!childState.open) {
           logger.info(
             s"Closing source $name of subject ${parent.parent().name} because all consumers closed.")
-          await(setState(childState))
+          await(setState(false))
         }
       }
     }

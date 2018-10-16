@@ -8,7 +8,21 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
-trait ConsumerNode extends ZkStateNode[Consumer, Boolean] {
+case class ConsumerState(finalEpoch: Option[Long], open: Boolean) {
+  def aggregate(that: ConsumerState) = ConsumerState(
+    finalEpoch match {
+      case Some(t) =>
+        that.finalEpoch match {
+          case Some(o) => Some(Math.max(o, t))
+          case _ => None
+        }
+      case None => None
+    },
+    open || that.open
+  )
+}
+
+trait ConsumerNode extends ZkStateNode[Consumer, ConsumerState] {
 
   def postCreate(): Future[Unit]
 
@@ -16,16 +30,16 @@ trait ConsumerNode extends ZkStateNode[Consumer, Boolean] {
 
   def consumerCollection(): ConsumerCollection
 
-  def typeT(): ClassTag[Boolean]
+  def typeT(): ClassTag[ConsumerState]
 
   /**
     * The initial state of the node. State is not allowed to be empty
     *
     * @return
     */
-  def initialState(): Boolean
+  def initialState(): ConsumerState
 
-  def setState(state: Boolean): Future[Unit]
+  def setState(state: ConsumerState): Future[Unit]
 }
 
 trait ConsumerNodeComponent extends ZkStateNodeComponent {
@@ -33,7 +47,7 @@ trait ConsumerNodeComponent extends ZkStateNodeComponent {
 
   class ConsumerNodeImpl(name: String, parent: ZkNodeBase)
       extends ZkNodeImpl[Consumer](name, parent)
-      with ZkStateNodeImpl[Consumer, Boolean]
+      with ZkStateNodeImpl[Consumer, ConsumerState]
       with ConsumerNode {
     override def postCreate(): Future[Unit] =
       for {
@@ -47,16 +61,17 @@ trait ConsumerNodeComponent extends ZkStateNodeComponent {
     override def consumerCollection(): ConsumerCollection =
       parent().asInstanceOf[ConsumerCollection]
 
-    override def typeT(): ClassTag[Boolean] = ClassTag(classOf[Boolean])
+    override def typeT(): ClassTag[ConsumerState] = ClassTag(classOf[ConsumerState])
 
     /**
       * The initial state of the node. State is not allowed to be empty
       *
       * @return
       */
-    override def initialState(): Boolean = true
+    override def initialState(): ConsumerState =
+      ConsumerState(None, open = true)
 
-    override def setState(state: Boolean): Future[Unit] = async {
+    override def setState(state: ConsumerState): Future[Unit] = async {
       await(super.setState(state))
       //Call update on query source state, because this consumer state change might impact it
       await(parent.parent().asInstanceOf[QuerySourceNode].updateState())

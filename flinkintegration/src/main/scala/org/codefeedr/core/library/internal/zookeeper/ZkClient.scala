@@ -48,8 +48,10 @@ import rx.lang.scala.observables.{AsyncOnSubscribe, SyncOnSubscribe}
 import scala.reflect.ClassTag
 
 object ZkClientImpl {
-  @transient @volatile var zk: ZooKeeper = _
-  @transient @volatile var connectPromise: Promise[Unit] = _
+  @transient
+  @volatile var zk: ZooKeeper = _
+  @transient
+  @volatile var connectPromise: Promise[Unit] = _
 }
 
 trait ZkClientComponent {
@@ -70,15 +72,13 @@ trait ZkClientComponent {
     @transient private lazy val sessionTimeout =
       Duration(zookeeperConfiguration.sessionTimeout, SECONDS)
 
-
-
     //@transient private var zk: ZooKeeper = _
 
     //A zkClient should always be connected
     //More clean solutions introduce a lot of complexity for very little performance gain
     Await.ready(connect(), connectTimeout)
 
-    private def connectPromise:Promise[Unit] = ZkClientImpl.connectPromise
+    private def connectPromise: Promise[Unit] = ZkClientImpl.connectPromise
     private def zk: ZooKeeper = ZkClientImpl.zk
 
     /**
@@ -105,8 +105,8 @@ trait ZkClientComponent {
               override def process(event: WatchedEvent): Unit = {
                 event.getState match {
                   case KeeperState.SyncConnected => connectPromise.completeWith(create(""))
-                  case KeeperState.Expired       => connect()
-                  case _                         =>
+                  case KeeperState.Expired => connect()
+                  case _ =>
                 }
               }
             }

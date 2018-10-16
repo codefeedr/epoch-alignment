@@ -116,7 +116,10 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
   @volatile private[kafka] var started = false
 
   //CheckpointId after which the source should start shutting down.
-  @volatile private[kafka] var finalCheckpointId: Long = Long.MaxValue
+  @volatile private[kafka] var finalCheckpointId: Option[Long] = None
+  //Boolean that is true when all parallel sources have agreed on the same final source checkpoint id
+  @volatile private[kafka] var finalCheckpointIdVerified: Boolean = false
+
   @volatile private[kafka] var finalSourceEpoch: Long = -2
   @volatile private[kafka] var synchronizeEpochId: Long = -2
 
@@ -368,7 +371,7 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
     * Checks if a cancel is required
     */
   private def cancelIfNeeded(currentCheckpoint: Long): Unit = {
-    if (finalSourceEpoch > -2 && finalCheckpointId == Long.MaxValue) {
+    if (finalSourceEpoch > -2 && finalCheckpointId.isEmpty) {
       logger.debug(s"Attempting to finish on source epoch $finalSourceEpoch")
       logger.debug(s"Current offsets: ${consumer.getCurrentOffsets} ($getLabel)")
       logger.debug(s"Final offsets: $finalSourceEpochOffsets ($getLabel)")
@@ -376,7 +379,8 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
       consumer.higherOrEqual(finalSourceEpochOffsets.map(o => o.nr -> o.offset).toMap) match {
         case Some(true) =>
           logger.debug(s"$getLabel is cancelling after checkpoint $currentCheckpoint completed.")
-          finalCheckpointId = currentCheckpoint
+          finalCheckpointId = Some(currentCheckpoint)
+          manager.sourceIsDone(currentCheckpoint)
         case Some(false) =>
           logger.debug(s"$getLabel is not cancelling because it has not reached end offsets")
         case None =>
@@ -393,8 +397,18 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
   override def notifyCheckpointComplete(checkpointId: Long): Unit = {
     logger.debug(
       s"$getLabel got checkpoint completion notification for checkpoint $checkpointId. Final checkpoint: $finalCheckpointId")
+
+    if (finalCheckpointId.nonEmpty && !finalCheckpointIdVerified) {
+      finalCheckpointIdVerified = manager.getVerifiedFinalCheckpoint.nonEmpty
+      if (finalCheckpointIdVerified) {
+        logger.debug(s"Setting final checkpoint to verified in $getLabel")
+      } else {
+        logger.debug(s"Cannot set final checkpoint to verified yet in $getLabel")
+      }
+    }
+
     //Check if the final checkpoint completed
-    if (checkpointId >= finalCheckpointId) {
+    if (finalCheckpointId.nonEmpty && finalCheckpointIdVerified && checkpointId >= finalCheckpointId.get) {
       logger.debug(s"$getLabel is stopping, final checkpoint $checkpointId completed")
       running = false
     }
@@ -525,6 +539,8 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
 
     logger.debug(s"Source reach endOffsets $getLabel")
 
+    logger.debug(s"Source done waiting for eventual other sources to complete  $getLabel")
+
     //Perform cleanup under checkpoint lock
     ctx.getCheckpointLock.synchronized {
       finalizeRun()
@@ -609,4 +625,5 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
       .map(tpo => s"(${tpo._1.topic()}_${tpo._1.partition()} -> ${tpo._2})")
       .mkString("\r\n")
   }
+
 }

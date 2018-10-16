@@ -48,6 +48,8 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
 
   private def getLabel = name
 
+  @volatile private var emptyAssignments: Int = 0
+
   /**
     * Variable that keeps track of new the assignment of new topicPartitions
     * Make sure to lock when writing to this value
@@ -115,21 +117,27 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     //Obtain current assignment
     val assignment = consumer.assignment().asScala
 
-    //Build offset collection
-    val newOffsets = assignment
-      .map(o =>
-        o.partition() -> {
-          val p = consumer.position(o) - 2
-          if (p < -1) {
-            -1
-          } else
-            p
-      })
-      .toMap
+    if (assignment.isEmpty) {
+      logger.debug(
+        s"Not setting offset because assignment was empty in $getLabel. Tried $emptyAssignments times")
+      emptyAssignments += 1
+    } else {
+      //Build offset collection
+      val newOffsets = assignment
+        .map(o =>
+          o.partition() -> {
+            val p = consumer.position(o) - 2
+            if (p < -1) {
+              -1
+            } else
+              p
+        })
+        .toMap
 
-    logger.debug(s"New offsets in $getLabel: $newOffsets")
-    state = KafkaSourceConsumerState(Some(assignment), Some(newOffsets))
-    logger.debug(s"New state in $name: $state")
+      logger.debug(s"New offsets in $getLabel: $newOffsets")
+      state = KafkaSourceConsumerState(Some(assignment), Some(newOffsets))
+      logger.debug(s"New state in $name: $state")
+    }
   }
 
   /**
@@ -275,8 +283,10 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
   private def hasPassedReference(
       referenceSet: PartialFunction[Int, Long])(partition: Int, currentOffset: Long): Boolean =
     referenceSet
-      .andThen((reference: Long) => reference <= currentOffset)
-      .applyOrElse(partition, (_: Int) => true)
+      .lift(partition) match {
+      case Some(v) => v <= currentOffset
+      case None => true
+    }
 
   /**
     * Closes the kafka consumer

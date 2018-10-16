@@ -7,7 +7,7 @@ import scala.concurrent.Future
 
 trait ConsumerCollection
     extends ZkCollectionNode[ConsumerNode, Unit]
-    with ZkCollectionStateNode[ConsumerNode, Unit, Consumer, Boolean, Boolean] {
+    with ZkCollectionStateNode[ConsumerNode, Unit, Consumer, ConsumerState, ConsumerState] {
   def querySource(): QuerySourceNode = parent().asInstanceOf[QuerySourceNode]
 }
 
@@ -19,14 +19,15 @@ trait ConsumerCollectionComponent extends ZkCollectionStateNodeComponent {
         "consumers",
         parent,
         (name, parent) => new ConsumerNodeImpl(name, parent))
-      with ZkCollectionStateNodeImpl[ConsumerNode, Unit, Consumer, Boolean, Boolean]
+      with ZkCollectionStateNodeImpl[ConsumerNode, Unit, Consumer, ConsumerState, ConsumerState]
       with ConsumerCollection {
 
-    override def initial(): Boolean = false
+    override def initial(): ConsumerState = ConsumerState(Some(-1), false)
 
-    override def mapChild(child: Boolean): Boolean = child
+    override def mapChild(child: ConsumerState): ConsumerState = child
 
-    override def reduceAggregate(left: Boolean, right: Boolean): Boolean = left || right
+    override def reduceAggregate(left: ConsumerState, right: ConsumerState): ConsumerState =
+      left.aggregate(right)
 
     /**
       * Returns a future that resolves when the given condition evaluates to true for all children
@@ -35,7 +36,7 @@ trait ConsumerCollectionComponent extends ZkCollectionStateNodeComponent {
       * @param f condition to evaluate for each child
       * @return
       */
-    override def watchStateAggregate(f: Boolean => Boolean): Future[Boolean] = ???
+    override def watchStateAggregate(f: ConsumerState => Boolean): Future[Boolean] = ???
   }
 
 }

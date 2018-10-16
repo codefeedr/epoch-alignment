@@ -69,7 +69,10 @@ trait ZkCollectionNodeComponent extends ZkNodeComponent { this: ZkClientComponen
       * @return
       */
     override def getChildren(): Future[Iterable[TNode]] =
-      zkClient.GetChildren(path()).map(o => o.map(getChild))
+      zkClient
+        .GetChildren(path())
+        .map(o =>
+          o.map(getChild).filter(o => !(o.name.contains("write-") || o.name.contains("read-"))))
 
     /**
       * Awaits child registration, and returns the node when the child has been created
