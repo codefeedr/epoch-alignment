@@ -196,6 +196,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
   it should "Close the source when a poll obtained all data of the final offsets" in async {
     //Arrange
     when(consumer.getCurrentOffsets).thenReturn(Map(3 -> 1339L))
+    when(manager.getVerifiedFinalCheckpoint) thenReturn Some(2L)
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn 2
     when(manager.getLatestSubjectEpoch) thenReturn Future.successful(1L)
