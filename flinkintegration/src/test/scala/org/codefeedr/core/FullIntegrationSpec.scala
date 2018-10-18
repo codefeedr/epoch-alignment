@@ -22,6 +22,7 @@ package org.codefeedr.core
 import java.util.UUID
 
 import com.typesafe.scalalogging.LazyLogging
+import org.apache.flink.api.common.restartstrategy.RestartStrategies
 import org.apache.flink.api.common.state.{ListState, OperatorStateStore}
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.runtime.state.FunctionInitializationContext
@@ -117,6 +118,7 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     */
   def runQueryEnvironment(query: QueryTree): Future[SubjectType] = async {
     val queryEnv = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
+    queryEnv.setRestartStrategy(RestartStrategies.noRestart())
     val name = UUID.randomUUID().toString
     queryEnv.enableCheckpointing(100)
     logger.debug("Creating query Composer")
@@ -169,6 +171,7 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
 
 
     val env = StreamExecutionEnvironment.createLocalEnvironment(parallelism)
+    env.setRestartStrategy(RestartStrategies.noRestart())
     env.enableCheckpointing(1000,CheckpointingMode.EXACTLY_ONCE)
     logger.debug(s"Composing env for ${t.name}")
 

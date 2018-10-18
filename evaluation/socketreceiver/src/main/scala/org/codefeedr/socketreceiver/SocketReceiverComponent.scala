@@ -1,5 +1,6 @@
 package org.codefeedr.socketreceiver
 
+import org.apache.flink.api.common.restartstrategy.RestartStrategies
 import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.streaming.api.{CheckpointingMode, TimeCharacteristic}
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
@@ -11,6 +12,7 @@ import org.codefeedr.core.library.metastore.SubjectLibraryComponent
 import org.codefeedr.evaluation.IntTuple
 import org.slf4j.MDC
 import org.codefeedr.util.NoEventTime._
+
 import scala.concurrent.duration._
 import scala.concurrent.Await
 

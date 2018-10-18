@@ -1,6 +1,7 @@
 package org.codefeedr.demo.ghtorrent
 
 import net.vankaam.flink.WebSocketSourceFunction
+import org.apache.flink.api.common.restartstrategy.RestartStrategies
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
@@ -10,6 +11,7 @@ import org.apache.flink.streaming.api.scala._
 import org.codefeedr.core.library.SubjectFactoryComponent
 import org.codefeedr.serde.GhTorrent._
 import org.codefeedr.util.NoEventTime._
+
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.reflect.ClassTag
@@ -61,7 +63,7 @@ trait WebSocketJsonPluginComponent extends SimplePluginComponent { this: Subject
       val plugin = new WebSocketJsonPlugin[User](url, subjectName, batchSize)
       Await.ready(plugin.reCreateSubject(), 5.seconds)
       val env = StreamExecutionEnvironment.getExecutionEnvironment
-
+    env.setRestartStrategy(RestartStrategies.noRestart())
       //@transient implicit lazy val formats: DefaultFormats.type = DefaultFormats
       //env.addSource(socket).map[User]((o:String) => parse(o).extract[User])
 
