@@ -114,6 +114,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     * @param newOffsets offsets to update the state with
     */
   private def updateOffsetState(): Unit = synchronized {
+    consumer.commitSync()
     //Obtain current assignment
     val assignment = consumer.assignment().asScala
 
