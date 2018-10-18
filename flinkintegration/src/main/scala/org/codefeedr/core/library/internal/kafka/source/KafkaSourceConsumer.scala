@@ -292,6 +292,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     * Closes the kafka consumer
     */
   def close(): Unit = {
+    consumer.commitSync()
     consumer.close()
   }
 }

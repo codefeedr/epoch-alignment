@@ -22,7 +22,7 @@ trait ConsumerCollectionComponent extends ZkCollectionStateNodeComponent {
       with ZkCollectionStateNodeImpl[ConsumerNode, Unit, Consumer, ConsumerState, ConsumerState]
       with ConsumerCollection {
 
-    override def initial(): ConsumerState = ConsumerState(Some(-1), false)
+    override def initial(): ConsumerState = ConsumerState(false)
 
     override def mapChild(child: ConsumerState): ConsumerState = child
 

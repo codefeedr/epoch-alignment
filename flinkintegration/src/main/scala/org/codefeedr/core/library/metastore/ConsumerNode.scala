@@ -8,16 +8,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
-case class ConsumerState(finalEpoch: Option[Long], open: Boolean) {
+case class ConsumerState(open: Boolean) {
   def aggregate(that: ConsumerState) = ConsumerState(
-    finalEpoch match {
-      case Some(t) =>
-        that.finalEpoch match {
-          case Some(o) => Some(Math.max(o, t))
-          case _ => None
-        }
-      case None => None
-    },
     open || that.open
   )
 }
@@ -69,7 +61,7 @@ trait ConsumerNodeComponent extends ZkStateNodeComponent {
       * @return
       */
     override def initialState(): ConsumerState =
-      ConsumerState(None, open = true)
+      ConsumerState(open = true)
 
     override def setState(state: ConsumerState): Future[Unit] = async {
       await(super.setState(state))

@@ -2,12 +2,7 @@ package org.codefeedr.core.library.internal.kafka.source
 
 import com.typesafe.scalalogging.LazyLogging
 import org.codefeedr.core.library.internal.kafka.OffsetUtils
-import org.codefeedr.core.library.metastore.{
-  ConsumerState,
-  KafkaSourceEpochState,
-  SubjectNode,
-  SynchronizationState
-}
+import org.codefeedr.core.library.metastore._
 import org.codefeedr.model.zookeeper.{Consumer, EpochCollection, Partition, QuerySource}
 
 import scala.async.Async.{async, await}
@@ -21,14 +16,20 @@ import scala.concurrent.{Await, Future, blocking}
   */
 class KafkaSourceManager(kafkaSource: GenericKafkaSource,
                          subjectNode: SubjectNode,
+                         jobNode: JobNode,
                          sourceUuid: String,
                          instanceUuid: String)
     extends LazyLogging {
 
   private val sourceCollectionNode = subjectNode.getSources()
   private val sourceNode = sourceCollectionNode.getChild(sourceUuid)
+
   private val consumerCollectionNode = sourceNode.getConsumers()
   private val consumerNode = consumerCollectionNode.getChild(instanceUuid)
+
+  private val jobConsumerCollectionNode = jobNode.getJobConsumerCollection()
+  private val jobConsumer = jobConsumerCollectionNode.getChild(s"$sourceUuid-$instanceUuid")
+
   private val syncStateNode = consumerNode.getSyncState()
   private lazy val sourceEpochCollections = sourceNode.getEpochs()
   private lazy val subjectEpochs = subjectNode.getEpochs()
@@ -51,6 +52,9 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     Await.result(sourceNode.create(QuerySource(sourceUuid)), timeout)
     Await.result(consumerNode.create(initialConsumer), timeout)
 
+    Await.result(jobConsumer.create(), timeout)
+    logger.trace(s"Initialized sourceconsumerstate for $getLabel")
+
   }
 
   def getState: ConsumerState = {
@@ -63,7 +67,7 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
   def finalizeRun(): Unit = {
     //Finally unsubscribe from the library
     val state = getState
-    Await.result(consumerNode.setState(ConsumerState(state.finalEpoch, open = false)), timeout)
+    Await.result(consumerNode.setState(ConsumerState(open = false)), timeout)
   }
 
   /**
@@ -179,14 +183,14 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     * @return the agreed final checkpoint id, or none if no final checkpoint was agreed on
     */
   def getVerifiedFinalCheckpoint: Option[Long] = {
-    logger.trace(s"consumer states are: $getConsumerState")
-    val aggregateState = await(consumerCollectionNode.getState())
+    logger.trace(s"consumer states on ${jobConsumerCollectionNode.path()} are: $getConsumerState")
+    val aggregateState = await(jobConsumerCollectionNode.getState())
     logger.trace(s"consumer aggregate state is: $aggregateState")
     aggregateState.finalEpoch
   }
 
   private def getConsumerState: String = {
-    val children = await(consumerCollectionNode.getChildren())
+    val children = await(jobConsumerCollectionNode.getChildren())
     val states = children.map(o => (o, await(o.getState())))
     s"\r\n${states.map(o => s"${o._1.name}: ${o._2}").mkString("\r\n")}\r\n"
   }
@@ -196,15 +200,15 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     * @param currentCheckpoint
     */
   def sourceIsDone(currentCheckpoint: Long): Unit = {
-    val lock = await(consumerCollectionNode.writeLock())
+    val lock = await(jobConsumerCollectionNode.writeLock())
     try {
-      val aggregateState = await(consumerCollectionNode.getState())
+      val aggregateState = await(jobConsumerCollectionNode.getState())
       if (aggregateState.finalEpoch.nonEmpty) {
         logger.info(
           s"Not updating final checkpoint in $getLabel to $currentCheckpoint because final checkpoint ${aggregateState.finalEpoch.get} was already assigned")
       } else {
         logger.info(s"updating final checkpoint in $getLabel to $currentCheckpoint")
-        await(consumerNode.setState(ConsumerState(Some(currentCheckpoint), open = true)))
+        await(jobConsumer.setState(JobConsumerState(Some(currentCheckpoint), open = true)))
       }
     } finally {
       lock.close()

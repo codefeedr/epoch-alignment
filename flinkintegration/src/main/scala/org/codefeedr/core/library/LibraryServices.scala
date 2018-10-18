@@ -82,6 +82,8 @@ trait ZookeeperComponents
     with SubjectNodeComponent
     with JobNodeCollectionComponent
     with JobNodeComponent
+    with JobConsumerCollectionComponent
+    with JobConsumerNodeComponent
     with EpochCollectionNodeComponent
     with EpochNodeComponent
     with EpochMappingCollectionComponent

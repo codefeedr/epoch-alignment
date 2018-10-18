@@ -22,6 +22,10 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
   private var sourceSyncStateNode: SourceSynchronizationStateNode = _
   private var sourceEpochCollectionNode: SourceEpochCollection = _
 
+  private var jobNode: JobNode = _
+  private var jobConsumerCollectionNode: JobConsumerCollectionNode = _
+  private var jobConsumerNode: JobConsumerNode = _
+
   private var consumerCollection: ConsumerCollection = _
   private var consumerNode: ConsumerNode = _
   private var consumerSyncState: SourceSynchronizationStateNode = _
@@ -43,6 +47,10 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     sourceNode = mock[QuerySourceNode]
     sourceSyncStateNode = mock[SourceSynchronizationStateNode]
     sourceEpochCollectionNode = mock[SourceEpochCollection]
+
+    jobNode = mock[JobNode]
+    jobConsumerCollectionNode = mock[JobConsumerCollectionNode]
+    jobConsumerNode = mock[JobConsumerNode]
 
     consumerCollection = mock[ConsumerCollection]
     consumerNode = mock[ConsumerNode]
@@ -76,9 +84,14 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
 
 
     when(subjectNode.getEpochs()) thenReturn epochCollection
+
+    when(jobNode.getJobConsumerCollection()) thenReturn jobConsumerCollectionNode
+    when(jobConsumerCollectionNode.getChild(ArgumentMatchers.any())) thenReturn jobConsumerNode
+
+    when(jobConsumerNode.create()) thenReturn Future.successful[String]("")
   }
 
-  def constructManager(): KafkaSourceManager = new KafkaSourceManager(source,subjectNode,"sourceuuid", "instanceuuid")
+  def constructManager(): KafkaSourceManager = new KafkaSourceManager(source,subjectNode,jobNode,"sourceuuid", "instanceuuid")
 
   "KafkaSourceManager.InitalizeRun" should "construct source and consumer if needed" in {
     //Arrange

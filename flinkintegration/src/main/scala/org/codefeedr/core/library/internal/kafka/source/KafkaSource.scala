@@ -62,7 +62,7 @@ case class KafkaSourceStateContainer(instanceId: String, offsets: Map[Int, Long]
   */
 abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag](
     subjectNode: SubjectNode,
-    JobNode: JobNode,
+    jobNode: JobNode,
     kafkaConfiguration: KafkaConfiguration,
     kafkaConsumerFactory: KafkaConsumerFactory)
 //Flink interfaces
@@ -243,7 +243,7 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
 
     //This construction would normally be done by composition, but because flink constructs the source we cannot do so here
     if (manager == null) {
-      manager = new KafkaSourceManager(this, subjectNode, sourceUuid, instanceUuid)
+      manager = new KafkaSourceManager(this, subjectNode, jobNode, sourceUuid, instanceUuid)
     }
 
     logger.info(s"Initializing state of $getLabel")
