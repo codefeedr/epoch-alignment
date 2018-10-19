@@ -469,9 +469,10 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
     ctx.getCheckpointLock.synchronized {
       while (queue.nonEmpty) {
         val element = queue.dequeue()
-        ctx.collect(element)
-        gatheredEvents += 1
         lastEventTime = element.getEventTime
+        ctx.collectWithTimestamp(element, lastEventTime)
+        gatheredEvents += 1
+
         lastLatency = System.currentTimeMillis() - lastEventTime
       }
     }
@@ -492,11 +493,14 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
         while (!consumer.higherOrEqual(alignmentOffsets).getOrElse(false)) {
           logger.debug(
             s"Perfoming synchronized poll loop in $getLabel.\r\n Offsets: ${consumer.getCurrentOffsets}.\r\n Desired: $alignmentOffsets")
-          consumer.poll(element => {
-            ctx.collect(element)
-            lastEventTime = element.getEventTime
-            lastLatency = System.currentTimeMillis() - lastEventTime
-          }, alignmentOffsets)
+          consumer.poll(
+            element => {
+              lastEventTime = element.getEventTime
+              ctx.collectWithTimestamp(element, lastEventTime)
+              lastLatency = System.currentTimeMillis() - lastEventTime
+            },
+            alignmentOffsets
+          )
         }
       }
     }

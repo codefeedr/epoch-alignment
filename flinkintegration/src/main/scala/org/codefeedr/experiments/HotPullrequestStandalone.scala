@@ -37,7 +37,7 @@ class HotPullrequestStandalone extends HotPullRequestQueryBase {
     val sink = new LoggingSinkFunction[HotPr]("IssueSink")
     //issues.addSink(o => Console.println(o))
     //hotIssuePrs.addSink(sink)
-    merged.addSink(sink)
+    merged.addSink(sink).name("Log hot pullrequests")
     //merged.addSink(o => Console.println(o))
     //logger.info("Submitting hot issue query job")
     env.execute("HotIssues")

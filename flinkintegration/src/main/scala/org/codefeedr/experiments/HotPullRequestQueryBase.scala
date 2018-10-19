@@ -73,6 +73,7 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
           None,
           enableLogging = false
         ))
+      .name("Issue Generator")
       .setParallelism(parallelism)
 
   protected def getIssueComments(parallelism: Int = 1): DataStream[IssueComment] =
@@ -86,6 +87,7 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
           issueCommentLimiter
         )
       )
+      .name("Issue Comment Generator")
       .setParallelism(parallelism)
 
   protected def getPullRequests(parallelism: Int = 1): DataStream[PullRequest] =
@@ -96,6 +98,7 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
             new PullRequestGenerator(l, c, o, ExperimentConfiguration.prPerCheckpoint),
           HotPullRequestQueryBase.seed3,
           "PullRequestGenerator"))
+      .name("PullRequest Generator")
       .setParallelism(parallelism)
 
   protected def getPullRequestComments(parallelism: Int = 1): DataStream[PullRequestComment] =
@@ -109,6 +112,7 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
           prCommentlimiter
         )
       )
+      .name("PullRequest Comment Generator")
       .setParallelism(parallelism)
 
   /**
@@ -123,10 +127,12 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
       parallelism: Int = getEnvironment.getParallelism): DataStream[HotIssue] = {
     input
       .map(o => HotIssue(o.issue_id, o.eventTime, 1, None))
+      .name("Map to Hot Issue")
       .keyBy(o => o.issueId)
       .window(TumblingEventTimeWindows.of(windowLength))
       .trigger(CountTrigger.of(1))
       .reduce((left, right) => left.merge(right))
+      .name("Windowed reduce of Hot Issue")
       .setParallelism(parallelism)
   }
 
@@ -136,10 +142,12 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
   ): DataStream[HotPr] =
     input
       .map(o => HotPr(o.pull_request_id, o.eventTime, 1, 0))
+      .name("Map to hot Pullrequest")
       .keyBy(o => o.prId)
       .window(TumblingEventTimeWindows.of(windowLength))
       .trigger(CountTrigger.of(1))
       .reduce((left, right) => left.merge(right))
+      .name("Windowed reduce of hot PullRequest")
       .setParallelism(parallelism)
 
   protected def getIssueCommentPullrequest(
@@ -153,6 +161,7 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
       .window(TumblingEventTimeWindows.of(issueJoinWindowLenght))
       .trigger(CountTrigger.of(1))
       .apply((i, c) => IssueCommentPr(i.id, i.pull_request_id, Math.max(i.eventTime, c.eventTime)))
+      .name("Merge Hot Issues with PullRequests")
       .setParallelism(parallelism)
   }
 
@@ -168,10 +177,12 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
       parallelism: Int = getEnvironment.getParallelism): DataStream[HotPr] = {
     hotIssues
       .map(o => HotPr(o.issueId, o.eventTime, 0, 1))
+      .name("Map hot issue to hot PullRequest")
       .keyBy(o => o.prId)
       .window(EventTimeSessionWindows.withGap(windowLength))
       .trigger(CountTrigger.of(1))
       .reduce((left, right) => left.merge(right))
+      .name("Reduce hot pullrequests")
       .setParallelism(parallelism)
   }
 
@@ -188,13 +199,16 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
       parallelism: Int = getEnvironment.getParallelism): DataStream[HotIssue] = {
     issues
       .map(o => HotIssue(o.issue_id, o.eventTime, 0, Some(o.pull_request_id)))
+      .name("Map Issue to HotIssue")
       .union(discussions)
       .keyBy(o => o.issueId)
       .window(TumblingEventTimeWindows.of(issueJoinWindowLenght))
       .trigger(CountTrigger.of(1))
       .reduce((left, right) => left.merge(right))
+      .name("Reduce HotIssues from both sources")
       .setParallelism(parallelism)
       .filter(o => o.prId.nonEmpty)
+      .name("Filter late issue comments")
       .setParallelism(parallelism)
   }
 
@@ -213,6 +227,7 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
 
     val mappedIssues = hotIssues
       .map(o => HotPr(o.prId.get, o.latestEvent, 0, o.comments))
+      .name("Map HotIssue to HotPullRequest")
       .setParallelism(parallelism)
 
     pullrequests
@@ -221,6 +236,7 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
       .window(TumblingEventTimeWindows.of(issueJoinWindowLenght))
       .trigger(CountTrigger.of(1))
       .reduce((l, r) => l.merge(r))
+      .name("Reduce hot PullRequests from both sources")
   }
 
   protected def getHotIssueKafkaSink: SinkFunction[HotIssue] =
@@ -235,7 +251,7 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
     val source = Await.result(async {
       await(subjectFactory.getSource[HotIssue]("HotIssueSource", "HotPullrequestQuery"))
     }, 5.seconds)
-    getEnvironment.addSource(source).setParallelism(parallelism)
+    getEnvironment.addSource(source).name("HotIssueSource").setParallelism(parallelism)
   }
 }
 

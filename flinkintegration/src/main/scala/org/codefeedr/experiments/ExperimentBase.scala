@@ -41,8 +41,11 @@ trait ExperimentBase extends CodefeedrComponents {
     Await.ready(subjectLibrary.initialize(), Duration(5, SECONDS))
   }
 
-  def getStateBackend: StateBackend =
-    new FsStateBackend(getStateBackendPath, true)
+  def getStateBackend: StateBackend = {
+    val sb = new FsStateBackend(getStateBackendPath, true)
+
+    sb
+  }
 
   /**
   * Creates a new stream stream execution environment with some default configuration
