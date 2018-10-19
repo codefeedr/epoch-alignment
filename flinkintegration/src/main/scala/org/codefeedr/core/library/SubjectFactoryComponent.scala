@@ -35,6 +35,7 @@ import org.codefeedr.core.library.internal.kafka.source.{
 }
 import org.codefeedr.core.library.internal.{KeyFactory, RecordTransformer, SubjectTypeFactory}
 import org.codefeedr.core.library.metastore.{JobNode, SubjectLibraryComponent, SubjectNode}
+import org.codefeedr.model.zookeeper.QuerySource
 import org.codefeedr.model.{ActionType, SubjectType, TrailedRecord}
 import org.codefeedr.util.EventTime
 
@@ -54,6 +55,7 @@ trait SubjectFactoryComponent extends Serializable {
     with KafkaConfigurationComponent =>
 
   private val subjectFactoryComponent = this
+  private val timeout = Duration(5, SECONDS)
 
   val subjectFactory: SubjectFactoryController
 
@@ -228,29 +230,38 @@ trait SubjectFactoryComponent extends Serializable {
       }
     }
 
+    private def createSourceNode(subjectNode: SubjectNode, sourceId: String): Unit = {
+      val sourceNode = subjectNode.getSources().getChild(sourceId)
+      Await.result(sourceNode.create(QuerySource(sourceId)), timeout)
+    }
+
     def getRowSource(subjectNode: SubjectNode,
                      jobNode: JobNode,
                      sourceId: String): SourceFunction[Row] = {
+      createSourceNode(subjectNode, sourceId)
       new KafkaRowSource(subjectNode, jobNode, kafkaConfiguration, kafkaConsumerFactory, sourceId)
     }
 
     def getSource[TSource: ClassTag: ru.TypeTag: EventTime](subjectNode: SubjectNode,
                                                             jobNode: JobNode,
-                                                            sinkId: String) =
+                                                            sourceId: String) = {
+      createSourceNode(subjectNode, sourceId)
       new KafkaGenericSource[TSource](subjectNode,
                                       jobNode,
                                       kafkaConfiguration,
                                       kafkaConsumerFactory,
-                                      sinkId)
+                                      sourceId)
+    }
 
     def getTrailedSource(subjectNode: SubjectNode,
                          jobNode: JobNode,
-                         sinkId: String): SourceFunction[TrailedRecord] = {
+                         sourceId: String): SourceFunction[TrailedRecord] = {
+      createSourceNode(subjectNode, sourceId)
       new KafkaTrailedRecordSource(subjectNode,
                                    jobNode,
                                    kafkaConfiguration,
                                    kafkaConsumerFactory,
-                                   sinkId)
+                                   sourceId)
     }
 
     /**
@@ -306,7 +317,7 @@ trait SubjectFactoryComponent extends Serializable {
       * @param st subject to await topic for
       */
     private def guaranteeTopicBlocking(st: SubjectType): Unit = {
-      Await.ready(guaranteeTopic(st), Duration(5, SECONDS))
+      Await.ready(guaranteeTopic(st), timeout)
     }
   }
 

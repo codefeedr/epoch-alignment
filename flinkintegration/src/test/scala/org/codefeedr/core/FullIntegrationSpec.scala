@@ -76,7 +76,7 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     await(libraryServices.subjectLibrary.getSubject(subject.name).assertExists())
     val jobName = UUID.randomUUID().toString
     val job = libraryServices.subjectLibrary.getJob(jobName)
-    val source = new KafkaTrailedRecordSource(libraryServices.subjectLibrary.getSubject(subject.name),job,libraryServices.kafkaConfiguration, libraryServices.kafkaConsumerFactory,s"testsource_$jobName")
+    val source = libraryServices.subjectFactory.getTrailedSource(libraryServices.subjectLibrary.getSubject(subject.name),job,s"testsource_$jobName").asInstanceOf[KafkaTrailedRecordSource]
     val result = new mutable.ArrayBuffer[TrailedRecord]()
 
 
@@ -94,7 +94,7 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
     source.setRuntimeContext(runtimeContext)
     source.initializeState(initContext)
     source.run(new SourceContext[TrailedRecord] {
-      override def collectWithTimestamp(element: TrailedRecord, timestamp: Long): Unit = ???
+      override def collectWithTimestamp(element: TrailedRecord, timestamp: Long): Unit = result.append(element)
 
       override def getCheckpointLock: AnyRef = this
 

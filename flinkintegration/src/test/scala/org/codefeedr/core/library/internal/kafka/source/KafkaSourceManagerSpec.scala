@@ -77,6 +77,7 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     when(consumerCollection.getChildren()) thenReturn Future.successful(Iterable(consumerNode,otherConsumerNode))
     when(consumerNode.create(ArgumentMatchers.any())) thenReturn Future.successful(null)
     when(consumerNode.getSyncState()) thenReturn consumerSyncState
+    when(consumerNode.exists()) thenReturn Future.successful(true)
     when(consumerSyncState.setData(ArgumentMatchers.any())) thenReturn Future.successful(())
 
     when(otherConsumerNode.getSyncState()) thenReturn otherConsumerSyncState
