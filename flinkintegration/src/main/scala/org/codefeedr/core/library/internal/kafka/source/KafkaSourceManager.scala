@@ -51,7 +51,7 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     //Update zookeeper state blocking, because the source cannot start until the proper zookeeper state has been configured
     if (!Await.result(sourceNode.exists(), timeout)) {
       throw new IllegalStateException(
-        s"Source $sourceUuid does not exist. Did you canstruct the source via the subjectFactory?")
+        s"Source $sourceUuid does not exist. Did you construct the source via the subjectFactory?")
     }
     Await.result(consumerNode.create(initialConsumer), timeout)
 

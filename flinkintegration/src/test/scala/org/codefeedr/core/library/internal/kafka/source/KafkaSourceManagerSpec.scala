@@ -69,6 +69,7 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     when(sourceNode.create(ArgumentMatchers.any())) thenReturn Future.successful(null)
     when(sourceNode.getSyncState()) thenReturn sourceSyncStateNode
     when(sourceNode.getEpochs()) thenReturn sourceEpochCollectionNode
+    when(sourceNode.exists()) thenReturn Future.successful(true)
     mockLock(sourceEpochCollectionNode)
     mockLock(sourceNode)
 
@@ -77,7 +78,7 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     when(consumerCollection.getChildren()) thenReturn Future.successful(Iterable(consumerNode,otherConsumerNode))
     when(consumerNode.create(ArgumentMatchers.any())) thenReturn Future.successful(null)
     when(consumerNode.getSyncState()) thenReturn consumerSyncState
-    when(consumerNode.exists()) thenReturn Future.successful(true)
+
     when(consumerSyncState.setData(ArgumentMatchers.any())) thenReturn Future.successful(())
 
     when(otherConsumerNode.getSyncState()) thenReturn otherConsumerSyncState
@@ -94,7 +95,7 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
 
   def constructManager(): KafkaSourceManager = new KafkaSourceManager(source,subjectNode,jobNode,"sourceuuid", "instanceuuid")
 
-  "KafkaSourceManager.InitalizeRun" should "construct source and consumer if needed" in {
+  "KafkaSourceManager.InitalizeRun" should "construct consumer if needed" in {
     //Arrange
     val manager = constructManager()
 
@@ -102,7 +103,6 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     manager.initializeRun()
 
     //Assert
-    verify(sourceNode, times(1)).create(ArgumentMatchers.any())
     verify(consumerNode, times(1)).create(ArgumentMatchers.any())
     assert(true)
   }

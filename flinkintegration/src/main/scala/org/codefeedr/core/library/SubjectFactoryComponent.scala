@@ -21,6 +21,7 @@ package org.codefeedr.core.library
 
 import java.util.UUID
 
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.streaming.api.functions.sink.SinkFunction
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.types.Row
@@ -63,7 +64,7 @@ trait SubjectFactoryComponent extends Serializable {
     * ThreadSafe
     * Created by Niels on 18/07/2017.
     */
-  class SubjectFactoryController {
+  class SubjectFactoryController extends LazyLogging {
 
     /**
       * Retrieve a basic sink of the given generic type
@@ -232,6 +233,7 @@ trait SubjectFactoryComponent extends Serializable {
 
     private def createSourceNode(subjectNode: SubjectNode, sourceId: String): Unit = {
       val sourceNode = subjectNode.getSources().getChild(sourceId)
+      logger.info(s"Creating source node ${sourceNode.name} on ${sourceNode.path()}")
       Await.result(sourceNode.create(QuerySource(sourceId)), timeout)
     }
 
@@ -245,6 +247,7 @@ trait SubjectFactoryComponent extends Serializable {
     def getSource[TSource: ClassTag: ru.TypeTag: EventTime](subjectNode: SubjectNode,
                                                             jobNode: JobNode,
                                                             sourceId: String) = {
+
       createSourceNode(subjectNode, sourceId)
       new KafkaGenericSource[TSource](subjectNode,
                                       jobNode,
