@@ -19,6 +19,9 @@ trait ExperimentBase extends CodefeedrComponents {
   protected def getParallelism: Int = 2
   protected def getKafkaParallelism: Int = 6
 
+  @transient protected lazy val awaitDuration: Duration =
+    configurationProvider.getDefaultAwaitDuration
+
   @transient protected lazy val getEnvironment: StreamExecutionEnvironment = {
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     configurationProvider.initEc(env.getConfig)
@@ -38,7 +41,7 @@ trait ExperimentBase extends CodefeedrComponents {
   def initialize(args: Array[String]) = {
     val pt = ParameterTool.fromArgs(args)
     configurationProvider.initParameters(pt)
-    Await.ready(subjectLibrary.initialize(), Duration(5, SECONDS))
+    awaitReady(subjectLibrary.initialize())
   }
 
   def getStateBackend: StateBackend = {

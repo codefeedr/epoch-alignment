@@ -8,6 +8,7 @@ import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironm
 import org.codefeedr.core.plugin.SimplePluginComponent
 import org.codefeedr.ghtorrent.User
 import org.apache.flink.streaming.api.scala._
+import org.codefeedr.configuration.ConfigUtilComponent
 import org.codefeedr.core.library.SubjectFactoryComponent
 import org.codefeedr.serde.GhTorrent._
 import org.codefeedr.util.NoEventTime._
@@ -18,7 +19,9 @@ import scala.reflect.ClassTag
 import scala.reflect._
 import scala.reflect.runtime.{universe => ru}
 
-trait WebSocketJsonPluginComponent extends SimplePluginComponent { this: SubjectFactoryComponent =>
+trait WebSocketJsonPluginComponent extends SimplePluginComponent {
+  this: SubjectFactoryComponent
+    with ConfigUtilComponent =>
 
   def createWebSocketJsonPlugin[TData: ru.TypeTag: ClassTag: Serde](
       url: String,
@@ -61,13 +64,12 @@ trait WebSocketJsonPluginComponent extends SimplePluginComponent { this: Subject
       val batchSize = parameter.getInt("batchSize", 100)
 
       val plugin = new WebSocketJsonPlugin[User](url, subjectName, batchSize)
-      Await.ready(plugin.reCreateSubject(), 5.seconds)
+      awaitReady(plugin.reCreateSubject())
       val env = StreamExecutionEnvironment.getExecutionEnvironment
     env.setRestartStrategy(RestartStrategies.noRestart())
       //@transient implicit lazy val formats: DefaultFormats.type = DefaultFormats
       //env.addSource(socket).map[User]((o:String) => parse(o).extract[User])
-
-      Await.result(plugin.compose(env, "readusers"), 5.seconds)
+      awaitReady(plugin.compose(env, "readusers"))
       env.execute()
     }
   }

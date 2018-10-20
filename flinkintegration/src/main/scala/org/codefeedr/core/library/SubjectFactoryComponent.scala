@@ -25,7 +25,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.streaming.api.functions.sink.SinkFunction
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.types.Row
-import org.codefeedr.configuration.KafkaConfigurationComponent
+import org.codefeedr.configuration.{ConfigUtilComponent, KafkaConfigurationComponent}
 import org.codefeedr.core.library.internal.kafka._
 import org.codefeedr.core.library.internal.kafka.sink._
 import org.codefeedr.core.library.internal.kafka.source.{
@@ -53,7 +53,8 @@ trait SubjectFactoryComponent extends Serializable {
     with KafkaConsumerFactoryComponent
     with KafkaControllerComponent
     with EpochStateManagerComponent
-    with KafkaConfigurationComponent =>
+    with KafkaConfigurationComponent
+    with ConfigUtilComponent =>
 
   private val subjectFactoryComponent = this
   private val timeout = Duration(5, SECONDS)
@@ -87,11 +88,11 @@ trait SubjectFactoryComponent extends Serializable {
       }
 
     def getSource[TData: ClassTag: ru.TypeTag: EventTime](
-        sinkId: String,
+        sourceId: String,
         jobName: String): Future[SourceFunction[TData]] = async {
       val (subjectNode, jobNode) = getSubjectJobNode[TData](jobName)
       await(validateSubject(subjectNode))
-      getSource[TData](subjectNode, jobNode, sinkId)
+      getSource[TData](subjectNode, jobNode, sourceId)
     }
 
     /**
@@ -234,7 +235,7 @@ trait SubjectFactoryComponent extends Serializable {
     private def createSourceNode(subjectNode: SubjectNode, sourceId: String): Unit = {
       val sourceNode = subjectNode.getSources().getChild(sourceId)
       logger.info(s"Creating source node ${sourceNode.name} on ${sourceNode.path()}")
-      Await.result(sourceNode.create(QuerySource(sourceId)), timeout)
+      awaitReady(sourceNode.create(QuerySource(sourceId)))
     }
 
     def getRowSource(subjectNode: SubjectNode,
@@ -320,7 +321,7 @@ trait SubjectFactoryComponent extends Serializable {
       * @param st subject to await topic for
       */
     private def guaranteeTopicBlocking(st: SubjectType): Unit = {
-      Await.ready(guaranteeTopic(st), timeout)
+      awaitReady(guaranteeTopic(st))
     }
   }
 

@@ -1,4 +1,6 @@
 package org.codefeedr.experiments
+import java.util.UUID
+
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.streaming.api.functions.co.CoFlatMapFunction
 import org.apache.flink.streaming.api.functions.sink.SinkFunction
@@ -240,18 +242,20 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
   }
 
   protected def getHotIssueKafkaSink: SinkFunction[HotIssue] =
-    Await.result(async {
+    awaitReady(async {
       await(subjectFactory.reCreate[HotIssue]())
       await(subjectFactory.getSink[HotIssue]("HotIssueSink", "HotIssueGenerator"))
 
-    }, 5.seconds)
+    })
 
   protected def getHotIssueKafkaSource(
       parallelism: Int = getKafkaParallelism): DataStream[HotIssue] = {
-    val source = Await.result(async {
-      await(subjectFactory.getSource[HotIssue]("HotIssueSource", "HotPullrequestQuery"))
-    }, 5.seconds)
-    getEnvironment.addSource(source).name("HotIssueSource").setParallelism(parallelism)
+    val source = awaitReady(async {
+      await(
+        subjectFactory.getSource[HotIssue](s"HotIssueSource-${UUID.randomUUID()}",
+                                           "HotPullrequestQuery"))
+    })
+    getEnvironment.addSource(source).name(s"HotIssueSource").setParallelism(parallelism)
   }
 }
 

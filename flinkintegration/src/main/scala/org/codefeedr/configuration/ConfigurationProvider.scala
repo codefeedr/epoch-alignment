@@ -7,6 +7,7 @@ import org.apache.flink.api.scala.ExecutionEnvironment
 import org.codefeedr.util.OptionExtensions.DebuggableOption
 
 import scala.collection.JavaConverters._
+import scala.concurrent.duration._
 
 /**
   * This component handles the global configuration
@@ -75,6 +76,8 @@ trait ConfigurationProvider extends Serializable {
     * @return the Flink executionconfig object
     */
   def getExecutionConfig: ExecutionConfig
+
+  def getDefaultAwaitDuration: Duration
 }
 
 trait ConfigurationProviderComponent {
@@ -194,5 +197,12 @@ trait FlinkConfigurationProviderComponent extends ConfigurationProviderComponent
         case Some(v) => v
       }
     }
+
+    @transient override lazy val getDefaultAwaitDuration: FiniteDuration = {
+      val seconds = parameterTool.getInt("codefeedr.awaitDuration")
+      logger.info(s"Initializing with default await duration $seconds")
+      Duration(seconds, SECONDS)
+    }
+
   }
 }

@@ -4,7 +4,7 @@ import org.apache.flink.api.common.restartstrategy.RestartStrategies
 import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.streaming.api.{CheckpointingMode, TimeCharacteristic}
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
-import org.codefeedr.configuration.ConfigurationProviderComponent
+import org.codefeedr.configuration.{ConfigUtilComponent, ConfigurationProviderComponent}
 import org.apache.flink.streaming.api.scala._
 import org.codefeedr.core.library.SubjectFactoryComponent
 import org.codefeedr.core.library.internal.zookeeper.ZkClientComponent
@@ -22,7 +22,7 @@ trait SocketReceiverComponent {
     with ZkClientComponent
     with SubjectLibraryComponent
     with SubjectFactoryComponent
-    =>
+    with ConfigUtilComponent =>
 
 
 
@@ -76,9 +76,8 @@ trait SocketReceiverComponent {
       zkClient.deleteRecursive("/")
       subjectLibrary.initialize()
 
-      val subject = Await.result(subjectFactory.create[IntTuple](), 10.seconds)
-      val sink = Await.result(subjectFactory.getSink[IntTuple]("testsink", "myjob"),
-        10.seconds)
+      val subject = awaitReady(subjectFactory.create[IntTuple]())
+      val sink = awaitReady(subjectFactory.getSink[IntTuple]("testsink", "myjob"))
       env.setParallelism(1)
       env.enableCheckpointing(1000,CheckpointingMode.EXACTLY_ONCE)
       env

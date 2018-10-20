@@ -48,7 +48,8 @@ trait ConfigurationModule
     extends Serializable
     with FlinkConfigurationProviderComponent
     with KafkaConfigurationComponent
-    with ZookeeperConfigurationComponent {
+    with ZookeeperConfigurationComponent
+    with ConfigUtilComponent {
   //The configurationprovider is serializable
   @transient lazy override val zookeeperConfiguration: ZookeeperConfiguration =
     ZookeeperConfiguration(
@@ -67,9 +68,11 @@ trait ConfigurationModule
 trait ConfigurationComponents
     extends ConfigurationModule
     with KafkaConsumerFactoryComponent
-    with KafkaProducerFactoryComponent {
+    with KafkaProducerFactoryComponent
+    with ConfigUtilComponent {
   @transient lazy override val kafkaConsumerFactory = new KafkaConsumerFactoryImpl()
   @transient lazy override val kafkaProducerFactory = new KafkaProducerFactoryImpl()
+  @transient lazy override val configUtil: ConfigUtil = new ConfigUtil()
 }
 
 //All zookeeper nodes

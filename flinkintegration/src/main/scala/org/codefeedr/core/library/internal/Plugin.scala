@@ -32,6 +32,7 @@ trait Plugin { this: ZkClientComponent with SubjectLibraryComponent with JobComp
   var jobs: List[Job[_, _]] = List()
 
   private def startPlugin() = async {
+
     Await.ready(subjectLibrary.initialize(), Duration(5, SECONDS))
     Await.ready(zkClient.deleteRecursive("/"), Duration(5, SECONDS))
     jobs = await(setupJobs)
