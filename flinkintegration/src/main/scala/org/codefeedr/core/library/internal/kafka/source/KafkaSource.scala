@@ -475,6 +475,8 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
 
         lastLatency = System.currentTimeMillis() - lastEventTime
       }
+      //Need to update the state in the offset map
+      consumer.updateOffsetState()
     }
   }
 

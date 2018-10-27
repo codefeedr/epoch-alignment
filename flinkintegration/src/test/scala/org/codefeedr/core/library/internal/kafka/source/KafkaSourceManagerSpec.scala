@@ -70,6 +70,7 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     when(sourceNode.getSyncState()) thenReturn sourceSyncStateNode
     when(sourceNode.getEpochs()) thenReturn sourceEpochCollectionNode
     when(sourceNode.exists()) thenReturn Future.successful(true)
+    when(sourceNode.sync()) thenReturn Future.successful(())
     mockLock(sourceEpochCollectionNode)
     mockLock(sourceNode)
 
@@ -141,9 +142,9 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     when(epochCollection.getLatestEpochId) thenReturn Future.successful(3L)
     val epoch = mock[EpochNode]
     when(epochCollection.getChild(2)) thenReturn epoch
-    when(epoch.getData()) thenReturn Future.successful(Some(Epoch(2,Seq(Partition(1,2L),Partition(2,2L),Partition(3,3L)))))
+    when(epoch.getData()) thenReturn Future.successful(Some(Epoch(2,Seq(Partition(1,2L),Partition(2,2L),Partition(3,4L)))))
 
-    val comparison = Map(1-> 2L, 2->2L)
+    val comparison = Map(1-> 3L, 2->3L)
 
     //Act
     val r = await(manager.isCatchedUp(comparison))

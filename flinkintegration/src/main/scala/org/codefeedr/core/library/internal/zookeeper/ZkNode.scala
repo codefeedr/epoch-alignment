@@ -91,6 +91,12 @@ trait ZkNode[TData] extends ZkNodeBase {
   def isDefinedAt(x: Unit): Boolean
 
   def apply(v1: Unit): Future[TData]
+
+  /**
+    *  synchronize the current node and its children
+    *  @return future when the synchronization has completed
+    */
+  def sync(): Future[Unit]
 }
 
 trait ZkNodeComponent extends ZkNodeBaseComponent { this: ZkClientComponent =>
@@ -195,6 +201,8 @@ trait ZkNodeComponent extends ZkNodeBaseComponent { this: ZkClientComponent =>
     override def isDefinedAt(x: Unit): Boolean = true
 
     override def apply(v1: Unit): Future[TData] = getData().map(o => o.get)
+
+    override def sync(): Future[Unit] = zkClient.sync(path())
   }
 
   object ZkNode {

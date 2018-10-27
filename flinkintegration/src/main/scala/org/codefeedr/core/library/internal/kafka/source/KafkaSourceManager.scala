@@ -49,6 +49,7 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     val initialConsumer = Consumer(instanceUuid, null, System.currentTimeMillis())
 
     //Update zookeeper state blocking, because the source cannot start until the proper zookeeper state has been configured
+    Await.result(sourceNode.sync(), timeout)
     if (!Await.result(sourceNode.exists(), timeout)) {
       throw new IllegalStateException(
         s"Source $sourceUuid does not exist on path ${sourceNode.path()}. Did you construct the source via the subjectFactory?")
@@ -166,7 +167,8 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
       throw new Exception(
         s"Attempting to obtain endoffsets for epoch -1 in source of ${subjectNode.name}. Did you run the job with checkpointing enabled?")
     } else {
-      await(subjectEpochs.getChild(epoch).getData()).get.partitions
+      await(subjectEpochs.getChild(epoch).getData()).get.partitions.map(o =>
+        Partition(o.nr, o.offset))
     }
   }
 

@@ -78,6 +78,7 @@
     <logger name="org.codefeedr.plugins.GeneratorSourceComponent$GeneratorSource" level="INFO" />
 
 
+
     <logger name="org.apache.kafka" level="WARN"/>
     <logger name="org.apache.flink" level="WARN"/>
     <logger name="org.apache.zookeeper" level="WARN"/>

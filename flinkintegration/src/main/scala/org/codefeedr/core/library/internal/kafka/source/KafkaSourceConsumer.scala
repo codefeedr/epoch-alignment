@@ -1,7 +1,7 @@
 package org.codefeedr.core.library.internal.kafka.source
 
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.kafka.clients.consumer.{ConsumerRecord, KafkaConsumer}
+import org.apache.kafka.clients.consumer.{ConsumerRecord, KafkaConsumer, OffsetAndMetadata}
 import org.apache.kafka.common.TopicPartition
 
 import scala.collection.JavaConverters._
@@ -10,6 +10,8 @@ import scala.collection.mutable.ArrayBuffer
 import java.time.Duration
 import java.time.temporal.ChronoUnit
 
+import org.codefeedr.core.library.internal.kafka.OffsetUtils
+
 import scala.reflect.ClassTag
 
 trait KafkaSourceMapper[TElement, TValue, TKey] {
@@ -17,8 +19,13 @@ trait KafkaSourceMapper[TElement, TValue, TKey] {
   def transform(value: TValue, key: TKey): TElement
 }
 
+/**
+  *   State held by the kafkaSourceConsumer
+  * @param assignment
+  * @param offsets
+  */
 case class KafkaSourceConsumerState(assignment: Option[Iterable[TopicPartition]],
-                                    offsets: Option[Map[Int, Long]]) {
+                                    offsets: Option[Map[TopicPartition, Long]]) {
 
   /**
     * Retrieves the current assignment, or empty collection if no assignment exists yet
@@ -31,7 +38,7 @@ case class KafkaSourceConsumerState(assignment: Option[Iterable[TopicPartition]]
     * Retrieves the current offsets, or an empty map if no offsets are available yet
     * @return
     */
-  def getOffsets = offsets.getOrElse(Map.empty[Int, Long])
+  def getOffsets = offsets.getOrElse(Map.empty[TopicPartition, Long])
 }
 
 /**
@@ -85,7 +92,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
 
   private def poll(cb: TElement => Unit,
                    shouldInclude: ConsumerRecord[TKey, TValue] => Boolean,
-                   seekOffsets: PartialFunction[Int, Long]): Unit = {
+                   seekOffsets: PartialFunction[Int, Long]): Unit = synchronized {
 
     logger.debug(s"$name started polling")
     val data = consumer.poll(pollTimeout).iterator().asScala
@@ -102,19 +109,18 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
         }
       }
     })
-    updateOffsetState()
     resetConsumer(resetSet, seekOffsets)
 
   }
 
   /**
     * Updates the state of this sourceConsumer with the new offset
+    * Should be called within checkpoint lock
     * Typically called at the end of the poll loop with the new offsets
-    * Most code is just to provice debug information of the current state
+    * Most code is just to provide debug information of the current state
     * @param newOffsets offsets to update the state with
     */
-  private def updateOffsetState(): Unit = synchronized {
-    consumer.commitSync()
+  def updateOffsetState(): Unit = synchronized {
     //Obtain current assignment
     val assignment = consumer.assignment().asScala
 
@@ -125,14 +131,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     } else {
       //Build offset collection
       val newOffsets = assignment
-        .map(o =>
-          o.partition() -> {
-            val p = consumer.position(o) - 2
-            if (p < -1) {
-              -1
-            } else
-              p
-        })
+        .map(o => o -> consumer.position(o))
         .toMap
 
       logger.debug(s"New offsets in $getLabel: $newOffsets")
@@ -151,8 +150,8 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
       logger.debug(s"received new partitions $newPartitions in $getLabel")
 
       val newOffsets = newPartitions.get
-        .filterNot(o => state.getOffsets.keys.toSet.contains(o.partition()))
-        .map(tp => tp.partition() -> Option(consumer.position(tp)).getOrElse(-1l))
+        .filterNot(o => state.getOffsets.keys.toSet.contains(o))
+        .map(tp => tp -> Option(consumer.position(tp)).getOrElse(-1l))
 
       logger.debug(s"$name removing offsets from state ${state.getOffsets.filter(o =>
         !newPartitions.get.map(_.partition()).exists(_ == o._1))}")
@@ -163,7 +162,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
 
       val newStateOffsets =
         state.getOffsets
-          .filter(o => newPartitions.get.map(_.partition()).exists(_ == o._1)) ++ newOffsets
+          .filter(o => newPartitions.get.exists(_ == o._1)) ++ newOffsets
 
       //Update assignment and offsets
       state = KafkaSourceConsumerState(newPartitions, Some(newStateOffsets))
@@ -221,43 +220,32 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     *
     * @param offsets the offsets to commit
     */
-  def commit(offsets: Map[Int, Long]): Unit = {
-    //Do we care about committing a consumer? We already keep track of offsets in the flink managed state...
-    //TODO: Implement or discard
-    /*
-    consumer.commitAsync(
-      offsets.map(o => (o._1, new OffsetAndMetadata(o._2))).asJava,
-      new OffsetCommitCallback {
-        override def onComplete(offsets: util.Map[TopicPartition, OffsetAndMetadata],
-                                exception: Exception): Unit = {
-          val parsedOffset = offsets.asScala.map(o => (o._1, o._2.offset()))
-          logger.debug(
-            s"Offsetts ${getReadablePartitions(parsedOffset.toMap)} successfully committed to kafka")
-        }
-      }
-    )
-   */
+  def commit(offsets: Map[Int, Long]): Unit = synchronized {
+    logger.debug(s"Committing offsets $offsets")
+    val commitData =
+      offsets.map(o => (new TopicPartition(topic, o._1), new OffsetAndMetadata(o._2))).asJava
+    consumer.commitSync(commitData)
   }
 
   /**
-    * Obtains the currently comitted offsets
+    * Obtains the offset currently stored in the consumer state.
     * Used to initialize a kafkaSource
     *
     * @return
     */
-  def getCurrentOffsets: Map[Int, Long] = state.getOffsets
+  def getCurrentOffsets: Map[Int, Long] = state.getOffsets.map(o => (o._1.partition(), o._2))
 
   /**
     * Retrieves the current position on the assigned partitions of the consumer
     *
     * @return
-    */
+
   def getCurrentPosition: mutable.Map[Int, Long] =
     mutable.Map[Int, Long]() ++= consumer
       .assignment()
       .asScala
       .map(o => o.partition() -> consumer.position(o))
-
+    */
   /**
     * Retrieves kafka endoffsets -1. (Kafka returns last avalaible message + 1)
     *
@@ -279,13 +267,14 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     *         False if the consumer is behind on one or more assigned partitions
     */
   def higherOrEqual(reference: PartialFunction[Int, Long]): Option[Boolean] =
-    state.offsets.map(offset => offset.forall(o => hasPassedReference(reference)(o._1, o._2)))
+    state.offsets.map(offset =>
+      offset.forall(o => hasPassedReference(reference)(o._1.partition(), o._2)))
 
   private def hasPassedReference(
       referenceSet: PartialFunction[Int, Long])(partition: Int, currentOffset: Long): Boolean =
     referenceSet
       .lift(partition) match {
-      case Some(v) => v <= currentOffset
+      case Some(v) => v < currentOffset
       case None => true
     }
 

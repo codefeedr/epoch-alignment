@@ -26,13 +26,14 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
     consumer = mock[KafkaConsumer[RecordSourceTrail, Row]]
   }
 
-  "KafkaSourceConsumer.Poll" should "update the latest offsets that it received by polling the source" in {
+  "KafkaSourceConsumer.updateOffsetState()" should "update the latest offsets that it received by polling the source" in {
     //Arrange
     val component = constructConsumer()
     constructPoll(Seq((1, 1L), (1, 2L), (2, 2L)))
 
     //Act
     component.poll(_ => Unit)
+    component.updateOffsetState()
 
     //Assert
     assert(component.getCurrentOffsets.contains(1 -> 2L))
@@ -90,6 +91,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
 
     //Act
     component.poll(_ => Unit, Map(1 -> 2, 2 -> 2))
+    component.updateOffsetState()
 
 
     //Assert
@@ -167,7 +169,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
     //Arrange
     val sConsumer = constructWithState(Map(1 -> 2,2 -> 2))
     //Act
-    val r = sConsumer.higherOrEqual(Map(1 -> 2, 2->2))
+    val r = sConsumer.higherOrEqual(Map(1 -> 1, 2->1))
     //Assert
     assert(r.get)
   }
@@ -175,7 +177,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
     //Arrange
     val sConsumer = constructWithState(Map(1 -> 2,2 -> 2))
     //Act
-    val r = sConsumer.higherOrEqual(Map(1 -> 2))
+    val r = sConsumer.higherOrEqual(Map(1 -> 1))
     //Assert
     assert(r.get)
   }
@@ -184,7 +186,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
     //Arrange
     val sConsumer = constructWithState(Map(1 -> 2,2 -> 2))
     //Act
-    val r = sConsumer.higherOrEqual(Map(1 -> 2,2->2,3->2))
+    val r = sConsumer.higherOrEqual(Map(1 -> 1,2->1,3->1))
     //Assert
     assert(r.get)
   }
@@ -193,7 +195,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
     //Arrange
     val sConsumer = constructWithState(Map(1 -> 2,2 -> 2))
     //Act
-    val r = sConsumer.higherOrEqual(Map(1 -> 2,2->3))
+    val r = sConsumer.higherOrEqual(Map(1 -> 1,2->2))
     //Assert
     assert(!r.get)
   }
@@ -235,7 +237,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
     //reset the consumer to the passed position
     constructPosition(offsets)
     //sConsumer.setPosition(offsets)
-    sConsumer.poll(_ => ())
+    sConsumer.updateOffsetState()
 
     sConsumer
   }
@@ -249,6 +251,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
     constructAssignment(partitions)
     sConsumer.onNewAssignment(tps)
     sConsumer.poll(_ => ())
+    sConsumer.updateOffsetState()
     sConsumer
   }
 
@@ -257,7 +260,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
   }
   private def constructPosition(data: Map[Int, Long]):Unit = {
     data.foreach(d => {
-      when(consumer.position(ArgumentMatchers.eq(new TopicPartition("",d._1)))).thenReturn(d._2+2)
+      when(consumer.position(ArgumentMatchers.eq(new TopicPartition("",d._1)))).thenReturn(d._2)
     })
   }
 

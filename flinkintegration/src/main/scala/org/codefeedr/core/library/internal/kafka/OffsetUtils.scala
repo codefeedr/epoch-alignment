@@ -17,7 +17,7 @@ object OffsetUtils extends LazyLogging {
       logger.warn(s"HigherOrEqual for offset comparison called with empty source. Returning true")
       true
     } else {
-      source.forall(o => reference(o._1) <= o._2)
+      source.forall(o => reference(o._1) < o._2)
     }
   }
 

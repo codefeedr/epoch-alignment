@@ -78,6 +78,7 @@
     </root>
     <!-- If you do not place this on info level, errors that trigger a restart will not be logged-->
     <logger name="org.apache.flink.runtime.taskmanager" level="INFO" />
+    <logger name="org.codefeedr.core.library.internal.kafka.source.KafkaSourceConsumer" level="TRACE" />
 
     <logger name="org.codefeedr.core.library.internal.kafka.sink" level="INFO"/>
     <logger name="org.codefeedr.core.library.internal.zookeeper" level="INFO"/>

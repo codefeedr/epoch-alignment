@@ -131,6 +131,22 @@ trait ZkClientComponent {
       }
 
     /**
+      * Calls zookeeper synchronize on the given path
+      * @param path path to synchronize on
+      * @return
+      */
+    override def sync(path: String, ctx: Option[Any] = None): Future[Unit] = {
+      val resultPromise = Promise[Unit]
+      ZkClientImpl.zk.sync(path, new VoidCallback {
+        override def processResult(rc: Int, path: String, ctx: Any): Unit = {
+          handleResponse[Unit](resultPromise, rc, path, Some(ctx), Unit)
+        }
+      }, ctx)
+
+      resultPromise.future
+    }
+
+    /**
       * Prepends codefeedr to the zookeeper path so that no actual data outside the codefeedr path can be mutated (for example to destroy kafka)
       * Only meant for implementations that directly call zookeeper
       * @param s string to prepend
@@ -989,4 +1005,12 @@ trait ZkClient {
     * @return writeLock for the node
     */
   def writeLock(path: String): Future[ZkWriteLock]
+
+  /**
+    * Calls zookeeper sync on the given path
+    * @param path to synchronize
+    * @param ctx optional context
+    * @return
+    */
+  def sync(path: String, ctx: Option[Any] = None): Future[Unit]
 }

@@ -17,7 +17,7 @@ trait ExperimentBase extends CodefeedrComponents {
   protected def getStateBackendPath: String = configurationProvider.get("statebackend.path")
 
   protected def getParallelism: Int = 2
-  protected def getKafkaParallelism: Int = 6
+  protected def getKafkaParallelism: Int = 2
 
   @transient protected lazy val awaitDuration: Duration =
     configurationProvider.getDefaultAwaitDuration
