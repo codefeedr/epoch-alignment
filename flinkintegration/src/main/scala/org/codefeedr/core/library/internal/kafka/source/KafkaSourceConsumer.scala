@@ -55,6 +55,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
 
   private def getLabel = name
 
+  @volatile private var open = true
   @volatile private var emptyAssignments: Int = 0
 
   /**
@@ -221,10 +222,15 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     * @param offsets the offsets to commit
     */
   def commit(offsets: Map[Int, Long]): Unit = synchronized {
-    logger.debug(s"Committing offsets $offsets")
-    val commitData =
-      offsets.map(o => (new TopicPartition(topic, o._1), new OffsetAndMetadata(o._2))).asJava
-    consumer.commitSync(commitData)
+
+    if (open) {
+      logger.debug(s"Committing offsets $offsets")
+      val commitData =
+        offsets.map(o => (new TopicPartition(topic, o._1), new OffsetAndMetadata(o._2))).asJava
+      consumer.commitSync(commitData)
+    } else {
+      logger.warn(s"Not committing offsets $offsets because the consumer has already closed")
+    }
   }
 
   /**
@@ -281,9 +287,10 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
   /**
     * Closes the kafka consumer
     */
-  def close(): Unit = {
+  def close(): Unit = synchronized {
     consumer.commitSync()
     consumer.close()
+    open = false
   }
 }
 
