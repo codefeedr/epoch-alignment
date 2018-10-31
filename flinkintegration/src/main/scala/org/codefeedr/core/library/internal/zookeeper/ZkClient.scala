@@ -53,6 +53,10 @@ object ZkClientImpl {
   @volatile var zk: ZooKeeper = _
   @transient
   @volatile var connectPromise: Promise[Unit] = _
+
+  @transient
+  @volatile
+  var closing: Boolean = false
 }
 
 trait ZkClientComponent {
@@ -95,7 +99,7 @@ trait ZkClientComponent {
           logger.warn("Zookeeper connection was not connected. Closing and retrying")
           close()
         }
-
+        ZkClientImpl.closing = false
         if (ZkClientImpl.zk == null || ZkClientImpl.zk.getState != States.CONNECTED) {
           ZkClientImpl.connectPromise = Promise[Unit]()
           logger.info(s"Connecting to zookeeper on $connectionString")
@@ -167,15 +171,23 @@ trait ZkClientComponent {
       */
     override def delayedClose(d: Long): Unit = {
       logger.info(s"Delaying close of zookeeper connection with $d milliseconds")
-
+      ZkClientImpl.closing = true
       val t = new Timer()
-      t.schedule(new TimerTask {
-        override def run(): Unit = {
-          logger.info(s"Closing zookeeper connection")
-          close()
-          logger.info(s"Closed zookeeper connection")
-        }
-      }, 30000)
+      t.schedule(
+        new TimerTask {
+          override def run(): Unit = {
+            if (!ZkClientImpl.closing) {
+              logger.debug(s"Closing zookeeper connection")
+              close()
+              logger.debug(s"Closed zookeeper connection")
+            } else {
+              logger.debug(
+                s"Not closing zookeeper connection because closing flag was no longer set")
+            }
+          }
+        },
+        30000
+      )
     }
 
     /**
