@@ -54,7 +54,7 @@ class GenericSerialiser[T: ClassTag]()(implicit val ec: ExecutionConfig) {
       case e: IOException =>
         throw new RuntimeException("Unable to serialize record", e)
     }
-    var res = outputSerializer.getByteArray
+    var res = outputSerializer.getSharedBuffer
     if (res.length != outputSerializer.length) {
       val n = new Array[Byte](outputSerializer.length)
       System.arraycopy(res, 0, n, 0, outputSerializer.length)
