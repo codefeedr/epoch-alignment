@@ -632,4 +632,9 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
       .mkString("\r\n")
   }
 
+  override def close(): Unit = {
+    subjectNode.closeConnection()
+    super.close()
+  }
+
 }

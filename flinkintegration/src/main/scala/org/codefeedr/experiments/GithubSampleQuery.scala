@@ -113,7 +113,7 @@ object GithubSampleQuery extends ExperimentBase with LazyLogging {
      */
     hotPullRequestIds.addSink(o => logger.info(o.toString))
 
-    env.execute("userProjectGenerator")
+    execute("userProjectGenerator")
   }
 
 }

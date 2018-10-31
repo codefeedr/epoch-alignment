@@ -13,6 +13,6 @@ trait ZookeeperConfigurationComponent { this: ConfigurationProviderComponent =>
   */
 case class ZookeeperConfiguration(
     connectionString: String,
-    connectionTimeout: Int = 5,
+    connectionTimeout: Int = 30,
     sessionTimeout: Int = 30
 )

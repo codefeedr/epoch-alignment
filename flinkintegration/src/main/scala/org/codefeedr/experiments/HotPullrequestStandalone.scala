@@ -40,7 +40,7 @@ class HotPullrequestStandalone extends HotPullRequestQueryBase {
     merged.addSink(sink).name("Log hot pullrequests")
     //merged.addSink(o => Console.println(o))
     //logger.info("Submitting hot issue query job")
-    env.execute("HotIssues")
+    execute("HotIssues")
   }
 
 }

@@ -162,6 +162,7 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
     } else {
       logger.warn(s"Close was called before initializing state")
     }
+    subjectNode.closeConnection()
   }
 
   /**

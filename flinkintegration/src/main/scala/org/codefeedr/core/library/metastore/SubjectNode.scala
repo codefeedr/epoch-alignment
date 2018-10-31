@@ -104,6 +104,12 @@ trait SubjectNode extends ZkStateNode[SubjectType, Boolean] {
     * @return
     */
   def initialState(): Boolean
+
+  /**
+    * Hacky workaround to let sources and sinks schedule a disconnect to zookeeper upon shutdown, to make sure zookeeper connections are disposed
+    * TODO: Refactor to make each source responsible for its own coneciton
+    */
+  def closeConnection(): Unit
 }
 
 trait SubjectNodeComponent extends ZkStateNodeComponent {
@@ -278,6 +284,8 @@ trait SubjectNodeComponent extends ZkStateNodeComponent {
       * @return
       */
     override def initialState(): Boolean = true
+
+    override def closeConnection(): Unit = zkClient.delayedClose(30000)
   }
 
 }

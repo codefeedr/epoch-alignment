@@ -35,7 +35,7 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
   private lazy val subjectEpochs = subjectNode.getEpochs()
   private lazy val kafkaSourceEpochState = new KafkaSourceEpochState(subjectNode, sourceNode)
 
-  private lazy val timeout = Duration(5, SECONDS)
+  private lazy val timeout = Duration(30, SECONDS)
 
   lazy val cancel: Future[Unit] = subjectNode.awaitClose()
 

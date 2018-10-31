@@ -54,7 +54,7 @@ trait ConfigurationModule
   @transient lazy override val zookeeperConfiguration: ZookeeperConfiguration =
     ZookeeperConfiguration(
       connectionString = configurationProvider.get("zookeeper.connectionString"),
-      connectionTimeout = configurationProvider.getInt("zookeeper.connectionTimeout", Some(5)),
+      connectionTimeout = configurationProvider.getInt("zookeeper.connectionTimeout", Some(30)),
       sessionTimeout = configurationProvider.getInt("zookeeper.sessionTimeout", Some(30))
     )
 

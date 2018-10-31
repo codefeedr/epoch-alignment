@@ -1,5 +1,6 @@
 package org.codefeedr.experiments
 
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.restartstrategy.RestartStrategies
 import org.apache.flink.api.common.time.Time
 import org.apache.flink.api.java.utils.ParameterTool
@@ -12,7 +13,7 @@ import org.apache.flink.runtime.state.filesystem.FsStateBackend
 import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, SECONDS}
 
-trait ExperimentBase extends CodefeedrComponents {
+trait ExperimentBase extends CodefeedrComponents with LazyLogging {
 
   protected def getStateBackendPath: String = configurationProvider.get("statebackend.path")
 
@@ -36,6 +37,12 @@ trait ExperimentBase extends CodefeedrComponents {
       ))
     env.setParallelism(getParallelism)
     env
+  }
+
+  def execute(jobName: String) = {
+    getEnvironment.execute(jobName)
+    logger.info("Job finished, closing zookeeper")
+    zkClient.close()
   }
 
   def initialize(args: Array[String]) = {

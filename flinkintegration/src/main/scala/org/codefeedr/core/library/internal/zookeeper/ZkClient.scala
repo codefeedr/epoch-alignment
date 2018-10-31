@@ -20,6 +20,7 @@
 package org.codefeedr.core.library.internal.zookeeper
 
 import java.util
+import java.util.{Timer, TimerTask}
 
 import scala.collection.JavaConverters._
 import com.typesafe.config.{Config, ConfigFactory}
@@ -43,9 +44,9 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, Future, Promise}
 import scala.async.Async.{async, await}
 import rx.lang.scala._
-import rx.lang.scala.observables.{AsyncOnSubscribe, SyncOnSubscribe}
 
 import scala.reflect.ClassTag
+import scala.util.Try
 
 object ZkClientImpl {
   @transient
@@ -158,6 +159,24 @@ trait ZkClientComponent {
       * Closes the connection to the zkClient
       */
     override def close(): Unit = zk.close()
+
+    /**
+      *   Closes the zookeeper connection after some delay
+      * Used in a hacky workaround to make sure the zookeeper connection is closed when a Flink job is done.
+      * Should be solved by letting each operator maintain its own zookeeper connection, but that refactoring is too large for the time available
+      */
+    override def delayedClose(d: Long): Unit = {
+      logger.info(s"Delaying close of zookeeper connection with $d milliseconds")
+
+      val t = new Timer()
+      t.schedule(new TimerTask {
+        override def run(): Unit = {
+          logger.info(s"Closing zookeeper connection")
+          close()
+          logger.info(s"Closed zookeeper connection")
+        }
+      }, 30000)
+    }
 
     /**
       * Returns the zookeeper connection object, for more advanced apis
@@ -783,6 +802,12 @@ trait ZkClient {
     * Closes the connection to the zkClient
     */
   def close(): Unit
+
+  /**
+    * Closes the connection after a delay
+    * @param delay
+    */
+  def delayedClose(delay: Long): Unit
 
   /**
     * Returns the zookeeper connection object, for more advanced apis
