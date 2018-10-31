@@ -176,7 +176,7 @@ trait ZkClientComponent {
       t.schedule(
         new TimerTask {
           override def run(): Unit = {
-            if (!ZkClientImpl.closing) {
+            if (ZkClientImpl.closing) {
               logger.debug(s"Closing zookeeper connection")
               close()
               logger.debug(s"Closed zookeeper connection")
