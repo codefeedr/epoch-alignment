@@ -56,7 +56,7 @@ object ZkClientImpl {
 
   @transient
   @volatile
-  var closing: Boolean = false
+  var closingTask: Option[TimerTask] = None
 }
 
 trait ZkClientComponent {
@@ -99,7 +99,13 @@ trait ZkClientComponent {
           logger.warn("Zookeeper connection was not connected. Closing and retrying")
           close()
         }
-        ZkClientImpl.closing = false
+
+        ZkClientImpl.closingTask = ZkClientImpl.closingTask match {
+          case Some(tt) =>
+            logger.debug("Cancelling closing of zookeeper connection"); tt.cancel(); None
+          case None => None
+        }
+
         if (ZkClientImpl.zk == null || ZkClientImpl.zk.getState != States.CONNECTED) {
           ZkClientImpl.connectPromise = Promise[Unit]()
           logger.info(s"Connecting to zookeeper on $connectionString")
@@ -169,25 +175,22 @@ trait ZkClientComponent {
       * Used in a hacky workaround to make sure the zookeeper connection is closed when a Flink job is done.
       * Should be solved by letting each operator maintain its own zookeeper connection, but that refactoring is too large for the time available
       */
-    override def delayedClose(d: Long): Unit = {
+    override def delayedClose(d: Long): Unit = ZkClientImpl.synchronized {
       logger.info(s"Delaying close of zookeeper connection with $d milliseconds")
-      ZkClientImpl.closing = true
-      val t = new Timer()
-      t.schedule(
-        new TimerTask {
-          override def run(): Unit = {
-            if (ZkClientImpl.closing) {
+      ZkClientImpl.closingTask = ZkClientImpl.closingTask match {
+        case None =>
+          logger.debug("Scheduling new shutdown of zookeeper connection")
+          val task = new TimerTask {
+            override def run(): Unit = {
               logger.debug(s"Closing zookeeper connection")
               close()
               logger.debug(s"Closed zookeeper connection")
-            } else {
-              logger.debug(
-                s"Not closing zookeeper connection because closing flag was no longer set")
             }
           }
-        },
-        30000
-      )
+          new Timer().schedule(task, 60000)
+          Some(task)
+        case Some(v) => Some(v)
+      }
     }
 
     /**
