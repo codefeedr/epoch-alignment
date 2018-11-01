@@ -69,7 +69,7 @@ class KafkaControllerSpec extends LibraryServiceSpec with Matchers with BeforeAn
 
   it should "create a topic with the configured amount of partitions" in async {
       val testTopic = createTestTopic()
-      await(libraryServices.kafkaController.guaranteeTopic(testTopic))
+      await(libraryServices.kafkaController.guaranteeTopic(testTopic, Some(4)))
       assert(await(libraryServices.kafkaController.getTopics()).contains(testTopic))
       val r = assert(await(libraryServices.kafkaController.getPartitions(testTopic)) == 4)
       await(libraryServices.kafkaController.deleteTopic(testTopic))
