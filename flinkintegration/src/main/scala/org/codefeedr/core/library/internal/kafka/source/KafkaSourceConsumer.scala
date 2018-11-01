@@ -229,7 +229,8 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
         offsets.map(o => (new TopicPartition(topic, o._1), new OffsetAndMetadata(o._2))).asJava
       consumer.commitSync(commitData)
     } else {
-      logger.warn(s"Not committing offsets $offsets because the consumer has already closed in $getLabel")
+      logger.warn(
+        s"Not committing offsets $offsets because the consumer has already closed in $getLabel")
     }
   }
 

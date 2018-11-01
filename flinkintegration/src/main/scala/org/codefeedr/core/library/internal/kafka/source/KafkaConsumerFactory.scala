@@ -58,8 +58,6 @@ trait KafkaConsumerFactoryComponent {
                                      new KafkaDeserialiser[TKey],
                                      new KafkaDeserialiser[TData])
 
-
-
     }
   }
 }

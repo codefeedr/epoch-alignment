@@ -36,11 +36,12 @@ trait MeasuredCheckpointedFunction
     */
   protected def snapshotMeasurement(checkPointId: Long): CheckpointMeasurement = {
     val currentOffset = getCurrentOffset
-    val measurement = CheckpointMeasurement(checkPointId,
-                                            currentOffset,
-                                            currentOffset - lastOffset,
-                                            getCurrentLatency,if(getLastEventTime != 0) { System.currentTimeMillis() - getLastEventTime} else {0}
-                                           )
+    val measurement = CheckpointMeasurement(
+      checkPointId,
+      currentOffset,
+      currentOffset - lastOffset,
+      getCurrentLatency,
+      if (getLastEventTime != 0) { System.currentTimeMillis() - getLastEventTime } else { 0 })
     lastOffset = currentOffset
     measurement
   }
