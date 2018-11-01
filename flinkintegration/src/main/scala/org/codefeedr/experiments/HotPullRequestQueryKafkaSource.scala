@@ -26,7 +26,7 @@ class HotPullRequestQueryKafkaSource extends HotPullRequestQueryBase {
 
     hotPrs.addSink(new LoggingSinkFunction[HotPr]("HotPrSink"))
     logger.info("Submitting hot issue query job")
-    execute("HotIssues")
+    execute("HotPullrequestKafkaSource")
 
   }
 }

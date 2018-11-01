@@ -30,7 +30,7 @@ class HotPullrequestKafkaSource extends HotPullRequestQueryBase {
     val merged = mergeHotPullRequest(hotPrs, hotIssues)
 
     //val sink = new LoggingSinkFunction[HotPr]("HotPrSink")
-    val sink = new LoggingSinkFunction[HotPr]("IssueSink")
+    val sink = new LoggingSinkFunction[HotPr]("HotPullrequests")
     //issues.addSink(o => Console.println(o))
     //hotIssuePrs.addSink(sink)
     merged.addSink(sink)
