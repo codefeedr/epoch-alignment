@@ -51,6 +51,7 @@ import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{Await, Future}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
+import scala.concurrent._
 
 class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogging with BeforeAndAfterEach with MockitoSugar {
   val parallelism: Int = 2
@@ -177,7 +178,7 @@ class FullIntegrationSpec extends LibraryServiceSpec with Matchers with LazyLogg
 
     await(libraryServices.createCollectionPlugin(data,useTrailedSink).compose(env, "testplugin"))
     logger.debug(s"Starting env for ${t.name}")
-    env.execute()
+    blocking { env.execute() }
     logger.debug(s"Completed env for ${t.name}")
     t
   }

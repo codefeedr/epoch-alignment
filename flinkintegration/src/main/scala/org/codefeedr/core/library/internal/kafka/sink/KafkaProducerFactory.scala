@@ -23,7 +23,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.codefeedr.configuration.{ConfigurationProviderComponent, KafkaConfigurationComponent}
 import org.codefeedr.core.library.internal.kafka.KafkaSerialiser
-
+import scala.concurrent._
 import scala.reflect.ClassTag
 
 trait KafkaProducerFactoryComponent {
@@ -35,13 +35,15 @@ trait KafkaProducerFactoryComponent {
     */
   class KafkaProducerFactoryImpl extends LazyLogging with KafkaProducerFactory with Serializable {
     def create[TKey: ClassTag, TData: ClassTag](
-        transactionalId: String): KafkaProducer[TKey, TData] = {
+        transactionalId: String): KafkaProducer[TKey, TData] = blocking {
       val properties = kafkaConfiguration.getProducerProperties
       logger.debug(s"Creating producer with id $transactionalId")
       properties.setProperty("transactional.id", transactionalId)
+      properties.setProperty("enable.idempotence", "true")
       val producer = new KafkaProducer[TKey, TData](properties,
                                                     new KafkaSerialiser[TKey],
                                                     new KafkaSerialiser[TData])
+
 
       producer.initTransactions()
       producer.flush()
