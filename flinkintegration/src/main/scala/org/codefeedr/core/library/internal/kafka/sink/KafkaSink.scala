@@ -263,7 +263,7 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
     lastEventTime = element.getEventTime
     lastLatency = System.currentTimeMillis() - lastEventTime
     val (key, value) = transform(element)
-    val record = new ProducerRecord[TKey, TValue](topic, key, value)
+    val record = new ProducerRecord[TKey, TValue](topic, parallelIndex, key, value)
 
     //Wrap the callback into a proper scala promise
     val p = Promise[RecordMetadata]

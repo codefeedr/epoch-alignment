@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 MAINCLASS=org.codefeedr.experiments.HotPullrequestKafkaSource
-ARGUMENTS="--name something"
+ARGUMENTS="something"
 cd ../
 
-bash deploy_dutihr.sh $MAINCLASS $ARGUMENTS true
+
+
+bash deploy_dutihr.sh $MAINCLASS $1 $ARGUMENTS
 
 cd experiment1
