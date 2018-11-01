@@ -177,20 +177,22 @@ trait ZkClientComponent {
       */
     override def delayedClose(d: Long): Unit = ZkClientImpl.synchronized {
       logger.info(s"Delaying close of zookeeper connection with $d milliseconds")
-      ZkClientImpl.closingTask = ZkClientImpl.closingTask match {
+      ZkClientImpl.closingTask match {
         case None =>
-          logger.debug("Scheduling new shutdown of zookeeper connection")
-          val task = new TimerTask {
-            override def run(): Unit = {
-              logger.debug(s"Closing zookeeper connection")
-              close()
-              logger.debug(s"Closed zookeeper connection")
-            }
-          }
-          new Timer().schedule(task, 60000)
-          Some(task)
-        case Some(v) => Some(v)
+        case Some(v) =>
+          v.cancel()
       }
+
+      logger.debug("Scheduling new shutdown of zookeeper connection")
+      val task = new TimerTask {
+        override def run(): Unit = {
+          logger.debug(s"Closing zookeeper connection")
+          close()
+          logger.debug(s"Closed zookeeper connection")
+        }
+      }
+      new Timer().schedule(task, 10000)
+      ZkClientImpl.closingTask = Some(task)
     }
 
     /**
