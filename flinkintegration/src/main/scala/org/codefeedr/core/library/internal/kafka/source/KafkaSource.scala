@@ -153,7 +153,7 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
   override def getOperatorLabel: String = s"$getCategoryLabel[$parallelIndex]"
 
   def getCategoryLabel: String =
-    s"KafkaSource ${subjectNode.name}($sourceUuid--${sourceState.map(o => o.instanceId).getOrElse("Uninitialized")})"
+    s"KafkaSource ${subjectNode.name}($sourceUuid-${sourceState.map(o => o.instanceId).getOrElse("Uninitialized")})"
 
   private def getSourceState: KafkaSourceStateContainer = sourceState match {
     case None =>
@@ -472,8 +472,11 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
         lastEventTime = element.getEventTime
         ctx.collectWithTimestamp(element, lastEventTime)
         gatheredEvents += 1
-
-        lastLatency = System.currentTimeMillis() - lastEventTime
+        if (lastEventTime != 0) {
+          lastLatency = System.currentTimeMillis() - lastEventTime
+        } else {
+          logger.warn("No latency measured because last event time was not set")
+        }
       }
       //Need to update the state in the offset map
       consumer.updateOffsetState()

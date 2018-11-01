@@ -224,12 +224,12 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
   def commit(offsets: Map[Int, Long]): Unit = synchronized {
 
     if (open) {
-      logger.debug(s"Committing offsets $offsets")
+      logger.info(s"Committing offsets in $getLabel: $offsets")
       val commitData =
         offsets.map(o => (new TopicPartition(topic, o._1), new OffsetAndMetadata(o._2))).asJava
       consumer.commitSync(commitData)
     } else {
-      logger.warn(s"Not committing offsets $offsets because the consumer has already closed")
+      logger.warn(s"Not committing offsets $offsets because the consumer has already closed in $getLabel")
     }
   }
 

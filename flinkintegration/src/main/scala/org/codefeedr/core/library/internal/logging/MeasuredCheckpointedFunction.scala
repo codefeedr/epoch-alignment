@@ -39,8 +39,8 @@ trait MeasuredCheckpointedFunction
     val measurement = CheckpointMeasurement(checkPointId,
                                             currentOffset,
                                             currentOffset - lastOffset,
-                                            getCurrentLatency,
-                                            System.currentTimeMillis() - getLastEventTime)
+                                            getCurrentLatency,if(getLastEventTime != 0) { System.currentTimeMillis() - getLastEventTime} else {0}
+                                           )
     lastOffset = currentOffset
     measurement
   }

@@ -42,8 +42,8 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
   @transient lazy protected val windowLength: Time = Time.seconds(3)
   @transient lazy protected val issueJoinWindowLenght: Time = Time.seconds(60)
 
-  protected val issueCommentLimiter = Some(1L)
-  protected val prCommentlimiter = Some(1L)
+  protected val issueCommentLimiter = Some(100L)
+  protected val prCommentlimiter = Some(100L)
 
   implicit val HotIssueEventTime: EventTime[HotIssue] =
     new EventTime[HotIssue] {
@@ -245,7 +245,6 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
     awaitReady(async {
       await(subjectFactory.reCreate[HotIssue]())
       await(subjectFactory.getSink[HotIssue]("HotIssueSink", "HotIssueGenerator"))
-
     })
 
   protected def getHotIssueKafkaSource(
