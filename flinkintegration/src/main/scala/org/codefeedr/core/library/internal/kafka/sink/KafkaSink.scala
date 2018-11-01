@@ -124,7 +124,7 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
     (1 to producerPoolSize)
       .map(i => {
         val uuid = UUID.randomUUID().toString
-        val id = s"${sinkUuid}_${getSinkState.sinkId}($uuid)_$i" //($uuid)"
+        val id = s"${getOperatorLabel}_$i" //($uuid)"
         kafkaProducerFactory.create[TKey, TValue](id)
       })
       .toList
@@ -230,6 +230,11 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
                 5.seconds)
     Await.ready(producerNode.setState(true), 5.seconds)
     logger.debug(s"Producer $getLabel created for topic $topic")
+
+    logger.debug(s"Initializing kafka producers for $getLabel")
+    val size = producerPool.size
+    logger.debug(s"Initialized $size producers for $getLabel")
+
   }
   //Used for test
   override protected[sink] def currentTransaction(): TransactionState = super.currentTransaction()

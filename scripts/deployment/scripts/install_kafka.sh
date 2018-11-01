@@ -13,11 +13,10 @@ cd $REPO_FOLDER
 git checkout epochalignment
 cd $REPO_FOLDER/experiments/Shared/kafka-docker
 
+
+# Force remove kafka and zookeeper
+docker rm --force kafkadocker_kafka_1
+docker rm --force kafkadocker_zookeeper_1
+
 #Start docker services
-docker-compose -f docker-compose-experiment.yml up --force-recreate -d  --remove-orphans
-
-#Start ELK stack
-cd $REPO_FOLDER/experiments/Shared/Elk
-docker-compose up --force-recreate -d
-
-#TODO:Import XML file into kibana
+docker-compose -f docker-compose-experiment.yml up -d
