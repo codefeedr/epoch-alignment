@@ -137,12 +137,8 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
   @transient private lazy val parallelIndex = getRuntimeContext.getIndexOfThisSubtask
   @transient private var sourceState: Option[KafkaSourceStateContainer] = None
 
-  @transient private var lastLatency: Long = 0
-  @transient private var lastEventTime: Long = 0
   @transient private var gatheredEvents: Long = 0
 
-  override def getLatency: Long = lastLatency
-  override def getLastEventTime: Long = lastEventTime
   override def getCurrentOffset: Long = gatheredEvents
 
   /**
@@ -469,14 +465,17 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
     ctx.getCheckpointLock.synchronized {
       while (queue.nonEmpty) {
         val element = queue.dequeue()
-        lastEventTime = element.getEventTime
-        ctx.collectWithTimestamp(element, lastEventTime)
-        gatheredEvents += 1
-        if (lastEventTime != 0) {
-          lastLatency = System.currentTimeMillis() - lastEventTime
-        } else {
-          logger.warn("No latency measured because last event time was not set")
+        val eventTime = element.getEventTime
+        onEvent(eventTime)
+        eventTime match {
+          case Some(e) =>
+            ctx.collectWithTimestamp(element, e)
+          case None => ctx.collect(element)
+
         }
+        onEvent(element.getEventTime)
+        gatheredEvents += 1
+
       }
       //Need to update the state in the offset map
       consumer.updateOffsetState()
@@ -500,9 +499,13 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
             s"Perfoming synchronized poll loop in $getLabel.\r\n Offsets: ${consumer.getCurrentOffsets}.\r\n Desired: $alignmentOffsets")
           consumer.poll(
             element => {
-              lastEventTime = element.getEventTime
-              ctx.collectWithTimestamp(element, lastEventTime)
-              lastLatency = System.currentTimeMillis() - lastEventTime
+              val eventTime = element.getEventTime
+              onEvent(eventTime)
+              eventTime match {
+                case Some(e) =>
+                  ctx.collectWithTimestamp(element, e)
+                case None => ctx.collect(element)
+              }
             },
             alignmentOffsets
           )
@@ -639,5 +642,4 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
     subjectNode.closeConnection()
     super.close()
   }
-
 }

@@ -31,8 +31,10 @@ case class WaitForNextCheckpoint(checkpoint: Long) extends GenerationResponse
 abstract class BaseSampleGenerator[TSource](val seed: Long, val checkpoint: Long, val offset: Long) {
   private val random = new Random(seed)
   val staticEventTime: Option[Long]
+  val enableEventTime: Boolean
 
-  protected def getEventTime: Long = staticEventTime.getOrElse(System.currentTimeMillis())
+  protected def getEventTime: Option[Long] =
+    if (enableEventTime) { Some(staticEventTime.getOrElse(System.currentTimeMillis())) } else None
   protected def nextString(length: Int): String = random.alphanumeric.take(length).mkString
   protected def nextInt(maxValue: Int): Int = random.nextInt(maxValue)
 
@@ -71,7 +73,7 @@ abstract class BaseSampleGenerator[TSource](val seed: Long, val checkpoint: Long
     * @param checkpointSetSize the number of elements that are generated for each checkpoint
     */
   protected def nextCheckpointRelation(checkpointSetSize: Int): Int = {
-    val checkpoint = nextCheckpoint()
+    val checkpoint = nextCheckpoint() - 1
     val id = nextIntPareto(checkpointSetSize)
     checkpoint * checkpointSetSize + id
   }
@@ -105,10 +107,11 @@ abstract class BaseSampleGenerator[TSource](val seed: Long, val checkpoint: Long
     * Generates a new random value, with event time
     * @return
     */
-  def generateWithEventTime(): Either[GenerationResponse, (TSource, Long)] = generate() match {
-    case Right(v) => Right(v, getEventTime)
-    case Left(v) => Left(v)
-  }
+  def generateWithEventTime(): Either[GenerationResponse, (TSource, Option[Long])] =
+    generate() match {
+      case Right(v) => Right(v, getEventTime)
+      case Left(v) => Left(v)
+    }
 }
 
 /**
@@ -121,7 +124,7 @@ abstract class BaseEventTimeGenerator[TSource: EventTime](seed: Long,
                                                           checkpoint: Long,
                                                           offset: Long)
     extends BaseSampleGenerator[TSource](seed, checkpoint, offset) {
-  override def generateWithEventTime(): Either[GenerationResponse, (TSource, Long)] = {
+  override def generateWithEventTime(): Either[GenerationResponse, (TSource, Option[Long])] = {
     generate() match {
       case Right(element) => Right(element, element.getEventTime)
       case Left(v) => Left(v)

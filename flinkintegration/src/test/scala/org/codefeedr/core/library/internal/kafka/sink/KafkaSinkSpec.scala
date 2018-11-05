@@ -354,16 +354,17 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     when(subjectType.name) thenReturn "testsubject"
 
     when(runtimeContext.isCheckpointingEnabled) thenReturn true
+    when(runtimeContext.getCheckpointMode) thenReturn CheckpointingMode.EXACTLY_ONCE
     when(initCtx.getOperatorStateStore) thenReturn operatorStore
     when(initCtx.isRestored) thenReturn false
     when(operatorStore.getListState[(Int, Long)](ArgumentMatchers.any())) thenReturn listState
     when(listState.get()) thenReturn List[(Int, Long)]().asJava
 
-    when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("1"))(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p0
-    when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("2"))(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p1
-    when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("3"))(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p2
-    when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("4"))(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p3
-    when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("5"))(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p4
+    when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("1"),ArgumentMatchers.anyBoolean())(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p0
+    when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("2"),ArgumentMatchers.anyBoolean())(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p1
+    when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("3"),ArgumentMatchers.anyBoolean())(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p2
+    when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("4"),ArgumentMatchers.anyBoolean())(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p3
+    when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("5"),ArgumentMatchers.anyBoolean())(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p4
 
     when(epochStateManager.commit(ArgumentMatchers.any())) thenReturn Future.successful(())
     when(epochStateManager.preCommit(ArgumentMatchers.any())) thenReturn Future.successful(())

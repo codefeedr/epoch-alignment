@@ -74,8 +74,6 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     @transient private lazy val parallelIndex = getRuntimeContext.getIndexOfThisSubtask
 
     override def getCurrentOffset: Long = currentOffset
-    override def getLastEventTime: Long = lastEventTime
-    override def getLatency: Long = lastLatency
 
     //Number of elements that is generated outside of the checkpointlock
     lazy private val generationBatchSize: Int =
@@ -97,7 +95,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     /**
       * Generates a sequence of elements of TSource, with the length of the configured generationBatchSize
       */
-    private def generate(): Seq[Either[GenerationResponse, (TSource, Long)]] =
+    private def generate(): Seq[Either[GenerationResponse, (TSource, Option[Long])]] =
       generationSource
         .map(
           o =>
@@ -125,15 +123,25 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
           nextElements.foreach {
             case Right(v) =>
               logger.debug(v._1.toString)
-              lastEventTime = v._2
+
               currentOffset += 1
-              ctx.collectWithTimestamp(v._1, v._2)
+              v._2 match {
+                case Some(time) =>
+                  lastEventTime = time
+                  onEvent(Some(time))
+                  ctx.collectWithTimestamp(v._1, time)
+                case None =>
+                  ctx.collect(v._1)
+              }
             case Left(w) =>
               w match {
                 case WaitForNextCheckpoint(nextCp) => waitForCp = Some(nextCp)
               }
           }
-          lastLatency = System.currentTimeMillis() - lastEventTime
+          val newLatency = System.currentTimeMillis() - lastEventTime
+          if (newLatency > lastLatency) {
+            lastLatency = newLatency
+          }
           ctx.emitWatermark(new Watermark(lastEventTime))
         }
 

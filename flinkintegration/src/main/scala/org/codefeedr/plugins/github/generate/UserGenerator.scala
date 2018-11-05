@@ -13,6 +13,8 @@ class UserGenerator(seed: Long,
     extends BaseEventTimeGenerator[User](seed, checkpoint, offset) {
   private val types = Array("TypeA", "TypeB")
 
+  override val enableEventTime: Boolean = false
+
   /**
     * Implement to generate a random value
     *
@@ -36,6 +38,6 @@ class UserGenerator(seed: Long,
         state = Some(randomOf(Constants.states)),
         city = Some(nextString(6)),
         updated_at = nextDateTimeLong(),
-        eventTime = getEventTime
+        eventTime = None
       ))
 }

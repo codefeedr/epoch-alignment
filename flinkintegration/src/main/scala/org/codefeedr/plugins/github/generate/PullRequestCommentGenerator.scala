@@ -12,6 +12,7 @@ class PullRequestCommentGenerator(seed: Long,
                                   val staticEventTime: Option[Long] = None)
     extends BaseEventTimeGenerator[PullRequestComment](seed, checkpoint, offset) {
   private val types = Array("TypeA", "TypeB")
+  override val enableEventTime: Boolean = false
 
   /**
     * Implement to generate a random value
@@ -28,7 +29,7 @@ class PullRequestCommentGenerator(seed: Long,
         body = "", //nextString(50),
         commit_id = nextInt(1000000),
         created_at = nextDateTimeLong(),
-        eventTime = getEventTime
+        eventTime = None
       ))
   }
 }

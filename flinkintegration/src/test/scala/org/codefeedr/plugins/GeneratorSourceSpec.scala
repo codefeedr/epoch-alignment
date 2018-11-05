@@ -25,7 +25,7 @@ object SeedGenerator {
   */
 class SeedGenerator(baseSeed:Long,checkpoint:Long,offset:Long, val maxCount:Int = 4, val waitForCp:Long = 1) extends BaseSampleGenerator[Long](baseSeed,checkpoint,offset) {
 
-
+  override val enableEventTime: Boolean = true
 
   override val staticEventTime: Option[Long] = None
   /**

@@ -20,13 +20,14 @@ trait MeasuredCheckpointedFunction
     with CheckpointedFunction
     with LabeledOperator {
 
-  def getLatency: Long
   def getCurrentOffset: Long
-  def getLastEventTime: Long
+  private var maxLatency: Long = 0L
+  private var latestEvent: Long = 0L
+  private var shouldLog: Boolean = false
 
   private var lastOffset: Long = 0L
 
-  private def getCurrentLatency: Long = getLatency
+  private def getCurrentLatency: Long = maxLatency
 
   protected val enableLoging: Boolean = true
 
@@ -41,9 +42,24 @@ trait MeasuredCheckpointedFunction
       currentOffset,
       currentOffset - lastOffset,
       getCurrentLatency,
-      if (getLastEventTime != 0) { System.currentTimeMillis() - getLastEventTime } else { 0 })
+      if (latestEvent != 0) { System.currentTimeMillis() - latestEvent } else { 0 })
     lastOffset = currentOffset
     measurement
+  }
+
+  /**
+    * Method that should be invoked whenever an eventTime is passed
+    * @param optEventTime
+    */
+  def onEvent(optEventTime: Option[Long]): Unit = optEventTime match {
+    case Some(eventTime) =>
+      shouldLog = true
+      val latency = System.currentTimeMillis() - eventTime
+      if (latency > maxLatency) {
+        maxLatency = latency
+        latestEvent = eventTime
+      }
+    case None =>
   }
 
   /**
@@ -68,6 +84,8 @@ trait MeasuredCheckpointedFunction
   override def snapshotState(context: FunctionSnapshotContext): Unit = {
     val currentCheckpoint = context.getCheckpointId
     onSnapshot(currentCheckpoint)
+    maxLatency = 0
+    latestEvent = 0
+    shouldLog = false
   }
-
 }

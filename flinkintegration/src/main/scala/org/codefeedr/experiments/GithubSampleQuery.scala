@@ -15,21 +15,24 @@ import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.streaming.api.windowing.triggers.{Trigger, TriggerResult}
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow
 import org.apache.flink.util.Collector
+import org.codefeedr.experiments.util.EventTimeUtils
 import org.codefeedr.ghtorrent.PullRequest
 
 case class CommentCounter(prId: Int, count: Int)
-case class PrHotness(prId: Int, eventTime: Long, hotness: Int)
+case class PrHotness(prId: Int, eventTime: Option[Long], hotness: Int)
 
 class CommentCounterAggregate extends AggregateFunction[PullRequest, PrHotness, PrHotness] {
-  override def createAccumulator(): PrHotness = PrHotness(0, 0, 0)
+  override def createAccumulator(): PrHotness = PrHotness(0, None, 0)
 
   override def add(value: PullRequest, accumulator: PrHotness): PrHotness =
-    PrHotness(value.id, Math.max(value.eventTime, accumulator.eventTime), accumulator.hotness + 1)
+    PrHotness(value.id,
+              EventTimeUtils.merge(value.eventTime, accumulator.eventTime),
+              accumulator.hotness + 1)
 
   override def getResult(accumulator: PrHotness): PrHotness = accumulator
 
   override def merge(a: PrHotness, b: PrHotness): PrHotness =
-    PrHotness(a.prId, Math.max(a.eventTime, b.eventTime), a.hotness + b.hotness)
+    PrHotness(a.prId, EventTimeUtils.merge(a.eventTime, b.eventTime), a.hotness + b.hotness)
 }
 
 class MyProcessWindowFunction

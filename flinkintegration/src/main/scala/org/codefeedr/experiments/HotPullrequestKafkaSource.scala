@@ -36,7 +36,7 @@ class HotPullrequestKafkaSource extends HotPullRequestQueryBase {
     merged.addSink(sink)
     //merged.addSink(o => Console.println(o))
     //logger.info("Submitting hot issue query job")
-    execute("HotIssues")
+    execute("hot pullrequest kafka source")
   }
 
 }

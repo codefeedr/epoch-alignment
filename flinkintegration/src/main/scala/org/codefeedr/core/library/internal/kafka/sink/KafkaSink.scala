@@ -74,11 +74,9 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
 
   protected val sinkUuid: String
 
-  @transient private var lastLatency: Long = 0
-  @transient private var lastEventTime: Long = 0
-
   @transient private var checkpointedState: ListState[KafkaSinkState] = _
-  @transient private[kafka] var checkpointingMode: Option[CheckpointingMode] = _
+  @transient private[kafka] var checkpointingMode: Option[CheckpointingMode] = None
+
   @transient private var gatheredEvents: Long = 0
 
   /** The index of this parallel subtask */
@@ -95,8 +93,6 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
     "parallelIndex" -> parallelIndex.toString
   )
 
-  override def getLatency: Long = lastLatency
-  override def getLastEventTime: Long = lastEventTime
   override def getCurrentOffset: Long = gatheredEvents
 
   private def getSinkState: KafkaSinkState = sinkState match {
@@ -125,7 +121,7 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
       .map(i => {
         val uuid = UUID.randomUUID().toString
         val id = s"${getOperatorLabel}_$i" //($uuid)"
-        kafkaProducerFactory.create[TKey, TValue](id)
+        kafkaProducerFactory.create[TKey, TValue](id, isTransactionsEnabled())
       })
       .toList
   @transient private lazy val fmt = ISODateTimeFormat.dateTime
@@ -136,6 +132,13 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
     * @return
     */
   def transform(element: TSink): (TKey, TValue)
+
+  /**
+    *   Returns true if this sink should use transactions
+    * @return
+    */
+  def isTransactionsEnabled(): Boolean =
+    checkpointingMode.contains(CheckpointingMode.EXACTLY_ONCE)
 
   def getLabel = getOperatorLabel
   override def getOperatorLabel: String = s"$getCategoryLabel[$parallelIndex]"
@@ -214,7 +217,9 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
         "Started a custom sink without checkpointing enabled. The custom source is designed to work with checkpoints only.")
       checkpointingMode = None
     } else {
-      checkpointingMode = Some(CheckpointingMode.EXACTLY_ONCE)
+      checkpointingMode = Some(
+        getRuntimeContext.asInstanceOf[StreamingRuntimeContext].getCheckpointMode)
+
     }
 
     //Temporary check if opened
@@ -260,8 +265,8 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
       s"$getLabel sending event on transaction ${transaction.checkPointId} producer ${transaction.producerIndex}")
 
     gatheredEvents += 1
-    lastEventTime = element.getEventTime
-    lastLatency = System.currentTimeMillis() - lastEventTime
+    onEvent(element.getEventTime)
+
     val (key, value) = transform(element)
     val record = new ProducerRecord[TKey, TValue](topic, parallelIndex, key, value)
 
@@ -368,5 +373,4 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
       .get()
       .availableProducers(transaction.producerIndex) = true
   }
-
 }

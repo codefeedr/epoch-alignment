@@ -13,6 +13,8 @@ class IssueCommentGenerator(seed: Long,
     extends BaseEventTimeGenerator[IssueComment](seed, checkpoint, offset) {
   private val types = Array("TypeA", "TypeB")
 
+  override val enableEventTime: Boolean = true
+
   /**
     * Implement to generate a random value
     *

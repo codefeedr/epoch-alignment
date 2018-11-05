@@ -13,6 +13,7 @@ import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.streaming.api.windowing.triggers.CountTrigger
 import org.apache.flink.util.Collector
 import org.codefeedr.experiments.model.{HotIssue, HotPr, IssueCommentPr}
+import org.codefeedr.experiments.util.EventTimeUtils
 import org.codefeedr.ghtorrent.{Issue, IssueComment, PullRequest, PullRequestComment}
 import org.codefeedr.plugins.github.generate.{
   IssueCommentGenerator,
@@ -47,17 +48,17 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
 
   implicit val HotIssueEventTime: EventTime[HotIssue] =
     new EventTime[HotIssue] {
-      override def getEventTime(a: HotIssue): Long = a.latestEvent
+      override def getEventTime(a: HotIssue): Option[Long] = a.latestEvent
     }
 
   implicit val HotPrEventTime: EventTime[HotPr] =
     new EventTime[HotPr] {
-      override def getEventTime(a: HotPr): Long = a.latestEvent
+      override def getEventTime(a: HotPr): Option[Long] = a.latestEvent
     }
 
   implicit val IssueCommentPrEventTime: EventTime[IssueCommentPr] =
     new EventTime[IssueCommentPr] {
-      override def getEventTime(a: IssueCommentPr): Long = a.eventTime
+      override def getEventTime(a: IssueCommentPr): Option[Long] = a.eventTime
     }
 
   protected def getIssues(parallelism: Int = 1): DataStream[Issue] =
@@ -162,7 +163,8 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
       .equalTo(o => o.issue_id)
       .window(TumblingEventTimeWindows.of(issueJoinWindowLenght))
       .trigger(CountTrigger.of(1))
-      .apply((i, c) => IssueCommentPr(i.id, i.pull_request_id, Math.max(i.eventTime, c.eventTime)))
+      .apply((i, c) =>
+        IssueCommentPr(i.id, i.pull_request_id, EventTimeUtils.merge(i.eventTime, c.eventTime)))
       .name("Merge Hot Issues with PullRequests")
       .setParallelism(parallelism)
   }

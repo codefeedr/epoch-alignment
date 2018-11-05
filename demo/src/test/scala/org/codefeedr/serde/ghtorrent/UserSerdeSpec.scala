@@ -31,7 +31,7 @@ class GhtorrentSpec extends FlatSpec {
       state = None,
       city = Some("city"),
       updated_at = DateTime.now(DateTimeZone.UTC).getMillis,
-      eventTime = DateTime.now(DateTimeZone.UTC).getMillis)
+      eventTime = Some(DateTime.now(DateTimeZone.UTC).getMillis))
 
     val serialized = user.serialize
     val deserialized = serialized.deserialize[User]

@@ -38,16 +38,23 @@ trait KafkaProducerFactoryComponent {
     */
   class KafkaProducerFactoryImpl extends LazyLogging with KafkaProducerFactory with Serializable {
     def create[TKey: ClassTag, TData: ClassTag](
-        transactionalId: String): KafkaProducer[TKey, TData] = {
+        transactionalId: String,
+        enableTransactions: Boolean): KafkaProducer[TKey, TData] = {
       val properties = kafkaConfiguration.getProducerProperties
-      logger.debug(s"Creating producer with id $transactionalId")
-      properties.setProperty("transactional.id", transactionalId)
+
+      if (enableTransactions) {
+        logger.info(s"Creating producer with id $transactionalId")
+        properties.setProperty("transactional.id", transactionalId)
+      } else {
+        logger.info(s"Creating producer without transactions: $transactionalId")
+      }
       //properties.setProperty("enable.idempotence", "true")
       val producer = new KafkaProducer[TKey, TData](properties,
                                                     new KafkaSerialiser[TKey],
                                                     new KafkaSerialiser[TData])
-
-      producer.initTransactions()
+      if (enableTransactions) {
+        producer.initTransactions()
+      }
       producer.flush()
       producer
     }
@@ -65,5 +72,7 @@ trait KafkaProducerFactory extends Serializable {
     * @tparam TKey  Type of the key identifying the data object
     * @return A kafka producer capable of pushing the tuple to kafka
     */
-  def create[TKey: ClassTag, TData: ClassTag](transactionalId: String): KafkaProducer[TKey, TData]
+  def create[TKey: ClassTag, TData: ClassTag](
+      transactionalId: String,
+      enableTransactions: Boolean): KafkaProducer[TKey, TData]
 }

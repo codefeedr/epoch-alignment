@@ -12,6 +12,8 @@ class CommitGenerator(seed: Long,
     extends BaseEventTimeGenerator[Commit](seed, checkpoint, offset) {
   private val types = Array("TypeA", "TypeB")
 
+  override val enableEventTime: Boolean = false
+
   /**
     * Implement to generate a random value
     *
@@ -26,6 +28,6 @@ class CommitGenerator(seed: Long,
         committer_id = nextInt(1000000),
         project_id = nextInt(10000),
         created_at = nextDateTimeLong(),
-        eventTime = getEventTime
+        eventTime = None
       ))
 }

@@ -12,6 +12,8 @@ class ProjectGenerator(seed: Long,
     extends BaseEventTimeGenerator[Project](seed, checkpoint, offset) {
   private val types = Array("TypeA", "TypeB")
 
+  override val enableEventTime: Boolean = false
+
   /**
     * Implement to generate a random value
     *
@@ -29,6 +31,6 @@ class ProjectGenerator(seed: Long,
         forked_from = nextInt(10000),
         deleted = nextBoolean(),
         updated_at = nextDateTimeLong(),
-        eventTime = getEventTime
+        eventTime = None
       ))
 }

@@ -65,7 +65,7 @@ case class User(id: Int,
                 state: Option[String],
                 city: Option[String],
                 updated_at: Long,
-                eventTime: Long)
+                eventTime: Option[Long])
 
 /**
   * Github commit
@@ -82,7 +82,7 @@ case class Commit(id: Int,
                   committer_id: Int,
                   project_id: Int,
                   created_at: Long,
-                  eventTime: Long)
+                  eventTime: Option[Long])
 
 /**
   * Project on github
@@ -105,7 +105,7 @@ case class Project(id: Int,
                    forked_from: Int,
                    deleted: Boolean,
                    updated_at: Long,
-                   eventTime: Long)
+                   eventTime: Option[Long])
 
 
 
@@ -117,7 +117,7 @@ case class PullRequest(id: Int,
                        base_commit_id: Int,
                        pullreq_id: Int,
                        intra_brach: Boolean,
-                       eventTime: Long)
+                       eventTime: Option[Long])
 
 case class PullRequestComment(
                              pull_request_id:Int,
@@ -127,7 +127,7 @@ case class PullRequestComment(
                              body: String,
                              commit_id: Int,
                             created_at:Long,
-                             eventTime:Long)
+                             eventTime:Option[Long])
 
 case class Issue(id: Int,
                  repo_id: Int,
@@ -137,7 +137,7 @@ case class Issue(id: Int,
                  pull_request:Boolean,
                  pull_request_id: Int,
                  created_at:Long,
-                eventTime:Long
+                eventTime:Option[Long]
                 )
 
 case class IssueComment(
@@ -145,6 +145,6 @@ case class IssueComment(
                        user_id:Int,
                        comment_id:Int,
                        created_at:Long,
-                       eventTime:Long
+                       eventTime:Option[Long]
                        )
 
