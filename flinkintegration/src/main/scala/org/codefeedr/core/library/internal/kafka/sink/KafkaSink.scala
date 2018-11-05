@@ -174,6 +174,17 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
     */
   override def initializeState(context: FunctionInitializationContext): Unit = {
     sinkState = None
+
+    if (!getRuntimeContext.asInstanceOf[StreamingRuntimeContext].isCheckpointingEnabled) {
+      logger.warn(
+        "Started a custom sink without checkpointing enabled. The custom source is designed to work with checkpoints only.")
+      checkpointingMode = None
+    } else {
+      logger.info(s"Started custom sink with checkpointing enabled $getLabel")
+      checkpointingMode = Some(
+        getRuntimeContext.asInstanceOf[StreamingRuntimeContext].getCheckpointMode)
+    }
+
     val descriptor = new ListStateDescriptor[KafkaSinkState](
       "Custom aligning kafka sink state",
       TypeInformation.of(new TypeHint[KafkaSinkState]() {})
@@ -210,16 +221,6 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
   override def open(parameters: Configuration): Unit = {
     if (opened) {
       throw new Exception(s"Open on sink called twice: $getLabel")
-    }
-
-    if (!getRuntimeContext.asInstanceOf[StreamingRuntimeContext].isCheckpointingEnabled) {
-      logger.warn(
-        "Started a custom sink without checkpointing enabled. The custom source is designed to work with checkpoints only.")
-      checkpointingMode = None
-    } else {
-      checkpointingMode = Some(
-        getRuntimeContext.asInstanceOf[StreamingRuntimeContext].getCheckpointMode)
-
     }
 
     //Temporary check if opened
