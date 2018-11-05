@@ -47,7 +47,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
   var producerFactory: KafkaProducerFactory = _
   var configuration:Configuration = _
 
-  var p0,p1,p2,p3,p4: KafkaProducer[RecordSourceTrail, Row] = _
+  var producers:Map[Int,KafkaProducer[RecordSourceTrail,Row]] = _
 
   private var runtimeContext:StreamingRuntimeContext = _
   var initCtx:FunctionInitializationContext = _
@@ -61,7 +61,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
 
   "KafkaSink.open" should "create sink and producer node and put the producer in the true state" in async {
     //Arrange
-    val sink = getTestSink()
+    val sink = getExactlyOnceInitializedTestSink()
 
     //Act
     sink.open(configuration)
@@ -77,7 +77,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
 
   "KafkaSink.BeginTransaction" should "Create an empty transaction with the first free producer of the pool" in async {
     //Arrange
-    val sink = getTestSink()
+    val sink = getExactlyOnceInitializedTestSink()
 
     //Act
     val transaction = sink.beginTransaction()
@@ -88,7 +88,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
 
   it should "Create a new empty transaction if BeginTransaction is called again" in async {
     //Arrange
-    val sink = getTestSink()
+    val sink = getExactlyOnceInitializedTestSink()
 
     //Act
 
@@ -98,11 +98,50 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     //Assert
     assert(transaction2.offsetMap.isEmpty)
     assert(transaction1 != transaction2)
+    assert(transaction1.producerIndex != transaction2.producerIndex)
+  }
+
+  it should "Reuse the existing producer when in at least once mode" in async {
+    //Arrange
+    val sink = getAtleastOnceInitializedTestSink()
+
+    //Act
+    val transaction1 = sink.beginTransaction()
+    val transaction2 = sink.beginTransaction()
+
+    //Assert
+    assert(transaction2.offsetMap.isEmpty)
+    assert(transaction1 != transaction2)
+    assert(transaction1.producerIndex == transaction2.producerIndex && transaction2.producerIndex == 0)
+  }
+
+  it should "call beginTransaction on the first producer in exactly once mode" in async {
+      //Arrange
+      val sink = getExactlyOnceInitializedTestSink()
+
+    //Act
+    val transaction1 = sink.beginTransaction()
+
+    //Assert
+    verify(producers(transaction1.producerIndex), times(1)).beginTransaction()
+    assert(true)
+  }
+
+  it should "not call beginTransaction in at least once mode" in async {
+    //Arrange
+    val sink = getAtleastOnceInitializedTestSink()
+
+    //Act
+    val transaction1 = sink.beginTransaction()
+
+    //Assert
+    verify(producers(transaction1.producerIndex), times(0)).beginTransaction()
+    assert(true)
   }
 
   "KafkaSink.snapshotState" should "Set the checkpointId on the currentTransaction" in async {
     //Arrange
-    val sink = getTestSink()
+    val sink = getExactlyOnceInitializedTestSink()
     val context = mock[FunctionSnapshotContext]
     when(context.getCheckpointId) thenReturn 10
 
@@ -121,7 +160,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
 
   "KafkaSink.Invoke" should "Emit the event to the currently assigned producer" in async {
     //Arrange
-    val sink = getTestSink()
+    val sink = getExactlyOnceInitializedTestSink()
     val o = new SampleObject()
     val transaction = sink.currentTransaction()
     val producer = sink.producerPool(transaction.producerIndex)
@@ -136,7 +175,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
   it should "Switch to the next producer on the next epoch" in async {
     //Arrange
     val snapshotContext = mock[FunctionSnapshotContext]
-    val sink = getTestSink()
+    val sink = getExactlyOnceInitializedTestSink()
     val o = new SampleObject()
     val transaction1 = sink.currentTransaction()
     val transaction2 = sink.beginTransaction()
@@ -162,7 +201,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
   it should "Update the transaction state with new offsets" in async {
     //Arrange
     val snapshotContext = mock[FunctionSnapshotContext]
-    val sink = getTestSink()
+    val sink = getExactlyOnceInitializedTestSink()
     val o = new SampleObject()
     val transaction1 = sink.currentTransaction()
     val producer1 = sink.producerPool(transaction1.producerIndex)
@@ -191,7 +230,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
 
   "KafkaSink.PreCommit()" should "call preCommit on the epochStateManager" in async {
     //Arrange
-    val sink = getTestSink()
+    val sink = getExactlyOnceInitializedTestSink()
     val o = new SampleObject()
     val transaction1 = sink.currentTransaction()
     val producer1 = sink.producerPool(transaction1.producerIndex)
@@ -219,7 +258,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
 
   it should "Flush the transaction to kafka" in async {
     //Arrange
-    val sink = getTestSink()
+    val sink = getExactlyOnceInitializedTestSink()
     val o = new SampleObject()
     val transaction1 = sink.currentTransaction()
     val producer1 = sink.producerPool(transaction1.producerIndex)
@@ -246,7 +285,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
 
   "KafkaSink.Commit()" should "Flag the created transaction in zookeeper as committed" in async {
     //Arrange
-    val sink = getTestSink()
+    val sink = getExactlyOnceInitializedTestSink()
     val o = new SampleObject()
     val transaction1 = sink.currentTransaction()
     val producer1 = sink.producerPool(transaction1.producerIndex)
@@ -273,7 +312,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
 
   it should "Commit the transaction to kafka" in async {
     //Arrange
-    val sink = getTestSink()
+    val sink = getExactlyOnceInitializedTestSink()
     val o = new SampleObject()
     val transaction1 = sink.currentTransaction()
     val producer1 = sink.producerPool(transaction1.producerIndex)
@@ -298,13 +337,57 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     assert(true)
   }
 
+
+  "KafkaSink.InitializeState" should "Only create a single producer when checkpointingmode is at least once" in {
+    //Arrange
+    val sink = getAtleastOnceTestSink()
+
+    //Act
+    sink.initializeState(initCtx)
+
+    //Assert
+    verify(producerFactory, times(1)).create(ArgumentMatchers.any(),ArgumentMatchers.any())(ArgumentMatchers.any(),ArgumentMatchers.any())
+    assert(true)
+  }
+
+  it should "Create the configured amount of producers when checkpointingmode is exactly once" in {
+    //Arrange
+    val sink = getExactlyOnceTestSink()
+
+    //Act
+    sink.initializeState(initCtx)
+
+    //Assert
+    verify(producerFactory, times(5)).create(ArgumentMatchers.any(),ArgumentMatchers.any())(ArgumentMatchers.any(),ArgumentMatchers.any())
+    assert(true)
+  }
+
+  private def  getAtleastOnceTestSink(): TestKafkaSink = {
+    val sink = new TestKafkaSink(subjectNode,jobNode,kafkaConfiguration,producerFactory,epochStateManager)
+    when(runtimeContext.getCheckpointMode) thenReturn CheckpointingMode.AT_LEAST_ONCE
+    sink.setRuntimeContext(runtimeContext)
+    sink
+  }
+
+  private def getAtleastOnceInitializedTestSink(): TestKafkaSink = {
+    val sink = getAtleastOnceTestSink()
+    sink.initializeState(initCtx)
+    sink
+  }
+
+
+  private def getExactlyOnceTestSink(): TestKafkaSink = {
+    val sink = new TestKafkaSink(subjectNode,jobNode,kafkaConfiguration,producerFactory,epochStateManager)
+    sink.setRuntimeContext(runtimeContext)
+    sink
+  }
+
   /**
     * Constructs a sink and places it and its base class into a representation of an initial state
     * @return
     */
-  private def getTestSink(): TestKafkaSink = {
-    val sink = new TestKafkaSink(subjectNode,jobNode,kafkaConfiguration,producerFactory,epochStateManager)
-    sink.setRuntimeContext(runtimeContext)
+  private def getExactlyOnceInitializedTestSink(): TestKafkaSink = {
+    val sink = getExactlyOnceTestSink()
     sink.initializeState(initCtx)
     sink
   }
@@ -334,12 +417,7 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
 
     epochStateManager = mock[EpochStateManager]
 
-    p0 = mock[KafkaProducer[RecordSourceTrail, Row]]
-    p1 = mock[KafkaProducer[RecordSourceTrail, Row]]
-    p2 = mock[KafkaProducer[RecordSourceTrail, Row]]
-    p3 = mock[KafkaProducer[RecordSourceTrail, Row]]
-    p4 = mock[KafkaProducer[RecordSourceTrail, Row]]
-
+    producers = (0 to 4).map(index => index -> mock[KafkaProducer[RecordSourceTrail, Row]]).toMap
 
     when(subjectNode.exists()) thenReturn Future.successful(true)
     when(subjectNode.getDataSync()) thenReturn Some(subjectType)
@@ -360,11 +438,10 @@ class KafkaSinkSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAndAfter
     when(operatorStore.getListState[(Int, Long)](ArgumentMatchers.any())) thenReturn listState
     when(listState.get()) thenReturn List[(Int, Long)]().asJava
 
-    when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("1"),ArgumentMatchers.anyBoolean())(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p0
-    when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("2"),ArgumentMatchers.anyBoolean())(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p1
-    when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("3"),ArgumentMatchers.anyBoolean())(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p2
-    when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("4"),ArgumentMatchers.anyBoolean())(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p3
-    when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith("5"),ArgumentMatchers.anyBoolean())(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn p4
+
+    (0 to 4).foreach(index => {
+      when(producerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.endsWith(s"$index"),ArgumentMatchers.anyBoolean())(ArgumentMatchers.any(),ArgumentMatchers.any())) thenReturn producers(index)
+    })
 
     when(epochStateManager.commit(ArgumentMatchers.any())) thenReturn Future.successful(())
     when(epochStateManager.preCommit(ArgumentMatchers.any())) thenReturn Future.successful(())

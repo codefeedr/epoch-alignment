@@ -222,7 +222,6 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     * @param offsets the offsets to commit
     */
   def commit(offsets: Map[Int, Long]): Unit = synchronized {
-
     if (open) {
       logger.info(s"Committing offsets in $getLabel: $offsets")
       val commitData =

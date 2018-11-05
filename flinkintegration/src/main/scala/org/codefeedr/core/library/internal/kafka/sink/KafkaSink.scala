@@ -112,12 +112,15 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
 
   @transient protected lazy val topic: String = kafkaConfiguration.getTopic(subjectType)
   //Size (amount) of kafkaProducers
+  //If transactions are disabled, only use a single producer
   @transient private lazy val producerPoolSize: Int =
-    ConfigFactory.load.getInt("codefeedr.kafka.custom.producer.count")
+    if (isTransactionsEnabled()) {
+      ConfigFactory.load.getInt("codefeedr.kafka.custom.producer.count")
+    } else { 1 }
 
   //Current set of available kafka producers
   @transient protected[sink] lazy val producerPool: List[KafkaProducer[TKey, TValue]] =
-    (1 to producerPoolSize)
+    (0 until producerPoolSize)
       .map(i => {
         val uuid = UUID.randomUUID().toString
         val id = s"${getOperatorLabel}_$i" //($uuid)"
@@ -352,11 +355,17 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
 
   override def beginTransaction(): TransactionState = {
     logger.debug(s"beginTransaction called on $getLabel. Opened: $opened")
-    val producerIndex = getFirstFreeProducerIndex()
-    getUserContext.get().availableProducers(producerIndex) = false
-    producerPool(producerIndex).beginTransaction()
-    logger.debug(s"$getLabel started new transaction on producer $producerIndex")
-
+    val producerIndex = if (isTransactionsEnabled()) {
+      val p = getFirstFreeProducerIndex()
+      getUserContext.get().availableProducers(p) = false
+      producerPool(p).beginTransaction()
+      logger.debug(s"$getLabel started new transaction on producer $p")
+      p
+    } else {
+      logger.debug("Continuing outside transaction on kafkaSink")
+      producerPool.head
+      0
+    }
     val nt = new TransactionState(producerIndex)
     val ct = currentTransaction()
     //Update new transaction with the offsets of the previous transaction
