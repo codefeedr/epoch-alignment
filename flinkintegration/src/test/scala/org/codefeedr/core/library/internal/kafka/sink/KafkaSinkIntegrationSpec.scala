@@ -25,11 +25,13 @@ import java.io.{ByteArrayOutputStream, ObjectOutputStream}
 
 import org.apache.flink.api.common.state.{ListState, OperatorStateStore}
 import org.apache.flink.runtime.state.FunctionInitializationContext
+import org.apache.flink.streaming.api.CheckpointingMode
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
 import org.codefeedr.core.LibraryServiceSpec
 import org.codefeedr.core.library.internal.SubjectTypeFactory
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.codefeedr.util.NoEventTime._
+
 import collection.JavaConverters._
 import scala.async.Async.{async, await}
 import scala.concurrent.Await
@@ -71,7 +73,8 @@ class KafkaSinkIntegrationSpec extends LibraryServiceSpec with BeforeAndAfterEac
     when(context.getOperatorStateStore()) thenReturn(operatorStore)
     when(operatorStore.getListState[KafkaSinkState](ArgumentMatchers.any())) thenReturn(listState)
     when(listState.get()) thenReturn Iterable.empty[KafkaSinkState].asJava
-
+    when(runtimeContext.isCheckpointingEnabled) thenReturn true
+    when(runtimeContext.getCheckpointMode) thenReturn CheckpointingMode.EXACTLY_ONCE
 
     sink.setRuntimeContext(runtimeContext)
 
