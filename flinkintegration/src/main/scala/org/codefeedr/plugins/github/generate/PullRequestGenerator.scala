@@ -12,7 +12,7 @@ class PullRequestGenerator(seed: Long,
                            val staticEventTime: Option[Long] = None)
     extends BaseEventTimeGenerator[PullRequest](seed, checkpoint, offset) {
   private val types = Array("TypeA", "TypeB")
-  override val enableEventTime: Boolean = false
+  override val enableEventTime: Boolean = true
 
   /**
     * Implement to generate a random value
@@ -36,7 +36,7 @@ class PullRequestGenerator(seed: Long,
       base_commit_id = nextInt(100),
       pullreq_id = nextId(),
       intra_brach = nextBoolean(),
-      eventTime = None
+      eventTime = getEventTime
     )
   }
 

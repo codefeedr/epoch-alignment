@@ -14,7 +14,7 @@ class IssueGenerator(seed: Long,
     extends BaseEventTimeGenerator[Issue](seed, checkpoint, offset) {
   private val types = Array("TypeA", "TypeB")
 
-  override val enableEventTime: Boolean = false
+  override val enableEventTime: Boolean = true
 
   /**
     * Implement to generate a random value

@@ -12,7 +12,7 @@ object EventTimeUtils {
     left match {
       case Some(d) =>
         right match {
-          case Some(r) => Some(Math.min(d, r))
+          case Some(r) => Some(Math.max(d, r))
           case None => Some(d)
         }
       case None => right

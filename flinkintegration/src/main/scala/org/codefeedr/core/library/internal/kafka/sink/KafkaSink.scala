@@ -306,16 +306,19 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
     */
   override def commit(transaction: TransactionState): Unit = {
     val sw = Stopwatch.start()
-    logger.debug(
-      s"$getLabel committing transaction ${transaction.checkPointId} on producer ${transaction.producerIndex}.\r\n${transaction
-        .displayOffsets()}\r\n$getLabel")
-    producerPool(transaction.producerIndex).commitTransaction()
-    val epochState = EpochState(transaction, subjectNode.getEpochs())
-    Await.ready(epochStateManager.commit(epochState), 5.seconds)
-    getUserContext.get().availableProducers(transaction.producerIndex) = true
-    logger.debug(
-      s"$getLabel done committing transaction ${transaction.checkPointId}.\r\n${transaction.displayOffsets()}")
+    if (isTransactionsEnabled()) {
+      logger.debug(
+        s"$getLabel committing transaction ${transaction.checkPointId} on producer ${transaction.producerIndex}.\r\n${transaction
+          .displayOffsets()}\r\n$getLabel")
 
+      producerPool(transaction.producerIndex).commitTransaction()
+
+      val epochState = EpochState(transaction, subjectNode.getEpochs())
+      Await.ready(epochStateManager.commit(epochState), 5.seconds)
+      getUserContext.get().availableProducers(transaction.producerIndex) = true
+      logger.debug(
+        s"$getLabel done committing transaction ${transaction.checkPointId}.\r\n${transaction.displayOffsets()}")
+    }
     MDC.put("event", "commit")
     MDC.put("EntityCount", transaction.completedEvents.toString)
     MDC.put("eventTime", DateTime.now.toString(fmt))
@@ -338,16 +341,17 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
     logger.debug(
       s"$getLabel Precomitting transaction ${transaction.checkPointId} on producer ${transaction.producerIndex}.\r\n${transaction
         .displayOffsets()}\r\n$getLabel")
-    //TODO: Validate if this should/can be replaced by just a flush
-    //Needs a decent high time because the first pushes to kafka can take a few seconds
-    Await.result(transaction.awaitCommit(), 60.seconds)
-    //producerPool(transaction.producerIndex).flush()
-    logger.debug(
-      s"flushed and is awaiting events to commit in ${sw.elapsed().toMillis}\r\n$getLabel")
-    //Perform precommit on the epochState
-    val epochState = EpochState(transaction, subjectNode.getEpochs())
-    Await.result(epochStateManager.preCommit(epochState), 5.seconds)
-
+    if (isTransactionsEnabled()) {
+      //TODO: Validate if this should/can be replaced by just a flush
+      //Needs a decent high time because the first pushes to kafka can take a few seconds
+      Await.result(transaction.awaitCommit(), 60.seconds)
+      //producerPool(transaction.producerIndex).flush()
+      logger.debug(
+        s"flushed and is awaiting events to commit in ${sw.elapsed().toMillis}\r\n$getLabel")
+      //Perform precommit on the epochState
+      val epochState = EpochState(transaction, subjectNode.getEpochs())
+      Await.result(epochStateManager.preCommit(epochState), 5.seconds)
+    }
     logger.debug(
       s"Precommit completed in ${sw.elapsed().toMillis} transaction ${transaction.checkPointId}.\r\n${transaction
         .displayOffsets()}\r\n$getLabel")

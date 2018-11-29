@@ -35,17 +35,19 @@ trait MeasuredCheckpointedFunction
     * Creates a snapshot of the current state with the passed checkpointId
     * Not a pure function, after calling ,the last offset is set to the current offset
     */
-  protected def snapshotMeasurement(checkPointId: Long): CheckpointMeasurement = {
+  def snapshotMeasurement(checkPointId: Long): CheckpointMeasurement = {
     val currentOffset = getCurrentOffset
     val measurement = CheckpointMeasurement(
       checkPointId,
       currentOffset,
       currentOffset - lastOffset,
       getCurrentLatency,
-      if (latestEvent != 0) { System.currentTimeMillis() - latestEvent } else { 0 })
+      if (latestEvent != 0) { currentMillis() - latestEvent } else { 0 })
     lastOffset = currentOffset
     measurement
   }
+
+  protected def currentMillis(): Long = System.currentTimeMillis()
 
   /**
     * Method that should be invoked whenever an eventTime is passed
@@ -54,7 +56,7 @@ trait MeasuredCheckpointedFunction
   def onEvent(optEventTime: Option[Long]): Unit = optEventTime match {
     case Some(eventTime) =>
       shouldLog = true
-      val latency = System.currentTimeMillis() - eventTime
+      val latency = currentMillis() - eventTime
       if (latency > maxLatency) {
         maxLatency = latency
         latestEvent = eventTime

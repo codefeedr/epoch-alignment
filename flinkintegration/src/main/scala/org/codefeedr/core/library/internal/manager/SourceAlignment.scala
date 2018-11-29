@@ -59,7 +59,6 @@ class SourceAlignment(sourceNode: QuerySourceNode) extends LazyLogging {
             throw new Exception(
               s"Cannot start running synchronized when source is in state $state. Source has to be in ready state")
         }
-
     })
   }
 
@@ -77,7 +76,7 @@ class SourceAlignment(sourceNode: QuerySourceNode) extends LazyLogging {
   /**
     * Creates a future that returns true when all sources are synchronized,
     * or false when the passed epoch has completed.
-    * This method sould be called with the synchronization epoch in most cases
+    * This method should be called with the synchronization epoch in most cases
     * @return The constructed future
     */
   def whenSynchronized(epoch: Long): Future[Boolean] = ???

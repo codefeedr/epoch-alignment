@@ -13,7 +13,7 @@ class UserGenerator(seed: Long,
     extends BaseEventTimeGenerator[User](seed, checkpoint, offset) {
   private val types = Array("TypeA", "TypeB")
 
-  override val enableEventTime: Boolean = false
+  override val enableEventTime: Boolean = true
 
   /**
     * Implement to generate a random value
