@@ -86,7 +86,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
     when(runtimeContext.isCheckpointingEnabled) thenReturn true
 
     when(ctx.getCheckpointLock).thenReturn (cpLock,cpLock)
-    when(consumerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.any[String]())(ArgumentMatchers.any(),ArgumentMatchers.any())).thenReturn (mock[KafkaConsumer[RecordSourceTrail,Row]])
+    when(consumerFactory.create[RecordSourceTrail, Row](ArgumentMatchers.any[String](), ArgumentMatchers.any[Boolean]())(ArgumentMatchers.any(),ArgumentMatchers.any())).thenReturn (mock[KafkaConsumer[RecordSourceTrail,Row]])
 
     //Some default values
     when(manager.getLatestSubjectEpoch) thenReturn Future.successful(0L)

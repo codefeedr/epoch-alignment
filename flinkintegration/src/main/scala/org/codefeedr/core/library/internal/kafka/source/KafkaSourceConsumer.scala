@@ -311,9 +311,10 @@ object KafkaSourceConsumer {
     */
   def apply[TElement, TValue: ClassTag, TKey: ClassTag](name: String,
                                                         sourceUuid: String,
-                                                        topic: String)(
+                                                        topic: String,
+                                                        commitOnly: Boolean)(
       mapper: KafkaSourceMapper[TElement, TValue, TKey])(consumerFactory: KafkaConsumerFactory) = {
-    val kafkaConsumer = consumerFactory.create[TKey, TValue](sourceUuid)
+    val kafkaConsumer = consumerFactory.create[TKey, TValue](sourceUuid, commitOnly)
     //TODO: Subscribe
     val rebalanceListener = new RebalanceListenerImpl()
     kafkaConsumer.subscribe(Iterable(topic).asJavaCollection, rebalanceListener)

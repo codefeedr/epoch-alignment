@@ -45,13 +45,17 @@ trait KafkaConsumerFactoryComponent {
       * @return
       */
     override def create[TKey: ClassTag, TData: ClassTag](
-        group: String): KafkaConsumer[TKey, TData] = {
+        group: String,
+        commitOnly: Boolean): KafkaConsumer[TKey, TData] = {
       //Kafka consumer constructor is not thread safe!
       val properties = kafkaConfiguration.getConsumerProperties
 
       properties.setProperty("group.id", group)
-      //Only read committed records
-      //properties.setProperty("isolation.level", "read_committed")
+
+      if (commitOnly) {
+        //Only read committed records
+        properties.setProperty("isolation.level", "read_committed")
+      }
       logger.info(s"Creating consumer in group $group")
       properties.setProperty("enable.auto.commit", "false") //Disable auto commit because we use manual commit
       new KafkaConsumer[TKey, TData](properties,
@@ -72,5 +76,6 @@ trait KafkaConsumerFactory {
     * @tparam TData Data type used to send to kafka
     * @return
     */
-  def create[TKey: ClassTag, TData: ClassTag](group: String): KafkaConsumer[TKey, TData]
+  def create[TKey: ClassTag, TData: ClassTag](group: String,
+                                              commitOnly: Boolean): KafkaConsumer[TKey, TData]
 }

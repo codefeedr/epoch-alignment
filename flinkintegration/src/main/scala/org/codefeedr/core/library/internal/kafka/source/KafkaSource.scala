@@ -85,8 +85,11 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
 
   @transient protected lazy val consumer
     : KafkaSourceConsumer[TElement, TValue, TKey] with KafkaSourceMapper[TElement, TValue, TKey] =
-    KafkaSourceConsumer[TElement, TValue, TKey](s"Consumer $getLabel", sourceUuid, topic)(this)(
-      kafkaConsumerFactory)
+    KafkaSourceConsumer[TElement, TValue, TKey](
+      s"Consumer $getLabel",
+      sourceUuid,
+      topic,
+      checkpointingMode.get == CheckpointingMode.EXACTLY_ONCE)(this)(kafkaConsumerFactory)
 
   //Unique id of the source the instance of this kafka source elongs to
   val sourceUuid: String
