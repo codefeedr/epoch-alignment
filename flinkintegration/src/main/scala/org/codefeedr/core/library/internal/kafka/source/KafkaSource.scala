@@ -89,7 +89,7 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
       s"Consumer $getLabel",
       sourceUuid,
       topic,
-      checkpointingMode.get == CheckpointingMode.EXACTLY_ONCE)(this)(kafkaConsumerFactory)
+      checkpointingMode.contains(CheckpointingMode.EXACTLY_ONCE))(this)(kafkaConsumerFactory)
 
   //Unique id of the source the instance of this kafka source elongs to
   val sourceUuid: String
@@ -215,6 +215,18 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
   override def initializeState(context: FunctionInitializationContext): Unit = {
     sourceState = None
 
+    logger.info(s"Initializing state of $getLabel")
+    if (!getRuntimeContext.asInstanceOf[StreamingRuntimeContext].isCheckpointingEnabled) {
+      logger.warn(
+        "Started a custom source without checkpointing enabled. The custom source is designed to work with checkpoints only.")
+      checkpointingMode = None
+      // throw new Error(
+      // "Started a custom source without checkpointing enabled. The custom source is designed to work with checkpoints only.")
+
+    } else {
+      checkpointingMode = Some(CheckpointingMode.EXACTLY_ONCE)
+    }
+
     val descriptor = new ListStateDescriptor[KafkaSourceStateContainer](
       "collected offsets",
       TypeInformation.of(new TypeHint[KafkaSourceStateContainer]() {})
@@ -243,18 +255,6 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
     //This construction would normally be done by composition, but because flink constructs the source we cannot do so here
     if (manager == null) {
       manager = new KafkaSourceManager(this, subjectNode, jobNode, sourceUuid, instanceUuid)
-    }
-
-    logger.info(s"Initializing state of $getLabel")
-    if (!getRuntimeContext.asInstanceOf[StreamingRuntimeContext].isCheckpointingEnabled) {
-      logger.warn(
-        "Started a custom source without checkpointing enabled. The custom source is designed to work with checkpoints only.")
-      checkpointingMode = None
-      // throw new Error(
-      // "Started a custom source without checkpointing enabled. The custom source is designed to work with checkpoints only.")
-
-    } else {
-      checkpointingMode = Some(CheckpointingMode.EXACTLY_ONCE)
     }
 
     initialized = true
