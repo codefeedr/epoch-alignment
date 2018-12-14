@@ -27,7 +27,7 @@ services:
     build:  
       context: flink/
     volumes:
-      - "./config/logback.xml:/opt/flink/conf/logback.xml"
+      - "./config/logback.xml:/opt/flink/conf/logback-console.xml"
     expose:
       - "6121"
       - "6122"
