@@ -558,7 +558,9 @@ trait ZkClientComponent {
       val p = if (path == "/") "" else path
       val children = await(GetChildren(p))
       await(Future.sequence(children.map(o => s"$p/$o").map(deleteRecursive)))
-      await(Delete(path))
+      if (path != "/") {
+        await(Delete(path))
+      }
     }
 
     /**
