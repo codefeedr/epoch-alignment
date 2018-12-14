@@ -1,6 +1,4 @@
----
-version: '2.4'
-
+version: '2'
 services:
 
 # Flink jobmanager
@@ -40,7 +38,6 @@ services:
     environment:
       - JOB_MANAGER_RPC_ADDRESS=jobmanager
       - TASK_MANAGER_NUMBER_OF_TASK_SLOTS=2
-    scale: 6
 
 
   logspout:

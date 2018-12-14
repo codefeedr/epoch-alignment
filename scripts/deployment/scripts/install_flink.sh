@@ -21,6 +21,7 @@ cp ~/codefeedr-deps.jar flink/lib/codefeedr-deps.jar
 
 #Start docker services
 docker-compose build
-docker-compose up -d --force-recreate  
+docker-compose up -d --force-recreate 
+docker-compose scale taskmanager=6 
 
 #TODO:Import XML file into kibana
