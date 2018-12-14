@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 source ~/parameters.sh
 
+cd $TARGET_CODEFEEDR_SOURCES/experiments/Shared/Flink
+docker-compose down
+
+cd ~
+
 rm -rf $TARGET_CODEFEEDR_SOURCES
 mkdir -p $TARGET_INSTALL_ROOT
 cd $TARGET_INSTALL_ROOT

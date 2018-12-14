@@ -10,7 +10,7 @@ services:
     build:
       context: flink/
     volumes:
-      - "./config/logback.xml:/opt/flink/conf/logback.xml"
+      - "./config/logback_jobmanager.xml:/opt/flink/conf/logback.xml"
     expose:
       - "6123"
     networks: ['flink']
