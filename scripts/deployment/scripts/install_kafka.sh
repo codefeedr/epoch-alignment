@@ -19,4 +19,4 @@ docker rm --force kafkadocker_kafka_1
 docker rm --force kafkadocker_zookeeper_1
 
 #Start docker services
-docker-compose -f docker-compose-experiment.yml up -d
+docker-compose -f docker-compose-experiment.yml up -d --build

@@ -297,7 +297,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
 /**
   * Companion object for Kafka Source consumer, with initialization logic
   */
-object KafkaSourceConsumer {
+object KafkaSourceConsumer extends LazyLogging {
 
   /**
     * Construct a new KafkaSourceConsumer
@@ -314,6 +314,7 @@ object KafkaSourceConsumer {
                                                         topic: String,
                                                         commitOnly: Boolean)(
       mapper: KafkaSourceMapper[TElement, TValue, TKey])(consumerFactory: KafkaConsumerFactory) = {
+
     val kafkaConsumer = consumerFactory.create[TKey, TValue](sourceUuid, commitOnly)
     //TODO: Subscribe
     val rebalanceListener = new RebalanceListenerImpl()

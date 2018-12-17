@@ -17,7 +17,7 @@ trait QuerySourceCommandNodeComponent extends ZkQueueNodeComponent {
       with ZkQueueNodeImpl[Unit, SourceCommand]
       with QuerySourceCommandNode {
 
-    override implicit def tag: ClassTag[SourceCommand] = classTag[SourceCommand]
+    override implicit def tag: ClassTag[SourceCommand] = ClassTag(classOf[SourceCommand])
   }
 
 }

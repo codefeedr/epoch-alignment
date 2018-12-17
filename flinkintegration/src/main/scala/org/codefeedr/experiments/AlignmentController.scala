@@ -15,6 +15,7 @@ object AlignmentController extends ExperimentBase {
   def main(args: Array[String]): Unit = {
     logger.info("Main class of alignment controller called")
     initialize(args)
+    configurationProvider.initEc(getEnvironment.getConfig)
     logger.info("Alignment controller initialized")
     align()
   }
@@ -25,6 +26,7 @@ object AlignmentController extends ExperimentBase {
     val subject = getAlignmentSubject(subjectName)
     val querySourceNode = getQuerySourceNode(subject, sourceName)
     val manager = new SourceAlignment(querySourceNode)
+    logger.info("Starting alignment")
     awaitReady(manager.startAlignment())
     logger.info("Alignment started")
     if (Await.result(manager.whenReady(), 60.seconds)) {
@@ -74,7 +76,8 @@ object AlignmentController extends ExperimentBase {
     } else {
       val names = awaitReady(subject.getSourceNames())
       throw new IllegalStateException(
-        s"Could not find querysource $querySource on subject ${subject.name}. Names are: ${names.mkString(",")}")
+        s"Could not find querysource $querySourceName on subject ${subject.name}. Names are: ${names
+          .mkString(",")}")
     }
   }
 
