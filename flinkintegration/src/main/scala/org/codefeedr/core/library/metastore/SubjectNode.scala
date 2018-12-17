@@ -36,6 +36,8 @@ trait SubjectNode extends ZkStateNode[SubjectType, Boolean] {
     */
   def getSources(): QuerySourceCollection
 
+  def getSourceNames(): Future[Iterable[String]]
+
   /**
     * Obtains the node that contains the epochs that belong to this subject
     *
@@ -286,6 +288,9 @@ trait SubjectNodeComponent extends ZkStateNodeComponent {
     override def initialState(): Boolean = true
 
     override def closeConnection(): Unit = zkClient.delayedClose(30000)
+    override def getSourceNames(): Future[Iterable[String]] = async {
+      await(getSources().getChildren()).map(o => o.name)
+    }
   }
 
 }

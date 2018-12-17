@@ -7,7 +7,7 @@ import org.codefeedr.core.library.metastore.{QuerySourceNode, SynchronizationSta
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.async.Async.{async, await}
-import scala.concurrent.Future
+import scala.concurrent._
 
 /**
   * Class providing logic relevant for the alignment of a source
@@ -79,6 +79,44 @@ class SourceAlignment(sourceNode: QuerySourceNode) extends LazyLogging {
     * This method should be called with the synchronization epoch in most cases
     * @return The constructed future
     */
-  def whenSynchronized(epoch: Long): Future[Boolean] = ???
+  def whenSynchronized(): Future[Boolean] =
+    blocking {
+      async {
+        var result: Option[Boolean] = None
+        while (result.isEmpty) {
+          val state = await(sourceNode.getSyncState().getData()).get.state
+          state match {
+            case KafkaSourceState.UnSynchronized => result = Some(false)
+            case KafkaSourceState.Ready => () //Ready is the expected state
+            case KafkaSourceState.Synchronized => result = Some(true)
+            case o => throw new IllegalStateException(s"Unexpected synchronization state: $o")
+          }
+        }
+        Thread.sleep(10)
+        result.get
+      }
+    }
+
+  /**
+    * Creates a future that returns true when all sources are ready to synchronize, or false whenever it failed
+    * @return
+    */
+  def whenReady(): Future[Boolean] = blocking {
+    async {
+
+      var result: Option[Boolean] = None
+      while (result.isEmpty) {
+        val state = await(sourceNode.getSyncState().getData()).get.state
+        state match {
+          case KafkaSourceState.UnSynchronized => result = Some(false)
+          case KafkaSourceState.CatchingUp => () //CatchingUp is the expected state
+          case KafkaSourceState.Ready => result = Some(true)
+          case o => throw new IllegalStateException(s"Unexpected synchronization state: $o")
+        }
+        Thread.sleep(10)
+      }
+      result.get
+    }
+  }
 
 }

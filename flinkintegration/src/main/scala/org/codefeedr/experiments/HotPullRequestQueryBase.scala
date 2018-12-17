@@ -252,7 +252,9 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
   protected def getHotIssueKafkaSource(
       parallelism: Int = getKafkaParallelism): DataStream[HotIssue] = {
     val source = awaitReady(async {
-      await(subjectFactory.getSource[HotIssue](s"HotIssueSource", "HotPullrequestQuery"))
+      await(
+        subjectFactory.getSource[HotIssue](s"HotIssueSource_${UUID.randomUUID().toString}",
+                                           "HotPullrequestQuery"))
     })
     getEnvironment.addSource(source).name(s"HotIssueSource").setParallelism(parallelism)
   }
