@@ -24,6 +24,8 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
   private val sourceCollectionNode = subjectNode.getSources()
   private val sourceNode = sourceCollectionNode.getChild(sourceUuid)
 
+  private val commandNode = sourceNode.getCommandNode()
+
   private val consumerCollectionNode = sourceNode.getConsumers()
   private val consumerNode = consumerCollectionNode.getChild(instanceUuid)
 
@@ -59,6 +61,17 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     Await.result(jobConsumer.create(), timeout)
     logger.trace(s"Initialized sourceconsumerstate for $getLabel")
 
+    linkCommandNode()
+    logger.debug(s"Linked commandNode for $getLabel")
+  }
+
+  private def linkCommandNode(): Unit = {
+    commandNode
+      .observe()
+      .subscribe(o => {
+        logger.info(s"Got command $o in $getLabel")
+        kafkaSource.apply(o)
+      })
   }
 
   def getState: ConsumerState = {
@@ -153,6 +166,7 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
       true
     } else {
       val comparison = await(getEpochOffsets(comparedEpoch)).map(o => o.nr -> o.offset).toMap
+      logger.debug(s"Catching up. Comparing $offset with $comparison for is catched up")
       OffsetUtils.HigherOrEqual(offset, comparison)
     }
   }

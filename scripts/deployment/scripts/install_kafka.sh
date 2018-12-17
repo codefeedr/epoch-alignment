@@ -3,6 +3,9 @@ INSTALL_ROOT=/home/nvankaam
 CODEFEEDR_SOURCES=afstuderen
 REPO_FOLDER=$INSTALL_ROOT/$CODEFEEDR_SOURCES/codefeedr
 
+cd $REPO_FOLDER/experiments/Shared/kafka-docker
+docker-compose down -v
+
 rm -rf $INSTALL_ROOT/$CODEFEEDR_SOURCES
 mkdir -p $INSTALL_ROOT/$CODEFEEDR_SOURCES
 mkdir -p $INSTALL_ROOT/codefeedr/experiments

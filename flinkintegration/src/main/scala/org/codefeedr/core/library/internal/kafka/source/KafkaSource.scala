@@ -202,6 +202,7 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
     */
   def apply(command: SourceCommand): Unit = {
     stateTransition.synchronized {
+      logger.info(s"Processing $command in $getLabel")
       command.command match {
         case KafkaSourceCommand.catchUp => catchUpCommand()
         case KafkaSourceCommand.synchronize => synchronizeCommand(command.context.get)
@@ -313,6 +314,7 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
           state = KafkaSourceState.UnSynchronized
         }
       case KafkaSourceStateTransition.CatchUp =>
+        logger.debug("Handling catching up command")
         stateTransition = KafkaSourceStateTransition.None
         state = KafkaSourceState.CatchingUp
         manager.startedCatchingUp()

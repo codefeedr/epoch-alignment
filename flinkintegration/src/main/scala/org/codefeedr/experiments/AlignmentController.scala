@@ -75,9 +75,16 @@ object AlignmentController extends ExperimentBase {
 
     } else {
       val names = awaitReady(subject.getSourceNames())
-      throw new IllegalStateException(
-        s"Could not find querysource $querySourceName on subject ${subject.name}. Names are: ${names
-          .mkString(",")}")
+      if (names.size == 1) {
+        logger.warn(
+          s"Could not find querysource $querySourceName on subject ${subject.name}. Using: ${names
+            .mkString(",")} instead")
+        subject.getSources().getChild(names.head)
+      } else {
+        throw new IllegalStateException(
+          s"Could not find querysource $querySourceName on subject ${subject.name}. Names are: ${names
+            .mkString(",")}")
+      }
     }
   }
 

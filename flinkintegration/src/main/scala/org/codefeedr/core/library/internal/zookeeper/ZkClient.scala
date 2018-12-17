@@ -271,7 +271,7 @@ trait ZkClientComponent {
                                  deserializer: Option[GenericDeserialiser[T]]): Option[T] = {
       if (data != null) {
         deserializer match {
-          case None => Some(getDeserializer[T].deserialize(data))
+          case None => Some(GenericDeserialiser[T](data))
           case Some(v) => Some(v.deserialize(data))
         }
       } else {
