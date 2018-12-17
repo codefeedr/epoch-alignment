@@ -86,6 +86,8 @@ trait ZkClientComponent {
     private def connectPromise: Promise[Unit] = ZkClientImpl.connectPromise
     private def zk: ZooKeeper = ZkClientImpl.zk
 
+    def getDeserializer[T: ClassTag]: GenericDeserialiser[T] = new GenericDeserialiser[T]()
+
     /**
       * Connect to the zookeeper server
       * If already connected, reconnects
@@ -243,11 +245,13 @@ trait ZkClientComponent {
       * @tparam T type to deserialize to
       * @return deserialized data
       */
-    override def getData[T: ClassTag](path: String): Future[Option[T]] = async {
+    override def getData[T: ClassTag](
+        path: String,
+        deserializer: Option[GenericDeserialiser[T]] = None): Future[Option[T]] = async {
       logger.debug(s"Retrieving data for path $path")
       val data = await(getRawData(path))
       logger.debug(s"Awaited raw data for $path")
-      toT[T](data)
+      toT[T](data, deserializer)
     }
 
     /**
@@ -256,14 +260,20 @@ trait ZkClientComponent {
       * @tparam T
       * @return
       */
-    override def getDataSync[T: ClassTag](path: String): Option[T] = {
+    override def getDataSync[T: ClassTag](
+        path: String,
+        deserializer: Option[GenericDeserialiser[T]] = None): Option[T] = {
       val data = getRawDataSync(path)
-      toT[T](data)
+      toT[T](data, deserializer)
     }
 
-    private def toT[T: ClassTag](data: Array[Byte]): Option[T] = {
+    private def toT[T: ClassTag](data: Array[Byte],
+                                 deserializer: Option[GenericDeserialiser[T]]): Option[T] = {
       if (data != null) {
-        Some(GenericDeserialiser[T](data))
+        deserializer match {
+          case None => Some(getDeserializer[T].deserialize(data))
+          case Some(v) => Some(v.deserialize(data))
+        }
       } else {
         None
       }
@@ -809,6 +819,13 @@ trait ZkClientComponent {
 trait ZkClient {
 
   /**
+    * Retrieves a deserialzier for the passed generic type
+    * @tparam T
+    * @return
+    */
+  def getDeserializer[T: ClassTag]: GenericDeserialiser[T]
+
+  /**
     * Prepends codefeedr to the zookeeper path so that no actual data outside the codefeedr path can be mutated (for example to destroy kafka)
     * Only meant for implementations that directly call zookeeper
     *
@@ -855,7 +872,8 @@ trait ZkClient {
     * @tparam T type to deserialize to
     * @return deserialized data
     */
-  def getData[T: ClassTag](path: String): Future[Option[T]]
+  def getData[T: ClassTag](path: String,
+                           deserializer: Option[GenericDeserialiser[T]] = None): Future[Option[T]]
 
   /**
     * Retrieves data from zookeeper in a synchronous way
@@ -864,7 +882,8 @@ trait ZkClient {
     * @tparam T
     * @return
     */
-  def getDataSync[T: ClassTag](path: String): Option[T]
+  def getDataSync[T: ClassTag](path: String,
+                               deserializer: Option[GenericDeserialiser[T]] = None): Option[T]
 
   /**
     * Sets the data on the given node.

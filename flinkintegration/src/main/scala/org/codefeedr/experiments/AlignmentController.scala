@@ -30,7 +30,7 @@ object AlignmentController extends ExperimentBase {
     awaitReady(manager.startAlignment())
     logger.info("Alignment started")
     if (Await.result(manager.whenReady(), 60.seconds)) {
-      logger.info("Sources are ready for synchronization")
+      logger.info("Sources are ready for synchronizatio n")
       manager.startRunningSynchronized()
       logger.info("Synchronization started")
       if (Await.result(manager.whenSynchronized(), 60.seconds)) {

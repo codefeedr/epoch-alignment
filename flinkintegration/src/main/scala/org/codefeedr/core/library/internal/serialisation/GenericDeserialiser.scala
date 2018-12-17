@@ -61,6 +61,7 @@ class GenericDeserialiser[T: ClassTag](implicit val ec: ExecutionConfig) {
   * Deserialise an object serialised by the GenericSerialiser
   */
 object GenericDeserialiser {
+
   def apply[TData: ClassTag](data: Array[Byte])(implicit executionConfig: ExecutionConfig): TData = {
     new GenericDeserialiser[TData]()(implicitly[ClassTag[TData]], executionConfig)
       .deserialize(data)

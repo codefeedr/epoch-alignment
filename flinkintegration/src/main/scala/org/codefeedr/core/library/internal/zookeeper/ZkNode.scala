@@ -20,6 +20,7 @@
 package org.codefeedr.core.library.internal.zookeeper
 
 import com.typesafe.scalalogging.LazyLogging
+import org.codefeedr.core.library.internal.serialisation.GenericDeserialiser
 import rx.lang.scala.Observable
 
 import scala.async.Async.{async, await}
@@ -114,6 +115,8 @@ trait ZkNodeComponent extends ZkNodeBaseComponent { this: ZkClientComponent =>
       with LazyLogging
       with ZkNode[TData] {
 
+    @transient lazy val deserializer: GenericDeserialiser[TData] = zkClient.getDeserializer[TData]
+
     override def parent(): ZkNodeBase = p
 
     /**
@@ -146,7 +149,7 @@ trait ZkNodeComponent extends ZkNodeBaseComponent { this: ZkClientComponent =>
       * @return
       */
     override def getData(): Future[Option[TData]] =
-      zkClient.getData[TData](path())
+      zkClient.getData[TData](path(), Some(deserializer))
 
     /**
       * Retrieve the data with a blocking wait
@@ -155,7 +158,7 @@ trait ZkNodeComponent extends ZkNodeBaseComponent { this: ZkClientComponent =>
       */
     override def getDataSync(): Option[TData] = {
       logger.debug(s"Get data sync called on node with name $name")
-      val r = zkClient.getDataSync[TData](path())
+      val r = zkClient.getDataSync[TData](path(), Some(deserializer))
       logger.debug(s"Got result of getdata on node with name $name")
       r
     }
