@@ -488,7 +488,6 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
   def constructInitializedSource(): TestKafkaSource = {
     val source = constructSource()
-    source.setRuntimeContext(runtimeContext)
     source.initializeState(initCtx)
     source.initRun()
     source
@@ -496,6 +495,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
   def constructSource(): TestKafkaSource = {
     val source = new TestKafkaSource(subjectNode,jobNode,kafkaConfiguration,consumerFactory,consumer)
+    source.setRuntimeContext(runtimeContext)
     //Override the default manager
     source.manager = manager
     source

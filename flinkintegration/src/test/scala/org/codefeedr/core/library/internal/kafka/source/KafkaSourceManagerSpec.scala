@@ -2,12 +2,14 @@ package org.codefeedr.core.library.internal.kafka.source
 
 import org.codefeedr.core.MockedLibraryServices
 import org.codefeedr.core.library.metastore._
+import org.codefeedr.core.library.metastore.sourcecommand.SourceCommand
 import org.codefeedr.model.zookeeper.{EpochCollection, Partition}
 import org.codefeedr.util.MockitoExtensions
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{times, verify, when}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterEach}
+import rx.lang.scala.Subject
 
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -19,6 +21,9 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
 
   private var sourceCollectionNode : QuerySourceCollection= _
   private var sourceNode: QuerySourceNode = _
+  private var commandNode: QuerySourceCommandNode = _
+
+
   private var sourceSyncStateNode: SourceSynchronizationStateNode = _
   private var sourceEpochCollectionNode: SourceEpochCollection = _
 
@@ -47,6 +52,7 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     sourceNode = mock[QuerySourceNode]
     sourceSyncStateNode = mock[SourceSynchronizationStateNode]
     sourceEpochCollectionNode = mock[SourceEpochCollection]
+    commandNode = mock[QuerySourceCommandNode]
 
     jobNode = mock[JobNode]
     jobConsumerCollectionNode = mock[JobConsumerCollectionNode]
@@ -69,6 +75,7 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     when(sourceNode.create(ArgumentMatchers.any())) thenReturn Future.successful(null)
     when(sourceNode.getSyncState()) thenReturn sourceSyncStateNode
     when(sourceNode.getEpochs()) thenReturn sourceEpochCollectionNode
+    when(sourceNode.getCommandNode()) thenReturn commandNode
     when(sourceNode.exists()) thenReturn Future.successful(true)
     when(sourceNode.sync()) thenReturn Future.successful(())
     mockLock(sourceEpochCollectionNode)
@@ -92,6 +99,8 @@ class KafkaSourceManagerSpec  extends AsyncFlatSpec with MockitoSugar with Befor
     when(jobConsumerCollectionNode.getChild(ArgumentMatchers.any())) thenReturn jobConsumerNode
 
     when(jobConsumerNode.create()) thenReturn Future.successful[String]("")
+
+    when(commandNode.observe()) thenReturn Subject[SourceCommand]()
   }
 
   def constructManager(): KafkaSourceManager = new KafkaSourceManager(source,subjectNode,jobNode,"sourceuuid", "instanceuuid")
