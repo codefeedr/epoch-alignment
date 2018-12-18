@@ -525,7 +525,8 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
           consumer.updateOffsetState()
         }
       }
-      logger.debug(s"Done performing synchronized poll in $getLabel. Offsets are now ${consumer.getCurrentOffsets} with desired offsets $alignmentOffsets")
+      logger.debug(
+        s"Done performing synchronized poll in $getLabel. Offsets are now ${consumer.getCurrentOffsets} with desired offsets $alignmentOffsets")
     }
 
   }
