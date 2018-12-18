@@ -105,11 +105,9 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
   @transient private[kafka] var manager: KafkaSourceManager = _
 
   //Running state
-  @transient
   @volatile private var state: KafkaSourceState.Value = KafkaSourceState.UnSynchronized
 
   //State transitions in progress
-  @transient
   @volatile private var stateTransition: KafkaSourceStateTransition.Value =
     KafkaSourceStateTransition.None
 
@@ -202,7 +200,7 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
     */
   def apply(command: SourceCommand): Unit = {
     stateTransition.synchronized {
-      logger.info(s"Processing $command in $getLabel")
+      logger.info(s"Processing command $command in $getLabel")
       command.command match {
         case KafkaSourceCommand.catchUp => catchUpCommand()
         case KafkaSourceCommand.synchronize => synchronizeCommand(command.context.get)
@@ -265,13 +263,16 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
   override def snapshotState(context: FunctionSnapshotContext): Unit = {
     super[MeasuredCheckpointedFunction].snapshotState(context)
     val epochId = context.getCheckpointId
-    logger.debug(s"Snapshotting epoch $epochId on $getLabel")
+    logger.debug(
+      s"Snapshotting epoch $epochId on $getLabel. Current state: $state. Current transition: $stateTransition")
 
     //Retrieve offsets from the consumer
     checkpointOffsets(epochId) = consumer.getCurrentOffsets
 
     performTransitions(epochId)
     //Handle state specific code
+    logger.debug(
+      s"State after transition in epoch $epochId on $getLabel: $state. Transition: $stateTransition")
     state match {
       case KafkaSourceState.CatchingUp => snapshotCatchingUpState(epochId)
       case KafkaSourceState.Ready => snapshotReadyState(epochId)
@@ -322,14 +323,20 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
     }
   }
 
-  private def snapshotCatchingUpState(epochId: Long): Unit = {
-    if (Await.result(manager.isCatchedUp(consumer.getCurrentOffsets), 1.seconds)) {
-      state = KafkaSourceState.Ready
-      logger.info(s"Transitioned to ready state in $getLabel")
-      manager.notifyStartedOnEpoch(epochId)
-      manager.notifyCatchedUp()
-    }
-  }
+  private def snapshotCatchingUpState(epochId: Long): Unit =
+    Await.result(
+      async {
+        if (await(manager.isCatchedUp(consumer.getCurrentOffsets))) {
+          state = KafkaSourceState.Ready
+          logger.info(s"Transitioned to ready state in $getLabel")
+          manager.notifyStartedOnEpoch(epochId)
+          manager.notifyCatchedUp()
+          alignmentOffsets =
+            await(manager.getEpochOffsets(epochId)).map(o => o.nr -> o.offset).toMap
+        }
+      },
+      1.seconds
+    )
 
   /** If th source is in "ready" state, obtain the maximum partition to read up to. We must not read ahead of the latest known epoch*/
   private def snapshotReadyState(epochId: Long): Unit = {
@@ -461,6 +468,7 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
 
     if (state == KafkaSourceState.Ready) {
       //If ready, make sure not to poll past the latest known offsets to zookeeper
+      logger.debug(s"Polling with alignment offset $alignmentOffsets")
       consumer.poll(queue += _, alignmentOffsets)
     } else {
       //Otherwise, just poll

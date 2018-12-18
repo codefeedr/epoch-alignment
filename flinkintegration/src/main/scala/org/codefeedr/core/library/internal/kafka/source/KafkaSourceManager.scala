@@ -166,8 +166,12 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
       true
     } else {
       val comparison = await(getEpochOffsets(comparedEpoch)).map(o => o.nr -> o.offset).toMap
-      logger.debug(s"Catching up. Comparing $offset with $comparison for is catched up")
-      OffsetUtils.HigherOrEqual(offset, comparison)
+      logger.debug(s"Catching up $getLabel. Comparing $offset with $comparison for is catched up")
+      val result = OffsetUtils.HigherOrEqual(offset, comparison)
+      if (result) {
+        logger.debug(s"Considered catchedup $getLabel")
+      }
+      result
     }
   }
 

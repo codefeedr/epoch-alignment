@@ -87,7 +87,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
     */
   def poll(cb: TElement => Unit, seekOffsets: PartialFunction[Int, Long]): Unit = {
     val shouldInclude = (r: ConsumerRecord[TKey, TValue]) =>
-      seekOffsets.lift(r.partition()).forall(_ >= r.offset())
+      seekOffsets.lift(r.partition()).forall(o => o >= r.offset())
     poll(cb, shouldInclude, seekOffsets)
   }
 
