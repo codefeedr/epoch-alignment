@@ -19,7 +19,7 @@ class SourceAlignment(sourceNode: QuerySourceNode) extends LazyLogging {
   private lazy val commandNode = sourceNode.getCommandNode()
 
   //TODO: Move this to some configuration
-  private lazy val synchronizeAfter: Int = 2
+  private lazy val synchronizeAfter: Int = 3
 
   /**
     * Starts the alignment

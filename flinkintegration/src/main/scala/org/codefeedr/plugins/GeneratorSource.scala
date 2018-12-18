@@ -122,8 +122,6 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
         ctx.getCheckpointLock.synchronized {
           nextElements.foreach {
             case Right(v) =>
-              logger.debug(v._1.toString)
-
               currentOffset += 1
               v._2 match {
                 case Some(time) =>

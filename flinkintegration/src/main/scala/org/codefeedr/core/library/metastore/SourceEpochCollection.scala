@@ -38,13 +38,13 @@ trait SourceEpochCollectionComponent extends ZkCollectionStateNodeComponent {
 
     /**
       * Retrieves the latest known completed checkpoint for this source.
-      * returns -1 if the source has no checkpoints.
+      * returns Long.minvalue if the source has no checkpoints.
       * If the subject is still active, this method might return different values upon each call
       *
       * @return
       */
     override def getLatestEpochId(): Future[Long] = async {
-      await(getData()).get.latestEpoch
+      await(getData()).map(o => o.latestEpoch).getOrElse(Long.MinValue)
     }
 
     /**

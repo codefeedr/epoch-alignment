@@ -500,7 +500,7 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
     * @param ctx the context to perform the synchronized poll on
     */
   def pollSynchronized(ctx: SourceFunction.SourceContext[TElement]): Unit = {
-    logger.debug(s"Currently performing synchronized poll in $getLabel")
+    logger.trace(s"Currently performing synchronized poll in $getLabel")
     //Do not lock if already reached the offsets
 
     if (!consumer.higherOrEqual(alignmentOffsets).getOrElse(false)) {
@@ -522,10 +522,12 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
             },
             alignmentOffsets
           )
+          consumer.updateOffsetState()
         }
       }
+      logger.debug(s"Done performing synchronized poll in $getLabel. Offsets are now ${consumer.getCurrentOffsets} with desired offsets $alignmentOffsets")
     }
-    logger.debug(s"Done performing synchronized poll in $getLabel")
+
   }
 
   /**

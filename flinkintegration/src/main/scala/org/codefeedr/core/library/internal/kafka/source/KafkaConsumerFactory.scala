@@ -56,7 +56,7 @@ trait KafkaConsumerFactoryComponent {
         //Only read committed records
         properties.setProperty("isolation.level", "read_committed")
       }
-      logger.info(s"Creating consumer in group $group")
+      logger.info(s"Creating consumer in group $group with commit only: $commitOnly")
       properties.setProperty("enable.auto.commit", "false") //Disable auto commit because we use manual commit
       new KafkaConsumer[TKey, TData](properties,
                                      new KafkaDeserialiser[TKey],

@@ -185,9 +185,10 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
   private[source] def resetConsumer(partitions: Seq[Int],
                                     offsets: PartialFunction[Int, Long]): Unit = {
     if (partitions.nonEmpty) {
-      logger.debug(s"Perfoming a seek on $name")
+      logger.debug(s"Performing a seek on $name for partitions $partitions")
       partitions.foreach(partition => {
         val offset = offsets(partition)
+        logger.debug(s"Seeking topic $topic partition $partition to $offset")
         consumer.seek(new TopicPartition(topic, partition), offset)
       })
     }
@@ -280,7 +281,7 @@ class KafkaSourceConsumer[TElement, TValue, TKey](name: String,
       referenceSet: PartialFunction[Int, Long])(partition: Int, currentOffset: Long): Boolean =
     referenceSet
       .lift(partition) match {
-      case Some(v) => v < currentOffset
+      case Some(v) => v <= currentOffset
       case None => true
     }
 
