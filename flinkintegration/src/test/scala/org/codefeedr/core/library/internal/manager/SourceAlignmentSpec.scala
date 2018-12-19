@@ -83,7 +83,7 @@ class SourceAlignmentSpec  extends AsyncFlatSpec with MockitoSugar with BeforeAn
     await(component.startRunningSynchronized())
 
     //Assert
-    verify(commandNode, times(1)).push(SourceCommand(KafkaSourceCommand.synchronize, Some("4")))
+    verify(commandNode, times(1)).push(SourceCommand(KafkaSourceCommand.synchronize, Some("5")))
     assert(true)
   }
 
