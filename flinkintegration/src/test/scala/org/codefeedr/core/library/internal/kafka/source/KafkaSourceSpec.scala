@@ -90,7 +90,7 @@ class KafkaSourceSpec extends AsyncFlatSpec with MockitoSugar with BeforeAndAfte
 
     //Some default values
     when(manager.getLatestSubjectEpoch) thenReturn Future.successful(0L)
-    when(manager.getEpochOffsets(0L)) thenReturn Future.successful(Iterable.empty[Partition])
+    when(manager.getEpochOffsets(ArgumentMatchers.any())) thenReturn Future.successful(Iterable.empty[Partition])
     when(manager.isCatchedUp(ArgumentMatchers.any())) thenReturn Future.successful(false)
   }
 

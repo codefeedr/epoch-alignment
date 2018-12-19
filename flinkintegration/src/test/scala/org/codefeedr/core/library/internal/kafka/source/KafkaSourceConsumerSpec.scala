@@ -195,7 +195,7 @@ class KafkaSourceConsumerSpec extends FlatSpec with BeforeAndAfterEach with Mock
     //Arrange
     val sConsumer = constructWithState(Map(1 -> 2,2 -> 2))
     //Act
-    val r = sConsumer.higherOrEqual(Map(1 -> 1,2->2))
+    val r = sConsumer.higherOrEqual(Map(1 -> 1,2->3))
     //Assert
     assert(!r.get)
   }
