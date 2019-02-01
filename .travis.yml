@@ -1,5 +1,5 @@
 language: scala
-scala: 2.11.11
+scala: 2.11.12
 sudo: required
 dist: trusty
 
@@ -7,6 +7,9 @@ services:
   - docker
   - mongodb
 
+addons:
+  hosts:
+    - localdocker
 
 before_cache:
   # Cleanup the cached directories to avoid unnecessary cache updates
@@ -19,19 +22,27 @@ cache:
     - $HOME/.sbt
 
 
+
 before_install:
-  - docker-compose -f "containers/kafka/docker-compose.yml" up -d
+  - docker-compose -f "experiments/Shared/kafka-docker/docker-compose-travis.yml" up -d
   - docker ps -a
 matrix:
   include:
-    - env: SCALA_VERSION=2.11.11
+    - env: SCALA_VERSION=2.11.12
       os: linux
-      jdk: oraclejdk8
+      jdk: openjdk8
+
 
 before_script:
   - sleep 10
 
 script:
   - sbt package
-  - sbt 'set parallelExecution in ThisBuild := false' test
-  - sbt scalafmt::test
+  - sbt 'set parallelExecution in ThisBuild := false' "project flinkintegration" test
+  - sbt "project flinkintegration" scalafmt::test
+
+#deploy:
+#  provider: script
+#  script: bash docker_push
+#  on:
+#    branch: epochalignment

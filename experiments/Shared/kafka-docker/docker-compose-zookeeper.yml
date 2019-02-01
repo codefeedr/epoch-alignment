@@ -1,0 +1,7 @@
+version: '2'
+services:
+  local_zookeeper:
+    image: wurstmeister/zookeeper
+    restart: on-failure
+    ports:
+      - "athens.ewi.tudelft.nl:2182:2181"

@@ -1,0 +1,485 @@
+
+
+"?Basis.Verblijfseenheid_type"
+	"?37136946-bff6-4fb3-8374-bcbb04b61b7f"
+
+
+
+
+
+{
+  "Patterns": [
+    {
+      "SubQueryPattern": null,
+      "TriplePattern": {
+        "Subject": "?Basis.Verblijfseenheid_type",
+        "Predicate": "Name",
+        "Object": "Basis.Verblijfseenheid",
+        "Opt": false,
+        "Weights": null,
+        "ObjectType": 1
+      }
+    },
+    {
+      "SubQueryPattern": null,
+      "TriplePattern": {
+        "Subject": "?37136946-bff6-4fb3-8374-bcbb04b61b7f",
+        "Predicate": "_HasType",
+        "Object": "?Basis.Verblijfseenheid_type",
+        "Opt": false,
+        "Weights": null,
+        "ObjectType": 1
+      }
+    },
+    {
+      "SubQueryPattern": null,
+      "TriplePattern": {
+        "Subject": "?7a8f0e18-9c40-4b04-95be-82d7d43f03ff",
+        "Predicate": "Indhoofdadres",
+        "Object": "J",
+        "Opt": false,
+        "Weights": null,
+        "ObjectType": 1
+      }
+    },
+    {
+      "SubQueryPattern": null,
+      "TriplePattern": {
+        "Subject": "?7a8f0e18-9c40-4b04-95be-82d7d43f03ff",
+        "Predicate": "_HasType",
+        "Object": "?042e2b16-3fbb-47d7-b9b9-29331634b9a9",
+        "Opt": false,
+        "Weights": null,
+        "ObjectType": 1
+      }
+    },
+    {
+      "SubQueryPattern": null,
+      "TriplePattern": {
+        "Subject": "?042e2b16-3fbb-47d7-b9b9-29331634b9a9",
+        "Predicate": "Name",
+        "Object": "Basis.Verblijfseenheidadres",
+        "Opt": false,
+        "Weights": null,
+        "ObjectType": 1
+      }
+    },
+    {
+      "SubQueryPattern": {
+        "Alias": "noMatchVerblijfseenheden",
+        "SubQuery": {
+          "Patterns": [
+            {
+              "SubQueryPattern": null,
+              "TriplePattern": {
+                "Subject": "?37136946-bff6-4fb3-8374-bcbb04b61b7f",
+                "Predicate": "Verblijfseenheidnummer",
+                "Object": "?Basis.Verblijfseenheid.Verblijfseenheidnummer_GouwV771.WozObject.Verblijfsobjectbagid_05b109bc-ee85-4040-85a4-838d75661144",
+                "Opt": false,
+                "Weights": null,
+                "ObjectType": 1
+              }
+            },
+            {
+              "SubQueryPattern": null,
+              "TriplePattern": {
+                "Subject": "?c867fb59-bc47-487d-9b45-7c0bcd8c3d5a",
+                "Predicate": "Verblijfsobjectbagid",
+                "Object": "?Basis.Verblijfseenheid.Verblijfseenheidnummer_GouwV771.WozObject.Verblijfsobjectbagid_05b109bc-ee85-4040-85a4-838d75661144",
+                "Opt": false,
+                "Weights": null,
+                "ObjectType": 1
+              }
+            },
+            {
+              "SubQueryPattern": null,
+              "TriplePattern": {
+                "Subject": "?c867fb59-bc47-487d-9b45-7c0bcd8c3d5a",
+                "Predicate": "_HasType",
+                "Object": "?61df4b0d-1745-46d9-97e2-33f6cdc509ab",
+                "Opt": false,
+                "Weights": null,
+                "ObjectType": 1
+              }
+            },
+            {
+              "SubQueryPattern": null,
+              "TriplePattern": {
+                "Subject": "?61df4b0d-1745-46d9-97e2-33f6cdc509ab",
+                "Predicate": "Name",
+                "Object": "GouwV771.WozObject",
+                "Opt": false,
+                "Weights": null,
+                "ObjectType": 1
+              }
+            }
+          ],
+          "Selects": [],
+          "MaxRows": 0,
+          "FirstRow": 0,
+          "QueryType": 3,
+          "Distinct": false,
+          "Weight": false,
+          "Orders": null
+        }
+      },
+      "TriplePattern": null
+    },
+    {
+      "SubQueryPattern": {
+        "Alias": "MatchVerblijfseenheidadressen",
+        "SubQuery": {
+          "Patterns": [
+            {
+              "SubQueryPattern": {
+                "Alias": "joinVerblijfseenheidadressenId",
+                "SubQuery": {
+                  "Patterns": [
+                    {
+                      "SubQueryPattern": null,
+                      "TriplePattern": {
+                        "Subject": "?37136946-bff6-4fb3-8374-bcbb04b61b7f",
+                        "Predicate": "Verblijfseenheidid",
+                        "Object": "?Basis.Verblijfseenheid.Verblijfseenheidid_Basis.Verblijfseenheidadres.Verblijfseenheidid_f452eec9-10a1-4477-8ef7-f93974e45e57",
+                        "Opt": false,
+                        "Weights": null,
+                        "ObjectType": 1
+                      }
+                    },
+                    {
+                      "SubQueryPattern": null,
+                      "TriplePattern": {
+                        "Subject": "?7a8f0e18-9c40-4b04-95be-82d7d43f03ff",
+                        "Predicate": "Verblijfseenheidid",
+                        "Object": "?Basis.Verblijfseenheid.Verblijfseenheidid_Basis.Verblijfseenheidadres.Verblijfseenheidid_f452eec9-10a1-4477-8ef7-f93974e45e57",
+                        "Opt": false,
+                        "Weights": null,
+                        "ObjectType": 1
+                      }
+                    }
+                  ],
+                  "Selects": [],
+                  "MaxRows": 0,
+                  "FirstRow": 0,
+                  "QueryType": 2,
+                  "Distinct": false,
+                  "Weight": false,
+                  "Orders": null
+                }
+              },
+              "TriplePattern": null
+            },
+            {
+              "SubQueryPattern": {
+                "Alias": "joinVerblijfseenheidadressenVolgnummer",
+                "SubQuery": {
+                  "Patterns": [
+                    {
+                      "SubQueryPattern": null,
+                      "TriplePattern": {
+                        "Subject": "?37136946-bff6-4fb3-8374-bcbb04b61b7f",
+                        "Predicate": "Verblijfseenheidvolgnummer",
+                        "Object": "?Basis.Verblijfseenheid.Verblijfseenheidvolgnummer_Basis.Verblijfseenheidadres.Verblijfseenheidvolgnummer_8fe1ab89-64e4-4010-8a1d-f465dbf1a5f4",
+                        "Opt": false,
+                        "Weights": null,
+                        "ObjectType": 1
+                      }
+                    },
+                    {
+                      "SubQueryPattern": null,
+                      "TriplePattern": {
+                        "Subject": "?7a8f0e18-9c40-4b04-95be-82d7d43f03ff",
+                        "Predicate": "Verblijfseenheidvolgnummer",
+                        "Object": "?Basis.Verblijfseenheid.Verblijfseenheidvolgnummer_Basis.Verblijfseenheidadres.Verblijfseenheidvolgnummer_8fe1ab89-64e4-4010-8a1d-f465dbf1a5f4",
+                        "Opt": false,
+                        "Weights": null,
+                        "ObjectType": 1
+                      }
+                    }
+                  ],
+                  "Selects": [],
+                  "MaxRows": 0,
+                  "FirstRow": 0,
+                  "QueryType": 2,
+                  "Distinct": false,
+                  "Weight": false,
+                  "Orders": null
+                }
+              },
+              "TriplePattern": null
+            },
+            {
+              "SubQueryPattern": null,
+              "TriplePattern": {
+                "Subject": "?7a8f0e18-9c40-4b04-95be-82d7d43f03ff",
+                "Predicate": "_HasType",
+                "Object": "?d85548f3-a835-45a2-afe2-fc0a7f272072",
+                "Opt": false,
+                "Weights": null,
+                "ObjectType": 1
+              }
+            },
+            {
+              "SubQueryPattern": null,
+              "TriplePattern": {
+                "Subject": "?d85548f3-a835-45a2-afe2-fc0a7f272072",
+                "Predicate": "Name",
+                "Object": "Basis.Verblijfseenheidadres",
+                "Opt": false,
+                "Weights": null,
+                "ObjectType": 1
+              }
+            }
+          ],
+          "Selects": [],
+          "MaxRows": 0,
+          "FirstRow": 0,
+          "QueryType": 2,
+          "Distinct": false,
+          "Weight": false,
+          "Orders": null
+        }
+      },
+      "TriplePattern": null
+    },
+    {
+      "SubQueryPattern": {
+        "Alias": "MatchAdressen",
+        "SubQuery": {
+          "Patterns": [
+            {
+              "SubQueryPattern": null,
+              "TriplePattern": {
+                "Subject": "?7a8f0e18-9c40-4b04-95be-82d7d43f03ff",
+                "Predicate": "Adresid",
+                "Object": "?Basis.Verblijfseenheidadres.Adresid_Basis.Adres.Adresid_5b244431-06b5-45cd-8d81-da7263d6dccc",
+                "Opt": false,
+                "Weights": null,
+                "ObjectType": 1
+              }
+            },
+            {
+              "SubQueryPattern": null,
+              "TriplePattern": {
+                "Subject": "?90844e41-4858-483a-98ba-8d8ad9061795",
+                "Predicate": "Adresid",
+                "Object": "?Basis.Verblijfseenheidadres.Adresid_Basis.Adres.Adresid_5b244431-06b5-45cd-8d81-da7263d6dccc",
+                "Opt": false,
+                "Weights": null,
+                "ObjectType": 1
+              }
+            },
+            {
+              "SubQueryPattern": null,
+              "TriplePattern": {
+                "Subject": "?90844e41-4858-483a-98ba-8d8ad9061795",
+                "Predicate": "_HasType",
+                "Object": "?82d02ee4-fdf1-4e66-82ee-74963b72bd90",
+                "Opt": false,
+                "Weights": null,
+                "ObjectType": 1
+              }
+            },
+            {
+              "SubQueryPattern": null,
+              "TriplePattern": {
+                "Subject": "?82d02ee4-fdf1-4e66-82ee-74963b72bd90",
+                "Predicate": "Name",
+                "Object": "Basis.Adres",
+                "Opt": false,
+                "Weights": null,
+                "ObjectType": 1
+              }
+            }
+          ],
+          "Selects": [],
+          "MaxRows": 0,
+          "FirstRow": 0,
+          "QueryType": 2,
+          "Distinct": false,
+          "Weight": false,
+          "Orders": null
+        }
+      },
+      "TriplePattern": null
+    },
+    {
+      "SubQueryPattern": {
+        "Alias": "MatchOpenbareruimtes",
+        "SubQuery": {
+          "Patterns": [
+            {
+              "SubQueryPattern": null,
+              "TriplePattern": {
+                "Subject": "?90844e41-4858-483a-98ba-8d8ad9061795",
+                "Predicate": "Openbareruimteid",
+                "Object": "?Basis.Adres.Openbareruimteid_Basis.Openbareruimte.Openbareruimteid_88ae9b5e-fe1c-47ed-8d81-c5d859d34e9f",
+                "Opt": false,
+                "Weights": null,
+                "ObjectType": 1
+              }
+            },
+            {
+              "SubQueryPattern": null,
+              "TriplePattern": {
+                "Subject": "?1fe63641-09c1-4f11-9d79-fcc63569b9be",
+                "Predicate": "Openbareruimteid",
+                "Object": "?Basis.Adres.Openbareruimteid_Basis.Openbareruimte.Openbareruimteid_88ae9b5e-fe1c-47ed-8d81-c5d859d34e9f",
+                "Opt": false,
+                "Weights": null,
+                "ObjectType": 1
+              }
+            },
+            {
+              "SubQueryPattern": null,
+              "TriplePattern": {
+                "Subject": "?1fe63641-09c1-4f11-9d79-fcc63569b9be",
+                "Predicate": "_HasType",
+                "Object": "?05e1709f-68ba-46e7-b11e-41c6a1a5e2d1",
+                "Opt": false,
+                "Weights": null,
+                "ObjectType": 1
+              }
+            },
+            {
+              "SubQueryPattern": null,
+              "TriplePattern": {
+                "Subject": "?05e1709f-68ba-46e7-b11e-41c6a1a5e2d1",
+                "Predicate": "Name",
+                "Object": "Basis.Openbareruimte",
+                "Opt": false,
+                "Weights": null,
+                "ObjectType": 1
+              }
+            }
+          ],
+          "Selects": [],
+          "MaxRows": 0,
+          "FirstRow": 0,
+          "QueryType": 2,
+          "Distinct": false,
+          "Weight": false,
+          "Orders": null
+        }
+      },
+      "TriplePattern": null
+    },
+    {
+      "SubQueryPattern": null,
+      "TriplePattern": {
+        "Subject": "?37136946-bff6-4fb3-8374-bcbb04b61b7f",
+        "Predicate": "Verblijfseenheidid",
+        "Object": "?Verblijfseenheidid_39f6837e-7670-45bf-adf9-30b78e3577a9",
+        "Opt": true,
+        "Weights": null,
+        "ObjectType": 1
+      }
+    },
+    {
+      "SubQueryPattern": null,
+      "TriplePattern": {
+        "Subject": "?37136946-bff6-4fb3-8374-bcbb04b61b7f",
+        "Predicate": "Verblijfseenheidvolgnummer",
+        "Object": "?Verblijfseenheidvolgnummer_cce35f38-069a-4634-b104-ee56ee6a7059",
+        "Opt": true,
+        "Weights": null,
+        "ObjectType": 1
+      }
+    },
+    {
+      "SubQueryPattern": null,
+      "TriplePattern": {
+        "Subject": "?37136946-bff6-4fb3-8374-bcbb04b61b7f",
+        "Predicate": "Verblijfseenheidnummer",
+        "Object": "?Verblijfseenheidnummer_ade451ac-e7ef-452c-b097-5aa9d7e5672e",
+        "Opt": true,
+        "Weights": null,
+        "ObjectType": 1
+      }
+    },
+    {
+      "SubQueryPattern": null,
+      "TriplePattern": {
+        "Subject": "?37136946-bff6-4fb3-8374-bcbb04b61b7f",
+        "Predicate": "StatusOmschrijving",
+        "Object": "?StatusOmschrijving_ca704d5a-1915-4b24-b6e8-97db68f377fe",
+        "Opt": true,
+        "Weights": null,
+        "ObjectType": 1
+      }
+    },
+    {
+      "SubQueryPattern": null,
+      "TriplePattern": {
+        "Subject": "?37136946-bff6-4fb3-8374-bcbb04b61b7f",
+        "Predicate": "Datumingang",
+        "Object": "?Datumingang_62fc3f6b-fdb3-4270-bd36-3cc40c3c87ec",
+        "Opt": true,
+        "Weights": null,
+        "ObjectType": 1
+      }
+    },
+    {
+      "SubQueryPattern": null,
+      "TriplePattern": {
+        "Subject": "?90844e41-4858-483a-98ba-8d8ad9061795",
+        "Predicate": "Adresnummer",
+        "Object": "?Adresnummer_f8363f3c-e648-4f0a-af43-8f6045b87e55",
+        "Opt": true,
+        "Weights": null,
+        "ObjectType": 1
+      }
+    },
+    {
+      "SubQueryPattern": null,
+      "TriplePattern": {
+        "Subject": "?90844e41-4858-483a-98ba-8d8ad9061795",
+        "Predicate": "Huisnummer",
+        "Object": "?Huisnummer_845ac5bc-35d3-4c53-bb21-5fb466d05d21",
+        "Opt": true,
+        "Weights": null,
+        "ObjectType": 1
+      }
+    },
+    {
+      "SubQueryPattern": null,
+      "TriplePattern": {
+        "Subject": "?90844e41-4858-483a-98ba-8d8ad9061795",
+        "Predicate": "Huisletter",
+        "Object": "?Huisletter_dbaaab6c-f56c-4e1e-a8b1-041b60dcab28",
+        "Opt": true,
+        "Weights": null,
+        "ObjectType": 1
+      }
+    },
+    {
+      "SubQueryPattern": null,
+      "TriplePattern": {
+        "Subject": "?90844e41-4858-483a-98ba-8d8ad9061795",
+        "Predicate": "Toevoeging",
+        "Object": "?Toevoeging_700045c1-f450-43ab-80d7-fe6b638bc6e0",
+        "Opt": true,
+        "Weights": null,
+        "ObjectType": 1
+      }
+    },
+    {
+      "SubQueryPattern": null,
+      "TriplePattern": {
+        "Subject": "?1fe63641-09c1-4f11-9d79-fcc63569b9be",
+        "Predicate": "OpenbareruimteNaam",
+        "Object": "?OpenbareruimteNaam_4f811bb8-2189-4e97-88a8-2ac998b05c17",
+        "Opt": true,
+        "Weights": null,
+        "ObjectType": 1
+      }
+    }
+  ],
+  "Selects": [ "?Verblijfseenheidid_39f6837e-7670-45bf-adf9-30b78e3577a9", "?Verblijfseenheidvolgnummer_cce35f38-069a-4634-b104-ee56ee6a7059", "?Verblijfseenheidnummer_ade451ac-e7ef-452c-b097-5aa9d7e5672e", "?StatusOmschrijving_ca704d5a-1915-4b24-b6e8-97db68f377fe", "?Datumingang_62fc3f6b-fdb3-4270-bd36-3cc40c3c87ec", "?Adresnummer_f8363f3c-e648-4f0a-af43-8f6045b87e55", "?Huisnummer_845ac5bc-35d3-4c53-bb21-5fb466d05d21", "?Huisletter_dbaaab6c-f56c-4e1e-a8b1-041b60dcab28", "?Toevoeging_700045c1-f450-43ab-80d7-fe6b638bc6e0", "?OpenbareruimteNaam_4f811bb8-2189-4e97-88a8-2ac998b05c17" ],
+  "MaxRows": 3000,
+  "FirstRow": 0,
+  "QueryType": 0,
+  "Distinct": false,
+  "Weight": false,
+  "Orders": null
+}

@@ -1,0 +1,13 @@
+FROM library/flink:1.5.3-alpine
+
+RUN rm -f /opt/flink/lib/log4j-1.2.17.jar
+RUN rm -f /opt/flink/lib/slf4j-log4j12-1.7.7.jar
+COPY lib /opt/flink/lib/
+
+RUN mkdir -p /temp/flinkstate
+RUN chmod 0777 /temp/flinkstate
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
+EXPOSE 6123 8081
+
+CMD ["help"]

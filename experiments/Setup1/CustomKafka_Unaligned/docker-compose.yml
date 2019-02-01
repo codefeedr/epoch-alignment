@@ -1,0 +1,11 @@
+version: "3.3"
+services:
+  socketgenerator:
+    volumes:
+      - "./configuration/socketgenerator.conf:/root/app/application.conf"
+      - "./configuration/logback.xml:/root/app/logback.xml"
+    image: "nvankaam/codefeedr_socketgenerator"
+    environment:
+      - RUN_INCREMENT=${RUNINCREMENT}
+  
+    
