@@ -17,7 +17,7 @@ trait ExperimentBase extends CodefeedrComponents with LazyLogging {
 
   protected def getStateBackendPath: String = configurationProvider.get("statebackend.path")
 
-  protected def getParallelism: Int = 2
+  protected def getParallelism: Int = 1
   protected def getKafkaParallelism: Int = 2
   protected def getRun = configurationProvider.get("run")
 
@@ -29,7 +29,7 @@ trait ExperimentBase extends CodefeedrComponents with LazyLogging {
     configurationProvider.initEc(env.getConfig)
     //env.getConfig.disableGenericTypes()
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
-    env.enableCheckpointing(5000, CheckpointingMode.EXACTLY_ONCE)
+    env.enableCheckpointing(1000, CheckpointingMode.AT_LEAST_ONCE)
     env.setStateBackend(getStateBackend)
     env.setRestartStrategy(
       RestartStrategies.fixedDelayRestart(
