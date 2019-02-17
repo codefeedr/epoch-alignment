@@ -64,7 +64,8 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
     subjectNode: SubjectNode,
     jobNode: JobNode,
     kafkaConfiguration: KafkaConfiguration,
-    kafkaConsumerFactory: KafkaConsumerFactory)
+    kafkaConsumerFactory: KafkaConsumerFactory,
+    run: String)
 //Flink interfaces
     extends RichParallelSourceFunction[TElement]
     with ResultTypeQueryable[TElement]
@@ -77,6 +78,8 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
     with Serializable
     //
     with KafkaSourceMapper[TElement, TValue, TKey] {
+
+  override def getRun: String = run
 
   @transient lazy val getMdcMap = Map(
     "operator" -> getOperatorLabel,

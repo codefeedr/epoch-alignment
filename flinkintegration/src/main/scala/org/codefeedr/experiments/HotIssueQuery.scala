@@ -30,7 +30,7 @@ class HotIssueQuery extends HotPullRequestQueryBase {
 
     val source = getIssueComments()
     val hotIssues = getDiscussions(source)
-    val sink = new LoggingSinkFunction[HotIssue]("HotIssueSink")
+    val sink = new LoggingSinkFunction[HotIssue]("HotIssueSink", getRun)
     hotIssues.addSink(sink)
     logger.info("Submitting hot issue query job")
     execute("HotIssues")

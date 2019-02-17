@@ -65,7 +65,8 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
     jobNode: JobNode,
     kafkaConfiguration: KafkaConfiguration,
     kafkaProducerFactory: KafkaProducerFactory,
-    epochStateManager: EpochStateManager)
+    epochStateManager: EpochStateManager,
+    run: String)
     extends TwoPhaseCommitSinkFunction[TSink, TransactionState, TransactionContext](
       transactionStateSerializer,
       transactionContextSerializer)
@@ -94,6 +95,8 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
   )
 
   override def getCurrentOffset: Long = gatheredEvents
+
+  override def getRun: String = run
 
   private def getSinkState: KafkaSinkState = sinkState match {
     case None =>

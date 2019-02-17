@@ -22,7 +22,8 @@ class RowSink(subjectNode: SubjectNode,
       jobNode,
       kafkaConfiguration,
       kafkaProducerFactory,
-      epochStateManager) {
+      epochStateManager,
+      s"rowsink ${subjectNode.name}") {
   @transient lazy val keyFactory = new KeyFactory(subjectType, UUID.randomUUID())
 
   override def transform(value: tuple.Tuple2[lang.Boolean, Row]): (RecordSourceTrail, Row) = {

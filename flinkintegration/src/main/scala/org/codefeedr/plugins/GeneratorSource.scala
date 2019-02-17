@@ -73,6 +73,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
 
     @transient private lazy val parallelIndex = getRuntimeContext.getIndexOfThisSubtask
 
+    override def getRun: String = configurationProvider.get("run")
     override def getCurrentOffset: Long = currentOffset
 
     //Number of elements that is generated outside of the checkpointlock
@@ -165,7 +166,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
           val elapsed = System.currentTimeMillis() - startTime
           val expectedEvents = elapsed * v
           if (expectedEvents < currentOffset - startOffset) {
-            logger.debug("Throttling event generation")
+            logger.trace("Throttling event generation")
             Thread.sleep(Math.max(generationBatchSize / v, 1))
           }
         case None =>

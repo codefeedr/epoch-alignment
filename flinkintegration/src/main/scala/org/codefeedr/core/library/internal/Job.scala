@@ -26,7 +26,7 @@ import org.apache.flink.streaming.api.functions.source.{
   SourceFunction
 }
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
-import org.codefeedr.configuration.KafkaConfigurationComponent
+import org.codefeedr.configuration.{ConfigurationProviderComponent, KafkaConfigurationComponent}
 import org.codefeedr.core.library.SubjectFactoryComponent
 import org.codefeedr.core.library.internal.kafka.source.{
   KafkaConsumerFactoryComponent,
@@ -47,6 +47,7 @@ import scala.reflect.runtime.{universe => ru}
 trait JobComponent {
   this: SubjectLibraryComponent
     with SubjectFactoryComponent
+    with ConfigurationProviderComponent
     with KafkaConsumerFactoryComponent
     with KafkaConfigurationComponent =>
 
@@ -115,7 +116,8 @@ trait JobComponent {
         kafkaConfiguration,
         kafkaConsumerFactory,
         subjectFactory.getUnTransformer[Input](subjectType),
-        job.subjectType.uuid
+        job.subjectType.uuid,
+        configurationProvider.get("run", Some("UnConfiguredRun"))
       )
     }
 

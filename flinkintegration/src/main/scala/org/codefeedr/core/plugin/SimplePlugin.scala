@@ -67,6 +67,7 @@ trait SimplePluginComponent { this: SubjectFactoryComponent =>
       val sink = if (useTrailedSink) {
         await(subjectFactory.getGenericTrailedSink[TData](sinkName, queryId))
       } else {
+        //HACK: QueryId used as run
         await(subjectFactory.getSink[TData](sinkName, queryId))
       }
 

@@ -19,13 +19,15 @@ abstract class KafkaTrailedRecordSink[TSink : EventTime](subjectNode: SubjectNod
                                              jobNode: JobNode,
                                                kafkaConfiguration: KafkaConfiguration,
                                              kafkaProducerFactory: KafkaProducerFactory,
-                                             epochStateManager: EpochStateManager)
+                                             epochStateManager: EpochStateManager,
+                                                         run:String)
                                              extends KafkaSink[TSink,Row,RecordSourceTrail](
                                                subjectNode,
                                                jobNode,
                                                kafkaConfiguration,
                                                kafkaProducerFactory,
-                                               epochStateManager) {
+                                               epochStateManager,
+                                               run) {
 
 
 }

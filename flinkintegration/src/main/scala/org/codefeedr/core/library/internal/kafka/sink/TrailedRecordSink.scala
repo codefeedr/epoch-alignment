@@ -24,7 +24,8 @@ class TrailedRecordSink(subjectNode: SubjectNode,
                                                              jobNode,
                                                              kafkaConfiguration,
                                                              kafkaProducerFactory,
-                                                             epochStateManager) {
+                                                             epochStateManager,
+                                                             s"trailedsink ${subjectNode.name}") {
 
   override def transform(value: TrailedRecord): (RecordSourceTrail, Row) = {
     (value.trail, value.row)

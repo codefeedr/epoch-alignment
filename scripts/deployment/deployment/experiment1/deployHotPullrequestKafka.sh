@@ -3,5 +3,5 @@
 
 
 bash ../shared/clearZookeeper.sh
-bash deployHotIssueQueryKafkaSink.sh $1
-bash deployHotPullrequestKafkaSource.sh true
+bash deployHotIssueQueryKafkaSink.sh $1 $2
+bash deployHotPullrequestKafkaSource.sh $1 true

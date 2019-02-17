@@ -10,7 +10,8 @@ case class CheckpointMeasurement(checkpointId: Long,
                                  offset: Long,
                                  elements: Long,
                                  latency: Long,
-                                 checkpointLatency: Long)
+                                 checkpointLatency: Long,
+                                 run: String)
 
 /**
   * Checkpointed function that measures
@@ -21,6 +22,7 @@ trait MeasuredCheckpointedFunction
     with LabeledOperator {
 
   def getCurrentOffset: Long
+  def getRun: String
   private var maxLatency: Long = 0L
   private var latestEvent: Long = 0L
   private var shouldLog: Boolean = false
@@ -42,7 +44,8 @@ trait MeasuredCheckpointedFunction
       currentOffset,
       currentOffset - lastOffset,
       getCurrentLatency,
-      if (latestEvent != 0) { currentMillis() - latestEvent } else { 0 })
+      if (latestEvent != 0) { currentMillis() - latestEvent } else { 0 },
+      getRun)
     lastOffset = currentOffset
     measurement
   }
@@ -75,12 +78,14 @@ trait MeasuredCheckpointedFunction
     MDC.put("checkpointLatency", s"${measurement.checkpointLatency}")
     MDC.put("category", getCategoryLabel)
     MDC.put("operator", operatorLabel)
+    MDC.put("run", getRun)
     logWithMdc(s"$operatorLabel snapshotting: ${measurement.toString}", "snapshot")
     MDC.remove("elements")
     MDC.remove("latency")
     MDC.remove("checkpointLatency")
     MDC.remove("category")
     MDC.remove("operator")
+    MDC.remove("run")
   }
 
   override def snapshotState(context: FunctionSnapshotContext): Unit = {

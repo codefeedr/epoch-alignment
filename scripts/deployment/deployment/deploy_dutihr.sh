@@ -31,8 +31,10 @@ fi
 ARGUMENTS="$3"
 if [ -z "$3" ]
   then
-    echo "No arguments supplied"
+    echo "No name supplied"
 	exit 1
+else
+	echo "Starting job with run name $3"
 fi
 
 
@@ -50,7 +52,7 @@ ssh nvankaam@dutihr.st.ewi.tudelft.nl MAIN_CLASS="$MAIN_CLASS" ARGUMENTS=\"$ARGU
 	
 	if [ -z "$ARGUMENTS" ]
 	  then
-		echo "No arguments supplied"
+		echo "No run name supplied"
 		exit 1
 	fi
 
@@ -66,5 +68,5 @@ ssh nvankaam@dutihr.st.ewi.tudelft.nl MAIN_CLASS="$MAIN_CLASS" ARGUMENTS=\"$ARGU
 	echo "Jar copied, starting job"
 	echo "Arguments: $ARGUMENTS"
 	#Change -d to -t when the job does not start to view eventual deployment errors
-	docker exec -t "$JOBMANAGER_CONTAINER" flink run -c $MAIN_CLASS /codefeedr.jar $ARGUMENTS
+	docker exec -t "$JOBMANAGER_CONTAINER" flink run -c $MAIN_CLASS /codefeedr.jar --run $ARGUMENTS
 ENDSSH

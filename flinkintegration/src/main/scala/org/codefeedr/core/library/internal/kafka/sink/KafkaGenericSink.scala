@@ -33,12 +33,14 @@ class KafkaGenericSink[TData: ClassTag: EventTime](val subjectNode: SubjectNode,
                                                    kafkaConfiguration: KafkaConfiguration,
                                                    kafkaProducerFactory: KafkaProducerFactory,
                                                    epochStateManager: EpochStateManager,
-                                                   override val sinkUuid: String)
+                                                   override val sinkUuid: String,
+                                                   run: String)
     extends KafkaSink[TData, TData, Object](subjectNode,
                                             jobNode,
                                             kafkaConfiguration,
                                             kafkaProducerFactory,
-                                            epochStateManager) {
+                                            epochStateManager,
+                                            run) {
 
   override def transform(value: TData): (Object, TData) = (null, value)
 }

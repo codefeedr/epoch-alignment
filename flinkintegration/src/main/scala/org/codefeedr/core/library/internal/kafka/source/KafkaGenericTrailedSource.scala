@@ -35,11 +35,13 @@ class KafkaGenericTrailedSource[T: ru.TypeTag: ClassTag: TypeInformation: EventT
     kafkaConfiguration: KafkaConfiguration,
     kafkaConsumerFactory: KafkaConsumerFactory,
     transformer: TrailedRecord => T,
-    override val sourceUuid: String)
+    override val sourceUuid: String,
+    run: String)
     extends KafkaSource[T, Row, RecordSourceTrail](subjectNode,
                                                    jobNode,
                                                    kafkaConfiguration,
-                                                   kafkaConsumerFactory) {
+                                                   kafkaConsumerFactory,
+                                                   run) {
 
   /**
     * Get typeinformation of the returned type

@@ -25,7 +25,11 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.streaming.api.functions.sink.SinkFunction
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.types.Row
-import org.codefeedr.configuration.{ConfigUtilComponent, KafkaConfigurationComponent}
+import org.codefeedr.configuration.{
+  ConfigUtilComponent,
+  ConfigurationProviderComponent,
+  KafkaConfigurationComponent
+}
 import org.codefeedr.core.library.internal.kafka._
 import org.codefeedr.core.library.internal.kafka.sink._
 import org.codefeedr.core.library.internal.kafka.source.{
@@ -49,6 +53,7 @@ import scala.reflect.runtime.{universe => ru}
 
 trait SubjectFactoryComponent extends Serializable {
   this: SubjectLibraryComponent
+    with ConfigurationProviderComponent
     with KafkaProducerFactoryComponent
     with KafkaConsumerFactoryComponent
     with KafkaControllerComponent
@@ -84,7 +89,8 @@ trait SubjectFactoryComponent extends Serializable {
                              kafkaConfiguration,
                              kafkaProducerFactory,
                              epochStateManager,
-                             sinkId)
+                             sinkId,
+                             configurationProvider.get("run", Some("UnConfiguredRun")))
       }
 
     def getSource[TData: ClassTag: ru.TypeTag: EventTime](
@@ -254,7 +260,8 @@ trait SubjectFactoryComponent extends Serializable {
                                       jobNode,
                                       kafkaConfiguration,
                                       kafkaConsumerFactory,
-                                      sourceId)
+                                      sourceId,
+                                      configurationProvider.get("run", Some("UnconfiguredRun")))
     }
 
     def getTrailedSource(subjectNode: SubjectNode,
@@ -265,7 +272,8 @@ trait SubjectFactoryComponent extends Serializable {
                                    jobNode,
                                    kafkaConfiguration,
                                    kafkaConsumerFactory,
-                                   sourceId)
+                                   sourceId,
+                                   configurationProvider.get("run", Some("UnconfiguredRun")))
     }
 
     /**

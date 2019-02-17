@@ -10,7 +10,7 @@ import org.codefeedr.util.EventTime._
   * A Flink sinkfunction that logs latency and throughput statistics
   * @tparam TData
   */
-class LoggingSinkFunction[TData: EventTime](val name: String)
+class LoggingSinkFunction[TData: EventTime](val name: String, run: String)
     extends RichSinkFunction[TData]
     with MeasuredCheckpointedFunction {
   @transient private var gatheredEvents: Long = 0
@@ -23,6 +23,7 @@ class LoggingSinkFunction[TData: EventTime](val name: String)
 
   override def getOperatorLabel: String = s"$getCategoryLabel[$parallelIndex]"
   override def getCategoryLabel: String = s"LoggingSink $name"
+  override def getRun: String = run
 
   override def invoke(value: TData): Unit = {
     gatheredEvents += 1

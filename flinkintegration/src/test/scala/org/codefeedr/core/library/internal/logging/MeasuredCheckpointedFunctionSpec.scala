@@ -14,7 +14,7 @@ class TestMeasuredCheckpointedFunction extends MeasuredCheckpointedFunction {
   override def getMdcMap: Map[String, String] = Map.empty[String,String]
   override def getOperatorLabel: String = "TestMeasuredCheckpointedFunction"
   override def getCategoryLabel: String = "TestMeasuredCheckpointedFunction"
-
+  override def getRun: String = getCategoryLabel
   override def currentMillis(): Long = 1000
 }
 

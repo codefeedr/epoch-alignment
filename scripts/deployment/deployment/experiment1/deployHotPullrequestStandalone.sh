@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 MAINCLASS=org.codefeedr.experiments.HotPullrequestStandalone
-ARGUMENTS="--something something"
+ARGUMENTS=$1
 cd ../
 
 bash deploy_dutihr.sh $MAINCLASS false "$ARGUMENTS"

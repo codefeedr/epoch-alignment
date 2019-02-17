@@ -20,7 +20,8 @@ class GenericTrailedRecordSink[TElement: ClassTag: EventTime](
                                                         jobNode,
                                                         kafkaConfiguration,
                                                         kafkaProducerFactory,
-                                                        epochStateManager) {
+                                                        epochStateManager,
+                                                        s"generic ${subjectNode.name}") {
 
   @transient private lazy val transformer =
     subjectFactoryComponent.subjectFactory.getTransformer[TElement](subjectType)

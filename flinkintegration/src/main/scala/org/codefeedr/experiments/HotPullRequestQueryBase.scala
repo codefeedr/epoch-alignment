@@ -43,8 +43,8 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
   @transient lazy protected val windowLength: Time = Time.seconds(3)
   @transient lazy protected val issueJoinWindowLenght: Time = Time.seconds(60)
 
-  protected val issueCommentLimiter = Some(1L)
-  protected val prCommentlimiter = Some(1L)
+  protected val issueCommentLimiter = Some(50L)
+  protected val prCommentlimiter = Some(50L)
 
   implicit val HotIssueEventTime: EventTime[HotIssue] =
     new EventTime[HotIssue] {
@@ -79,7 +79,7 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
       .name("Issue Generator")
       .setParallelism(parallelism)
 
-  protected def getIssueComments(parallelism: Int = 1): DataStream[IssueComment] =
+  protected def getIssueComments(parallelism: Int = getParallelism): DataStream[IssueComment] =
     getEnvironment
       .addSource(
         createGeneratorSource(
@@ -104,7 +104,8 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
       .name("PullRequest Generator")
       .setParallelism(parallelism)
 
-  protected def getPullRequestComments(parallelism: Int = 1): DataStream[PullRequestComment] =
+  protected def getPullRequestComments(
+      parallelism: Int = getParallelism): DataStream[PullRequestComment] =
     getEnvironment
       .addSource(
         createGeneratorSource(

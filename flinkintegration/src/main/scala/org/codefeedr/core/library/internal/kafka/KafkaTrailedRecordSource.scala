@@ -31,11 +31,13 @@ class KafkaTrailedRecordSource(subjectNode: SubjectNode,
                                jobNode: JobNode,
                                kafkaConfiguration: KafkaConfiguration,
                                kafkaConsumerFactory: KafkaConsumerFactory,
-                               override val sourceUuid: String)
+                               override val sourceUuid: String,
+                               run: String)
     extends KafkaSource[TrailedRecord, Row, RecordSourceTrail](subjectNode,
                                                                jobNode,
                                                                kafkaConfiguration,
-                                                               kafkaConsumerFactory) {
+                                                               kafkaConsumerFactory,
+                                                               run) {
 
   /**
     * Get typeinformation of the returned type
@@ -48,4 +50,6 @@ class KafkaTrailedRecordSource(subjectNode: SubjectNode,
 
   override def transform(value: Row, key: RecordSourceTrail): TrailedRecord =
     TrailedRecord(value)
+
+  override def getRun: String = s"trailed $getLabel"
 }

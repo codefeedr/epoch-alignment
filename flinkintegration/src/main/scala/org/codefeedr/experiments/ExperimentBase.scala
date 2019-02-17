@@ -19,6 +19,7 @@ trait ExperimentBase extends CodefeedrComponents with LazyLogging {
 
   protected def getParallelism: Int = 2
   protected def getKafkaParallelism: Int = 2
+  protected def getRun = configurationProvider.get("run")
 
   @transient protected lazy val awaitDuration: Duration =
     configurationProvider.getDefaultAwaitDuration
@@ -28,7 +29,7 @@ trait ExperimentBase extends CodefeedrComponents with LazyLogging {
     configurationProvider.initEc(env.getConfig)
     //env.getConfig.disableGenericTypes()
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
-    env.enableCheckpointing(1000, CheckpointingMode.EXACTLY_ONCE)
+    env.enableCheckpointing(5000, CheckpointingMode.EXACTLY_ONCE)
     env.setStateBackend(getStateBackend)
     env.setRestartStrategy(
       RestartStrategies.fixedDelayRestart(

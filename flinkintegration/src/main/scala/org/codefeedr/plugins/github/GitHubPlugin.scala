@@ -82,6 +82,7 @@ class GitHubPlugin[PushEvent: ru.TypeTag: ClassTag](maxRequests: Integer = -1)
   override def compose(env: StreamExecutionEnvironment, queryId: String): Future[Unit] =
     Async.async {
       val sinkName = s"composedsink_${queryId}"
+      //HACK: QueryId used as run
       val sink = await(subjectFactory.getSink[GitHubProtocol.PushEvent](sinkName, queryId))
       val stream = getStream(env)
       stream.addSink(sink)

@@ -24,7 +24,7 @@ class HotPullRequestQueryKafkaSource extends HotPullRequestQueryBase {
     val prComments = getPullRequestComments()
     val hotPrs = getHotPullRequests(prComments)
 
-    hotPrs.addSink(new LoggingSinkFunction[HotPr]("HotPrSink"))
+    hotPrs.addSink(new LoggingSinkFunction[HotPr]("HotPrSink", getRun))
     logger.info("Submitting hot issue query job")
     execute("HotPullrequestKafkaSource")
 

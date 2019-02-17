@@ -38,7 +38,8 @@ class KafkaRowSource(subjectNode: SubjectNode,
     extends KafkaSource[Row, Row, RecordSourceTrail](subjectNode,
                                                      jobNode,
                                                      kafkaConfiguration,
-                                                     kafkaConsumerFactory) {
+                                                     kafkaConsumerFactory,
+                                                     s"rowSource ${subjectNode.name}") {
 
   /**
     * Get typeinformation of the returned type

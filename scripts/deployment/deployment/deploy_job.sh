@@ -10,11 +10,13 @@ if [ -z "$1" ]
 	echo "Supplied main class is \"$MAIN_CLASS\"" 
 fi
 
-ARGUMENTS=$2
+NAME=$2
 if [ -z "$2" ]
   then
-    echo "No arguments supplied"
+    echo "No name supplied"
 	exit 1
+else
+	echo "Executing with run \"$NAME\""
 fi
 
 #Build new version of codefeedr
@@ -28,4 +30,4 @@ docker cp ~/codefeedr.jar "$JOBMANAGER_CONTAINER:/codefeedr.jar"
 
 echo "Jar copied, starting job"
 #Change -d to -t when the job does not start to view eventual deployment errors
-docker exec -t "$JOBMANAGER_CONTAINER" flink run -c $MAIN_CLASS /codefeedr.jar
+docker exec -t "$JOBMANAGER_CONTAINER" flink run -c $MAIN_CLASS /codefeedr.jar --run $NAME

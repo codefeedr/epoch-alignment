@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 INSTALL_ROOT=/home/nvankaam
 CODEFEEDR_SOURCES=afstuderen
-REPO_FOLDER=$INSTALL_ROOT/$CODEFEEDR_SOURCES/codefeedr
+REPO_FOLDER=$INSTALL_ROOT/$CODEFEEDR_SOURCES/epoch-alignment
 
 cd $REPO_FOLDER/experiments/Shared/kafka-docker
 docker-compose down -v
@@ -11,7 +11,7 @@ mkdir -p $INSTALL_ROOT/$CODEFEEDR_SOURCES
 mkdir -p $INSTALL_ROOT/codefeedr/experiments
 cd $INSTALL_ROOT/$CODEFEEDR_SOURCES
 
-git clone https://github.com/codefeedr/codefeedr.git
+git clone https://github.com/codefeedr/epoch-alignment.git
 cd $REPO_FOLDER
 git checkout epochalignment
 cd $REPO_FOLDER/experiments/Shared/kafka-docker

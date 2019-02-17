@@ -16,16 +16,17 @@ import scala.reflect._
   * @param ct classtag of the generic type
   * @tparam TElement entity type of the source
   */
-class KafkaGenericSource[TElement: EventTime](
-    subjectNode: SubjectNode,
-    jobNode: JobNode,
-    kafkaConfiguration: KafkaConfiguration,
-    kafkaConsumerFactory: KafkaConsumerFactory,
-    override val sourceUuid: String)(implicit ct: ClassTag[TElement])
+class KafkaGenericSource[TElement: EventTime](subjectNode: SubjectNode,
+                                              jobNode: JobNode,
+                                              kafkaConfiguration: KafkaConfiguration,
+                                              kafkaConsumerFactory: KafkaConsumerFactory,
+                                              override val sourceUuid: String,
+                                              run: String)(implicit ct: ClassTag[TElement])
     extends KafkaSource[TElement, TElement, Object](subjectNode,
                                                     jobNode,
                                                     kafkaConfiguration,
-                                                    kafkaConsumerFactory) {
+                                                    kafkaConsumerFactory,
+                                                    run) {
 
   override def transform(value: TElement, key: Object): TElement = value
 

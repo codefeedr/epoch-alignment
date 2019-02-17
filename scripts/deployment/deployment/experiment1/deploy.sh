@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 MAINCLASS=org.codefeedr.experiments.HotIssueQueryKafkaSink
-ARGUMENTS="--name something"
+
+
+
+ARGUMENTS=$1
 cd ../
 
 bash deploy_dutihr.sh $MAINCLASS $ARGUMENTS true

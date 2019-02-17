@@ -10,7 +10,7 @@ rm -rf $TARGET_CODEFEEDR_SOURCES
 mkdir -p $TARGET_INSTALL_ROOT
 cd $TARGET_INSTALL_ROOT
 
-git clone https://github.com/codefeedr/codefeedr.git
+git clone https://github.com/codefeedr/epoch-alignment.git
 cd $TARGET_CODEFEEDR_SOURCES
 git checkout epochalignment
 
