@@ -13,7 +13,7 @@ cd $INSTALL_ROOT/$CODEFEEDR_SOURCES
 
 git clone https://github.com/codefeedr/epoch-alignment.git
 cd $REPO_FOLDER
-git checkout epochalignment
+git checkout master
 cd $REPO_FOLDER/experiments/Shared/kafka-docker
 
 
