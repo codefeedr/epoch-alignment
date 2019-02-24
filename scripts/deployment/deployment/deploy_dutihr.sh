@@ -68,5 +68,5 @@ ssh nvankaam@dutihr.st.ewi.tudelft.nl MAIN_CLASS="$MAIN_CLASS" ARGUMENTS=\"$ARGU
 	echo "Jar copied, starting job"
 	echo "Arguments: $ARGUMENTS"
 	#Change -d to -t when the job does not start to view eventual deployment errors
-	docker exec -d "$JOBMANAGER_CONTAINER" flink run -c $MAIN_CLASS /codefeedr.jar --run $ARGUMENTS
+	docker exec -t "$JOBMANAGER_CONTAINER" flink run -c $MAIN_CLASS /codefeedr.jar --run $ARGUMENTS
 ENDSSH
