@@ -29,7 +29,7 @@ trait ExperimentBase extends CodefeedrComponents with LazyLogging {
     configurationProvider.initEc(env.getConfig)
     //env.getConfig.disableGenericTypes()
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
-    env.enableCheckpointing(1000, CheckpointingMode.AT_LEAST_ONCE)
+    env.enableCheckpointing(1000, CheckpointingMode.EXACTLY_ONCE)
     env.setStateBackend(getStateBackend)
     env.setRestartStrategy(
       RestartStrategies.fixedDelayRestart(

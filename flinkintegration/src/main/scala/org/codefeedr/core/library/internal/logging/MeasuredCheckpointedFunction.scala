@@ -25,7 +25,7 @@ trait MeasuredCheckpointedFunction
   private var maxLatency: Long = 0L
   private[MeasuredCheckpointedFunction] var latencySum: Long = 0L
   private[MeasuredCheckpointedFunction] var eventCount: Long = 0L
-  private var latestEvent: Long = 0L
+  private var latestEvent: Long = Int.MaxValue
   private var shouldLog: Boolean = false
   private var lastOffset: Long = 0L
 
