@@ -4,14 +4,14 @@ services:
     image: wurstmeister/zookeeper
     restart: on-failure
     ports:
-      - "gangster.processfive.com:2181:2181"
+      - "2181:2181"
   kafka:
     build: .
     restart: on-failure
     ports:
-      - "gangster.processfive.com:9092:9092"
+      - "9092:9092"
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: athens.ewi.tudelft.nl
+      KAFKA_ADVERTISED_HOST_NAME: gangster.processfive.com
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
