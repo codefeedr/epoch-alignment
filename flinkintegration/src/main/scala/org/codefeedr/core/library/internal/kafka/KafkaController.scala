@@ -37,7 +37,7 @@ import scala.util.{Failure, Success}
 trait KafkaControllerComponent { this: KafkaConfigurationComponent =>
   val kafkaController: KafkaController
 
-  val p = 1
+  val p = 4
 
   /**
     * low level object to control the connected kafka
