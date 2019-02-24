@@ -81,7 +81,7 @@ trait ZkClientComponent {
 
     //A zkClient should always be connected
     //More clean solutions introduce a lot of complexity for very little performance gain
-    Await.ready(connect(), connectTimeout)
+    Await.result(connect(), connectTimeout)
 
     private def connectPromise: Promise[Unit] = ZkClientImpl.connectPromise
     private def zk: ZooKeeper = ZkClientImpl.zk

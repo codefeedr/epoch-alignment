@@ -10,6 +10,7 @@ case class CheckpointMeasurement(checkpointId: Long,
                                  offset: Long,
                                  elements: Long,
                                  latency: Long,
+                                 avgLatency: Long,
                                  checkpointLatency: Long,
                                  run: String)
 
@@ -21,17 +22,19 @@ trait MeasuredCheckpointedFunction
     with CheckpointedFunction
     with LabeledOperator {
 
-  def getCurrentOffset: Long
-  def getRun: String
   private var maxLatency: Long = 0L
+  private[MeasuredCheckpointedFunction] var latencySum: Long = 0L
+  private[MeasuredCheckpointedFunction] var eventCount: Long = 0L
   private var latestEvent: Long = 0L
   private var shouldLog: Boolean = false
-
   private var lastOffset: Long = 0L
 
   private def getCurrentLatency: Long = maxLatency
 
   protected val enableLoging: Boolean = true
+
+  def getCurrentOffset: Long
+  def getRun: String
 
   /**
     * Creates a snapshot of the current state with the passed checkpointId
@@ -44,8 +47,10 @@ trait MeasuredCheckpointedFunction
       currentOffset,
       currentOffset - lastOffset,
       getCurrentLatency,
-      if (latestEvent != 0) { currentMillis() - latestEvent } else { 0 },
-      getRun)
+      if (latencySum == 0) { 0 } else { latencySum / eventCount },
+      if (latestEvent != Int.MaxValue) { currentMillis() - latestEvent } else { 0 },
+      getRun
+    )
     lastOffset = currentOffset
     measurement
   }
@@ -60,8 +65,13 @@ trait MeasuredCheckpointedFunction
     case Some(eventTime) =>
       shouldLog = true
       val latency = currentMillis() - eventTime
+      latencySum += latency
+      eventCount += 1
       if (latency > maxLatency) {
         maxLatency = latency
+
+      }
+      if (latestEvent > eventTime) {
         latestEvent = eventTime
       }
     case None =>
@@ -74,14 +84,16 @@ trait MeasuredCheckpointedFunction
     val measurement = snapshotMeasurement(checkpointId)
     val operatorLabel = getOperatorLabel
     MDC.put("elements", s"${measurement.elements}")
-    MDC.put("latency", s"${measurement.latency}")
+    MDC.put("max_latency", s"${measurement.latency}")
+    MDC.put("average_latency", s"${measurement.avgLatency}")
     MDC.put("checkpointLatency", s"${measurement.checkpointLatency}")
     MDC.put("category", getCategoryLabel)
     MDC.put("operator", operatorLabel)
     MDC.put("run", getRun)
     logWithMdc(s"$operatorLabel snapshotting: ${measurement.toString}", "snapshot")
     MDC.remove("elements")
-    MDC.remove("latency")
+    MDC.remove("max_latency")
+    MDC.remove("average_latency")
     MDC.remove("checkpointLatency")
     MDC.remove("category")
     MDC.remove("operator")
@@ -92,7 +104,9 @@ trait MeasuredCheckpointedFunction
     val currentCheckpoint = context.getCheckpointId
     onSnapshot(currentCheckpoint)
     maxLatency = 0
-    latestEvent = 0
+    eventCount = 0
+    latencySum = 0
+    latestEvent = Int.MaxValue
     shouldLog = false
   }
 }

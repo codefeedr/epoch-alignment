@@ -12,7 +12,7 @@ cd $TARGET_INSTALL_ROOT
 
 git clone https://github.com/codefeedr/epoch-alignment.git
 cd $TARGET_CODEFEEDR_SOURCES
-git checkout epochalignment
+git checkout master
 
 
 
@@ -22,6 +22,6 @@ cp ~/codefeedr-deps.jar flink/lib/codefeedr-deps.jar
 #Start docker services
 docker-compose build
 docker-compose up -d --force-recreate 
-docker-compose scale taskmanager=2
+docker-compose scale taskmanager=1
 
 #TODO:Import XML file into kibana

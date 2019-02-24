@@ -3,6 +3,7 @@ package org.codefeedr.plugins
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.state.{ListState, ListStateDescriptor}
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
+import org.apache.flink.configuration.Configuration
 import org.apache.flink.runtime.state.{
   CheckpointListener,
   FunctionInitializationContext,
@@ -77,8 +78,8 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
     override def getCurrentOffset: Long = currentOffset
 
     //Number of elements that is generated outside of the checkpointlock
-    lazy private val generationBatchSize: Int =
-      configurationProvider.getInt("generator.batch.size")
+    private lazy val generationBatchSize: Int = eventsPerMillisecond.getOrElse(1L).toInt
+    //configurationProvider.getInt("generator.batch.size")
     //Current state object
     var state: ListState[GeneratorSourceState] = _
 
@@ -141,7 +142,7 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
           if (newLatency > lastLatency) {
             lastLatency = newLatency
           }
-          ctx.emitWatermark(new Watermark(lastEventTime))
+          ctx.emitWatermark(new Watermark(lastEventTime + 1))
         }
 
         limitThroughput()
@@ -181,6 +182,11 @@ trait GeneratorSourceComponent { this: ConfigurationProviderComponent =>
 
     override def cancel(): Unit = {
       running = false
+    }
+
+    override def open(parameters: Configuration): Unit = {
+      super.open(parameters)
+      Thread.sleep(5000)
     }
 
     override def initializeState(context: FunctionInitializationContext): Unit = {

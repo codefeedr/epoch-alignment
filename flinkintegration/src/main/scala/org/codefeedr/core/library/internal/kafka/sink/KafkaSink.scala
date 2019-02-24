@@ -232,8 +232,14 @@ abstract class KafkaSink[TSink: EventTime, TValue: ClassTag, TKey: ClassTag](
     //Temporary check if opened
     opened = true
     logger.debug(s"Opening producer $getLabel for ${subjectType.name}")
+
+    var x = 0
+    while (!Await.result(subjectNode.exists(), 5.seconds) && x < 20) {
+      x += 1
+      Thread.sleep(100)
+    }
     //Create zookeeper nodes synchronous
-    if (!Await.result(subjectNode.exists(), 5.seconds)) {
+    if (x == 20 && !Await.result(subjectNode.exists(), 5.seconds)) {
       throw new Exception(
         s"Cannot open sink $getLabel because its subject ${subjectNode.name}(${subjectNode.path()}) does not exist.")
     }

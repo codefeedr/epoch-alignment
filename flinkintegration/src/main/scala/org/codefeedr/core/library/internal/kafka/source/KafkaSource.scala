@@ -23,6 +23,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.flink.api.common.state.{ListState, ListStateDescriptor}
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable
+import org.apache.flink.configuration.Configuration
 import org.apache.flink.runtime.state.{
   CheckpointListener,
   FunctionInitializationContext,
@@ -32,6 +33,7 @@ import org.apache.flink.streaming.api.CheckpointingMode
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
 import org.apache.flink.streaming.api.functions.source.{RichParallelSourceFunction, SourceFunction}
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext
+import org.apache.flink.streaming.api.watermark.Watermark
 import org.apache.kafka.common.TopicPartition
 import org.codefeedr.configuration.KafkaConfiguration
 import org.codefeedr.core.library.internal.logging.MeasuredCheckpointedFunction
@@ -144,6 +146,20 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
   @transient private var gatheredEvents: Long = 0
 
   override def getCurrentOffset: Long = gatheredEvents
+
+  override def open(parameters: Configuration): Unit = {
+    super.open(parameters)
+    var x = 0
+    while (!Await.result(subjectNode.exists(), 5.seconds) && x < 20) {
+      x += 1
+      Thread.sleep(100)
+    }
+    //Create zookeeper nodes synchronous
+    if (x == 20 && !Await.result(subjectNode.exists(), 5.seconds)) {
+      throw new Exception(
+        s"Cannot open source $getLabel because its subject ${subjectNode.name}(${subjectNode.path()}) does not exist.")
+    }
+  }
 
   /**
     * Get a display label for this source
@@ -477,21 +493,25 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
       //Otherwise, just poll
       consumer.poll(queue += _)
     }
-
+    var eventTime: Option[Long] = None
     ctx.getCheckpointLock.synchronized {
       while (queue.nonEmpty) {
         val element = queue.dequeue()
-        val eventTime = element.getEventTime
+        eventTime = element.getEventTime
         onEvent(eventTime)
         eventTime match {
-          case Some(e) =>
+          case Some(e) => {
             ctx.collectWithTimestamp(element, e)
+          }
           case None => ctx.collect(element)
 
         }
         onEvent(element.getEventTime)
         gatheredEvents += 1
 
+      }
+      if (eventTime.isDefined) {
+        ctx.emitWatermark(new Watermark(eventTime.get + 1))
       }
       //Need to update the state in the offset map
       consumer.updateOffsetState()

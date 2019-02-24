@@ -22,7 +22,7 @@ class LoggingSinkFunction[TData: EventTime](val name: String, run: String)
   )
 
   override def getOperatorLabel: String = s"$getCategoryLabel[$parallelIndex]"
-  override def getCategoryLabel: String = s"LoggingSink $name"
+  override def getCategoryLabel: String = s"Sink $name"
   override def getRun: String = run
 
   override def invoke(value: TData): Unit = {

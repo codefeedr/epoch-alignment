@@ -37,6 +37,8 @@ import scala.util.{Failure, Success}
 trait KafkaControllerComponent { this: KafkaConfigurationComponent =>
   val kafkaController: KafkaController
 
+  val p = 4
+
   /**
     * low level object to control the connected kafka
     */
@@ -70,7 +72,8 @@ trait KafkaControllerComponent { this: KafkaConfigurationComponent =>
     def createTopic(name: String, partitions: Option[Int] = None): Future[Unit] = {
       val usedPartitions = partitions.getOrElse[Int](kafkaConfiguration.defaultPartitions)
       logger.info(s"Creating kafka topic $name with $usedPartitions partitions")
-      val topic = new NewTopic(name, usedPartitions, 1)
+      //HACK: Make this configurable again!!! Experimental configuration does not get here for some reason
+      val topic = new NewTopic(name, p, 1)
       val topicSet = Iterable(topic).asJavaCollection
       Future {
         apply(o => o.createTopics(topicSet).all().get())

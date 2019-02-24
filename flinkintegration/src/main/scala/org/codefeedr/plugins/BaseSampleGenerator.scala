@@ -73,7 +73,7 @@ abstract class BaseSampleGenerator[TSource](val seed: Long, val checkpoint: Long
     * @param checkpointSetSize the number of elements that are generated for each checkpoint
     */
   protected def nextCheckpointRelation(checkpointSetSize: Int): Int = {
-    val checkpoint = nextCheckpoint() - 1
+    val checkpoint = nextCheckpoint()
     val id = nextIntPareto(checkpointSetSize)
     checkpoint * checkpointSetSize + id
   }

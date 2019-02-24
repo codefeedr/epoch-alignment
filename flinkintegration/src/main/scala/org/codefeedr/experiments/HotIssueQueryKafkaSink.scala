@@ -1,4 +1,6 @@
 package org.codefeedr.experiments
+import org.codefeedr.core.library.internal.LoggingSinkFunction
+import org.codefeedr.experiments.model.HotIssue
 
 object HotIssueQueryKafkaSink {
 
@@ -22,6 +24,12 @@ class HotIssueQueryKafkaSink extends HotPullRequestQueryBase {
 
     val discussions = getDiscussions(source)
     val hotIssues = getHotIssues(discussions, issues)
+
+    val discussionSink = new LoggingSinkFunction[HotIssue]("Discussion", getRun)
+    discussions.addSink(discussionSink)
+
+    val extraSink = new LoggingSinkFunction[HotIssue]("HotIssue", getRun)
+    hotIssues.addSink(extraSink)
 
     val sink = getHotIssueKafkaSink
     hotIssues.addSink(sink).name("Hot issues to kafka").setParallelism(getKafkaParallelism)

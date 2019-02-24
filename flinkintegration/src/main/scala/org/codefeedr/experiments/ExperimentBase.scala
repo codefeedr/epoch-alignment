@@ -17,8 +17,8 @@ trait ExperimentBase extends CodefeedrComponents with LazyLogging {
 
   protected def getStateBackendPath: String = configurationProvider.get("statebackend.path")
 
-  protected def getParallelism: Int = 1
-  protected def getKafkaParallelism: Int = 2
+  protected def getParallelism: Int = 4
+  protected def getKafkaParallelism: Int = 4
   protected def getRun = configurationProvider.get("run")
 
   @transient protected lazy val awaitDuration: Duration =
@@ -36,6 +36,7 @@ trait ExperimentBase extends CodefeedrComponents with LazyLogging {
         0,
         Time.seconds(60)
       ))
+    env.setBufferTimeout(2)
     env.setParallelism(getParallelism)
     env
   }
