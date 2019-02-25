@@ -46,7 +46,7 @@ services:
     volumes:
       - '/var/run/docker.sock:/tmp/docker.sock'
     environment:
-        ROUTE_URIS: logstash://gangster.processfive.com:5000
+      ROUTE_URIS: logstash://gangster.processfive.com:5000
       #ROUTE_URIS: logstash://172.16.45.114:5000
       LOGSTASH_TAGS: docker-elk
 
