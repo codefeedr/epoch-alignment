@@ -46,8 +46,8 @@ class HotPullRequestQueryBase extends ExperimentBase with LazyLogging {
   @transient lazy protected val issueJoinWindowSize: Time = Time.seconds(8)
   @transient lazy protected val issueJoinWindowInterval: Time = Time.seconds(4)
 
-  protected val issueCommentLimiter = Some(50L)
-  protected val prCommentlimiter = Some(50L)
+  protected val issueCommentLimiter = Some(5L)
+  protected val prCommentlimiter = Some(5L)
 
   implicit val HotIssueEventTime: EventTime[HotIssue] =
     new EventTime[HotIssue] {

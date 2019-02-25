@@ -334,7 +334,7 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
           state = KafkaSourceState.UnSynchronized
         }
       case KafkaSourceStateTransition.CatchUp =>
-        logger.debug("Handling catching up command")
+        logger.info("Handling catching up command")
         stateTransition = KafkaSourceStateTransition.None
         state = KafkaSourceState.CatchingUp
         manager.startedCatchingUp()
@@ -350,8 +350,9 @@ abstract class KafkaSource[TElement: EventTime, TValue: ClassTag, TKey: ClassTag
           logger.info(s"Transitioned to ready state in $getLabel")
           manager.notifyStartedOnEpoch(epochId)
           manager.notifyCatchedUp()
+          val alignmentEpoch = await(manager.getLatestSubjectEpoch)
           alignmentOffsets =
-            await(manager.getEpochOffsets(epochId)).map(o => o.nr -> o.offset).toMap
+            await(manager.getEpochOffsets(alignmentEpoch)).map(o => o.nr -> o.offset).toMap
         }
       },
       1.seconds

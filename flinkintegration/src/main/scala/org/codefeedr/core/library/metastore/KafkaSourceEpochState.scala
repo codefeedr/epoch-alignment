@@ -26,6 +26,7 @@ class KafkaSourceEpochState(subjectNode: SubjectNode, querySourceNode: QuerySour
     //Perform all operations within a write lock
     sourceEpochCollection.asyncWriteLock(() =>
       async {
+        //await(sourceEpochCollection.sync())
         val resultNode = sourceEpochCollection.getChild(s"$checkpointId")
         //If the node already exists, some other worker already performed the operation. Returns this information
         if (await(resultNode.exists())) {
@@ -61,16 +62,19 @@ class KafkaSourceEpochState(subjectNode: SubjectNode, querySourceNode: QuerySour
     */
   private def CreateNextSourceEpoch(previousSubjectEpoch: Long,
                                     checkpointId: Long): Future[SourceEpoch] = async {
-    val nextSourceEpoch = subjectNode.getEpochs().getChild(s"${previousSubjectEpoch + 1}")
+    //val nextSourceEpoch = subjectNode.getEpochs().getChild(s"${previousSubjectEpoch + 1}")
+    val nextSourceEpoch = subjectNode.getEpochs().getChild(s"${await(subjectNode.getEpochs().getLatestEpochId)}")
     //If the next epoch is available, use it. Otherwise use the previous epoch (Which means this source will not be reading new data)
-    if (await(nextSourceEpoch.exists())) {
+  // if (await(nextSourceEpoch.exists())) {
       await(CreateSourceEpoch(nextSourceEpoch, checkpointId))
-    } else {
+
+  /*} else {
       val previousSourceEpoch = subjectNode.getEpochs().getChild(s"$previousSubjectEpoch")
       logger.warn(
         s"Source on ${subjectNode.name} reusing subject epoch $previousSourceEpoch because no newer epochs were found for source epoch $checkpointId")
       await(CreateSourceEpoch(previousSourceEpoch, checkpointId))
     }
+    */
   }
 
   /**
@@ -94,7 +98,7 @@ class KafkaSourceEpochState(subjectNode: SubjectNode, querySourceNode: QuerySour
   private def CreateSourceEpoch(epochNode: EpochNode, checkpointId: Long): Future[SourceEpoch] =
     async {
       val partitions = await(epochNode.getPartitionData())
-      SourceEpoch(partitions.toList, checkpointId, epochNode.getEpoch())
+      SourceEpoch(partitions.map(o => o.nr -> o.offset).toMap, checkpointId, epochNode.getEpoch())
     }
 
 }

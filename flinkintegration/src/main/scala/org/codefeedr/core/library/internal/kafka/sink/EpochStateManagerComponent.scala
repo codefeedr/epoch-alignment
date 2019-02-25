@@ -28,6 +28,7 @@ class EpochStateManager extends Serializable with LazyLogging {
     val epochNode = await(guaranteeEpochNode(epochState))
     await(epochNode.asyncWriteLock(() =>
       async {
+        //await(epochNode.sync())
         //Create all partition offsets of the current transaction
 
         logger.debug(
@@ -91,7 +92,7 @@ class EpochStateManager extends Serializable with LazyLogging {
 
             //Calculate all combined partitions
             val epoch = Epoch(epochState.transactionState.checkPointId,
-                              await(epochState.epochNode.getPartitionData()))
+                              await(epochState.epochNode.getPartitionData()).map(o => o.nr -> o.offset).toMap)
             //Update the epochNode itself
             await(epochState.epochNode.setData(epoch))
             //Flag the epoch as completed

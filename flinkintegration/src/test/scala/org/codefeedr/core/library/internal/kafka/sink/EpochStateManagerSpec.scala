@@ -169,7 +169,8 @@ class EpochStateManagerSpec extends AsyncFlatSpec with MockitoSugar with BeforeA
     await(epochStateManager.commit(epochState))
 
     //Assert
-    verify(epochNode,times(1)).setData(Epoch(10,Iterable(Partition(1,100),Partition(2,200))))
+    verify(epochNode,times(1)).setData(Epoch(10,Map[Int,Long](1 -> 100, 2 -> 200)))
+    //verify(epochNode,times(1)).setData(Epoch(10,Array(Partition(1,100),Partition(2,200))))
     assert(true)
   }
 

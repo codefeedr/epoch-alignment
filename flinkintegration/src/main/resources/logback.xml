@@ -84,7 +84,7 @@
     <logger name="org.apache.zookeeper" level="WARN"/>
 
     <logger name="org.codefeedr.core.library.internal.kafka.sink" level="TRACE"/>
-    <logger name="org.codefeedr.core.library.internal.zookeeper" level="TRACE"/>
+    <logger name="org.codefeedr.core.library.internal.zookeeper" level="WARN"/>
 
     <!-- If you do not place this on info level, errors that trigger a restart will not be logged-->
     <logger name="org.apache.flink.runtime.taskmanager" level="INFO" />

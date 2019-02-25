@@ -71,7 +71,7 @@ ssh nvankaam@dutihr.st.ewi.tudelft.nl MAIN_CLASS="$MAIN_CLASS" ARGUMENTS=\"$ARGU
 	
 	if [ "$MAIN_CLASS" == "org.codefeedr.experiments.AlignmentController" ]
 	then
-		docker exec -t "$JOBMANAGER_CONTAINER" flink run -c $MAIN_CLASS /codefeedr.jar --run $ARGUMENTS
+		docker exec -d "$JOBMANAGER_CONTAINER" flink run -c $MAIN_CLASS /codefeedr.jar --run $ARGUMENTS
 	else
 		docker exec -d "$JOBMANAGER_CONTAINER" flink run -c $MAIN_CLASS /codefeedr.jar --run $ARGUMENTS
 	fi

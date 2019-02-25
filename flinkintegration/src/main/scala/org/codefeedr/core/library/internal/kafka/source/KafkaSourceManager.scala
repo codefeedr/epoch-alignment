@@ -117,10 +117,13 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     await(syncStateNode.setData(SynchronizationState(state)))
     await(sourceNode.asyncWriteLock(() =>
       async {
+        //await(sourceNode.sync())
         if (await(sourceNode.getSyncState().getData()).get.state != state)
           if (await(allSourcesInState(state))) {
-            logger.debug(s"All sources on ${subjectNode.name} are on state $state")
+            logger.info(s"All sources on ${subjectNode.name} are on state $state")
             sourceNode.getSyncState().setData(SynchronizationState(state))
+          } else {
+            logger.info(s"Not all sources on ${subjectNode.name} are on state $state")
           }
     }))
   }
@@ -149,10 +152,13 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
           Future
             .sequence(
               o.map(
-                o => o.getSyncState().getData().map(o => o.get)
+                o => o.getSyncState().getData().map(o2 => {
+              //    logger.info(s"State in node: ${o.name}: ${o2.get}(${o2.get.state.id}). Comparing with ${state}(${state.id}).")
+                  o2.get
+                })
               )
             )
-            .map(o => o.forall(o => o.state == state))
+            .map(o => o.forall(o => o.state.id == state.id))
       )
 
   /** Checks if the given offset is considered to be catched up with the source
@@ -180,13 +186,14 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     * If -1 is passed, obtains the current latest offsets
     */
   def getEpochOffsets(epoch: Long): Future[Iterable[Partition]] = async {
-    logger.debug(s"Obtaining offsets for epoch $epoch")
+    logger.info(s"Obtaining offsets for epoch $epoch")
     if (epoch == -1) {
       throw new Exception(
         s"Attempting to obtain endoffsets for epoch -1 in source of ${subjectNode.name}. Did you run the job with checkpointing enabled?")
     } else {
+      //await(subjectEpochs.sync())
       await(subjectEpochs.getChild(epoch).getData()).get.partitions.map(o =>
-        Partition(o.nr, o.offset))
+        Partition(o._1, o._2))
     }
   }
 
@@ -198,7 +205,7 @@ class KafkaSourceManager(kafkaSource: GenericKafkaSource,
     * @return the collection of partitions
     */
   def nextSourceEpoch(epoch: Long): Future[Iterable[Partition]] = async {
-    await(kafkaSourceEpochState.nextSourceEpoch(epoch)).partitions
+    await(kafkaSourceEpochState.nextSourceEpoch(epoch)).partitions.map(o => Partition(o._1, o._2))
   }
 
   /**

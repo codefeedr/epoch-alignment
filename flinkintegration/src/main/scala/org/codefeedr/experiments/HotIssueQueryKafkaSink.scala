@@ -23,11 +23,12 @@ class HotIssueQueryKafkaSink extends HotPullRequestQueryBase {
     val issues = getIssues()
 
     val discussions = getDiscussions(source)
-    val hotIssues = getHotIssues(discussions, issues)
+
 
     val discussionSink = new LoggingSinkFunction[HotIssue]("Discussion", getRun)
     discussions.addSink(discussionSink)
 
+    val hotIssues = getHotIssues(discussions, issues)
     val extraSink = new LoggingSinkFunction[HotIssue]("HotIssue", getRun)
     hotIssues.addSink(extraSink)
 
