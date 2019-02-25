@@ -10,7 +10,7 @@ cd $INSTALL_ROOT/$CODEFEEDR_SOURCES
 
 git clone https://github.com/codefeedr/epoch-alignment.git
 cd $REPO_FOLDER
-git checkout epochalignment
+git checkout master
 
 #Start ELK stack
 cd $REPO_FOLDER/experiments/Shared/Elk
